@@ -19,15 +19,6 @@
     { state: 'not_arrived', label: 'غائب' },
     { state: 'missed_inside', label: 'تخلّف عن الاصطفاف', sub: 'وهو في المدرسة' },
   ];
-  // أسماء الصفات كما في قيد app_users.role — للعرض فقط
-  const ROLE_AR = {
-    owner: 'المالك', principal: 'مدير المدرسة', deputy: 'الوكيل',
-    deputy_students: 'وكيل شؤون الطلاب', deputy_academic: 'الوكيل للشؤون التعليمية',
-    deputy_school: 'الوكيل للشؤون المدرسية', admin_assistant: 'المساعد الإداري',
-    duty_officer: 'المناوب', info_registrar: 'مسجّل المعلومات', counselor: 'الموجّه الطلابي',
-    activity_leader: 'رائد النشاط', health_counselor: 'الموجّه الصحي', teacher: 'المعلّم',
-    staff: 'منسوب', viewer: 'مطّلع',
-  };
 
   const ui = {
     school: null, date: null, summary: null, rows: [],
@@ -259,7 +250,7 @@
     if (r.assembly_ar) bits.push(r.assembly_ar);
     if (r.arrived_at) bits.push('وصل ' + r.arrived_at.slice(0, 5) + (r.minutes_late != null ? ' — متأخر ' + r.minutes_late + ' دقيقة' : ''));
     if (r.has_permit) bits.push('إذن موافقة' + (r.permit_decision ? ' (' + permitAr(r.permit_decision) + ')' : ''));
-    if (r.recorded_role) bits.push('رصده: ' + (ROLE_AR[r.recorded_role] || r.recorded_role));
+    if (r.recorded_role) bits.push('رصده: ' + r.recorded_role);
     if (bits.length) {
       const d = document.createElement('div');
       d.className = 'detail';
