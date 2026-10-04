@@ -130,7 +130,13 @@
       const td = el('td');
       if (f.input === 'auto') {
         const v = autoValue(f.key);
-        td.appendChild(v == null ? el('span', 'blank', '—') : document.createTextNode(v));
+        // ما يملؤه غير المدرسة (filled_by_ar) لا يُكتب هنا — وحتى يردّ صاحبه: «بانتظار ردّ وليّ الأمر»
+        const other = f.filled_by_ar && f.filled_by_ar !== 'المدرسة';
+        if (v != null) td.appendChild(document.createTextNode(v));
+        else if (other && d.awaiting_guardian) td.appendChild(el('span', 'awaiting', 'بانتظار ردّ وليّ الأمر'));
+        else td.appendChild(el('span', 'blank', '—'));
+        if (other) td.appendChild(el('div', 'hint', 'يملؤه: ' + f.filled_by_ar));
+        else if (f.hint) td.appendChild(el('div', 'hint', f.hint));
         td.classList.add('auto');
       } else {
         td.appendChild(control(f, data[f.key], ro, 'f_'));
