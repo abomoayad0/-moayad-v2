@@ -16,22 +16,13 @@
     <h1>مؤيّد · قرارات الوكيل</h1>
     <div class="who" id="who"></div>
   </div>
-  <button id="logout" hidden>خروج</button>
+  <div class="hdr-acts">
+    <a id="toMenu" class="hbtn" href="./" hidden>الشاشات</a>
+    <button id="logout" class="hbtn" type="button">خروج</button>
+  </div>
 </header>
-
-<!-- الدخول -->
-<section id="loginView" class="login" hidden>
-  <h2>الدخول</h2>
-  <p>شاشة وكيل شؤون الطلاب — يرى ويقرّر ولا يرصد: الإقفال · إعادة الفتح · البتّ في الأعذار.</p>
-  <form id="loginForm">
-    <label for="email">البريد</label>
-    <input id="email" type="email" autocomplete="username" required>
-    <label for="password">كلمة المرور</label>
-    <input id="password" type="password" autocomplete="current-password" required>
-    <button class="btn-main" id="loginBtn" type="submit">دخول</button>
-  </form>
-  <div class="notice err" id="loginErr" hidden></div>
-</section>
+<div class="testmode" id="testMode" hidden></div>
+<div class="wrap"><div class="notice err" id="gateErr" hidden></div></div>
 
 <main id="dayView" class="wrap" hidden>
   <div class="day">

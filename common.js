@@ -1,5 +1,6 @@
-// مؤيّد — ما تشترك فيه الشاشات: الدخول، والمدرسة، واليوم، والرسائل.
-// كل شاشة تستدعي Moayad.start({ onChange }) وتجلب ما يخصّها من الجسور.
+// مؤيّد — ما تشترك فيه الشاشات: الهوية (v2_me)، والمدرسة، واليوم، والرسائل.
+// الدخول من رابط واحد (index.html)، وكل شاشة تستدعي Moayad.start({ screen, onChange }).
+// وما يظهر لكل مستخدم يُقرأ من can في v2_me وحدها — لا يُخمَّن من الصفة.
 (function () {
   'use strict';
 
@@ -13,7 +14,15 @@
     weekend: 'عطلة نهاية الأسبوع', suspended: 'دراسة معلّقة',
   };
 
-  const state = { school: null, date: null };
+  // الشاشات المبنية، وما يفتح كلّاً منها من مفاتيح can
+  const SCREENS = [
+    { key: 'rasd', title: 'رصد اليوم', desc: 'حصر الغياب في سجل اليوم — فصلاً فصلاً',
+      href: 'rasd.html', allow: (c) => !!c.record_assembly },
+    { key: 'deputy', title: 'قرارات الوكيل', desc: 'الإقفال · إعادة الفتح · البتّ في الأعذار',
+      href: 'deputy.html', allow: (c) => !!(c.close_day || c.reopen_day || c.decide_excuse) },
+  ];
+
+  const state = { school: null, date: null, me: null };
 
   function store(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* لا شيء */ } }
   function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -68,64 +77,47 @@
     if (dayKind) box.append(el('span', 'kind', DAY_KIND_AR[dayKind] || dayKind));
   }
 
+  // ---------- الهوية ----------
+  async function loadMe() {
+    const { data, error } = await sb.rpc('v2_me');
+    if (error) throw error;
+    return data || null;
+  }
+
+  function screensFor(me) {
+    return me && me.can ? SCREENS.filter((x) => x.allow(me.can)) : [];
+  }
+
+  // الصفة في رأس الشاشة دائماً — من role_ar
+  function renderHeader(me) {
+    const who = $('who');
+    who.textContent = '';
+    if (!me) return;
+    who.append(el('span', null, me.name || me.full_name || ''), ' · ');
+    who.append(el('span', 'role', me.role_ar || 'بلا صفة'));
+    const tm = (me.schools || []).filter((x) => x.test_mode);
+    const t = $('testMode');
+    t.hidden = tm.length === 0;
+    t.textContent = 'وضع التجربة — ' + tm.map((x) => x.name).join(' · ') + ': ما يُرصد يُوسم تجريبياً ويُمحى بأمر.';
+  }
+
+  function gate(msg) {
+    $('gateErr').textContent = msg;
+    $('gateErr').hidden = !msg;
+  }
+
+  async function signOut() {
+    await sb.auth.signOut();
+    location.replace('./');
+  }
+
+  // ---------- شاشة ----------
   function start(opts) {
     const onChange = opts.onChange;
-
-    function showLogin() {
-      $('loginView').hidden = false;
-      $('dayView').hidden = true;
-      $('logout').hidden = true;
-      $('who').textContent = '';
-    }
-
-    async function enter(session) {
-      $('loginView').hidden = true;
-      $('dayView').hidden = false;
-      $('logout').hidden = false;
-      $('who').textContent = session.user.email || '';
-
-      const { data, error } = await sb.rpc('v2_my_schools');
-      const sel = $('school');
-      sel.innerHTML = '';
-      if (error) { showLoadErr('تعذّر جلب المدارس: ' + errText(error)); return; }
-      if (!data || data.length === 0) {
-        showLoadErr('لا مدرسة مسندة لحسابك. اطلب من مالك النظام إسنادك إلى مدرستك وصفتك.');
-        return;
-      }
-      for (const s of data) {
-        const o = document.createElement('option');
-        o.value = s.id;
-        o.textContent = s.name_ar + ' — ' + s.students_n + ' طالباً مقيّداً';
-        sel.appendChild(o);
-      }
-      const saved = load('moayad.school');
-      if (saved && data.some((s) => s.id === saved)) sel.value = saved;
-      $('schoolBox').hidden = data.length === 1;
-      state.school = sel.value;
-      $('date').value = state.date || localToday();
-      state.date = $('date').value;
-      await onChange('enter');
-    }
+    const screen = SCREENS.find((x) => x.key === opts.screen);
 
     $('toast').addEventListener('click', () => { $('toast').hidden = true; });
-
-    $('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      $('loginErr').hidden = true;
-      $('loginBtn').disabled = true;
-      const { data, error } = await sb.auth.signInWithPassword({
-        email: $('email').value.trim(), password: $('password').value,
-      });
-      $('loginBtn').disabled = false;
-      if (error) {
-        $('loginErr').textContent = 'تعذّر الدخول: ' + errText(error);
-        $('loginErr').hidden = false;
-        return;
-      }
-      await enter(data.session);
-    });
-
-    $('logout').addEventListener('click', async () => { await sb.auth.signOut(); });
+    $('logout').addEventListener('click', signOut);
 
     $('school').addEventListener('change', () => {
       state.school = $('school').value;
@@ -140,13 +132,43 @@
 
     (async () => {
       const { data } = await sb.auth.getSession();
-      if (data.session) await enter(data.session);
-      else showLogin();
-      sb.auth.onAuthStateChange((evt) => { if (evt === 'SIGNED_OUT') showLogin(); });
+      if (!data.session) { location.replace('./'); return; }
+
+      let me;
+      try { me = await loadMe(); } catch (e) { gate('تعذّر جلب حسابك: ' + errText(e)); return; }
+      state.me = me;
+      renderHeader(me);
+      if (!me) { gate('حسابك غير مسند إلى منسوب في مؤيّد. اطلب من مالك النظام إسنادك.'); return; }
+      if (!screen || !screen.allow(me.can || {})) {
+        gate('صفتك (' + (me.role_ar || 'بلا صفة') + ') لا تملك هذه الشاشة.');
+        $('toMenu').hidden = false;
+        return;
+      }
+      $('toMenu').hidden = screensFor(me).length < 2;
+
+      const schools = me.schools || [];
+      if (schools.length === 0) { gate('لا مدرسة مسندة لحسابك.'); return; }
+      const sel = $('school');
+      sel.innerHTML = '';
+      for (const x of schools) {
+        const o = document.createElement('option');
+        o.value = x.id;
+        o.textContent = x.name + ' — ' + x.students + ' طالباً مقيّداً';
+        sel.appendChild(o);
+      }
+      const saved = load('moayad.school');
+      if (saved && schools.some((x) => x.id === saved)) sel.value = saved;
+      $('schoolBox').hidden = schools.length === 1;
+      state.school = sel.value;
+      $('date').value = localToday();
+      state.date = $('date').value;
+      $('dayView').hidden = false;
+      await onChange('enter');
     })();
   }
 
   window.Moayad = {
-    sb, $, state, DAY_KIND_AR, toast, errText, ltr, el, showLoadErr, renderDates, start,
+    sb, $, state, SCREENS, DAY_KIND_AR, toast, errText, ltr, el, showLoadErr, renderDates,
+    loadMe, screensFor, renderHeader, gate, signOut, start,
   };
 })();

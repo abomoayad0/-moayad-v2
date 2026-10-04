@@ -250,6 +250,7 @@
   $('q').addEventListener('input', () => { ui.q = $('q').value; renderList(); });
 
   M.start({
+    screen: 'rasd',
     onChange: (why) => {
       if (why === 'school') ui.cls = null;
       return refresh();

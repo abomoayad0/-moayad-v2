@@ -188,3 +188,14 @@
   .ev .row1 { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
   .ev .name { font-weight: 700; }
   .ev .detail { font-size: 13px; margin-top: 4px; }
+
+  /* ---------- الرأس والقائمة ---------- */
+  .hdr-acts { display: flex; gap: 6px; }
+  header.top .hbtn { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.4); border-radius: 8px; padding: 4px 10px; font-size: 13px; text-decoration: none; }
+  header.top .who .role { display: inline-block; background: rgba(255,255,255,.18); border-radius: 999px; padding: 0 8px; font-weight: 700; opacity: 1; }
+  .testmode { background: var(--warn-bg); color: var(--warn); font-size: 13px; font-weight: 600; padding: 6px 16px; text-align: center; }
+  .menu-h { margin-top: 18px; }
+  .menu { display: grid; gap: 10px; }
+  .menu-item { display: block; background: var(--card); border: 1px solid var(--line); border-inline-start: 5px solid var(--primary); border-radius: 14px; padding: 14px 16px; color: var(--text); text-decoration: none; min-height: 64px; }
+  .menu-item b { display: block; font-size: 17px; }
+  .menu-item span { font-size: 14px; color: var(--muted); }

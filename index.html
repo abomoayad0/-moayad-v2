@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>مؤيّد · رصد اليوم</title>
+<title>مؤيّد</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
@@ -13,16 +13,19 @@
 
 <header class="top">
   <div>
-    <h1>مؤيّد · رصد اليوم</h1>
+    <h1>مؤيّد</h1>
     <div class="who" id="who"></div>
   </div>
-  <button id="logout" hidden>خروج</button>
+  <div class="hdr-acts">
+    <button id="logout" class="hbtn" type="button" hidden>خروج</button>
+  </div>
 </header>
+<div class="testmode" id="testMode" hidden></div>
 
-<!-- الدخول -->
+<!-- الدخول — رابط واحد للجميع -->
 <section id="loginView" class="login" hidden>
   <h2>الدخول</h2>
-  <p>شاشة المساعد الإداري — حصر الغياب في سجل اليوم (ض٠٢ من س-٦-ا١).</p>
+  <p>تُفتح لك الشاشات التي يملكها تكليفك.</p>
   <form id="loginForm">
     <label for="email">البريد</label>
     <input id="email" type="email" autocomplete="username" required>
@@ -33,63 +36,16 @@
   <div class="notice err" id="loginErr" hidden></div>
 </section>
 
-<!-- الرصد -->
-<main id="dayView" class="wrap" hidden>
-  <div class="day">
-    <div class="full" id="schoolBox">
-      <label for="school">المدرسة</label>
-      <select id="school"></select>
-    </div>
-    <div class="full">
-      <label for="date">اليوم</label>
-      <input id="date" type="date">
-      <div class="dates" id="dates"></div>
-    </div>
-  </div>
-
-  <div class="notice err" id="loadErr" hidden></div>
-  <div class="notice nostudy" id="noStudy" hidden></div>
-  <div class="notice closed" id="closedNote" hidden>هذا اليوم مقفَل — لا يُعدَّل سجله إلا بإعادة فتح يقرّرها وكيل شؤون الطلاب بسبب مكتوب.</div>
-
-  <!-- الشريط الأعلى: كم فصلاً رُصد من كم — من is_done في v2_day_classes -->
-  <div class="unrec" id="unrec" hidden>
-    <span id="unrecText"></span>
-    <button id="nextClass" type="button">أول فصل لم يكتمل</button>
-  </div>
-
-  <!-- اختيار الفصل -->
-  <section id="classPick" hidden>
-    <h3 class="grp">اختر الفصل</h3>
-    <div class="classes" id="classes"></div>
+<!-- القائمة — لمن يملك أكثر من شاشة -->
+<main id="menuView" class="wrap" hidden>
+  <div class="notice err" id="gateErr" hidden></div>
+  <section id="menuBox" hidden>
+    <h2 class="ph menu-h">اختر الشاشة</h2>
+    <div class="menu" id="menu"></div>
   </section>
-
-  <!-- الفصل المختار -->
-  <section id="classView" hidden>
-    <div class="cls-head">
-      <button type="button" class="back" id="backToClasses">→ الفصول</button>
-      <h2 id="clsTitle"></h2>
-    </div>
-    <div class="cls-unrec" id="clsUnrec"></div>
-
-    <div class="counts" id="counts">
-      <div><b id="cPresent">–</b><span>حاضر</span></div>
-      <div><b id="cAbsent">–</b><span>غائب</span></div>
-      <div><b id="cLate">–</b><span>متأخر</span></div>
-      <div><b id="cPermitted">–</b><span>مستأذن</span></div>
-      <div><b id="cMissed">–</b><span>تخلّف عن الاصطفاف</span></div>
-    </div>
-
-    <div class="filters" id="filters" role="group" aria-label="تصفية">
-      <button type="button" data-f="all" aria-pressed="true">الكل</button>
-      <button type="button" data-f="unrecorded" aria-pressed="false">لم يُرصد</button>
-      <button type="button" data-f="absent" aria-pressed="false">غائب</button>
-      <button type="button" data-f="late" aria-pressed="false">متأخر</button>
-      <button type="button" data-f="permitted" aria-pressed="false">مستأذن</button>
-      <button type="button" data-f="present" aria-pressed="false">حاضر</button>
-    </div>
-    <input id="q" type="search" placeholder="بحث بالاسم أو رقم الطالب" aria-label="بحث">
-
-    <div id="list"></div>
+  <section class="panel" id="meBox" hidden>
+    <h2 class="ph">تكاليفك النافذة</h2>
+    <div id="assignments"></div>
   </section>
 </main>
 
@@ -98,6 +54,6 @@
 <script src="vendor/supabase-2.117.2.js"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
-<script src="app.js"></script>
+<script src="entry.js"></script>
 </body>
 </html>

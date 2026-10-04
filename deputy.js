@@ -68,6 +68,7 @@
 
   async function refreshExcuses() {
     if (!M.state.school) return;
+    if (!M.state.me.can.decide_excuse) { $('excusePanel').hidden = true; return; }
     const { data, error } = await sb.rpc('v2_pending_excuses', { p_school: M.state.school });
     if (error) { showLoadErr('تعذّر جلب الأعذار: ' + errText(error)); return; }
     ui.excuses = data || [];
@@ -115,9 +116,10 @@
       for (const c of open) oc.appendChild(el('span', 'oc', c.label_ar + ' — لم يُرصد ' + c.unrecorded));
     }
 
-    // الإقفال: يظهر زرّه في اليوم المفتوح، وإعادة الفتح في المقفَل
-    $('closeBtn').hidden = s.closed;
-    $('reopenBox').hidden = !s.closed;
+    // الإقفال: يظهر زرّه في اليوم المفتوح، وإعادة الفتح في المقفَل — كلٌّ بما يملكه في can
+    const can = M.state.me.can;
+    $('closeBtn').hidden = s.closed || !can.close_day;
+    $('reopenBox').hidden = !s.closed || !can.reopen_day;
     $('closeHint').textContent = s.closed
       ? 'اليوم مقفَل. وإعادة فتحه لا تقع إلا بسبب مكتوب يُقيَّد في السجل.'
       : (s.unrecorded > 0
@@ -313,6 +315,7 @@
   }
 
   M.start({
+    screen: 'deputy',
     onChange: (why) => {
       if (why === 'date') return refreshDay();
       return Promise.all([refreshDay(), refreshExcuses()]);
