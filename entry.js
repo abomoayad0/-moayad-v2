@@ -1,5 +1,5 @@
 // مؤيّد — الرابط الواحد: الدخول، ثم v2_me، ثم الشاشات من can وحدها.
-// من له شاشة واحدة تُفتح له مباشرة، ومن له أكثر يختار من قائمة.
+// تُفتح أول شاشة تملكها الصفة، والبقية في شريط الشاشات أعلى كل شاشة.
 (function () {
   'use strict';
 
@@ -14,33 +14,31 @@
     $('testMode').hidden = true;
   }
 
-  async function route() {
+  async function route(me) {
     $('loginView').hidden = true;
     $('menuView').hidden = false;
     $('logout').hidden = false;
 
-    let me;
-    try { me = await M.loadMe(); } catch (e) { M.gate('تعذّر جلب حسابك: ' + errText(e)); return; }
-    M.renderHeader(me);
+    if (me === undefined) {
+      try { me = await M.loadMe(); } catch (e) { M.gate('تعذّر جلب حسابك: ' + errText(e)); return; }
+    }
+    M.renderHeader(me, onRole);
+    M.renderNav(me, null);
     if (!me) { M.gate('حسابك غير مسند إلى منسوب في مؤيّد. اطلب من مالك النظام إسنادك.'); return; }
 
+    // لا قائمة وسيطة: أول شاشة تملكها الصفة تُفتح مباشرة، والبقية في الشريط
     const screens = M.screensFor(me);
-    if (screens.length === 1) { location.replace(screens[0].href); return; }
+    if (screens.length) { location.replace(screens[0].href); return; }
 
     renderAssignments(me);
-    if (screens.length === 0) {
-      M.gate('صفتك (' + (me.role_ar || 'بلا صفة') + ') لا تملك شاشة مبنية بعد.');
-      return;
-    }
-    const box = $('menu');
-    box.textContent = '';
-    for (const x of screens) {
-      const a = el('a', 'menu-item');
-      a.href = x.href;
-      a.append(el('b', null, x.title), el('span', null, x.desc));
-      box.appendChild(a);
-    }
-    $('menuBox').hidden = false;
+    M.gate('صفتك (' + (me.role_ar || 'بلا صفة') + ') لا تملك شاشة مبنية بعد.' +
+      ((me.roles || []).length > 1 ? ' بدّل صفتك من الأعلى إن أردت.' : ''));
+  }
+
+  async function onRole(r) {
+    let me;
+    try { me = await M.actAs(r); } catch (e) { M.gate('تعذّر جلب حسابك: ' + errText(e)); return; }
+    if (me) await route(me);
   }
 
   function renderAssignments(me) {

@@ -88,17 +88,79 @@
     return me && me.can ? SCREENS.filter((x) => x.allow(me.can)) : [];
   }
 
-  // الصفة في رأس الشاشة دائماً — من role_ar
-  function renderHeader(me) {
+  // ---------- الرأس: الاسم والصفة ومبدّلها ----------
+  // الصفة تحكم ما يملكه كلّه، والشاشات أدوات. فالمبدّل هنا غير شريط الشاشات.
+  function roleLabel(r) {
+    return r.role_ar + (r.school ? ' — ' + r.school : '') + ' · ' + r.source;
+  }
+
+  function renderHeader(me, onRole) {
     const who = $('who');
     who.textContent = '';
-    if (!me) return;
-    who.append(el('span', null, me.name || me.full_name || ''), ' · ');
-    who.append(el('span', 'role', me.role_ar || 'بلا صفة'));
+    if (!me) { $('testMode').hidden = true; return; }
+    who.append(el('span', 'name', me.name || me.full_name || ''));
+
+    const roles = me.roles || [];
+    const box = el('div', 'rolebox');
+    box.append(el('span', 'role-l', 'تعمل بصفة:'));
+    if (roles.length > 1 && onRole) {
+      const sel = document.createElement('select');
+      sel.id = 'roleSel';
+      sel.className = 'rolesel';
+      sel.setAttribute('aria-label', 'بدّل صفتك');
+      const cur = roles.findIndex((r) => r.is_current === true);
+      if (cur < 0) {
+        // لم تُختر صفة بعد — تُعرض الصفة التي تحكم الآن (role_ar) ولا يُدّعى غيرها
+        const o = document.createElement('option');
+        o.value = '';
+        o.textContent = (me.role_ar || 'بلا صفة') + ' (لم تُختر بعد)';
+        o.disabled = true;
+        o.selected = true;
+        sel.appendChild(o);
+      }
+      roles.forEach((r, i) => {
+        const o = document.createElement('option');
+        o.value = String(i);
+        o.textContent = roleLabel(r);
+        if (i === cur) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.addEventListener('change', () => {
+        const r = roles[Number(sel.value)];
+        if (r) onRole(r);
+      });
+      box.appendChild(sel);
+    } else {
+      box.appendChild(el('span', 'role', me.role_ar || 'بلا صفة'));
+    }
+    who.appendChild(box);
+
     const tm = (me.schools || []).filter((x) => x.test_mode);
     const t = $('testMode');
     t.hidden = tm.length === 0;
     t.textContent = 'وضع التجربة — ' + tm.map((x) => x.name).join(' · ') + ': ما يُرصد يُوسم تجريبياً ويُمحى بأمر.';
+  }
+
+  // ---------- شريط الشاشات: من can وحدها ----------
+  function renderNav(me, currentKey) {
+    const nav = $('screens');
+    nav.textContent = '';
+    const list = screensFor(me);
+    nav.hidden = list.length === 0;
+    for (const x of list) {
+      const a = el('a', 'nav-i' + (x.key === currentKey ? ' on' : ''), x.title);
+      a.href = x.href;
+      if (x.key === currentKey) a.setAttribute('aria-current', 'page');
+      nav.appendChild(a);
+    }
+  }
+
+  // تبديل الصفة: v2_act_as ثم v2_me من جديد — فـ can تتغيّر والشريط يُبنى من جديد
+  async function actAs(r) {
+    const { data, error } = await sb.rpc('v2_act_as', { p_role: r.role_key, p_school: r.school_id || null });
+    if (error) { toast('لم تُبدَّل الصفة:\n' + errText(error)); return null; }
+    toast(data || 'بُدّلت الصفة.', true);
+    return loadMe();
   }
 
   function gate(msg) {
@@ -130,25 +192,33 @@
       onChange('date');
     });
 
-    (async () => {
-      const { data } = await sb.auth.getSession();
-      if (!data.session) { location.replace('./'); return; }
-
+    async function onRole(r) {
       let me;
-      try { me = await loadMe(); } catch (e) { gate('تعذّر جلب حسابك: ' + errText(e)); return; }
+      try { me = await actAs(r); } catch (e) { toast('تعذّر جلب حسابك: ' + errText(e)); return; }
+      if (me) await apply(me, 'role');
+      else renderHeader(state.me, onRole);
+    }
+
+    async function apply(me, why) {
       state.me = me;
-      renderHeader(me);
+      renderHeader(me, onRole);
+      renderNav(me, screen && screen.key);
       if (!me) { gate('حسابك غير مسند إلى منسوب في مؤيّد. اطلب من مالك النظام إسنادك.'); return; }
       if (!screen || !screen.allow(me.can || {})) {
-        gate('صفتك (' + (me.role_ar || 'بلا صفة') + ') لا تملك هذه الشاشة.');
-        $('toMenu').hidden = false;
+        // الصفة الجديدة لا تملك هذه الشاشة: إلى أول شاشة تملكها، وإلا فلا شيء
+        const first = screensFor(me)[0];
+        if (why === 'role' && first) { location.replace(first.href); return; }
+        $('dayView').hidden = true;
+        gate('صفتك (' + (me.role_ar || 'بلا صفة') + ') لا تملك هذه الشاشة.' +
+          (first ? '' : ' ولا شاشة مبنية لها بعد — بدّل صفتك إن كانت لك غيرها.'));
         return;
       }
-      $('toMenu').hidden = screensFor(me).length < 2;
+      gate('');
 
       const schools = me.schools || [];
       if (schools.length === 0) { gate('لا مدرسة مسندة لحسابك.'); return; }
       const sel = $('school');
+      const prev = state.school;
       sel.innerHTML = '';
       for (const x of schools) {
         const o = document.createElement('option');
@@ -156,19 +226,29 @@
         o.textContent = x.name + ' — ' + x.students + ' طالباً مقيّداً';
         sel.appendChild(o);
       }
-      const saved = load('moayad.school');
+      // الصفة المختارة إن كانت لمدرسة بعينها فمدرستها أولاً
+      const curRole = (me.roles || []).find((r) => r.is_current === true && r.school_id);
+      const saved = (why === 'role' && curRole) ? curRole.school_id
+        : (prev || (curRole && curRole.school_id) || load('moayad.school'));
       if (saved && schools.some((x) => x.id === saved)) sel.value = saved;
       $('schoolBox').hidden = schools.length === 1;
       state.school = sel.value;
-      $('date').value = localToday();
-      state.date = $('date').value;
+      if (!state.date) { $('date').value = localToday(); state.date = $('date').value; }
       $('dayView').hidden = false;
-      await onChange('enter');
+      await onChange(why);
+    }
+
+    (async () => {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) { location.replace('./'); return; }
+      let me;
+      try { me = await loadMe(); } catch (e) { gate('تعذّر جلب حسابك: ' + errText(e)); return; }
+      await apply(me, 'enter');
     })();
   }
 
   window.Moayad = {
     sb, $, state, SCREENS, DAY_KIND_AR, toast, errText, ltr, el, showLoadErr, renderDates,
-    loadMe, screensFor, renderHeader, gate, signOut, start,
+    loadMe, screensFor, renderHeader, renderNav, actAs, gate, signOut, start,
   };
 })();

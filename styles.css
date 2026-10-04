@@ -199,3 +199,19 @@
   .menu-item { display: block; background: var(--card); border: 1px solid var(--line); border-inline-start: 5px solid var(--primary); border-radius: 14px; padding: 14px 16px; color: var(--text); text-decoration: none; min-height: 64px; }
   .menu-item b { display: block; font-size: 17px; }
   .menu-item span { font-size: 14px; color: var(--muted); }
+
+  /* ---------- مبدّل الصفة وشريط الشاشات ---------- */
+  header.top .who { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
+  header.top .who .name { font-size: 13px; opacity: .85; }
+  .rolebox { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .role-l { font-size: 12px; opacity: .85; }
+  .rolesel { background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.45); border-radius: 999px;
+             padding: 3px 10px; font-weight: 700; font-size: 13px; max-width: 70vw; min-height: 32px; }
+  .rolesel option { color: #1b2a33; background: #fff; }
+  nav.screens { position: sticky; top: 0; z-index: 8; display: flex; gap: 6px; overflow-x: auto;
+                background: var(--card); border-bottom: 1px solid var(--line); padding: 8px 16px; }
+  .nav-i { flex: 0 0 auto; text-decoration: none; color: var(--text); border: 1px solid var(--line); border-radius: 999px;
+           padding: 6px 14px; font-size: 14px; font-weight: 600; min-height: 36px; display: inline-flex; align-items: center; }
+  .nav-i.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .unrec { top: 53px; }
+  .gatebox { max-width: 720px; margin: 0 auto; padding: 0 16px; }
