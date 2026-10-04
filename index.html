@@ -100,6 +100,22 @@
   .filters button { flex: 0 0 auto; border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 999px; padding: 6px 12px; font-size: 14px; min-height: 36px; }
   .filters button[aria-pressed=true] { background: var(--navy); color: #fff; border-color: var(--navy); }
 
+
+  /* الفصول */
+  .classes { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .cls { text-align: start; border: 1px solid var(--line); border-inline-start: 5px solid var(--danger);
+         background: var(--card); color: var(--text); border-radius: 12px; padding: 10px 12px; min-height: 64px; }
+  .cls.done { border-inline-start-color: var(--primary); }
+  .cls b { display: block; font-size: 15px; }
+  .cls span { font-size: 13px; font-weight: 700; color: var(--danger); }
+  .cls.done span { color: #05774a; }
+  .cls small { display: block; font-size: 12px; color: var(--muted); }
+  .cls-head { display: flex; align-items: center; gap: 10px; margin: 14px 0 6px; }
+  .cls-head h2 { font-size: 18px; margin: 0; }
+  .back { border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 10px; padding: 6px 10px; min-height: 40px; font-size: 14px; }
+  .cls-unrec { border-radius: 10px; padding: 8px 12px; margin-bottom: 10px; font-weight: 700; background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); }
+  .cls-unrec.zero { background: #e3f6ee; color: #05774a; border-color: var(--primary); }
+
   h3.grp { font-size: 14px; color: var(--muted); margin: 18px 0 6px; font-weight: 600; }
 
   .st { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
@@ -178,30 +194,46 @@
   <div class="notice nostudy" id="noStudy" hidden></div>
   <div class="notice closed" id="closedNote" hidden>هذا اليوم مقفَل — لا يُعدَّل سجله إلا بإعادة فتح يقرّرها وكيل شؤون الطلاب بسبب مكتوب.</div>
 
+  <!-- الشريط الأعلى: كم فصلاً رُصد من كم — من is_done في v2_day_classes -->
   <div class="unrec" id="unrec" hidden>
     <span id="unrecText"></span>
-    <button id="showUnrec" type="button">اعرضهم</button>
+    <button id="nextClass" type="button">أول فصل لم يكتمل</button>
   </div>
 
-  <div class="counts" id="counts" hidden>
-    <div><b id="cPresent">–</b><span>حاضر</span></div>
-    <div><b id="cAbsent">–</b><span>غائب</span></div>
-    <div><b id="cLate">–</b><span>متأخر</span></div>
-    <div><b id="cPermitted">–</b><span>مستأذن</span></div>
-    <div><b id="cMissed">–</b><span>تخلّف عن الاصطفاف</span></div>
-  </div>
+  <!-- اختيار الفصل -->
+  <section id="classPick" hidden>
+    <h3 class="grp">اختر الفصل</h3>
+    <div class="classes" id="classes"></div>
+  </section>
 
-  <div class="filters" id="filters" role="group" aria-label="تصفية">
-    <button type="button" data-f="all" aria-pressed="true">الكل</button>
-    <button type="button" data-f="unrecorded" aria-pressed="false">لم يُرصد</button>
-    <button type="button" data-f="absent" aria-pressed="false">غائب</button>
-    <button type="button" data-f="late" aria-pressed="false">متأخر</button>
-    <button type="button" data-f="permitted" aria-pressed="false">مستأذن</button>
-    <button type="button" data-f="present" aria-pressed="false">حاضر</button>
-  </div>
-  <input id="q" type="search" placeholder="بحث بالاسم أو رقم الطالب" aria-label="بحث">
+  <!-- الفصل المختار -->
+  <section id="classView" hidden>
+    <div class="cls-head">
+      <button type="button" class="back" id="backToClasses">→ الفصول</button>
+      <h2 id="clsTitle"></h2>
+    </div>
+    <div class="cls-unrec" id="clsUnrec"></div>
 
-  <div id="list"></div>
+    <div class="counts" id="counts">
+      <div><b id="cPresent">–</b><span>حاضر</span></div>
+      <div><b id="cAbsent">–</b><span>غائب</span></div>
+      <div><b id="cLate">–</b><span>متأخر</span></div>
+      <div><b id="cPermitted">–</b><span>مستأذن</span></div>
+      <div><b id="cMissed">–</b><span>تخلّف عن الاصطفاف</span></div>
+    </div>
+
+    <div class="filters" id="filters" role="group" aria-label="تصفية">
+      <button type="button" data-f="all" aria-pressed="true">الكل</button>
+      <button type="button" data-f="unrecorded" aria-pressed="false">لم يُرصد</button>
+      <button type="button" data-f="absent" aria-pressed="false">غائب</button>
+      <button type="button" data-f="late" aria-pressed="false">متأخر</button>
+      <button type="button" data-f="permitted" aria-pressed="false">مستأذن</button>
+      <button type="button" data-f="present" aria-pressed="false">حاضر</button>
+    </div>
+    <input id="q" type="search" placeholder="بحث بالاسم أو رقم الطالب" aria-label="بحث">
+
+    <div id="list"></div>
+  </section>
 </main>
 
 <div class="toast" id="toast" hidden></div>

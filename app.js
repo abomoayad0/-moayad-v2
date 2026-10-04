@@ -1,6 +1,7 @@
 // مؤيّد · رصد اليوم — شاشة المساعد الإداري.
 // الواجهة لا تحسب شيئاً: الأعداد والحالات والتاريخ الهجري كلها من دوالّ القاعدة
-// (v2_my_schools · v2_day_summary · v2_day_list · v2_record_assembly).
+// (v2_my_schools · v2_day_summary · v2_day_classes · v2_day_list · v2_record_assembly).
+// والرصد بالفصل: يُختار الصف والفصل أولاً، و«الفصل مرصود» حكمه is_done من القاعدة.
 (function () {
   'use strict';
 
@@ -21,7 +22,7 @@
   ];
 
   const ui = {
-    school: null, date: null, summary: null, rows: [],
+    school: null, date: null, summary: null, classes: [], rows: [], cls: null,
     filter: 'all', q: '', canRecord: false, busy: new Set(),
   };
 
@@ -115,6 +116,7 @@
   $('school').addEventListener('change', () => {
     ui.school = $('school').value;
     store('moayad.school', ui.school);
+    ui.cls = null;
     refresh();
   });
   $('date').addEventListener('change', () => {
@@ -133,16 +135,20 @@
     if (!ui.school || !ui.date) return;
     showLoadErr('');
     const args = { p_school: ui.school, p_date: ui.date };
-    const [sum, list] = await Promise.all([
+    const [sum, cls, list] = await Promise.all([
       sb.rpc('v2_day_summary', args),
+      sb.rpc('v2_day_classes', args),
       sb.rpc('v2_day_list', args),
     ]);
-    if (sum.error || list.error) {
-      showLoadErr('تعذّر جلب اليوم: ' + errText(sum.error || list.error));
+    const err = sum.error || cls.error || list.error;
+    if (err) {
+      showLoadErr('تعذّر جلب اليوم: ' + errText(err));
       return;
     }
     ui.summary = (sum.data && sum.data[0]) || null;
+    ui.classes = cls.data || [];
     ui.rows = list.data || [];
+    if (ui.cls && !currentClass()) ui.cls = null;
     render();
   }
 
@@ -174,25 +180,18 @@
     }
     $('closedNote').hidden = !closed;
 
-    // من لم يُرصد — من القاعدة، بارز، ولا يُطوى
+    // الشريط الأعلى: كم فصلاً رُصد من كم — من is_done، بارز، ولا يُطوى
     const un = $('unrec');
-    un.hidden = !s || !isStudy;
-    if (s) {
-      un.classList.toggle('zero', s.unrecorded === 0);
-      $('unrecText').textContent = s.unrecorded === 0
-        ? 'رُصد جميع المقيّدين (' + s.enrolled + ')'
-        : s.unrecorded + ' طالباً لم يُرصد بعد — من ' + s.enrolled;
-    }
+    un.hidden = !s || !isStudy || ui.classes.length === 0;
+    const done = ui.classes.filter((c) => c.is_done).length;
+    const total = ui.classes.length;
+    un.classList.toggle('zero', done === total);
+    $('unrecText').textContent = done === total
+      ? 'رُصدت الفصول كلها (' + total + ')'
+      : 'رُصد ' + done + ' فصلاً من ' + total + ' — بقي ' + (total - done);
 
-    $('counts').hidden = !s;
-    if (s) {
-      $('cPresent').textContent = s.present;
-      $('cAbsent').textContent = s.absent;
-      $('cLate').textContent = s.late;
-      $('cPermitted').textContent = s.permitted;
-      $('cMissed').textContent = s.missed_assembly;
-    }
-
+    renderClasses();
+    renderClassView();
     renderList();
   }
 
@@ -200,31 +199,86 @@
     const box = $('list');
     box.textContent = '';
     const q = ui.q.trim();
-    const rows = ui.rows.filter((r) =>
+    const c = currentClass();
+    if (!c) return;
+    const inClass = ui.rows.filter((r) => r.grade === c.grade && r.section === c.section);
+    const rows = inClass.filter((r) =>
       (ui.filter === 'all' || r.state === ui.filter) &&
       (!q || (r.full_name || '').includes(q) || (r.display_name || '').includes(q) || (r.student_no || '').includes(q)));
 
     if (rows.length === 0) {
       const e = document.createElement('div');
       e.className = 'empty';
-      e.textContent = ui.rows.length === 0 ? 'لا طلاب مقيّدون في هذه المدرسة.' : 'لا أحد في هذا التصنيف.';
+      e.textContent = inClass.length === 0 ? 'لا طلاب مقيّدون في هذا الفصل.' : 'لا أحد في هذا التصنيف.';
       box.appendChild(e);
       return;
     }
 
-    let grp = null;
-    for (const r of rows) {
-      const g = r.grade + '/' + r.section;
-      if (g !== grp) {
-        grp = g;
-        const h = document.createElement('h3');
-        h.className = 'grp';
-        h.textContent = 'الصف ' + r.grade + ' — الفصل ' + r.section;
-        box.appendChild(h);
-      }
-      box.appendChild(card(r));
+    for (const r of rows) box.appendChild(card(r));
+  }
+
+  // ---------- الفصول ----------
+  function classKey(c) { return c.grade + '/' + c.section; }
+  function currentClass() { return ui.classes.find((c) => classKey(c) === ui.cls) || null; }
+
+  function renderClasses() {
+    $('classPick').hidden = !!currentClass();
+    const box = $('classes');
+    box.textContent = '';
+    if (ui.classes.length === 0) {
+      const e = document.createElement('div');
+      e.className = 'empty';
+      e.textContent = 'لا فصول فيها طلاب مقيّدون.';
+      box.appendChild(e);
+      return;
+    }
+    for (const c of ui.classes) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cls' + (c.is_done ? ' done' : '');
+      const t = document.createElement('b');
+      t.textContent = c.label_ar;
+      const st = document.createElement('span');
+      st.textContent = c.is_done ? '✓ رُصد كاملاً' : 'لم يُرصد ' + c.unrecorded + ' من ' + c.enrolled;
+      const sm = document.createElement('small');
+      sm.textContent = 'غائب ' + c.absent + ' · متأخر ' + c.late + ' · مستأذن ' + c.permitted;
+      b.append(t, st, sm);
+      b.addEventListener('click', () => openClass(classKey(c)));
+      box.appendChild(b);
     }
   }
+
+  function renderClassView() {
+    const c = currentClass();
+    $('classView').hidden = !c;
+    if (!c) return;
+    $('clsTitle').textContent = c.label_ar;
+    const u = $('clsUnrec');
+    u.classList.toggle('zero', c.is_done);
+    u.textContent = c.is_done
+      ? 'رُصد الفصل كاملاً (' + c.enrolled + ')'
+      : c.unrecorded + ' طالباً لم يُرصد بعد في هذا الفصل — من ' + c.enrolled;
+    $('cPresent').textContent = c.present;
+    $('cAbsent').textContent = c.absent;
+    $('cLate').textContent = c.late;
+    $('cPermitted').textContent = c.permitted;
+    $('cMissed').textContent = c.missed_assembly;
+  }
+
+  function openClass(key) {
+    ui.cls = key;
+    ui.q = '';
+    $('q').value = '';
+    setFilter('all');
+    render();
+    window.scrollTo(0, 0);
+  }
+
+  $('backToClasses').addEventListener('click', () => { ui.cls = null; render(); window.scrollTo(0, 0); });
+  $('nextClass').addEventListener('click', () => {
+    const c = ui.classes.find((x) => !x.is_done);
+    if (c) openClass(classKey(c));
+  });
 
   function card(r) {
     const c = document.createElement('div');
@@ -322,7 +376,6 @@
     }
     renderList();
   }
-  $('showUnrec').addEventListener('click', () => setFilter('unrecorded'));
   $('q').addEventListener('input', () => { ui.q = $('q').value; renderList(); });
 
   boot();
