@@ -215,3 +215,11 @@
   .nav-i.on { background: var(--navy); color: #fff; border-color: var(--navy); }
   .unrec { top: 53px; }
   .gatebox { max-width: 720px; margin: 0 auto; padding: 0 16px; }
+
+  /* ---------- الوصول والانصراف ---------- */
+  .tabs { margin-top: 6px; }
+  .tabs button { flex: 1 1 0; font-weight: 700; }
+  .acts.one { grid-template-columns: 1fr; }
+  .acts button.a-go { background: var(--navy); color: #fff; border-color: transparent; }
+  #arrDlg .name, #disDlg .name { font-weight: 700; }
+  input[type=time] { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); min-height: 44px; font: inherit; }

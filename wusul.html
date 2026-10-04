@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مؤيّد · الوصول والانصراف</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>مؤيّد · الوصول والانصراف</h1>
+    <div class="who" id="who"></div>
+  </div>
+  <div class="hdr-acts">
+    <button id="logout" class="hbtn" type="button">خروج</button>
+  </div>
+</header>
+<nav class="screens" id="screens" aria-label="الشاشات" hidden></nav>
+<div class="testmode" id="testMode" hidden></div>
+<div class="gatebox"><div class="notice err" id="gateErr" hidden></div></div>
+
+<main id="dayView" class="wrap" hidden>
+  <div class="day">
+    <div class="full" id="schoolBox">
+      <label for="school">المدرسة</label>
+      <select id="school"></select>
+    </div>
+    <div class="full">
+      <label for="date">اليوم</label>
+      <input id="date" type="date">
+      <div class="dates" id="dates"></div>
+    </div>
+  </div>
+
+  <div class="notice err" id="loadErr" hidden></div>
+  <div class="notice nostudy" id="noStudy" hidden></div>
+
+  <div class="filters tabs" role="tablist">
+    <button type="button" role="tab" id="tabArr" aria-pressed="true">الوصول المتأخر</button>
+    <button type="button" role="tab" id="tabDis" aria-pressed="false">تأخر الانصراف</button>
+  </div>
+
+  <!-- الوصول المتأخر — ض٠٥ -->
+  <section id="arrView">
+    <div class="notice closed" id="closedNote" hidden>هذا اليوم مقفَل — لا يُسجَّل فيه وصول إلا بإعادة فتح يقرّرها وكيل شؤون الطلاب بسبب مكتوب.</div>
+    <p class="hint">ض٠٥: في حال التأخر الصباحي يُدخَل الطالب إلى فصله مع إذن الموافقة، أو يُحوَّل إلى الموجّه الطلابي مباشرة.</p>
+    <input id="qArr" type="search" placeholder="ابحث بالاسم أو رقم الطالب" aria-label="بحث">
+    <h3 class="grp" id="waitTitle"></h3>
+    <div id="waitList"></div>
+    <h3 class="grp" id="lateTitle"></h3>
+    <div id="lateList"></div>
+  </section>
+
+  <!-- تأخر الانصراف — ض٠٣ وض٠٦ -->
+  <section id="disView" hidden>
+    <p class="hint">ض٠٣: يُحصر المتأخرون بعد نهاية الدوام بخمس عشرة دقيقة · ض٠٦: وبعد ثلاثين دقيقة يُتخذ الإجراء المناسب. والعتبتان تحكم بهما القاعدة.</p>
+    <input id="qDis" type="search" placeholder="ابحث عن الطالب بالاسم أو الرقم" aria-label="بحث">
+    <div id="disList"></div>
+    <h3 class="grp" id="disDoneTitle" hidden>رُصد في هذه الجلسة</h3>
+    <div id="disDone"></div>
+  </section>
+</main>
+
+<!-- تسجيل الوصول -->
+<dialog id="arrDlg">
+  <form method="dialog">
+    <h3>تسجيل وصول متأخر</h3>
+    <p id="arrWho" class="name"></p>
+    <label for="arrTime">وقت الوصول</label>
+    <input id="arrTime" type="time" required>
+    <label>القرار — ض٠٥</label>
+    <label class="check"><input type="radio" name="arrDec" value="enter_class" checked> دخول الفصل بإذن الموافقة</label>
+    <label class="check"><input type="radio" name="arrDec" value="to_counselor"> تحويل إلى الموجّه الطلابي</label>
+    <label for="arrNote">ملاحظة (اختيارية)</label>
+    <textarea id="arrNote" rows="2"></textarea>
+    <div class="dlg-acts">
+      <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+      <button value="ok" type="submit" class="btn-accept" id="arrOk">سجّل الوصول</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- تسجيل تأخر الانصراف -->
+<dialog id="disDlg">
+  <form method="dialog">
+    <h3>تأخر عن الانصراف</h3>
+    <p id="disWho" class="name"></p>
+    <label for="disTime">وقت خروجه من المدرسة</label>
+    <input id="disTime" type="time" required>
+    <label for="disReason">السبب (اختياري)</label>
+    <textarea id="disReason" rows="2"></textarea>
+    <div class="dlg-acts">
+      <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+      <button value="ok" type="submit" class="btn-accept" id="disOk">سجّل</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="vendor/supabase-2.117.2.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="wusul.js"></script>
+</body>
+</html>
