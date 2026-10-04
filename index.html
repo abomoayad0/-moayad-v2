@@ -7,150 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-  /* الألوان من v2.brand_tokens — دليل الهوية البصرية لوزارة التعليم ص8–9 */
-  :root {
-    --primary: #07a869;      /* color.primary.1 */
-    --blue: #3d7eb9;         /* color.primary.2 */
-    --teal: #0da9a6;         /* color.primary.3 */
-    --navy: #15445a;         /* color.primary.4 */
-    --sand: #c1b489;         /* color.primary.5 */
-    --grey: #c2c1c1;         /* color.primary.6 */
-    --danger: #c62828;
-    --danger-bg: #fdecea;
-    --warn: #8a5a00;
-    --warn-bg: #fff4d6;
-    --bg: #f5f7f8;
-    --card: #ffffff;
-    --text: #1b2a33;
-    --muted: #5d6b73;
-    --line: #e1e6e9;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #0f1a20; --card: #172630; --text: #e8eef1; --muted: #9fb0b9; --line: #26404d;
-      --danger-bg: #3a1414; --warn-bg: #3a2e10; --warn: #f0c062;
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #0f1a20; --card: #172630; --text: #e8eef1; --muted: #9fb0b9; --line: #26404d;
-    --danger-bg: #3a1414; --warn-bg: #3a2e10; --warn: #f0c062;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; }
-  body {
-    background: var(--bg); color: var(--text);
-    font-family: "IBM Plex Sans Arabic", system-ui, sans-serif;
-    font-size: 16px; line-height: 1.5;
-    -webkit-text-size-adjust: 100%;
-  }
-  button, input, select { font: inherit; }
-  .wrap { max-width: 720px; margin: 0 auto; padding: 0 16px 96px; }
-  header.top {
-    background: var(--navy); color: #fff; padding: 12px 16px;
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  }
-  header.top h1 { font-size: 18px; margin: 0; font-weight: 700; }
-  header.top .who { font-size: 13px; opacity: .85; }
-  header.top button { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.4); border-radius: 8px; padding: 4px 10px; font-size: 13px; }
-  [hidden] { display: none !important; }
-
-  /* الدخول */
-  .login { max-width: 380px; margin: 48px auto; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
-  .login h2 { margin: 0 0 4px; font-size: 20px; }
-  .login p { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
-  label { display: block; font-size: 14px; color: var(--muted); margin: 12px 0 4px; }
-  input[type=email], input[type=password], input[type=date], input[type=search], select {
-    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
-    background: var(--card); color: var(--text); min-height: 44px;
-  }
-  .btn-main { width: 100%; margin-top: 18px; min-height: 48px; border: 0; border-radius: 10px; background: var(--primary); color: #fff; font-weight: 700; }
-  .btn-main:disabled { opacity: .6; }
-
-  /* شريط اليوم */
-  .day { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0 8px; }
-  .day .full { grid-column: 1 / -1; }
-  .dates { margin: 6px 0 0; font-size: 15px; }
-  .dates .h { font-weight: 700; font-size: 18px; }
-  .dates .g { color: var(--muted); font-size: 14px; }
-  .kind { display: inline-block; font-size: 13px; padding: 2px 10px; border-radius: 999px; background: var(--line); color: var(--text); margin-inline-start: 8px; vertical-align: middle; }
-
-  .notice { border-radius: 12px; padding: 12px 14px; margin: 10px 0; font-weight: 600; }
-  .notice.closed { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn); }
-  .notice.nostudy { background: var(--line); color: var(--text); }
-  .notice.err { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); white-space: pre-wrap; }
-
-  /* لم يُرصد — بارز ولا يُطوى */
-  .unrec {
-    position: sticky; top: 0; z-index: 5;
-    background: var(--danger); color: #fff; border-radius: 0 0 12px 12px;
-    padding: 12px 16px; margin: 0 -16px 10px; font-weight: 700; font-size: 18px;
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  }
-  .unrec.zero { background: var(--primary); }
-  .unrec button { background: #fff; color: var(--danger); border: 0; border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 14px; white-space: nowrap; }
-  .unrec.zero button { display: none; }
-
-  .counts { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 0 0 12px; }
-  .counts div { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 6px 4px; text-align: center; }
-  .counts b { display: block; font-size: 20px; }
-  .counts span { font-size: 12px; color: var(--muted); }
-
-  .filters { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 8px; }
-  .filters button { flex: 0 0 auto; border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 999px; padding: 6px 12px; font-size: 14px; min-height: 36px; }
-  .filters button[aria-pressed=true] { background: var(--navy); color: #fff; border-color: var(--navy); }
-
-
-  /* الفصول */
-  .classes { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
-  .cls { text-align: start; border: 1px solid var(--line); border-inline-start: 5px solid var(--danger);
-         background: var(--card); color: var(--text); border-radius: 12px; padding: 10px 12px; min-height: 64px; }
-  .cls.done { border-inline-start-color: var(--primary); }
-  .cls b { display: block; font-size: 15px; }
-  .cls span { font-size: 13px; font-weight: 700; color: var(--danger); }
-  .cls.done span { color: #05774a; }
-  .cls small { display: block; font-size: 12px; color: var(--muted); }
-  .cls-head { display: flex; align-items: center; gap: 10px; margin: 14px 0 6px; }
-  .cls-head h2 { font-size: 18px; margin: 0; }
-  .back { border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 10px; padding: 6px 10px; min-height: 40px; font-size: 14px; }
-  .cls-unrec { border-radius: 10px; padding: 8px 12px; margin-bottom: 10px; font-weight: 700; background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); }
-  .cls-unrec.zero { background: #e3f6ee; color: #05774a; border-color: var(--primary); }
-
-  h3.grp { font-size: 14px; color: var(--muted); margin: 18px 0 6px; font-weight: 600; }
-
-  .st { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
-  .st.s-unrecorded { border-inline-start: 5px solid var(--danger); }
-  .st.s-absent { border-inline-start: 5px solid var(--danger); }
-  .st.s-late { border-inline-start: 5px solid var(--sand); }
-  .st.s-present { border-inline-start: 5px solid var(--primary); }
-  .st.s-permitted { border-inline-start: 5px solid var(--blue); }
-  .st .row1 { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-  .st .name { font-weight: 700; }
-  .st .meta { font-size: 13px; color: var(--muted); }
-  .badge { font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
-  .b-unrecorded { background: var(--danger); color: #fff; }
-  .b-absent { background: var(--danger-bg); color: var(--danger); }
-  .b-late { background: var(--warn-bg); color: var(--warn); }
-  .b-present { background: #e3f6ee; color: #05774a; }
-  .b-permitted { background: #e5eef7; color: #2a5d8c; }
-  .st .detail { font-size: 13px; margin-top: 4px; }
-  .acts { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 6px; margin-top: 8px; }
-  .acts button {
-    min-height: 44px; border-radius: 10px; border: 1px solid var(--line);
-    background: var(--card); color: var(--text); font-size: 14px; font-weight: 600; padding: 4px 6px;
-  }
-  .acts button.on { color: #fff; border-color: transparent; }
-  .acts button.a-attended.on { background: var(--primary); }
-  .acts button.a-not_arrived.on { background: var(--danger); }
-  .acts button.a-missed_inside.on { background: var(--navy); }
-  .acts button:disabled { opacity: .45; }
-  .acts button small { display: block; font-size: 11px; font-weight: 400; opacity: .85; }
-  .busy { opacity: .5; pointer-events: none; }
-
-  .toast { position: fixed; bottom: 16px; left: 16px; right: 16px; max-width: 688px; margin: 0 auto; z-index: 20;
-           background: var(--danger); color: #fff; border-radius: 12px; padding: 12px 14px; font-weight: 600; white-space: pre-wrap; }
-  .empty { text-align: center; color: var(--muted); padding: 24px 0; }
-</style>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
@@ -240,6 +97,7 @@
 
 <script src="vendor/supabase-2.117.2.js"></script>
 <script src="config.js"></script>
+<script src="common.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

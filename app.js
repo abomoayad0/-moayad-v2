@@ -5,15 +5,9 @@
 (function () {
   'use strict';
 
-  const cfg = window.MOAYAD_CONFIG;
-  const sb = window.supabase.createClient(cfg.url, cfg.key);
-  const $ = (id) => document.getElementById(id);
+  const M = window.Moayad;
+  const { sb, $, toast, errText, showLoadErr } = M;
 
-  // أسماء أنواع اليوم كما تُرجعها fn_day_kind
-  const DAY_KIND_AR = {
-    study: 'يوم دراسة', exam: 'يوم اختبار', holiday: 'إجازة',
-    weekend: 'عطلة نهاية الأسبوع', suspended: 'دراسة معلّقة',
-  };
   // أزرار المساعد الإداري — حالات الاصطفاف من قيد attendance.assembly_state
   const ACTIONS = [
     { state: 'attended', label: 'حاضر' },
@@ -22,119 +16,15 @@
   ];
 
   const ui = {
-    school: null, date: null, summary: null, classes: [], rows: [], cls: null,
+    summary: null, classes: [], rows: [], cls: null,
     filter: 'all', q: '', canRecord: false, busy: new Set(),
   };
 
-  function store(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* لا شيء */ } }
-  function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-
-  function localToday() {
-    // تاريخ الجهاز بصيغة YYYY-MM-DD — يُرسل كما هو للقاعدة
-    return new Date().toLocaleDateString('en-CA');
-  }
-
-  let toastTimer = null;
-  function toast(msg) {
-    const t = $('toast');
-    t.textContent = msg;
-    t.hidden = false;
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { t.hidden = true; }, 7000);
-  }
-  $('toast').addEventListener('click', () => { $('toast').hidden = true; });
-
-  function errText(error) {
-    if (!error) return '';
-    return [error.message, error.details, error.hint].filter(Boolean).join('\n');
-  }
-
-  // ---------- الدخول ----------
-  async function boot() {
-    const { data } = await sb.auth.getSession();
-    if (data.session) await enter(data.session);
-    else showLogin();
-    sb.auth.onAuthStateChange((evt, session) => {
-      if (evt === 'SIGNED_OUT') showLogin();
-    });
-  }
-
-  function showLogin() {
-    $('loginView').hidden = false;
-    $('dayView').hidden = true;
-    $('logout').hidden = true;
-    $('who').textContent = '';
-  }
-
-  $('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    $('loginErr').hidden = true;
-    $('loginBtn').disabled = true;
-    const { data, error } = await sb.auth.signInWithPassword({
-      email: $('email').value.trim(), password: $('password').value,
-    });
-    $('loginBtn').disabled = false;
-    if (error) {
-      $('loginErr').textContent = 'تعذّر الدخول: ' + errText(error);
-      $('loginErr').hidden = false;
-      return;
-    }
-    await enter(data.session);
-  });
-
-  $('logout').addEventListener('click', async () => { await sb.auth.signOut(); });
-
-  async function enter(session) {
-    $('loginView').hidden = true;
-    $('dayView').hidden = false;
-    $('logout').hidden = false;
-    $('who').textContent = session.user.email || '';
-
-    const { data, error } = await sb.rpc('v2_my_schools');
-    const sel = $('school');
-    sel.innerHTML = '';
-    if (error) { showLoadErr('تعذّر جلب المدارس: ' + errText(error)); return; }
-    if (!data || data.length === 0) {
-      showLoadErr('لا مدرسة مسندة لحسابك. اطلب من مالك النظام إسنادك إلى مدرستك وصفتك.');
-      return;
-    }
-    for (const s of data) {
-      const o = document.createElement('option');
-      o.value = s.id;
-      o.textContent = s.name_ar + ' — ' + s.students_n + ' طالباً مقيّداً';
-      sel.appendChild(o);
-    }
-    const saved = load('moayad.school');
-    if (saved && data.some((s) => s.id === saved)) sel.value = saved;
-    $('schoolBox').hidden = data.length === 1;
-    ui.school = sel.value;
-    $('date').value = ui.date || localToday();
-    ui.date = $('date').value;
-    await refresh();
-  }
-
-  $('school').addEventListener('change', () => {
-    ui.school = $('school').value;
-    store('moayad.school', ui.school);
-    ui.cls = null;
-    refresh();
-  });
-  $('date').addEventListener('change', () => {
-    if (!$('date').value) return;
-    ui.date = $('date').value;
-    refresh();
-  });
-
   // ---------- جلب اليوم ----------
-  function showLoadErr(msg) {
-    $('loadErr').textContent = msg;
-    $('loadErr').hidden = !msg;
-  }
-
   async function refresh() {
-    if (!ui.school || !ui.date) return;
+    if (!M.state.school || !M.state.date) return;
     showLoadErr('');
-    const args = { p_school: ui.school, p_date: ui.date };
+    const args = { p_school: M.state.school, p_date: M.state.date };
     const [sum, cls, list] = await Promise.all([
       sb.rpc('v2_day_summary', args),
       sb.rpc('v2_day_classes', args),
@@ -155,20 +45,8 @@
   // ---------- العرض ----------
   function render() {
     const s = ui.summary;
-    const dates = $('dates');
-    dates.textContent = '';
-    if (s) {
-      const h = document.createElement('span');
-      h.className = 'h';
-      if (s.hijri) { h.append(ltr(s.hijri), ' هـ'); } else { h.textContent = 'التاريخ الهجري غير متاح'; }
-      const g = document.createElement('span');
-      g.className = 'g';
-      g.append(' · ', ltr(ui.date), ' م');
-      const k = document.createElement('span');
-      k.className = 'kind';
-      k.textContent = DAY_KIND_AR[s.day_kind] || s.day_kind;
-      dates.append(h, g, k);
-    }
+    if (s) M.renderDates($('dates'), s.hijri, M.state.date, s.day_kind);
+    else $('dates').textContent = '';
 
     const isStudy = !!s && (s.day_kind === 'study' || s.day_kind === 'exam');
     const closed = !!s && s.closed;
@@ -176,7 +54,7 @@
 
     $('noStudy').hidden = !s || isStudy;
     if (s && !isStudy) {
-      $('noStudy').textContent = 'هذا اليوم ليس يوم دراسة (' + (DAY_KIND_AR[s.day_kind] || s.day_kind) + ') — لا يُرصد فيه حضور ولا غياب.';
+      $('noStudy').textContent = 'هذا اليوم ليس يوم دراسة (' + (M.DAY_KIND_AR[s.day_kind] || s.day_kind) + ') — لا يُرصد فيه حضور ولا غياب.';
     }
     $('closedNote').hidden = !closed;
 
@@ -333,13 +211,6 @@
     return c;
   }
 
-  function ltr(text) {
-    const b = document.createElement('bdi');
-    b.dir = 'ltr';
-    b.textContent = text;
-    return b;
-  }
-
   function permitAr(d) {
     if (d === 'enter_class') return 'دخول الفصل';
     if (d === 'to_counselor') return 'تحويل للموجّه';
@@ -352,7 +223,7 @@
     ui.busy.add(r.student_id);
     renderList();
     const { error } = await sb.rpc('v2_record_assembly', {
-      p_student: r.student_id, p_date: ui.date, p_state: state,
+      p_student: r.student_id, p_date: M.state.date, p_state: state,
     });
     ui.busy.delete(r.student_id);
     if (error) {
@@ -378,5 +249,10 @@
   }
   $('q').addEventListener('input', () => { ui.q = $('q').value; renderList(); });
 
-  boot();
+  M.start({
+    onChange: (why) => {
+      if (why === 'school') ui.cls = null;
+      return refresh();
+    },
+  });
 })();
