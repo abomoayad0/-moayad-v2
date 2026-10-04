@@ -84,6 +84,12 @@
     return data || null;
   }
 
+  // مرّة بعد الدخول وقبل v2_me: تُفرض صفة إن لم تكن مختارة، ولا يتغيّر شيء إن كانت
+  async function defaultRole() {
+    const { error } = await sb.rpc('v2_default_role');
+    if (error) throw error;
+  }
+
   function screensFor(me) {
     return me && me.can ? SCREENS.filter((x) => x.allow(me.can)) : [];
   }
@@ -215,7 +221,9 @@
       }
       gate('');
 
-      const schools = me.schools || [];
+      // الصفة المختارة إن كانت لمدرسة بعينها فلا عمل إلا فيها — والقاعدة تمنع غيرها
+      const curRole = (me.roles || []).find((r) => r.is_current === true && r.school_id);
+      const schools = (me.schools || []).filter((x) => !curRole || x.id === curRole.school_id);
       if (schools.length === 0) { gate('لا مدرسة مسندة لحسابك.'); return; }
       const sel = $('school');
       const prev = state.school;
@@ -226,10 +234,7 @@
         o.textContent = x.name + ' — ' + x.students + ' طالباً مقيّداً';
         sel.appendChild(o);
       }
-      // الصفة المختارة إن كانت لمدرسة بعينها فمدرستها أولاً
-      const curRole = (me.roles || []).find((r) => r.is_current === true && r.school_id);
-      const saved = (why === 'role' && curRole) ? curRole.school_id
-        : (prev || (curRole && curRole.school_id) || load('moayad.school'));
+      const saved = prev || load('moayad.school');
       if (saved && schools.some((x) => x.id === saved)) sel.value = saved;
       $('schoolBox').hidden = schools.length === 1;
       state.school = sel.value;
@@ -242,13 +247,13 @@
       const { data } = await sb.auth.getSession();
       if (!data.session) { location.replace('./'); return; }
       let me;
-      try { me = await loadMe(); } catch (e) { gate('تعذّر جلب حسابك: ' + errText(e)); return; }
+      try { await defaultRole(); me = await loadMe(); } catch (e) { gate('تعذّر جلب حسابك: ' + errText(e)); return; }
       await apply(me, 'enter');
     })();
   }
 
   window.Moayad = {
     sb, $, state, SCREENS, DAY_KIND_AR, toast, errText, ltr, el, showLoadErr, renderDates,
-    loadMe, screensFor, renderHeader, renderNav, actAs, gate, signOut, start,
+    loadMe, defaultRole, screensFor, renderHeader, renderNav, actAs, gate, signOut, start,
   };
 })();

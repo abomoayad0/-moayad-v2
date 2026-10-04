@@ -1,4 +1,4 @@
-// مؤيّد — الرابط الواحد: الدخول، ثم v2_me، ثم الشاشات من can وحدها.
+// مؤيّد — الرابط الواحد: الدخول، ثم v2_default_role، ثم v2_me، ثم الشاشات من can وحدها.
 // تُفتح أول شاشة تملكها الصفة، والبقية في شريط الشاشات أعلى كل شاشة.
 (function () {
   'use strict';
@@ -20,7 +20,7 @@
     $('logout').hidden = false;
 
     if (me === undefined) {
-      try { me = await M.loadMe(); } catch (e) { M.gate('تعذّر جلب حسابك: ' + errText(e)); return; }
+      try { await M.defaultRole(); me = await M.loadMe(); } catch (e) { M.gate('تعذّر جلب حسابك: ' + errText(e)); return; }
     }
     M.renderHeader(me, onRole);
     M.renderNav(me, null);
