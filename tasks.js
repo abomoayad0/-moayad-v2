@@ -142,14 +142,16 @@
     c.appendChild(top);
     const meta = kind === 'behavior'
       ? (t.problem_ar ? t.problem_ar + ' — الدرجة ' + t.degree_no + ' · ' : '') + (t.occurred_on || '')
-      : 'غياب ' + t.days_n + ' أيام ' + (t.excused ? 'بعذر' : 'بلا عذر') + ' · ' + (t.opened_on || '');
+      : 'غياب ' + t.days_n + ' أيام ' + (t.excused ? 'بعذر' : 'بلا عذر') + ' · ' + (t.triggered_on || '');
     c.appendChild(el('div', 'meta', meta));
     c.appendChild(el('div', 'meta', 'المسؤول: ' + (t.owner_role || '—') + (t.evidence_ar ? ' · الإثبات: ' + t.evidence_ar : '')));
     // الآلي يقع في القاعدة (الحسم والتعويض) فلا يُسأل عنه إثبات
     if (t.status === 'auto') {
       c.appendChild(el('div', 'meta', 'وقعت آلياً في القاعدة — لا تُغلق من هنا.'));
     } else if (t.status === 'open') {
-      if (t.evidence_kind === 'auto') {
+      if (!M.state.me.can.close_task) {
+        c.appendChild(el('div', 'meta', 'صفتك لا تملك إغلاق المهامّ.'));
+      } else if (t.evidence_kind === 'auto') {
         c.appendChild(el('div', 'meta', 'تقع آلياً في القاعدة — لا تُغلق من هنا.'));
       } else {
         const acts = el('div', 'acts two');

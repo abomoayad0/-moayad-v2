@@ -24,6 +24,8 @@
       href: 'deputy.html', allow: (c) => !!(c.close_day || c.reopen_day || c.decide_excuse) },
     { key: 'suluk', title: 'رصد المخالفات', desc: 'الفصل ثم الطالب ثم المخالفة — والمهامّ المولَّدة',
       href: 'suluk.html', allow: (c) => !!c.record_behavior },
+    { key: 'errors', title: 'لوحة الأخطاء', desc: 'ما سجّلته الشاشات والجسور — الأعطاب والحرّاس',
+      href: 'errors.html', allow: (c) => !!c.view_errors },
   ];
 
   const state = { school: null, date: null, me: null, screen: null };

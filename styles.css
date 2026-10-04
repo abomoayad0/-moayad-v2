@@ -245,3 +245,11 @@
   .btn-ghost.wide { width: 100%; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); margin-bottom: 10px; font-weight: 700; }
   .evf { margin-top: 6px; }
   #evDlg { max-height: 90vh; overflow-y: auto; }
+
+  /* ---------- لوحة الأخطاء ---------- */
+  .err-row.k-error { border-inline-start: 5px solid var(--danger); }
+  .err-row.k-guard { border-inline-start: 5px solid var(--blue); }
+  .err-row.fixed { opacity: .6; }
+  .err-row .name { margin-top: 4px; word-break: break-word; }
+  pre.params { direction: ltr; text-align: left; font-size: 12px; background: var(--bg); padding: 8px; border-radius: 8px; overflow-x: auto; max-width: 100%; }
+  details summary { cursor: pointer; font-size: 13px; color: var(--muted); margin-top: 4px; }
