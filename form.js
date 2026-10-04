@@ -1,146 +1,276 @@
-// مؤيّد · النموذج الرسمي للطبع — يُملأ من v2_form ولا يُؤلَّف منه حرف.
-// form.html?form=8&student=<uuid>&ref=<record_id>
-// وما لا تُرجعه القاعدة يبقى سطراً فارغاً يُكتب باليد، وخانات التوقيع فارغة.
+// مؤيّد · النموذج الرسمي — يُملأ في الشاشة ويُحفظ في القاعدة، ثم يُعتمد ويُوقَّع، ويُطبع من المحفوظ.
+// form.html?form=8&student=<uuid>&ref=<record_id>&task=<task_id>
+// v2_form_open · v2_form_save · v2_form_sign
+// الخانات من schema والجدول من row_schema، ولا يُؤلَّف حقل ولا يُحسب شيء في الشاشة.
 (function () {
   'use strict';
 
   const M = window.Moayad;
-  const { $, el, errText, showLoadErr } = M;
+  const { $, el, toast, errText, showLoadErr } = M;
   M.state.screen = 'form';
 
-  const STATUS_AR = { open: 'مفتوحة', done: 'نُفّذت', skipped: 'أُسقطت', auto: 'وقعت آلياً' };
+  const q = new URLSearchParams(location.search);
+  const P = {
+    form: Number(q.get('form')), student: q.get('student') || null,
+    ref: q.get('ref') || null, task: q.get('task') || null,
+  };
+  const ui = { doc: null, rows: [] };
 
-  function blank() { return el('span', 'blank', '.................................'); }
+  function ask(dlg) {
+    return new Promise((resolve) => {
+      dlg.addEventListener('close', () => resolve(dlg.returnValue), { once: true });
+      dlg.returnValue = '';
+      dlg.showModal();
+    });
+  }
 
-  function kv(rows) {
-    const t = el('table');
-    for (const [k, v] of rows) {
+  function isFinal() { return !!(ui.doc && ui.doc.entry && ui.doc.entry.status === 'final'); }
+
+  // قيمة الحقل الآلي من auto بمفتاحه كما هو — لا مطابقة في الشاشة
+  function autoValue(key) {
+    const a = (ui.doc && ui.doc.auto) || {};
+    const v = a[key];
+    return v == null || typeof v === 'object' ? null : String(v);
+  }
+
+  // خانة بحسب input من القاعدة
+  function control(f, value, disabled, idp) {
+    let c;
+    switch (f.input) {
+      case 'longtext':
+        c = document.createElement('textarea'); c.rows = 3; break;
+      case 'date':
+        c = document.createElement('input'); c.type = 'date'; break;
+      case 'number':
+        c = document.createElement('input'); c.type = 'number'; c.inputMode = 'decimal'; break;
+      case 'checkbox':
+        c = document.createElement('input'); c.type = 'checkbox'; break;
+      case 'select': {
+        c = document.createElement('select');
+        const ph = document.createElement('option');
+        ph.value = ''; ph.textContent = '—';
+        c.appendChild(ph);
+        for (const o of f.options || []) {
+          const op = document.createElement('option');
+          op.value = o; op.textContent = o;
+          c.appendChild(op);
+        }
+        break;
+      }
+      default:
+        c = document.createElement('input'); c.type = 'text';
+    }
+    c.id = idp + f.key;
+    c.dataset.key = f.key;
+    if (f.input === 'checkbox') c.checked = value === true || value === 'true';
+    else if (value != null) c.value = value;
+    c.disabled = disabled;
+    return c;
+  }
+
+  function read(c) {
+    if (c.type === 'checkbox') return c.checked;
+    const v = c.value.trim();
+    if (v === '') return null;
+    return c.type === 'number' && !isNaN(Number(v)) ? Number(v) : v;
+  }
+
+  // ---------- العرض ----------
+  function render() {
+    const d = ui.doc;
+    const e = d.entry;
+    const fin = isFinal();
+    document.title = 'مؤيّد · ' + (d.title_ar || 'نموذج');
+    $('barTitle').textContent = 'نموذج ' + d.form_no + ': ' + (d.title_ar || '');
+    const sh = $('sheet');
+    sh.textContent = '';
+
+    const auto = d.auto || {};
+    if (auto.school) sh.appendChild(el('div', 'sch', auto.school));
+    sh.appendChild(el('h1', null, d.title_ar || ''));
+    sh.appendChild(el('div', 'src', 'نموذج رقم ' + d.form_no + (d.source ? ' · ' + d.source : '')));
+    const st = el('div', 'fstatus ' + (fin ? 'final' : e ? 'draft' : 'new'),
+      fin ? 'معتمد' + (e.finalized_h ? ' في ' + e.finalized_h : '') + (e.filled_role ? ' — ' + e.filled_role : '')
+        : e ? 'مسوّدة محفوظة' : 'جديد — لم يُحفظ بعد');
+    sh.appendChild(st);
+
+    // الخانات
+    const data = (e && e.data) || {};
+    const t = el('table', 'kv');
+    for (const f of d.schema || []) {
       const tr = el('tr');
-      const th = el('th', null, k);
+      const th = el('th', null, f.label + (f.required && f.input !== 'auto' ? ' *' : ''));
       const td = el('td');
-      if (v == null || v === '') td.appendChild(blank());
-      else if (v instanceof Node) td.appendChild(v);
-      else td.textContent = v;
+      if (f.input === 'auto') {
+        const v = autoValue(f.key);
+        td.appendChild(v == null ? el('span', 'blank', '—') : document.createTextNode(v));
+        td.classList.add('auto');
+      } else {
+        td.appendChild(control(f, data[f.key], fin, 'f_'));
+        if (f.hint && !fin) td.appendChild(el('div', 'hint', f.hint));
+      }
       tr.append(th, td);
       t.appendChild(tr);
     }
-    return t;
-  }
+    sh.appendChild(t);
 
-  function render(f) {
-    document.title = 'مؤيّد · ' + f.title_ar;
-    $('barTitle').textContent = 'نموذج ' + f.form_no + ': ' + f.title_ar;
-    const sh = $('sheet');
-    sh.textContent = '';
-    sh.appendChild(el('div', 'sch', f.school || ''));
-    sh.appendChild(el('h1', null, f.title_ar));
-    sh.appendChild(el('div', 'src', 'نموذج رقم ' + f.form_no + (f.source ? ' · ' + f.source : '')));
-
-    // حقول النموذج الرسمي أزواجاً {label, value} بترتيبه — كما هي، والفارغ سطر منقّط
-    if (Array.isArray(f.fields_kv) && f.fields_kv.length) {
-      sh.appendChild(kv(f.fields_kv.map((x) => [x.label, x.value])));
-    } else if (Array.isArray(f.fields) && f.fields.length) {
-      sh.appendChild(kv(f.fields.map((n) => [n, null])));
-    }
-
-    // الطالب وأولياؤه
-    const s = f.student || {};
-    sh.appendChild(el('h2', null, 'بيانات الطالب'));
-    const shown = new Set((f.fields_kv || []).map((x) => x.label).concat(f.fields || []));
-    sh.appendChild(kv([['اسم الطالب', s.name], ['الصف', s.class_ar], ['رقم الطالب', s.student_no], ['رقم الهوية', s.national_id]]
-      .filter(([k]) => !shown.has(k))));
-    for (const g of f.guardians || []) {
-      sh.appendChild(kv([[g.relation || 'ولي الأمر', g.name], ['الجوال', g.phone]]));
-    }
-
-    // الواقعة — للنماذج المبنية على رصد سلوكي
-    const r = f.record;
-    if (r) {
-      sh.appendChild(el('h2', null, 'الواقعة'));
-      sh.appendChild(kv([
-        ['المشكلة', r.problem_ar],
-        ['الدرجة', r.degree_no != null ? String(r.degree_no) : null],
-        ['اليوم والتاريخ', (() => {
-          const sp = document.createElement('span');
-          sp.append([r.weekday_ar, r.occurred_h ? r.occurred_h + ' هـ' : null].filter(Boolean).join(' '));
-          if (r.occurred_on) sp.append(' (', M.ltr(r.occurred_on), ' م)');
-          return sp;
-        })()],
-        ['المكان', r.place],
-        ['التكرار والخطوة', (r.occurrence_no != null ? 'التكرار ' + r.occurrence_no : '') + (r.step_no != null ? ' · الخطوة ' + r.step_no : '')],
-        ['الدرجات المحسومة', r.deducted != null ? String(r.deducted) : null],
-        ['ملاحظة', r.note],
-      ]));
-      if (Array.isArray(r.actions) && r.actions.length) {
-        sh.appendChild(el('h2', null, 'الإجراءات'));
-        const t = el('table', 'grid');
-        const hr = el('tr');
-        for (const h of ['م', 'الإجراء', 'المسؤول', 'الحالة', 'التاريخ']) hr.appendChild(el('th', null, h));
-        t.appendChild(hr);
-        r.actions.forEach((a, i) => {
-          const tr = el('tr');
-          tr.append(el('td', null, String(i + 1)), el('td', null, a.text), el('td', null, a.owner || ''),
-            el('td', null, STATUS_AR[a.status] || a.status || ''), el('td', null, a.on_h ? a.on_h + ' هـ' : ''));
-          t.appendChild(tr);
-        });
-        sh.appendChild(t);
-      }
-    }
-
-    // المواظبة — للنماذج ١٥ و١٦ و١٧
-    if (f.attendance) {
-      sh.appendChild(el('h2', null, 'المواظبة'));
-      sh.appendChild(kv(Object.entries(f.attendance).map(([k, v]) => [k.replace(/_/g, ' '), typeof v === 'boolean' ? (v ? 'نعم' : 'لا') : String(v)])));
-    }
-
-    // جدول النموذج كما طُبع — بصفوفه من القاعدة، وإلا سطور فارغة تُملأ باليد
-    if (Array.isArray(f.columns) && f.columns.length) {
-      const t = el('table', 'grid');
+    // الجدول — تُضاف صفوفه وتُحذف
+    const rs = d.row_schema || [];
+    if (rs.length) {
+      sh.appendChild(el('h2', null, 'الجدول'));
+      const wrap = el('div', 'gridwrap');
+      const g = el('table', 'grid');
       const hr = el('tr');
-      for (const h of f.columns) hr.appendChild(el('th', null, h));
-      t.appendChild(hr);
-      const rows = Array.isArray(f.days) && f.days.length ? f.days : [];
-      for (const d of rows) {
+      for (const c of rs) hr.appendChild(el('th', null, c.label));
+      if (!fin) hr.appendChild(el('th', 'noprint', ''));
+      g.appendChild(hr);
+      ui.rows.forEach((row, i) => {
         const tr = el('tr');
-        for (const h of f.columns) tr.appendChild(el('td', null, d && d[h] != null ? String(d[h]) : ''));
-        t.appendChild(tr);
+        for (const c of rs) {
+          const td = el('td');
+          if (c.input === 'auto') {
+            const v = row[c.key];
+            td.appendChild(v == null ? el('span', 'blank', '—') : document.createTextNode(String(v)));
+            td.classList.add('auto');
+          } else {
+            const ctl = control(c, row[c.key], fin, 'r' + i + '_');
+            ctl.addEventListener('input', () => { row[c.key] = read(ctl); });
+            ctl.addEventListener('change', () => { row[c.key] = read(ctl); });
+            td.appendChild(ctl);
+          }
+          tr.appendChild(td);
+        }
+        if (!fin) {
+          const td = el('td', 'noprint');
+          const del = el('button', 'rowdel', '✕');
+          del.type = 'button';
+          del.title = 'احذف الصف';
+          del.addEventListener('click', () => { ui.rows.splice(i, 1); render(); });
+          td.appendChild(del);
+          tr.appendChild(td);
+        }
+        g.appendChild(tr);
+      });
+      wrap.appendChild(g);
+      sh.appendChild(wrap);
+      if (!fin) {
+        const add = el('button', 'btn-ghost wide noprint', '+ أضف صفاً');
+        add.type = 'button';
+        add.addEventListener('click', () => { ui.rows.push({}); render(); });
+        sh.appendChild(add);
       }
-      for (let i = rows.length; i < Math.max(6, rows.length); i++) {
-        const tr = el('tr');
-        for (let j = 0; j < f.columns.length; j++) tr.appendChild(el('td'));
-        t.appendChild(tr);
-      }
-      sh.appendChild(t);
     }
 
-    // التاريخ والموقّعون — خانات فارغة تُوقَّع يدوياً
-    const dt = el('div', 'dt');
-    dt.append('حُرّر في ', M.ltr(f.today_h || ''), ' هـ (', M.ltr(f.today_g || ''), ' م)');
-    sh.appendChild(dt);
+    // الحفظ والاعتماد
+    if (!fin) {
+      const acts = el('div', 'dlg-acts noprint');
+      const draft = el('button', 'btn-ghost', 'حفظ مسوّدة');
+      draft.type = 'button';
+      draft.addEventListener('click', () => save(false));
+      const final = el('button', 'btn-accept', 'اعتماد');
+      final.type = 'button';
+      final.addEventListener('click', () => save(true));
+      acts.append(draft, final);
+      sh.appendChild(acts);
+    }
+
+    // التوقيعات — بعد الاعتماد
     const signs = el('div', 'signs');
-    for (const who of f.signers || []) {
-      const d = el('div');
-      d.append(el('div', 'line'), el('div', null, who), el('div', 'blank', 'الاسم والتوقيع'));
-      signs.appendChild(d);
+    const sigs = (e && e.signatures) || [];
+    for (const who of d.signers || []) {
+      const box = el('div');
+      const done = sigs.filter((x) => x.signer === who);
+      const last = done[done.length - 1];
+      box.append(el('div', 'line', last ? (last.signed ? '✓ أقرّ' : '✕ امتنع') : ''), el('div', null, who));
+      if (last) {
+        box.appendChild(el('div', last.signed ? 'meta' : 'meta red',
+          (last.signed ? 'أقرّ' : 'امتنع: ' + (last.reason || '')) + (last.at_h ? ' · ' + last.at_h : '')));
+      }
+      if (fin && !last) {
+        const a = el('div', 'acts two noprint');
+        const y = el('button', 'a-accept', 'أقرّ');
+        y.type = 'button';
+        y.addEventListener('click', () => sign(who, true));
+        const n = el('button', 'a-reject', 'امتنع بسبب');
+        n.type = 'button';
+        n.addEventListener('click', () => sign(who, false));
+        a.append(y, n);
+        box.appendChild(a);
+      } else if (!fin) {
+        box.appendChild(el('div', 'blank', 'يُوقَّع بعد الاعتماد'));
+      }
+      signs.appendChild(box);
     }
     sh.appendChild(signs);
     sh.hidden = false;
+  }
+
+  function collect() {
+    const data = {};
+    for (const f of ui.doc.schema || []) {
+      if (f.input === 'auto') continue;
+      const c = $('f_' + f.key);
+      if (c) data[f.key] = read(c);
+    }
+    // يُرسل المكتوب وحده: لا الآلي، ولا الصفوف الفارغة كلها
+    const typed = (ui.doc.row_schema || []).filter((c) => c.input !== 'auto').map((c) => c.key);
+    const rows = ui.rows
+      .map((r) => Object.fromEntries(typed.map((k) => [k, r[k] == null ? null : r[k]])))
+      .filter((r) => Object.values(r).some((v) => v != null && v !== '' && v !== false));
+    return { data, rows };
+  }
+
+  // ---------- الحفظ والتوقيع ----------
+  async function save(final) {
+    const { data, rows } = collect();
+    const e = ui.doc.entry;
+    const { data: res, error } = await M.rpc('v2_form_save', {
+      p_form: P.form, p_data: data, p_rows: rows, p_student: P.student, p_ref: P.ref,
+      p_task: P.task, p_entry: e ? e.id : null, p_final: final,
+    }, final ? 'اعتماد نموذج' : 'حفظ مسوّدة نموذج');
+    if (error) { toast((final ? 'لم يُعتمد النموذج:\n' : 'لم تُحفظ المسوّدة:\n') + errText(error)); return; }
+    toast(final ? 'اعتُمد النموذج. ويُوقَّع الآن.' : 'حُفظت المسوّدة.', true);
+    await open();
+  }
+
+  async function sign(who, signed) {
+    let reason = null;
+    if (!signed) {
+      $('refWho').textContent = who;
+      $('refReason').value = '';
+      $('refOk').disabled = true;
+      if (await ask($('refuseDlg')) !== 'ok') return;
+      reason = $('refReason').value.trim();
+    }
+    const { error } = await M.rpc('v2_form_sign', {
+      p_entry: ui.doc.entry.id, p_signer: who, p_signed: signed, p_refuse_reason: reason,
+    }, 'توقيع نموذج');
+    if (error) { toast('لم يُسجَّل التوقيع:\n' + errText(error)); return; }
+    toast(signed ? 'سُجّل إقرار ' + who + '.' : 'سُجّل امتناع ' + who + '.', true);
+    await open();
+  }
+
+  $('refReason').addEventListener('input', () => { $('refOk').disabled = $('refReason').value.trim() === ''; });
+
+  // ---------- الفتح ----------
+  async function open() {
+    showLoadErr('');
+    const { data, error } = await M.rpc('v2_form_open',
+      { p_form: P.form, p_student: P.student, p_ref: P.ref, p_task: P.task }, 'فتح نموذج ' + P.form);
+    if (error) { showLoadErr('تعذّر فتح النموذج: ' + errText(error)); return; }
+    if (!data) { showLoadErr('لم يُرجع النموذج شيئاً.'); return; }
+    ui.doc = data;
+    ui.rows = ((data.entry && data.entry.rows) || []).map((r) => Object.assign({}, r));
+    render();
   }
 
   $('printBtn').addEventListener('click', () => window.print());
   $('toast').addEventListener('click', () => { $('toast').hidden = true; });
 
   (async () => {
-    const q = new URLSearchParams(location.search);
-    const form = Number(q.get('form'));
-    const student = q.get('student');
-    const ref = q.get('ref') || null;
-    if (!form || !student) { showLoadErr('رابط النموذج ناقص: يلزم رقم النموذج والطالب.'); return; }
+    if (!P.form) { showLoadErr('رابط النموذج ناقص: يلزم رقم النموذج.'); return; }
     const { data: sess } = await M.sb.auth.getSession();
     if (!sess.session) { location.replace('./'); return; }
-    const { data, error } = await M.rpc('v2_form', { p_form: form, p_student: student, p_ref: ref }, 'فتح نموذج ' + form);
-    if (error) { showLoadErr('تعذّر فتح النموذج: ' + errText(error)); return; }
-    if (!data) { showLoadErr('لم يُرجع النموذج شيئاً.'); return; }
-    render(data);
+    await open();
   })();
 })();

@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>مؤيّد · نموذج للطبع</title>
+<title>مؤيّد · نموذج</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <style>
-  /* صفحة النموذج — تُطبع على A4، وخانات التوقيع فارغة تُوقَّع يدوياً */
+  /* صفحة النموذج — تُملأ وتُحفظ، وتُطبع على A4 من المحفوظ */
   body { background: #e9edef; }
   .bar { position: sticky; top: 0; z-index: 5; display: flex; gap: 8px; justify-content: space-between; align-items: center;
          background: var(--navy); color: #fff; padding: 10px 16px; }
@@ -29,9 +29,28 @@
   .signs div { text-align: center; font-size: 14px; }
   .signs .line { border-bottom: 1px solid #333; height: 44px; margin-bottom: 6px; }
   .dt { text-align: start; font-size: 13px; margin-top: 8px; }
+  .fstatus { text-align: center; font-size: 13px; font-weight: 700; border-radius: 8px; padding: 6px 10px; margin: 0 auto 10px; width: fit-content; }
+  .fstatus.new { background: #f1f4f5; color: #555; }
+  .fstatus.draft { background: #fff4d6; color: #7a5a00; }
+  .fstatus.final { background: #dff3ea; color: #0d6b45; }
+  .sheet .kv td.auto { background: #fafbfb; }
+  .sheet input, .sheet select, .sheet textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px;
+    border: 1px solid #b9c2c6; border-radius: 6px; padding: 6px 8px; min-height: 38px; background: #fff; color: #111; }
+  .sheet input[type=checkbox] { width: 22px; min-height: 22px; }
+  .sheet input:disabled, .sheet select:disabled, .sheet textarea:disabled { background: transparent; border-color: transparent; color: #111; opacity: 1; }
+  .sheet .hint { font-size: 12px; margin: 4px 0 0; }
+  .gridwrap { overflow-x: auto; }
+  .sheet table.grid td { min-width: 70px; padding: 4px; }
+  .rowdel { background: #fff; color: var(--danger); border: 1px solid var(--danger); border-radius: 6px; min-width: 34px; min-height: 34px; font-weight: 700; }
+  .sheet .dlg-acts { margin-top: 16px; }
+  .signs .meta { font-size: 12px; margin-top: 4px; color: #333; }
+  .signs .meta.red { color: var(--danger); }
+  .signs .blank { font-size: 12px; margin-top: 4px; }
   @media print {
     body { background: #fff; }
-    .bar, .toast, #loadErr { display: none !important; }
+    .bar, .toast, #loadErr, .noprint, .sheet .hint { display: none !important; }
+    .sheet input, .sheet select, .sheet textarea { border-color: transparent; padding: 0; min-height: 0; }
+    .gridwrap { overflow: visible; }
     .sheet { box-shadow: none; margin: 0; max-width: none; padding: 0; }
     @page { size: A4; margin: 14mm; }
   }
@@ -45,6 +64,16 @@
 </div>
 <div class="gatebox"><div class="notice err" id="loadErr" hidden></div></div>
 <article class="sheet" id="sheet" hidden></article>
+<dialog id="refuseDlg"><form method="dialog">
+  <h3>الامتناع عن التوقيع</h3>
+  <p class="quote" id="refWho"></p>
+  <label for="refReason">سبب الامتناع — إلزامي</label>
+  <textarea id="refReason" rows="3"></textarea>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-danger" id="refOk" disabled>سجّل الامتناع</button>
+  </div>
+</form></dialog>
 <div class="toast" id="toast" hidden></div>
 
 <script src="vendor/supabase-2.117.2.js"></script>

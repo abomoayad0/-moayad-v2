@@ -25,7 +25,7 @@
         <p class="quote" id="evTask"></p>
         <p class="hint" id="evHint"></p>
         <p class="detail" id="evForm" hidden></p>
-        <a class="btn-ghost wide formlink" id="evFormBtn" target="_blank" rel="noopener" hidden>افتح النموذج للطبع</a>
+        <a class="btn-ghost wide formlink" id="evFormBtn" target="_blank" rel="noopener" hidden>افتح النموذج</a>
         <p class="hint" id="evFormNote" hidden></p>
         <div id="evFields"></div>
         <div class="dlg-acts">
@@ -152,7 +152,8 @@
       return;
     }
     btn.classList.remove('off');
-    btn.href = 'form.html?form=' + t.form_no + '&student=' + encodeURIComponent(studentId) + (ref ? '&ref=' + encodeURIComponent(ref) : '');
+    btn.href = 'form.html?form=' + t.form_no + '&student=' + encodeURIComponent(studentId) + (ref ? '&ref=' + encodeURIComponent(ref) : '') +
+      (t.task_id ? '&task=' + encodeURIComponent(t.task_id) : '');
   }
 
   async function closeTask(kind, t, onChanged, studentId) {
