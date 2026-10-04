@@ -12,24 +12,6 @@
 
   function blank() { return el('span', 'blank', '.................................'); }
 
-  // قيم حقول النموذج بأسمائها كما يُرجعها fields — من القاعدة وحدها، وما لا يُعرف يُترك فارغاً
-  function fieldValue(name, f) {
-    const s = f.student || {};
-    const r = f.record || {};
-    const map = {
-      'اسم الطالب': s.name,
-      'الصف': s.class_ar,
-      'رقم الطالب': s.student_no,
-      'رقم الهوية': s.national_id,
-      'يوم الواقعة': r.weekday_ar,
-      'تاريخها': r.occurred_h ? r.occurred_h + ' هـ' : null,
-      'درجة المشكلة': r.degree_no != null ? String(r.degree_no) : null,
-      'نص المشكلة': r.problem_ar,
-      'المكان': r.place,
-    };
-    return map[name] || null;
-  }
-
   function kv(rows) {
     const t = el('table');
     for (const [k, v] of rows) {
@@ -54,15 +36,17 @@
     sh.appendChild(el('h1', null, f.title_ar));
     sh.appendChild(el('div', 'src', 'نموذج رقم ' + f.form_no + (f.source ? ' · ' + f.source : '')));
 
-    // حقول النموذج الرسمي بأسمائها
-    if (Array.isArray(f.fields) && f.fields.length) {
-      sh.appendChild(kv(f.fields.map((n) => [n, fieldValue(n, f)])));
+    // حقول النموذج الرسمي أزواجاً {label, value} بترتيبه — كما هي، والفارغ سطر منقّط
+    if (Array.isArray(f.fields_kv) && f.fields_kv.length) {
+      sh.appendChild(kv(f.fields_kv.map((x) => [x.label, x.value])));
+    } else if (Array.isArray(f.fields) && f.fields.length) {
+      sh.appendChild(kv(f.fields.map((n) => [n, null])));
     }
 
     // الطالب وأولياؤه
     const s = f.student || {};
     sh.appendChild(el('h2', null, 'بيانات الطالب'));
-    const shown = new Set(f.fields || []);
+    const shown = new Set((f.fields_kv || []).map((x) => x.label).concat(f.fields || []));
     sh.appendChild(kv([['اسم الطالب', s.name], ['الصف', s.class_ar], ['رقم الطالب', s.student_no], ['رقم الهوية', s.national_id]]
       .filter(([k]) => !shown.has(k))));
     for (const g of f.guardians || []) {
