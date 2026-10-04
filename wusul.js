@@ -84,6 +84,10 @@
     $('tabArr').hidden = !canArr();
     $('tabDis').hidden = !canDis();
     $('tabs').hidden = !(canArr() && canDis());
+    const why = canArr() && !canDis() ? M.lacks('رصد تأخر الانصراف')
+      : canDis() && !canArr() ? M.lacks('تسجيل الوصول المتأخر') : '';
+    $('noCanTab').textContent = why;
+    $('noCanTab').hidden = !why;
     $('tabArr').setAttribute('aria-pressed', ui.tab === 'arr' ? 'true' : 'false');
     $('tabDis').setAttribute('aria-pressed', ui.tab === 'dis' ? 'true' : 'false');
     $('arrView').hidden = ui.tab !== 'arr';

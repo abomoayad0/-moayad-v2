@@ -119,7 +119,7 @@
     sh.appendChild(st);
     // إلى من يصل — قبل الاعتماد لئلّا يُفاجأ
     if (!fin && goesText()) sh.appendChild(el('div', 'goes noprint', 'عند الاعتماد يصل إلى: ' + goesText()));
-    if (!fin && !canEdit()) sh.appendChild(el('div', 'notice err noprint', 'لا تملك صفتك تعبئة هذا النموذج — يُعرض للاطّلاع.'));
+    if (!fin && !canEdit()) sh.appendChild(el('div', 'notice err noprint', M.lacks('تعبئة هذا النموذج') + ' يُعرض للاطّلاع.'));
 
     // الخانات
     const data = (e && e.data) || {};
@@ -341,7 +341,9 @@
     const { data: sess } = await M.sb.auth.getSession();
     if (!sess.session) { location.replace('./'); return; }
     // تُفرض صفة إن لم تكن مختارة — كبقيّة الشاشات قبل أيّ جسر
-    try { await M.defaultRole(); } catch (e) { showLoadErr('تعذّر فرض الصفة: ' + errText(e)); return; }
+    try { await M.defaultRole(); M.state.me = await M.loadMe(); } catch (e) { showLoadErr('تعذّر جلب حسابك: ' + errText(e)); return; }
+    // الصفة النافذة في رأس الصفحة
+    if (M.state.me) $('barRole').textContent = 'الصفة: ' + (M.state.me.role_ar || '—');
     await open();
   })();
 })();

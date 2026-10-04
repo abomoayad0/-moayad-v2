@@ -38,8 +38,7 @@
     if (screens.length) { location.replace(screens[0].href); return; }
 
     renderAssignments(me);
-    M.gate('صفتك (' + (me.role_ar || 'بلا صفة') + ') لا تملك شاشة مبنية بعد.' +
-      ((me.roles || []).length > 1 ? ' بدّل صفتك من الأعلى إن أردت.' : ''));
+    M.gate('صفتك (' + (me.role_ar || 'بلا صفة') + ') لا تملك شاشة مبنية بعد.');
   }
 
   async function onRole(r) {

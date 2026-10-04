@@ -168,6 +168,10 @@
     // التعبئة بمفتاح fill_form في can
     btn.hidden = !t.form_no || !M.state.me.can.fill_form;
     note.hidden = true;
+    if (t.form_no && !M.state.me.can.fill_form) {
+      note.textContent = M.lacks('تعبئة النماذج الرسمية');
+      note.hidden = false;
+    }
     if (btn.hidden) return;
     const ref = t.record_id || null;
     if (NEEDS_REF.includes(t.form_no) && !ref) {
@@ -271,7 +275,7 @@
       c.appendChild(el('div', 'meta', 'وقعت آلياً في القاعدة — لا تُغلق من هنا.'));
     } else if (t.status === 'open') {
       if (!M.state.me.can.close_task) {
-        c.appendChild(el('div', 'meta', 'صفتك لا تملك إغلاق المهامّ.'));
+        c.appendChild(el('div', 'meta nocan', M.lacks('إغلاق المهامّ')));
       } else if (t.evidence_kind === 'auto') {
         c.appendChild(el('div', 'meta', 'تقع آلياً في القاعدة — لا تُغلق من هنا.'));
       } else {
@@ -291,6 +295,8 @@
         dg.type = 'button';
         dg.addEventListener('click', () => delegateTask(kind, t, onChanged));
         c.appendChild(dg);
+      } else if (!M.state.me.can.delegate_task && t.evidence_kind !== 'auto') {
+        c.appendChild(el('div', 'meta nocan', M.lacks('تحويل المهامّ')));
       }
     }
     return c;

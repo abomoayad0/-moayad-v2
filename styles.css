@@ -274,3 +274,6 @@
   .formdlg-bar b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .formdlg-bar .hbtn { flex: none; background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.5); border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 700; }
   #formFrame { display: block; width: 100%; height: calc(100% - 52px); border: 0; background: #e9edef; }
+
+/* سبب غياب الزرّ بالصفة */
+  .nocan { color: var(--muted); font-style: normal; }

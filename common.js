@@ -100,6 +100,12 @@
     return e;
   }
 
+  // سبب غياب الزرّ: الصفة النافذة كما هي في الرأس — ولا اقتراح بتبديلها
+  function lacks(what) {
+    const r = state.me && state.me.role_ar;
+    return 'بصفتك ' + (r ? '«' + r + '»' : 'الحالية') + ' لا تملك ' + what + '.';
+  }
+
   function showLoadErr(msg) {
     $('loadErr').textContent = msg;
     $('loadErr').hidden = !msg;
@@ -252,7 +258,7 @@
         if (why === 'role' && first) { location.replace(first.href); return; }
         $('dayView').hidden = true;
         gate('صفتك (' + (me.role_ar || 'بلا صفة') + ') لا تملك هذه الشاشة.' +
-          (first ? '' : ' ولا شاشة مبنية لها بعد — بدّل صفتك إن كانت لك غيرها.'));
+          (first ? '' : ' ولا شاشة مبنية لها بعد.'));
         return;
       }
       gate('');
@@ -289,7 +295,7 @@
   }
 
   window.Moayad = {
-    sb, rpc, logError, $, state, SCREENS, DAY_KIND_AR, toast, errText, ltr, el, showLoadErr, renderDates,
+    sb, rpc, logError, $, state, SCREENS, DAY_KIND_AR, toast, errText, ltr, el, showLoadErr, renderDates, lacks,
     loadMe, defaultRole, screensFor, renderHeader, renderNav, actAs, gate, signOut, start,
   };
 })();

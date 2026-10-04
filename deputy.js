@@ -68,7 +68,14 @@
 
   async function refreshExcuses() {
     if (!M.state.school) return;
-    if (!M.state.me.can.decide_excuse) { $('excusePanel').hidden = true; return; }
+    if (!M.state.me.can.decide_excuse) {
+      // اللوحة تظهر بسبب غياب أزرارها
+      $('excusePanel').hidden = false;
+      $('excuseCount').textContent = '';
+      $('excuses').textContent = '';
+      $('excuses').appendChild(el('p', 'hint nocan', M.lacks('البتّ في الأعذار')));
+      return;
+    }
     const { data, error } = await M.rpc('v2_pending_excuses', { p_school: M.state.school });
     if (error) { showLoadErr('تعذّر جلب الأعذار: ' + errText(error)); return; }
     ui.excuses = data || [];
@@ -120,6 +127,10 @@
     const can = M.state.me.can;
     $('closeBtn').hidden = s.closed || !can.close_day;
     $('reopenBox').hidden = !s.closed || !can.reopen_day;
+    const why = !s.closed && !can.close_day ? M.lacks('إقفال اليوم')
+      : s.closed && !can.reopen_day ? M.lacks('إعادة فتح اليوم') : '';
+    $('noCanDay').textContent = why;
+    $('noCanDay').hidden = !why;
     $('closeHint').textContent = s.closed
       ? 'اليوم مقفَل. وإعادة فتحه لا تقع إلا بسبب مكتوب يُقيَّد في السجل.'
       : (s.unrecorded > 0

@@ -47,6 +47,8 @@
   .signs .meta.red { color: var(--danger); }
   .signs .blank { font-size: 12px; margin-top: 4px; }
   .goes { text-align: center; font-size: 13px; color: var(--navy); font-weight: 700; margin: -4px 0 10px; }
+  .barrole { display: block; font-size: 12px; opacity: .85; }
+  body.embed .barrole { display: none; }
   .voidbtn { margin-top: 20px; color: var(--danger); border-color: var(--danger) !important; }
   /* داخل نافذة المهامّ: العنوان في رأس النافذة، فيبقى زرّ الطبع وحده */
   body.embed #barTitle { visibility: hidden; }
@@ -64,7 +66,7 @@
 </head>
 <body>
 <div class="bar">
-  <span id="barTitle">نموذج للطبع</span>
+  <span><span id="barTitle">نموذج</span><small id="barRole" class="barrole"></small></span>
   <button type="button" id="printBtn">اطبع</button>
 </div>
 <div class="gatebox"><div class="notice err" id="loadErr" hidden></div></div>
