@@ -10,8 +10,8 @@
 
   const STATUS_AR = { open: 'مفتوحة', done: 'أُغلقت', skipped: 'أُسقطت', auto: 'وقعت آلياً' };
   const BRIDGE = {
-    behavior: { done: 'v2_task_done', skip: 'v2_task_skip' },
-    absence: { done: 'v2_absence_task_done', skip: 'v2_absence_task_skip' },
+    behavior: { done: 'v2_task_done', skip: 'v2_task_skip', delegate: 'v2_task_delegate' },
+    absence: { done: 'v2_absence_task_done', skip: 'v2_absence_task_skip', delegate: 'v2_absence_task_delegate' },
   };
 
   // نافذة الإثبات — تُبنى مرّة وتُستعمل لكل مهمّة
@@ -49,6 +49,30 @@
       </form>`;
     document.body.appendChild(s);
     $('tskSkipReason').addEventListener('input', () => { $('tskSkipOk').disabled = $('tskSkipReason').value.trim() === ''; });
+    const g = document.createElement('dialog');
+    g.id = 'dlgDelegate';
+    g.innerHTML = `
+      <form method="dialog">
+        <h3>تحويل المهمّة</h3>
+        <p class="quote" id="dlgText"></p>
+        <label for="dlgPerson">إلى</label>
+        <select id="dlgPerson"></select>
+        <p class="hint" id="dlgRoles"></p>
+        <label for="dlgNote">سبب التحويل — إلزامي</label>
+        <textarea id="dlgNote" rows="3"></textarea>
+        <div class="dlg-acts">
+          <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+          <button value="ok" type="submit" class="btn-accept" id="dlgOk" disabled>حوّلها</button>
+        </div>
+      </form>`;
+    document.body.appendChild(g);
+    const upd = () => { $('dlgOk').disabled = !$('dlgPerson').value || $('dlgNote').value.trim() === ''; };
+    $('dlgNote').addEventListener('input', upd);
+    $('dlgPerson').addEventListener('change', () => {
+      const o = $('dlgPerson').selectedOptions[0];
+      $('dlgRoles').textContent = o && o.dataset.roles ? 'تكاليفه: ' + o.dataset.roles : '';
+      upd();
+    });
   }
 
   function ask(dlg) {
@@ -72,12 +96,13 @@
   function buildFields(t) {
     const box = $('evFields');
     box.textContent = '';
-    if (t.needs_date) { const i = inp('evOn', 'date'); i.value = new Date().toLocaleDateString('en-CA'); box.appendChild(field('التاريخ', i, true)); }
-    if (t.needs_text) box.appendChild(field('ما تمّ', inp('evText', 'textarea'), true));
-    if (t.needs_people) box.appendChild(field('من حضر أو من استلم', inp('evPeople', 'text'), true));
-    if (t.needs_ref) box.appendChild(field('رقم الصادر أو البلاغ', inp('evRef', 'text'), true));
+    // أسماء الحقول من القاعدة (lbl_*) لكل مهمّة
+    if (t.needs_date) { const i = inp('evOn', 'date'); i.value = new Date().toLocaleDateString('en-CA'); box.appendChild(field(t.lbl_date || 'التاريخ', i, true)); }
+    if (t.needs_text) box.appendChild(field(t.lbl_text || 'ما تمّ', inp('evText', 'textarea'), true));
+    if (t.needs_people) box.appendChild(field(t.lbl_people || 'من حضر أو من استلم', inp('evPeople', 'text'), true));
+    if (t.needs_ref) box.appendChild(field(t.lbl_ref || 'رقم الصادر أو البلاغ', inp('evRef', 'text'), true));
     if (t.needs_file) {
-      box.appendChild(field('المرفق (رقمه أو وصفه)', inp('evFile', 'text'), true));
+      box.appendChild(field(t.lbl_file || 'المرفق (رقمه أو وصفه)', inp('evFile', 'text'), true));
       const r = el('label', 'check');
       const c = inp('evRefused', 'checkbox');
       r.append(c, ' امتنع عن التسليم أو الاستلام');
@@ -86,7 +111,7 @@
     if (t.needs_signature) {
       const r = el('label', 'check');
       const c = inp('evSigned', 'checkbox');
-      r.append(c, ' وُقّع');
+      r.append(c, ' ' + (t.lbl_sign || 'وُقّع'));
       box.appendChild(r);
       box.appendChild(field('أو سبب الامتناع عن التوقيع', inp('evRefusedReason', 'text'), false));
     }
@@ -157,6 +182,41 @@
     await onChanged();
   }
 
+  // من يُحوَّل إليهم — من القاعدة لمدرسة الشاشة
+  let staffCache = null;
+  async function delegateTask(kind, t, onChanged) {
+    ensureDialogs();
+    $('dlgText').textContent = t.text_ar;
+    $('dlgNote').value = '';
+    $('dlgOk').disabled = true;
+    $('dlgRoles').textContent = '';
+    const sel = $('dlgPerson');
+    sel.innerHTML = '';
+    if (!staffCache || staffCache.school !== M.state.school) {
+      const { data, error } = await M.rpc('v2_staff_list', { p_school: M.state.school }, 'قائمة المنسوبين');
+      if (error) { toast('تعذّر جلب المنسوبين:\n' + errText(error)); return; }
+      staffCache = { school: M.state.school, list: data || [] };
+    }
+    const ph = document.createElement('option');
+    ph.value = '';
+    ph.textContent = 'اختر المنسوب';
+    sel.appendChild(ph);
+    for (const p of staffCache.list) {
+      const o = document.createElement('option');
+      o.value = p.person_id;
+      o.textContent = p.name_ar + (p.post_ar ? ' — ' + p.post_ar : '');
+      o.dataset.roles = p.roles_ar || '';
+      if (p.person_id === t.owner_person) o.textContent += ' (المُسندة إليه الآن)';
+      sel.appendChild(o);
+    }
+    if (await ask($('dlgDelegate')) !== 'ok') return;
+    const { data, error } = await M.rpc(BRIDGE[kind].delegate,
+      { p_task: t.task_id, p_person: sel.value, p_note: $('dlgNote').value.trim() }, 'تحويل مهمّة');
+    if (error) { toast('لم تُحوَّل المهمّة:\n' + errText(error)); return; }
+    toast('حُوّلت المهمّة' + (data && data.to ? ' إلى ' + data.to : '') + '.', true);
+    await onChanged();
+  }
+
   function card(kind, t, onChanged, studentId) {
     const c = el('div', 'ev task t-' + t.status);
     const top = el('div', 'row1');
@@ -168,7 +228,13 @@
       ? (t.problem_ar ? t.problem_ar + ' — الدرجة ' + t.degree_no + ' · ' : '') + (t.occurred_on || '')
       : 'غياب ' + t.days_n + ' أيام ' + (t.excused ? 'بعذر' : 'بلا عذر') + ' · ' + (t.triggered_on || '');
     c.appendChild(el('div', 'meta', meta));
-    c.appendChild(el('div', 'meta', 'المسؤول: ' + (t.owner_role || '—') + (t.evidence_ar ? ' · الإثبات: ' + t.evidence_ar : '')));
+    // المُسندة إلى شخص بعينه تُعرض باسمه وسبب تحويلها
+    if (t.owner_person) {
+      c.appendChild(el('div', 'meta assigned', 'مُسندة إلى ' + (t.owner_ar || '—') + (t.delegate_note ? ' — بسبب: ' + t.delegate_note : '')));
+    } else {
+      c.appendChild(el('div', 'meta', 'المسؤول: ' + (t.owner_role || '—')));
+    }
+    if (t.evidence_ar) c.appendChild(el('div', 'meta', 'الإثبات: ' + t.evidence_ar));
     // الآلي يقع في القاعدة (الحسم والتعويض) فلا يُسأل عنه إثبات
     if (t.status === 'auto') {
       c.appendChild(el('div', 'meta', 'وقعت آلياً في القاعدة — لا تُغلق من هنا.'));
@@ -187,6 +253,13 @@
         no.addEventListener('click', () => skipTask(kind, t, onChanged));
         acts.append(ok, no);
         c.appendChild(acts);
+      }
+      // التحويل بمفتاحه في can — والقاعدة تحرسه
+      if (M.state.me.can.delegate_task && t.evidence_kind !== 'auto') {
+        const dg = el('button', 'btn-ghost wide', t.owner_person ? 'إعادة التحويل' : 'حوّلها إلى منسوب');
+        dg.type = 'button';
+        dg.addEventListener('click', () => delegateTask(kind, t, onChanged));
+        c.appendChild(dg);
       }
     }
     return c;

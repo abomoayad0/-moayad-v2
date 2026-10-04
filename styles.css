@@ -257,3 +257,5 @@
   a.formlink.off { opacity: .45; pointer-events: none; }
   .pick:disabled { opacity: .55; }
   .pick small.why { display: block; color: var(--danger); }
+  .meta.assigned { color: var(--navy); font-weight: 700; }
+  .task .btn-ghost.wide { margin-top: 6px; margin-bottom: 0; }
