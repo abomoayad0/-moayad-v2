@@ -1,14 +1,19 @@
 // مؤيّد · الوصول والانصراف — المناوب.
 // الوصول المتأخر بوقته وقراره (ض٠٥)، وتأخر الانصراف (ض٠٣ وض٠٦).
 // الدقائق والعتبات والإجراء كلها من القاعدة:
-// v2_day_summary · v2_day_classes · v2_day_list · v2_record_arrival · v2_record_dismissal
+// v2_day_summary · v2_day_classes · v2_day_list · v2_day_dismissals
+// v2_record_arrival · v2_record_dismissal
+// والتبويبان من can: الوصول بـ record_arrival، والانصراف بـ record_dismissal.
 (function () {
   'use strict';
 
   const M = window.Moayad;
   const { sb, $, el, toast, errText, showLoadErr } = M;
 
-  const ui = { summary: null, classes: [], rows: [], tab: 'arr', disDone: [] };
+  const ui = { summary: null, classes: [], rows: [], tab: null, disDone: [], disDay: [], disDayErr: '' };
+
+  function canArr() { return !!M.state.me.can.record_arrival; }
+  function canDis() { return !!M.state.me.can.record_dismissal; }
 
   const DECISION_AR = { enter_class: 'دخل الفصل بإذن الموافقة', to_counselor: 'حُوّل إلى الموجّه الطلابي' };
 
@@ -40,16 +45,20 @@
     if (!M.state.school || !M.state.date) return;
     showLoadErr('');
     const args = { p_school: M.state.school, p_date: M.state.date };
-    const [sum, cls, list] = await Promise.all([
+    const [sum, cls, list, dis] = await Promise.all([
       sb.rpc('v2_day_summary', args),
       sb.rpc('v2_day_classes', args),
       sb.rpc('v2_day_list', args),
+      canDis() ? sb.rpc('v2_day_dismissals', args) : Promise.resolve({ data: [] }),
     ]);
     const err = sum.error || cls.error || list.error;
     if (err) { showLoadErr('تعذّر جلب اليوم: ' + errText(err)); return; }
     ui.summary = (sum.data && sum.data[0]) || null;
     ui.classes = cls.data || [];
     ui.rows = list.data || [];
+    // خطأ جسر الانصرافات يُعرض بنصّه في موضعه ولا يُطوى
+    ui.disDayErr = dis.error ? 'تعذّر جلب انصرافات اليوم: ' + errText(dis.error) : '';
+    ui.disDay = dis.data || [];
     render();
   }
 
@@ -68,6 +77,15 @@
       $('noStudy').textContent = 'هذا اليوم ليس يوم دراسة (' + (M.DAY_KIND_AR[s.day_kind] || s.day_kind) + ') — لا يُسجَّل فيه وصول ولا انصراف.';
     }
     $('closedNote').hidden = !s || !s.closed;
+    // التبويبان بما في can — ولا تبويب لما لا يملكه
+    if (ui.tab === 'arr' && !canArr()) ui.tab = null;
+    if (ui.tab === 'dis' && !canDis()) ui.tab = null;
+    if (!ui.tab) ui.tab = canArr() ? 'arr' : (canDis() ? 'dis' : null);
+    $('tabArr').hidden = !canArr();
+    $('tabDis').hidden = !canDis();
+    $('tabs').hidden = !(canArr() && canDis());
+    $('tabArr').setAttribute('aria-pressed', ui.tab === 'arr' ? 'true' : 'false');
+    $('tabDis').setAttribute('aria-pressed', ui.tab === 'dis' ? 'true' : 'false');
     $('arrView').hidden = ui.tab !== 'arr';
     $('disView').hidden = ui.tab !== 'dis';
     renderArrivals();
@@ -96,7 +114,7 @@
 
   function renderArrivals() {
     const q = $('qArr').value;
-    const canArr = isStudy() && !ui.summary.closed && !!M.state.me.can.record_arrival;
+    const canArrNow = isStudy() && !ui.summary.closed && canArr();
 
     // من لم يصل بعد: غائب أو لم يُرصد — والحالة من القاعدة
     const wait = ui.rows.filter((r) => (r.state === 'absent' || r.state === 'unrecorded') && matches(r, q));
@@ -106,7 +124,7 @@
     if (wait.length === 0) wb.appendChild(el('div', 'empty', q ? 'لا أحد بهذا البحث.' : 'لا أحد ينتظر وصوله.'));
     for (const r of wait) {
       wb.appendChild(studentCard(r, 'b-' + r.state, r.state_ar, [r.assembly_ar],
-        'وصل الآن', () => recordArrival(r), !canArr));
+        'وصل الآن', () => recordArrival(r), !canArrNow));
     }
 
     // من سُجّل وصوله متأخراً — بوقته ودقائقه وقراره كما في القاعدة
@@ -120,7 +138,7 @@
         (r.minutes_late != null ? ' — متأخراً ' + r.minutes_late + ' دقيقة' : '') : '';
       lb.appendChild(studentCard(r, 'b-' + r.state, r.state_ar,
         [t, r.permit_decision ? (DECISION_AR[r.permit_decision] || r.permit_decision) : ''],
-        'تعديل', () => recordArrival(r), !canArr));
+        'تعديل', () => recordArrival(r), !canArrNow));
     }
   }
 
@@ -144,7 +162,7 @@
 
   function renderDismissals() {
     const q = $('qDis').value;
-    const canDis = isStudy();
+    const canDisNow = isStudy() && canDis();
     const box = $('disList');
     box.textContent = '';
     if (!q.trim()) {
@@ -153,12 +171,36 @@
       const found = ui.rows.filter((r) => matches(r, q));
       if (found.length === 0) box.appendChild(el('div', 'empty', 'لا أحد بهذا البحث.'));
       for (const r of found.slice(0, 20)) {
-        box.appendChild(studentCard(r, 'b-' + r.state, r.state_ar, [], 'سجّل تأخر انصرافه', () => recordDismissal(r), !canDis));
+        box.appendChild(studentCard(r, 'b-' + r.state, r.state_ar, [], 'سجّل تأخر انصرافه', () => recordDismissal(r), !canDisNow));
       }
     }
-    $('disDoneTitle').hidden = ui.disDone.length === 0;
+    // انصرافات اليوم من القاعدة — بالدقائق والعتبة والإجراء ومن رصد
+    $('disDayErr').textContent = ui.disDayErr;
+    $('disDayErr').hidden = !ui.disDayErr;
+    $('disDayTitle').textContent = 'انصرافات اليوم' + (ui.disDayErr ? '' : ' (' + ui.disDay.length + ')');
+    const day = $('disDay');
+    day.textContent = '';
+    if (!ui.disDayErr && ui.disDay.length === 0) day.appendChild(el('div', 'empty', 'لم يُرصد تأخر انصراف في هذا اليوم.'));
+    for (const d of ui.disDay) {
+      const act = d.threshold === 'action_30';
+      const c = el('div', 'ev' + (act ? ' act' : ''));
+      const top = el('div', 'row1');
+      const who = el('div');
+      who.append(el('div', 'name', d.student_name), el('div', 'meta', d.class_ar || ''));
+      top.append(who, el('span', 'badge ' + (act ? 'b-absent' : 'b-late'), d.threshold_ar));
+      c.appendChild(top);
+      c.appendChild(el('div', 'detail', 'خرج ' + (d.left_at || '').slice(0, 5) + ' — بعد نهاية الدوام بـ' + d.minutes_after + ' دقيقة' +
+        (d.reason_ar ? ' · ' + d.reason_ar : '')));
+      c.appendChild(el('div', act ? 'need' : 'detail', d.action_taken));
+      c.appendChild(el('div', 'meta', 'رصده: ' + (d.recorded_role || '—') + ' · ' + (d.guardian_notified ? 'أُبلغ ولي الأمر' : 'لم يُبلَّغ ولي الأمر')));
+      day.appendChild(c);
+    }
+
+    // ما رُصد في هذه الجلسة يظهر فقط إن تعذّر جلب انصرافات اليوم من القاعدة
+    $('disDoneTitle').hidden = !ui.disDayErr || ui.disDone.length === 0;
     const done = $('disDone');
     done.textContent = '';
+    if (!ui.disDayErr) return;
     for (const d of ui.disDone) {
       const c = el('div', 'ev' + (d.threshold.includes('30') ? ' act' : ''));
       c.append(el('div', 'name', d.name),
@@ -186,14 +228,12 @@
     });
     toast('رُصد تأخر انصراف ' + (r.display_name || r.full_name) + ' — ' + (x.threshold || ''), true);
     $('qDis').value = '';
-    renderDismissals();
+    await refresh();
   }
 
   // ---------- التبويبان والبحث ----------
   function setTab(t) {
     ui.tab = t;
-    $('tabArr').setAttribute('aria-pressed', t === 'arr' ? 'true' : 'false');
-    $('tabDis').setAttribute('aria-pressed', t === 'dis' ? 'true' : 'false');
     render();
   }
   $('tabArr').addEventListener('click', () => setTab('arr'));

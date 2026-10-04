@@ -40,7 +40,7 @@
   <div class="notice err" id="loadErr" hidden></div>
   <div class="notice nostudy" id="noStudy" hidden></div>
 
-  <div class="filters tabs" role="tablist">
+  <div class="filters tabs" role="tablist" id="tabs">
     <button type="button" role="tab" id="tabArr" aria-pressed="true">الوصول المتأخر</button>
     <button type="button" role="tab" id="tabDis" aria-pressed="false">تأخر الانصراف</button>
   </div>
@@ -61,6 +61,9 @@
     <p class="hint">ض٠٣: يُحصر المتأخرون بعد نهاية الدوام بخمس عشرة دقيقة · ض٠٦: وبعد ثلاثين دقيقة يُتخذ الإجراء المناسب. والعتبتان تحكم بهما القاعدة.</p>
     <input id="qDis" type="search" placeholder="ابحث عن الطالب بالاسم أو الرقم" aria-label="بحث">
     <div id="disList"></div>
+    <h3 class="grp" id="disDayTitle">انصرافات اليوم</h3>
+    <div class="notice err" id="disDayErr" hidden></div>
+    <div id="disDay"></div>
     <h3 class="grp" id="disDoneTitle" hidden>رُصد في هذه الجلسة</h3>
     <div id="disDone"></div>
   </section>

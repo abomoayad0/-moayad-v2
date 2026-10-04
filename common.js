@@ -19,7 +19,7 @@
     { key: 'rasd', title: 'رصد اليوم', desc: 'حصر الغياب في سجل اليوم — فصلاً فصلاً',
       href: 'rasd.html', allow: (c) => !!c.record_assembly },
     { key: 'wusul', title: 'الوصول والانصراف', desc: 'الوصول المتأخر بقراره · تأخر الانصراف',
-      href: 'wusul.html', allow: (c) => !!c.record_arrival },
+      href: 'wusul.html', allow: (c) => !!(c.record_arrival || c.record_dismissal) },
     { key: 'deputy', title: 'قرارات الوكيل', desc: 'الإقفال · إعادة الفتح · البتّ في الأعذار',
       href: 'deputy.html', allow: (c) => !!(c.close_day || c.reopen_day || c.decide_excuse) },
   ];
