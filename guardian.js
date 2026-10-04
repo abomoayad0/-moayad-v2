@@ -1,5 +1,5 @@
 // مؤيّد · بوّابة وليّ الأمر — «نماذج تنتظرك»: ما اعتُمد ووصل إليه.
-// v2_guardian_me · v2_guardian_forms · v2_guardian_form_read · v2_guardian_form_reply
+// v2_guardian_me · v2_guardian_forms · v2_guardian_form_read · v2_guardian_form_reply · v2_guardian_form_note
 // والتوقيع بـ v2_form_sign(p_entry, 'ولي الأمر', …). وما يلزمه (needs_sign · needs_reply) من القاعدة.
 (function () {
   'use strict';
@@ -42,7 +42,7 @@
   function render() {
     const box = $('forms');
     box.textContent = '';
-    const waiting = ui.forms.filter((f) => f.needs_sign || f.needs_reply).length;
+    const waiting = ui.forms.filter((f) => f.needs_sign || f.needs_reply || f.needs_note).length;
     $('formsTitle').textContent = 'نماذج تنتظرك' + (ui.forms.length ? ' — ' + waiting + ' تنتظر ردّك من ' + ui.forms.length : '');
     if (ui.forms.length === 0) { box.appendChild(el('div', 'empty', 'لا نماذج وصلتك.')); return; }
     for (const f of ui.forms) {
@@ -50,8 +50,8 @@
       const c = el('div', 'ev gform' + (unread ? ' unread' : ''));
       const top = el('div', 'row1');
       top.append(el('div', 'name', f.title_ar || ('نموذج ' + f.form_no)),
-        el('span', 'badge ' + (f.needs_sign || f.needs_reply ? 'b-absent' : 'b-permitted'),
-          f.needs_sign ? 'ينتظر توقيعك' : f.needs_reply ? 'ينتظر ردّك' : unread ? 'جديد' : 'للاطّلاع'));
+        el('span', 'badge ' + (f.needs_sign || f.needs_reply || f.needs_note ? 'b-absent' : 'b-permitted'),
+          f.needs_sign ? 'ينتظر توقيعك' : f.needs_reply ? 'ينتظر ردّك' : f.needs_note ? 'ينتظر رأيك' : unread ? 'جديد' : 'للاطّلاع'));
       c.appendChild(top);
       c.appendChild(el('div', 'meta', [f.student_ar, f.class_ar].filter(Boolean).join(' — ')));
       if (f.delivered_h) c.appendChild(el('div', 'meta', 'وصل في ' + f.delivered_h));
@@ -94,8 +94,29 @@
           c.appendChild(el('div', 'notice err', 'لم تُرسل القاعدة خيارات الردّ (reply_options).'));
         }
       }
+      // رأي حرّ (needs_note) — نصّ يكتبه وليّ الأمر ويرجع في النموذج
+      if (f.needs_note) {
+        const a = el('div', 'acts one');
+        const b = el('button', 'a-go', 'اكتب رأيك');
+        b.type = 'button';
+        b.addEventListener('click', () => note(f));
+        a.appendChild(b);
+        c.appendChild(a);
+      }
       box.appendChild(c);
     }
+  }
+
+  async function note(f) {
+    $('noteWhat').textContent = f.title_ar || '';
+    $('noteText').value = '';
+    $('noteOk').disabled = true;
+    if (await ask($('noteDlg')) !== 'ok') return;
+    const { error } = await M.rpc('v2_guardian_form_note',
+      { p_inbox: f.inbox_id, p_note: $('noteText').value.trim() }, 'رأي وليّ الأمر');
+    if (error) { toast('لم يُرسل رأيك:\n' + errText(error)); return; }
+    toast('أُرسل رأيك.', true);
+    await refresh();
   }
 
   async function markRead(f) {
@@ -142,6 +163,7 @@
     render();
   }
 
+  $('noteText').addEventListener('input', () => { $('noteOk').disabled = $('noteText').value.trim() === ''; });
   $('refReason').addEventListener('input', () => { $('refOk').disabled = $('refReason').value.trim() === ''; });
   $('toast').addEventListener('click', () => { $('toast').hidden = true; });
   $('logout').addEventListener('click', M.signOut);

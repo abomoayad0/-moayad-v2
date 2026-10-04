@@ -261,13 +261,24 @@
     sh.hidden = false;
   }
 
-  // المشتقّ يُعرض حيّاً من القاعدة كلما تغيّر أصله — v2_weekday(p_date)
+  // المشتقّ يُعرض حيّاً من القاعدة، ونوع حسابه من derive_kind لا من اسم الحقل:
+  // weekday ⇐ v2_weekday(p_date) كلما تغيّر التاريخ · age ⇐ v2_age_ar(p_birth) من auto.birth_g
   function wireDerived() {
     for (const f of ui.doc.schema || []) {
-      if (f.input !== 'derived' || !f.derived_from) continue;
-      const src = $('f_' + f.derived_from);
+      if (f.input !== 'derived') continue;
       const out = $('f_' + f.key);
-      if (!src || !out || src.type !== 'date') continue;
+      if (!out) continue;
+      if (f.derive_kind === 'age') {
+        const birth = (ui.doc.auto || {}).birth_g;
+        if (!birth) continue;
+        M.rpc('v2_age_ar', { p_birth: birth }, 'العمر من الميلاد').then(({ data, error }) => {
+          out.textContent = error ? 'تعذّر: ' + errText(error) : (data || '—');
+        });
+        continue;
+      }
+      if (f.derive_kind !== 'weekday' || !f.derived_from) continue;
+      const src = $('f_' + f.derived_from);
+      if (!src || src.type !== 'date') continue;
       src.addEventListener('change', async () => {
         if (!src.value) { out.textContent = '—'; return; }
         const asked = src.value;

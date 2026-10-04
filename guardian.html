@@ -50,6 +50,17 @@
   </div>
 </form></dialog>
 
+<dialog id="noteDlg"><form method="dialog">
+  <h3>رأيك في النموذج</h3>
+  <p class="quote" id="noteWhat"></p>
+  <label for="noteText">اكتب رأيك</label>
+  <textarea id="noteText" rows="4"></textarea>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept" id="noteOk" disabled>أرسل رأيك</button>
+  </div>
+</form></dialog>
+
 <div class="toast" id="toast" hidden></div>
 
 <script src="vendor/supabase-2.117.2.js"></script>
