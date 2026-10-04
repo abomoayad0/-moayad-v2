@@ -25,7 +25,7 @@
         <p class="quote" id="evTask"></p>
         <p class="hint" id="evHint"></p>
         <p class="detail" id="evForm" hidden></p>
-        <a class="btn-ghost wide formlink" id="evFormBtn" target="_blank" rel="noopener" hidden>افتح النموذج</a>
+        <button type="button" class="btn-ghost wide formlink" id="evFormBtn" hidden>افتح النموذج</button>
         <p class="hint" id="evFormNote" hidden></p>
         <div id="evFields"></div>
         <div class="dlg-acts">
@@ -48,6 +48,29 @@
         </div>
       </form>`;
     document.body.appendChild(s);
+    // النموذج في نافذة داخل الشاشة — يُملأ ويُعتمد ثم تُغلق فيرجع الإثبات كما كان
+    const f = document.createElement('dialog');
+    f.id = 'formDlg';
+    f.className = 'formdlg';
+    f.innerHTML = `
+      <div class="formdlg-bar">
+        <b id="formDlgTitle">النموذج</b>
+        <button type="button" class="hbtn" id="formDlgClose">أغلق النموذج</button>
+      </div>
+      <iframe id="formFrame" title="النموذج"></iframe>`;
+    document.body.appendChild(f);
+    $('formDlgClose').addEventListener('click', () => f.close());
+    f.addEventListener('close', () => { $('formFrame').src = 'about:blank'; });
+    $('evFormBtn').addEventListener('click', () => {
+      const url = $('evFormBtn').dataset.src;
+      if (!url) return;
+      $('formFrame').src = url + '&embed=1';
+      f.showModal();
+    });
+    // النموذج يُبلغ إذا حُفظ أو اعتُمد أو وُقّع، فتُحدَّث المهامّ بعد الإثبات
+    window.addEventListener('message', (e) => {
+      if (e.origin === location.origin && e.data && e.data.moayad === 'form-changed') formChanged = true;
+    });
     $('tskSkipReason').addEventListener('input', () => { $('tskSkipOk').disabled = $('tskSkipReason').value.trim() === ''; });
     const g = document.createElement('dialog');
     g.id = 'dlgDelegate';
@@ -134,6 +157,8 @@
     return ev;
   }
 
+  let formChanged = false;
+
   // النماذج المبنية على رصد سلوكي تحتاج record_id في p_ref (٥–١٠)
   const NEEDS_REF = [5, 6, 7, 8, 9, 10];
 
@@ -146,14 +171,17 @@
     if (btn.hidden) return;
     const ref = t.record_id || null;
     if (NEEDS_REF.includes(t.form_no) && !ref) {
-      btn.removeAttribute('href');
+      delete btn.dataset.src;
+      btn.disabled = true;
       btn.classList.add('off');
       note.textContent = 'لا يُفتح النموذج بعد: يلزم أن يُرجع v2_student_tasks رقم الرصد (record_id) لهذه المهمّة.';
       note.hidden = false;
       return;
     }
     btn.classList.remove('off');
-    btn.href = 'form.html?form=' + t.form_no + '&student=' + encodeURIComponent(studentId) + (ref ? '&ref=' + encodeURIComponent(ref) : '') +
+    btn.disabled = false;
+    $('formDlgTitle').textContent = 'النموذج رقم ' + t.form_no + (t.form_title ? ': ' + t.form_title : '');
+    btn.dataset.src = 'form.html?form=' + t.form_no + '&student=' + encodeURIComponent(studentId) + (ref ? '&ref=' + encodeURIComponent(ref) : '') +
       (t.task_id ? '&task=' + encodeURIComponent(t.task_id) : '');
   }
 
@@ -165,7 +193,8 @@
     $('evForm').hidden = !t.form_no;
     $('evForm').textContent = t.form_no ? 'النموذج رقم ' + t.form_no + (t.form_title ? ': ' + t.form_title : '') : '';
     buildFields(t);
-    if (await ask($('evDlg')) !== 'ok') return;
+    formChanged = false;
+    if (await ask($('evDlg')) !== 'ok') { if (formChanged) await onChanged(); return; }
     const { data, error } = await M.rpc(BRIDGE[kind].done, { p_task: t.task_id, p_ev: readEv() }, 'إغلاق مهمّة');
     if (error) { toast('لم تُغلق المهمّة:\n' + errText(error)); return; }
     toast('أُغلقت المهمّة' + (data && data.evidence_ar ? ' — ' + data.evidence_ar : '') + '.', true);

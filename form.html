@@ -48,6 +48,9 @@
   .signs .blank { font-size: 12px; margin-top: 4px; }
   .goes { text-align: center; font-size: 13px; color: var(--navy); font-weight: 700; margin: -4px 0 10px; }
   .voidbtn { margin-top: 20px; color: var(--danger); border-color: var(--danger) !important; }
+  /* داخل نافذة المهامّ: العنوان في رأس النافذة، فيبقى زرّ الطبع وحده */
+  body.embed #barTitle { visibility: hidden; }
+  body.embed .bar { padding: 6px 12px; }
   @media print {
     body { background: #fff; }
     .bar, .toast, #loadErr, .noprint, .sheet .hint { display: none !important; }

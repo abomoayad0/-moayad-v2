@@ -267,3 +267,10 @@
   .gform table.kv { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 14px; }
   .gform table.kv th, .gform table.kv td { border: 1px solid var(--line); padding: 6px 8px; text-align: start; vertical-align: top; }
   .gform table.kv th { width: 38%; background: var(--bg); }
+
+/* نافذة النموذج داخل الشاشة */
+  dialog.formdlg { width: min(900px, calc(100vw - 16px)); max-width: none; height: calc(100vh - 24px); max-height: none; padding: 0; overflow: hidden; }
+  .formdlg-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; background: var(--navy); color: #fff; }
+  .formdlg-bar b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .formdlg-bar .hbtn { flex: none; background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.5); border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 700; }
+  #formFrame { display: block; width: 100%; height: calc(100% - 52px); border: 0; background: #e9edef; }

@@ -15,6 +15,12 @@
     ref: q.get('ref') || null, task: q.get('task') || null,
   };
   const ui = { doc: null, rows: [] };
+  // داخل نافذة المهامّ (embed=1): يُبلغ الشاشة الأمّ بكل تغيير
+  const EMBED = q.get('embed') === '1' && window.parent !== window;
+  if (EMBED) document.body.classList.add('embed');
+  function notifyParent() {
+    if (EMBED) window.parent.postMessage({ moayad: 'form-changed' }, location.origin);
+  }
 
   // الوجهة بأسمائها من القاعدة (goes_to_ar)
   function goesText() { return ((ui.doc && ui.doc.goes_to_ar) || []).join(' · '); }
@@ -261,6 +267,7 @@
       p_task: P.task, p_entry: e ? e.id : null, p_final: final,
     }, final ? 'اعتماد نموذج' : 'حفظ مسوّدة نموذج');
     if (error) { toast((final ? 'لم يُعتمد النموذج:\n' : 'لم تُحفظ المسوّدة:\n') + errText(error)); return; }
+    notifyParent();
     if (final) {
       const to = goesText();
       toast('اعتُمد النموذج' + (to ? ' · وصل إلى: ' + to : '') +
@@ -284,6 +291,7 @@
       p_entry: ui.doc.entry.id, p_signer: who, p_signed: signed, p_refuse_reason: reason,
     }, 'توقيع نموذج');
     if (error) { toast('لم يُسجَّل التوقيع:\n' + errText(error)); return; }
+    notifyParent();
     const left = (res && res.remaining) || [];
     toast((signed ? 'سُجّل إقرار ' + who + '.' : 'سُجّل امتناع ' + who + '.') +
       (left.length ? '\nبقي: ' + left.join(' · ') : '\nاكتملت التوقيعات.'), true);
@@ -297,6 +305,7 @@
     const { error } = await M.rpc('v2_form_void',
       { p_entry: ui.doc.entry.id, p_reason: $('voidReason').value.trim() }, 'إلغاء نموذج');
     if (error) { toast('لم يُلغَ النموذج:\n' + errText(error)); return; }
+    notifyParent();
     toast('أُلغي النموذج. ويُعبّأ من جديد.', true);
     await open();
   }
@@ -331,6 +340,8 @@
     if (!P.form) { showLoadErr('رابط النموذج ناقص: يلزم رقم النموذج.'); return; }
     const { data: sess } = await M.sb.auth.getSession();
     if (!sess.session) { location.replace('./'); return; }
+    // تُفرض صفة إن لم تكن مختارة — كبقيّة الشاشات قبل أيّ جسر
+    try { await M.defaultRole(); } catch (e) { showLoadErr('تعذّر فرض الصفة: ' + errText(e)); return; }
     await open();
   })();
 })();
