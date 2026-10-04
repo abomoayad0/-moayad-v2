@@ -46,6 +46,7 @@
   .signs .meta { font-size: 12px; margin-top: 4px; color: #333; }
   .signs .meta.red { color: var(--danger); }
   .signs .blank { font-size: 12px; margin-top: 4px; }
+  .voidbtn { margin-top: 20px; color: var(--danger); border-color: var(--danger) !important; }
   @media print {
     body { background: #fff; }
     .bar, .toast, #loadErr, .noprint, .sheet .hint { display: none !important; }
@@ -72,6 +73,16 @@
   <div class="dlg-acts">
     <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
     <button value="ok" type="submit" class="btn-danger" id="refOk" disabled>سجّل الامتناع</button>
+  </div>
+</form></dialog>
+<dialog id="voidDlg"><form method="dialog">
+  <h3>إلغاء النموذج المعتمد</h3>
+  <p class="hint">المعتمد لا يُعدَّل: يُلغى بسبب مكتوب، ثم يُعبّأ من جديد.</p>
+  <label for="voidReason">سبب الإلغاء — إلزامي</label>
+  <textarea id="voidReason" rows="3"></textarea>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-danger" id="voidOk" disabled>ألغِ النموذج</button>
   </div>
 </form></dialog>
 <div class="toast" id="toast" hidden></div>

@@ -1,6 +1,6 @@
 // مؤيّد · النموذج الرسمي — يُملأ في الشاشة ويُحفظ في القاعدة، ثم يُعتمد ويُوقَّع، ويُطبع من المحفوظ.
 // form.html?form=8&student=<uuid>&ref=<record_id>&task=<task_id>
-// v2_form_open · v2_form_save · v2_form_sign
+// v2_form_open · v2_form_save · v2_form_sign · v2_form_void
 // الخانات من schema والجدول من row_schema، ولا يُؤلَّف حقل ولا يُحسب شيء في الشاشة.
 (function () {
   'use strict';
@@ -25,6 +25,19 @@
   }
 
   function isFinal() { return !!(ui.doc && ui.doc.entry && ui.doc.entry.status === 'final'); }
+  // من يملك التعديل تحكم به القاعدة (can_edit)
+  function canEdit() { return !!(ui.doc && ui.doc.can_edit); }
+
+  // مفتاح الصف الآلي من أعمدته الآلية — ليُعرف ما جاء من auto_rows فلا يُحذف
+  function autoKey(row) {
+    const ks = (ui.doc.row_schema || []).filter((c) => c.input === 'auto').map((c) => c.key);
+    if (!ks.length || ks.every((k) => row[k] == null)) return null;
+    return JSON.stringify(ks.map((k) => row[k] == null ? null : row[k]));
+  }
+  function isFixed(row) {
+    const k = autoKey(row);
+    return k != null && (ui.doc.auto_rows || []).some((a) => autoKey(a) === k);
+  }
 
   // قيمة الحقل الآلي من auto بمفتاحه كما هو — لا مطابقة في الشاشة
   function autoValue(key) {
@@ -80,19 +93,22 @@
     const d = ui.doc;
     const e = d.entry;
     const fin = isFinal();
+    const ro = fin || !canEdit();
     document.title = 'مؤيّد · ' + (d.title_ar || 'نموذج');
     $('barTitle').textContent = 'نموذج ' + d.form_no + ': ' + (d.title_ar || '');
     const sh = $('sheet');
     sh.textContent = '';
 
     const auto = d.auto || {};
-    if (auto.school) sh.appendChild(el('div', 'sch', auto.school));
+    const school = auto.school || (d.doc && d.doc.school);
+    if (school) sh.appendChild(el('div', 'sch', school));
     sh.appendChild(el('h1', null, d.title_ar || ''));
     sh.appendChild(el('div', 'src', 'نموذج رقم ' + d.form_no + (d.source ? ' · ' + d.source : '')));
     const st = el('div', 'fstatus ' + (fin ? 'final' : e ? 'draft' : 'new'),
       fin ? 'معتمد' + (e.finalized_h ? ' في ' + e.finalized_h : '') + (e.filled_role ? ' — ' + e.filled_role : '')
         : e ? 'مسوّدة محفوظة' : 'جديد — لم يُحفظ بعد');
     sh.appendChild(st);
+    if (!fin && !canEdit()) sh.appendChild(el('div', 'notice err noprint', 'لا تملك صفتك تعبئة هذا النموذج — يُعرض للاطّلاع.'));
 
     // الخانات
     const data = (e && e.data) || {};
@@ -106,8 +122,8 @@
         td.appendChild(v == null ? el('span', 'blank', '—') : document.createTextNode(v));
         td.classList.add('auto');
       } else {
-        td.appendChild(control(f, data[f.key], fin, 'f_'));
-        if (f.hint && !fin) td.appendChild(el('div', 'hint', f.hint));
+        td.appendChild(control(f, data[f.key], ro, 'f_'));
+        if (f.hint && !ro) td.appendChild(el('div', 'hint', f.hint));
       }
       tr.append(th, td);
       t.appendChild(tr);
@@ -122,7 +138,7 @@
       const g = el('table', 'grid');
       const hr = el('tr');
       for (const c of rs) hr.appendChild(el('th', null, c.label));
-      if (!fin) hr.appendChild(el('th', 'noprint', ''));
+      if (!ro) hr.appendChild(el('th', 'noprint', ''));
       g.appendChild(hr);
       ui.rows.forEach((row, i) => {
         const tr = el('tr');
@@ -133,27 +149,30 @@
             td.appendChild(v == null ? el('span', 'blank', '—') : document.createTextNode(String(v)));
             td.classList.add('auto');
           } else {
-            const ctl = control(c, row[c.key], fin, 'r' + i + '_');
+            const ctl = control(c, row[c.key], ro, 'r' + i + '_');
             ctl.addEventListener('input', () => { row[c.key] = read(ctl); });
             ctl.addEventListener('change', () => { row[c.key] = read(ctl); });
             td.appendChild(ctl);
           }
           tr.appendChild(td);
         }
-        if (!fin) {
+        if (!ro) {
           const td = el('td', 'noprint');
-          const del = el('button', 'rowdel', '✕');
-          del.type = 'button';
-          del.title = 'احذف الصف';
-          del.addEventListener('click', () => { ui.rows.splice(i, 1); render(); });
-          td.appendChild(del);
+          // صفوف القاعدة (auto_rows) لا تُحذف
+          if (!isFixed(row)) {
+            const del = el('button', 'rowdel', '✕');
+            del.type = 'button';
+            del.title = 'احذف الصف';
+            del.addEventListener('click', () => { ui.rows.splice(i, 1); render(); });
+            td.appendChild(del);
+          }
           tr.appendChild(td);
         }
         g.appendChild(tr);
       });
       wrap.appendChild(g);
       sh.appendChild(wrap);
-      if (!fin) {
+      if (!ro) {
         const add = el('button', 'btn-ghost wide noprint', '+ أضف صفاً');
         add.type = 'button';
         add.addEventListener('click', () => { ui.rows.push({}); render(); });
@@ -162,7 +181,7 @@
     }
 
     // الحفظ والاعتماد
-    if (!fin) {
+    if (!ro) {
       const acts = el('div', 'dlg-acts noprint');
       const draft = el('button', 'btn-ghost', 'حفظ مسوّدة');
       draft.type = 'button';
@@ -202,6 +221,14 @@
       signs.appendChild(box);
     }
     sh.appendChild(signs);
+
+    // المعتمد لا يُعدَّل — يُلغى بسبب مكتوب ثم يُعاد، والقاعدة تحكم بمن يلغي
+    if (fin && canEdit()) {
+      const v = el('button', 'btn-ghost wide noprint voidbtn', 'ألغِ النموذج بسبب');
+      v.type = 'button';
+      v.addEventListener('click', voidEntry);
+      sh.appendChild(v);
+    }
     sh.hidden = false;
   }
 
@@ -212,10 +239,10 @@
       const c = $('f_' + f.key);
       if (c) data[f.key] = read(c);
     }
-    // يُرسل المكتوب وحده: لا الآلي، ولا الصفوف الفارغة كلها
-    const typed = (ui.doc.row_schema || []).filter((c) => c.input !== 'auto').map((c) => c.key);
+    // الصف بأعمدة row_schema (والآلي منها كما أرجعته القاعدة)، ولا تُرسل الصفوف الفارغة كلها
+    const keys = (ui.doc.row_schema || []).map((c) => c.key);
     const rows = ui.rows
-      .map((r) => Object.fromEntries(typed.map((k) => [k, r[k] == null ? null : r[k]])))
+      .map((r) => Object.fromEntries(keys.map((k) => [k, r[k] == null ? null : r[k]])))
       .filter((r) => Object.values(r).some((v) => v != null && v !== '' && v !== false));
     return { data, rows };
   }
@@ -242,14 +269,28 @@
       if (await ask($('refuseDlg')) !== 'ok') return;
       reason = $('refReason').value.trim();
     }
-    const { error } = await M.rpc('v2_form_sign', {
+    const { data: res, error } = await M.rpc('v2_form_sign', {
       p_entry: ui.doc.entry.id, p_signer: who, p_signed: signed, p_refuse_reason: reason,
     }, 'توقيع نموذج');
     if (error) { toast('لم يُسجَّل التوقيع:\n' + errText(error)); return; }
-    toast(signed ? 'سُجّل إقرار ' + who + '.' : 'سُجّل امتناع ' + who + '.', true);
+    const left = (res && res.remaining) || [];
+    toast((signed ? 'سُجّل إقرار ' + who + '.' : 'سُجّل امتناع ' + who + '.') +
+      (left.length ? '\nبقي: ' + left.join(' · ') : '\nاكتملت التوقيعات.'), true);
     await open();
   }
 
+  async function voidEntry() {
+    $('voidReason').value = '';
+    $('voidOk').disabled = true;
+    if (await ask($('voidDlg')) !== 'ok') return;
+    const { error } = await M.rpc('v2_form_void',
+      { p_entry: ui.doc.entry.id, p_reason: $('voidReason').value.trim() }, 'إلغاء نموذج');
+    if (error) { toast('لم يُلغَ النموذج:\n' + errText(error)); return; }
+    toast('أُلغي النموذج. ويُعبّأ من جديد.', true);
+    await open();
+  }
+
+  $('voidReason').addEventListener('input', () => { $('voidOk').disabled = $('voidReason').value.trim() === ''; });
   $('refReason').addEventListener('input', () => { $('refOk').disabled = $('refReason').value.trim() === ''; });
 
   // ---------- الفتح ----------
@@ -260,7 +301,15 @@
     if (error) { showLoadErr('تعذّر فتح النموذج: ' + errText(error)); return; }
     if (!data) { showLoadErr('لم يُرجع النموذج شيئاً.'); return; }
     ui.doc = data;
+    // المحفوظ أولاً، ثم ما في auto_rows ولم يُحفظ بعد (ما دام النموذج لم يُعتمد)
     ui.rows = ((data.entry && data.entry.rows) || []).map((r) => Object.assign({}, r));
+    if (!(data.entry && data.entry.status === 'final')) {
+      const have = new Set(ui.rows.map(autoKey).filter((k) => k != null));
+      for (const a of data.auto_rows || []) {
+        const k = autoKey(a);
+        if (k == null || !have.has(k)) ui.rows.push(Object.assign({}, a));
+      }
+    }
     render();
   }
 
