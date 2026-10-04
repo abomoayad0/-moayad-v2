@@ -63,6 +63,8 @@
         c = document.createElement('textarea'); c.rows = 3; break;
       case 'date':
         c = document.createElement('input'); c.type = 'date'; break;
+      case 'time':
+        c = document.createElement('input'); c.type = 'time'; break;
       case 'number':
         c = document.createElement('input'); c.type = 'number'; c.inputMode = 'decimal'; break;
       case 'checkbox':
@@ -114,7 +116,7 @@
     sh.appendChild(el('h1', null, d.title_ar || ''));
     sh.appendChild(el('div', 'src', 'نموذج رقم ' + d.form_no + (d.source ? ' · ' + d.source : '')));
     const st = el('div', 'fstatus ' + (fin ? 'final' : e ? 'draft' : 'new'),
-      fin ? 'معتمد' + (e.finalized_h ? ' في ' + e.finalized_h : '') + (e.filled_role ? ' — ' + e.filled_role : '')
+      fin ? (d.final_done_ar || 'معتمد') + (e.finalized_h ? ' في ' + e.finalized_h : '') + (e.filled_role ? ' — ' + e.filled_role : '')
         : e ? 'مسوّدة محفوظة' : 'جديد — لم يُحفظ بعد');
     sh.appendChild(st);
     // إلى من يصل — قبل الاعتماد لئلّا يُفاجأ
@@ -126,7 +128,8 @@
     const t = el('table', 'kv');
     for (const f of d.schema || []) {
       const tr = el('tr');
-      const th = el('th', null, f.label + (f.required && f.input !== 'auto' ? ' *' : ''));
+      const locked = f.input === 'auto' || f.input === 'derived';
+      const th = el('th', null, f.label + (f.required && !locked ? ' *' : ''));
       const td = el('td');
       if (f.input === 'auto') {
         const v = autoValue(f.key);
@@ -135,7 +138,15 @@
         if (v != null) td.appendChild(document.createTextNode(v));
         else if (other && d.awaiting_guardian) td.appendChild(el('span', 'awaiting', 'بانتظار ردّ وليّ الأمر'));
         else td.appendChild(el('span', 'blank', '—'));
-        if (other) td.appendChild(el('div', 'hint', 'يملؤه: ' + f.filled_by_ar));
+        if (f.filled_by_ar) td.appendChild(el('div', 'hint', 'يملؤه: ' + f.filled_by_ar));
+        else if (f.hint) td.appendChild(el('div', 'hint', f.hint));
+        td.classList.add('auto');
+      } else if (f.input === 'derived') {
+        // مشتقّ من حقل آخر (derived_from): خانة مقفلة، والقاعدة تحسبه عند الحفظ ولا يُرسل
+        const out = el('span', 'derived', data[f.key] != null ? String(data[f.key]) : '—');
+        out.id = 'f_' + f.key;
+        td.appendChild(out);
+        if (f.filled_by_ar) td.appendChild(el('div', 'hint', 'يملؤه: ' + f.filled_by_ar));
         else if (f.hint) td.appendChild(el('div', 'hint', f.hint));
         td.classList.add('auto');
       } else {
@@ -146,6 +157,7 @@
       t.appendChild(tr);
     }
     sh.appendChild(t);
+    if (!ro) wireDerived();
 
     // الجدول — تُضاف صفوفه وتُحذف
     const rs = d.row_schema || [];
@@ -203,7 +215,7 @@
       const draft = el('button', 'btn-ghost', 'حفظ مسوّدة');
       draft.type = 'button';
       draft.addEventListener('click', () => save(false));
-      const final = el('button', 'btn-accept', 'اعتماد');
+      const final = el('button', 'btn-accept', d.final_label_ar || 'اعتماد');
       final.type = 'button';
       final.addEventListener('click', () => save(true));
       acts.append(draft, final);
@@ -249,10 +261,27 @@
     sh.hidden = false;
   }
 
+  // المشتقّ يُعرض حيّاً من القاعدة كلما تغيّر أصله — v2_weekday(p_date)
+  function wireDerived() {
+    for (const f of ui.doc.schema || []) {
+      if (f.input !== 'derived' || !f.derived_from) continue;
+      const src = $('f_' + f.derived_from);
+      const out = $('f_' + f.key);
+      if (!src || !out || src.type !== 'date') continue;
+      src.addEventListener('change', async () => {
+        if (!src.value) { out.textContent = '—'; return; }
+        const asked = src.value;
+        const { data, error } = await M.rpc('v2_weekday', { p_date: asked }, 'اليوم من التاريخ');
+        if (src.value !== asked) return;
+        out.textContent = error ? 'تعذّر: ' + errText(error) : (data || '—');
+      });
+    }
+  }
+
   function collect() {
     const data = {};
     for (const f of ui.doc.schema || []) {
-      if (f.input === 'auto') continue;
+      if (f.input === 'auto' || f.input === 'derived') continue;
       const c = $('f_' + f.key);
       if (c) data[f.key] = read(c);
     }
@@ -276,7 +305,7 @@
     notifyParent();
     if (final) {
       const to = goesText();
-      toast('اعتُمد النموذج' + (to ? ' · وصل إلى: ' + to : '') +
+      toast((ui.doc.final_done_ar || 'اعتُمد النموذج') + (to ? ' · وصل إلى: ' + to : '') +
         (res && res.delivered != null ? ' (' + res.delivered + ' نسخة)' : '') + '\nويُوقَّع الآن.', true);
     } else {
       toast('حُفظت المسوّدة.', true);
