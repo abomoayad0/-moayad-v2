@@ -25,6 +25,8 @@
         <p class="quote" id="evTask"></p>
         <p class="hint" id="evHint"></p>
         <p class="detail" id="evForm" hidden></p>
+        <a class="btn-ghost wide formlink" id="evFormBtn" target="_blank" rel="noopener" hidden>افتح النموذج للطبع</a>
+        <p class="hint" id="evFormNote" hidden></p>
         <div id="evFields"></div>
         <div class="dlg-acts">
           <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
@@ -107,8 +109,30 @@
     return ev;
   }
 
-  async function closeTask(kind, t, onChanged) {
+  // النماذج المبنية على رصد سلوكي تحتاج record_id في p_ref (٥–١٠)
+  const NEEDS_REF = [5, 6, 7, 8, 9, 10];
+
+  function setFormLink(t, studentId) {
+    const btn = $('evFormBtn');
+    const note = $('evFormNote');
+    btn.hidden = !t.form_no;
+    note.hidden = true;
+    if (!t.form_no) return;
+    const ref = t.record_id || null;
+    if (NEEDS_REF.includes(t.form_no) && !ref) {
+      btn.removeAttribute('href');
+      btn.classList.add('off');
+      note.textContent = 'لا يُفتح النموذج بعد: يلزم أن يُرجع v2_student_tasks رقم الرصد (record_id) لهذه المهمّة.';
+      note.hidden = false;
+      return;
+    }
+    btn.classList.remove('off');
+    btn.href = 'form.html?form=' + t.form_no + '&student=' + encodeURIComponent(studentId) + (ref ? '&ref=' + encodeURIComponent(ref) : '');
+  }
+
+  async function closeTask(kind, t, onChanged, studentId) {
     ensureDialogs();
+    setFormLink(t, studentId);
     $('evTask').textContent = t.text_ar;
     $('evHint').textContent = (t.evidence_ar ? 'الإثبات: ' + t.evidence_ar : '') + (t.hint_ar ? ' — ' + t.hint_ar : '');
     $('evForm').hidden = !t.form_no;
@@ -133,7 +157,7 @@
     await onChanged();
   }
 
-  function card(kind, t, onChanged) {
+  function card(kind, t, onChanged, studentId) {
     const c = el('div', 'ev task t-' + t.status);
     const top = el('div', 'row1');
     const b = el('span', 'badge b-' + (t.status === 'open' ? 'late' : (t.status === 'done' || t.status === 'auto') ? 'present' : 'unrecorded'),
@@ -157,7 +181,7 @@
         const acts = el('div', 'acts two');
         const ok = el('button', 'a-accept', 'أغلقها بإثبات');
         ok.type = 'button';
-        ok.addEventListener('click', () => closeTask(kind, t, onChanged));
+        ok.addEventListener('click', () => closeTask(kind, t, onChanged, studentId));
         const no = el('button', 'a-reject', 'إسقاط بسبب');
         no.type = 'button';
         no.addEventListener('click', () => skipTask(kind, t, onChanged));
@@ -182,7 +206,7 @@
       box.appendChild(el('h3', 'grp', title + (res.error ? '' : ' (' + (res.data || []).length + ')')));
       if (res.error) { box.appendChild(el('div', 'notice err', 'تعذّر جلبها: ' + errText(res.error))); continue; }
       if (!res.data || res.data.length === 0) { box.appendChild(el('div', 'empty', 'لا مهامّ.')); continue; }
-      for (const t of res.data) box.appendChild(card(kind, t, again));
+      for (const t of res.data) box.appendChild(card(kind, t, again, studentId));
     }
   }
 

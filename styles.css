@@ -253,3 +253,5 @@
   .err-row .name { margin-top: 4px; word-break: break-word; }
   pre.params { direction: ltr; text-align: left; font-size: 12px; background: var(--bg); padding: 8px; border-radius: 8px; overflow-x: auto; max-width: 100%; }
   details summary { cursor: pointer; font-size: 13px; color: var(--muted); margin-top: 4px; }
+  a.formlink { display: flex; align-items: center; justify-content: center; text-decoration: none; color: var(--navy); background: var(--card); margin-top: 6px; }
+  a.formlink.off { opacity: .45; pointer-events: none; }
