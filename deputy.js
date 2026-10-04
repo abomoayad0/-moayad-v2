@@ -22,6 +22,13 @@
     return s.split(' · ').map((c) => CHANNEL_AR[c] || c).join(' · ');
   }
 
+  // اسم الفصل كما تسمّيه القاعدة (label_ar من v2_day_classes)
+  function classLabel(grade, section) {
+    if (grade == null) return '';
+    const c = ui.classes.find((k) => k.grade === grade && k.section === section);
+    return c ? c.label_ar : grade + ' — ' + section;
+  }
+
   // نافذة تأكيد تُرجع وعداً بقيمة الزرّ
   function ask(dlg) {
     return new Promise((resolve) => {
@@ -159,7 +166,7 @@
       const top = el('div', 'row1');
       const who = el('div');
       who.append(el('div', 'name', e.student_name),
-        el('div', 'meta', e.grade != null ? 'الصف ' + e.grade + ' — الفصل ' + e.section : ''));
+        el('div', 'meta', classLabel(e.grade, e.section)));
       top.append(who, el('span', 'badge b-ev', e.title_ar));
       c.appendChild(top);
       if (e.body_ar) c.appendChild(el('div', 'detail', e.body_ar));
@@ -246,7 +253,7 @@
     const top = el('div', 'row1');
     const who = el('div');
     who.append(el('div', 'name', x.student_name),
-      el('div', 'meta', 'الصف ' + x.grade + ' — الفصل ' + x.section));
+      el('div', 'meta', classLabel(x.grade, x.section)));
     top.append(who, el('span', 'badge b-late', x.days + (x.days === 1 ? ' يوم' : ' أيام')));
     c.appendChild(top);
 
