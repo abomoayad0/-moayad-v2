@@ -8,7 +8,7 @@
   const M = window.Moayad;
   const { sb, $, el, toast, errText, showLoadErr } = M;
 
-  const ui = { classes: [], rows: [], problems: null, cls: null, stu: null, degree: 'all', tasks: [], prob: null };
+  const ui = { classes: [], rows: [], problems: [], cls: null, stu: null, degree: 'all', tasks: [], prob: null };
 
   // رموز القاعدة بأسمائها — للعرض فقط
   const SCOPE_AR = { primary: 'ابتدائي', intermediate_secondary: 'متوسط وثانوي', all: 'الجميع' };
@@ -35,20 +35,17 @@
     if (!M.state.school || !M.state.date) return;
     showLoadErr('');
     const args = { p_school: M.state.school, p_date: M.state.date };
-    const [sum, cls, list, probs] = await Promise.all([
+    const [sum, cls, list] = await Promise.all([
       M.rpc('v2_day_summary', args),
       M.rpc('v2_day_classes', args),
       M.rpc('v2_day_list', args),
-      ui.problems ? Promise.resolve({ data: ui.problems })
-        : M.rpc('v2_conduct_list', { p_stage: null, p_mode: 'onsite', p_target: 'general' }),
     ]);
-    const err = sum.error || cls.error || list.error || probs.error;
+    const err = sum.error || cls.error || list.error;
     if (err) { showLoadErr('تعذّر الجلب: ' + errText(err)); return; }
     const s = sum.data && sum.data[0];
     if (s) M.renderDates($('dates'), s.hijri, M.state.date, null);
     ui.classes = cls.data || [];
     ui.rows = list.data || [];
-    ui.problems = probs.data || [];
     ui.cls = null;
     ui.stu = null;
     renderClasses();
@@ -95,13 +92,28 @@
     }
   }
 
-  function openStudent(r) {
+  // المخالفات تُصفّى بمرحلة الطالب في القاعدة — v2_conduct_list(p_student)
+  async function openStudent(r) {
     ui.stu = r;
+    ui.problems = [];
+    ui.degree = 'all';
     $('stuTitle').textContent = (r.display_name || r.full_name) + ' — ' + ui.cls.label_ar;
     $('qProb').value = '';
     renderDegrees();
-    renderProblems();
+    $('problems').textContent = '';
+    $('problems').appendChild(el('div', 'empty', 'جارٍ جلب المخالفات المنطبقة على الطالب…'));
     step(3);
+    const { data, error } = await M.rpc('v2_conduct_list',
+      { p_student: r.student_id, p_mode: 'onsite', p_target: 'general' }, 'قائمة المخالفات');
+    if (ui.stu !== r) return;
+    if (error) {
+      $('problems').textContent = '';
+      $('problems').appendChild(el('div', 'notice err', 'تعذّر جلب المخالفات: ' + errText(error)));
+      return;
+    }
+    ui.problems = data || [];
+    renderDegrees();
+    renderProblems();
   }
 
   // ---------- ٣ المخالفة ----------
@@ -109,8 +121,9 @@
     const box = $('degrees');
     box.textContent = '';
     const degs = [...new Set(ui.problems.map((p) => p.degree_no))].sort((a, b) => a - b);
+    const label = (d) => (ui.problems.find((p) => p.degree_no === d) || {}).degree_ar || ('الدرجة ' + d);
     for (const d of ['all', ...degs]) {
-      const b = el('button', null, d === 'all' ? 'كل الدرجات' : 'الدرجة ' + d);
+      const b = el('button', null, d === 'all' ? 'كل الدرجات' : label(d));
       b.type = 'button';
       b.setAttribute('aria-pressed', String(ui.degree === d));
       b.addEventListener('click', () => { ui.degree = d; renderDegrees(); renderProblems(); });
@@ -128,8 +141,14 @@
       const b = el('button', 'pick prob deg' + p.degree_no);
       b.type = 'button';
       b.append(el('b', null, p.text_ar),
-        el('small', null, 'الدرجة ' + p.degree_no + ' · ' + (SCOPE_AR[p.stage_scope] || p.stage_scope) + ' · ' + (p.source_page || '')));
-      b.addEventListener('click', () => record(p));
+        el('small', null, (p.degree_ar || 'الدرجة ' + p.degree_no) + ' · ' + (SCOPE_AR[p.stage_scope] || p.stage_scope) + ' · ' + (p.source_page || '')));
+      // ما لا ينطبق يُعرض بسببه من القاعدة ولا يُرصد
+      if (p.applies === false) {
+        b.disabled = true;
+        b.appendChild(el('small', 'why', p.why || 'لا تنطبق على الطالب'));
+      } else {
+        b.addEventListener('click', () => record(p));
+      }
       box.appendChild(b);
     }
   }
@@ -137,7 +156,7 @@
   async function record(p) {
     const r = ui.stu;
     $('recWho').textContent = (r.display_name || r.full_name) + ' — ' + ui.cls.label_ar;
-    $('recProb').textContent = 'الدرجة ' + p.degree_no + ': ' + p.text_ar;
+    $('recProb').textContent = (p.degree_ar || 'الدرجة ' + p.degree_no) + ': ' + p.text_ar;
     for (const id of ['recPlace', 'recPeriod', 'recNote']) $(id).value = '';
     for (const id of ['recInjury', 'recDamage', 'recSeizure', 'recLegal']) $(id).checked = false;
     $('recLegalBox').hidden = true;
@@ -153,7 +172,7 @@
     });
     if (error) { toast('لم تُرصد المخالفة:\n' + errText(error)); return; }
     ui.prob = p;
-    showTasks('رُصدت المخالفة', 'الدرجة ' + p.degree_no + ': ' + p.text_ar);
+    showTasks('رُصدت المخالفة', (p.degree_ar || 'الدرجة ' + p.degree_no) + ': ' + p.text_ar);
     toast('رُصدت المخالفة — ولّدت ' + (((data && data.tasks) || []).length) + ' مهمّة.', true);
   }
 

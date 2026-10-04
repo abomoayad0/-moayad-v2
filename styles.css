@@ -255,3 +255,5 @@
   details summary { cursor: pointer; font-size: 13px; color: var(--muted); margin-top: 4px; }
   a.formlink { display: flex; align-items: center; justify-content: center; text-decoration: none; color: var(--navy); background: var(--card); margin-top: 6px; }
   a.formlink.off { opacity: .45; pointer-events: none; }
+  .pick:disabled { opacity: .55; }
+  .pick small.why { display: block; color: var(--danger); }
