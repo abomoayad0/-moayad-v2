@@ -16,6 +16,13 @@
   };
   const ui = { doc: null, rows: [] };
 
+  // وجهات النماذج كما فهرستها القاعدة — للعرض فقط
+  const GOES_AR = {
+    guardian: 'بوّابة وليّ الأمر', student: 'الطالب', counselor: 'الموجّه الطلابي',
+    committee: 'لجنة التوجيه', external: 'جهة خارجية', school: 'يبقى في المدرسة',
+  };
+  function goesText(g) { return (g || []).map((k) => GOES_AR[k] || k).join(' · '); }
+
   function ask(dlg) {
     return new Promise((resolve) => {
       dlg.addEventListener('close', () => resolve(dlg.returnValue), { once: true });
@@ -108,6 +115,8 @@
       fin ? 'معتمد' + (e.finalized_h ? ' في ' + e.finalized_h : '') + (e.filled_role ? ' — ' + e.filled_role : '')
         : e ? 'مسوّدة محفوظة' : 'جديد — لم يُحفظ بعد');
     sh.appendChild(st);
+    // إلى من يصل — قبل الاعتماد لئلّا يُفاجأ
+    if (!fin && (d.goes_to || []).length) sh.appendChild(el('div', 'goes noprint', 'عند الاعتماد يصل إلى: ' + goesText(d.goes_to)));
     if (!fin && !canEdit()) sh.appendChild(el('div', 'notice err noprint', 'لا تملك صفتك تعبئة هذا النموذج — يُعرض للاطّلاع.'));
 
     // الخانات
@@ -256,7 +265,13 @@
       p_task: P.task, p_entry: e ? e.id : null, p_final: final,
     }, final ? 'اعتماد نموذج' : 'حفظ مسوّدة نموذج');
     if (error) { toast((final ? 'لم يُعتمد النموذج:\n' : 'لم تُحفظ المسوّدة:\n') + errText(error)); return; }
-    toast(final ? 'اعتُمد النموذج. ويُوقَّع الآن.' : 'حُفظت المسوّدة.', true);
+    if (final) {
+      const to = goesText(res && res.goes_to);
+      toast('اعتُمد النموذج' + (to ? ' · وصل إلى: ' + to : '') +
+        (res && res.delivered != null ? ' (' + res.delivered + ' نسخة)' : '') + '\nويُوقَّع الآن.', true);
+    } else {
+      toast('حُفظت المسوّدة.', true);
+    }
     await open();
   }
 

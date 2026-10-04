@@ -1,4 +1,5 @@
 // مؤيّد — الرابط الواحد: الدخول، ثم v2_default_role، ثم v2_me، ثم الشاشات من can وحدها.
+// ومن ليس منسوباً وكان وليّ أمر (v2_guardian_me) فإلى بوّابته.
 // تُفتح أول شاشة تملكها الصفة، والبقية في شريط الشاشات أعلى كل شاشة.
 (function () {
   'use strict';
@@ -23,9 +24,14 @@
     if (me === undefined) {
       try { await M.defaultRole(); me = await M.loadMe(); } catch (e) { M.gate('تعذّر جلب حسابك: ' + errText(e)); return; }
     }
+    // ليس منسوباً: إن كان وليّ أمر فبوّابته
+    if (!me) {
+      const { data: g, error } = await M.rpc('v2_guardian_me', undefined, 'حساب وليّ الأمر');
+      if (!error && g) { location.replace('guardian.html'); return; }
+    }
     M.renderHeader(me, onRole);
     M.renderNav(me, null);
-    if (!me) { M.gate('حسابك غير مسند إلى منسوب في مؤيّد. اطلب من مالك النظام إسنادك.'); return; }
+    if (!me) { M.gate('حسابك غير مسند إلى منسوب في مؤيّد ولا إلى وليّ أمر. اطلب من مالك النظام إسنادك.'); return; }
 
     // لا قائمة وسيطة: أول شاشة تملكها الصفة تُفتح مباشرة، والبقية في الشريط
     const screens = M.screensFor(me);

@@ -259,3 +259,11 @@
   .pick small.why { display: block; color: var(--danger); }
   .meta.assigned { color: var(--navy); font-weight: 700; }
   .task .btn-ghost.wide { margin-top: 6px; margin-bottom: 0; }
+
+/* بوّابة وليّ الأمر */
+  .gform.unread { border-inline-start: 4px solid var(--navy); }
+  .gform details { margin-top: 8px; }
+  .gform summary { cursor: pointer; font-weight: 700; color: var(--navy); }
+  .gform table.kv { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 14px; }
+  .gform table.kv th, .gform table.kv td { border: 1px solid var(--line); padding: 6px 8px; text-align: start; vertical-align: top; }
+  .gform table.kv th { width: 38%; background: var(--bg); }
