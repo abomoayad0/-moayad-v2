@@ -140,9 +140,10 @@
   function setFormLink(t, studentId) {
     const btn = $('evFormBtn');
     const note = $('evFormNote');
-    btn.hidden = !t.form_no;
+    // التعبئة بمفتاح fill_form في can
+    btn.hidden = !t.form_no || !M.state.me.can.fill_form;
     note.hidden = true;
-    if (!t.form_no) return;
+    if (btn.hidden) return;
     const ref = t.record_id || null;
     if (NEEDS_REF.includes(t.form_no) && !ref) {
       btn.removeAttribute('href');

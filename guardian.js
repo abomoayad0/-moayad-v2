@@ -33,8 +33,10 @@
   }
 
   function signedList(f) {
+    // signed أسماء من وقّع كما ترسلها القاعدة
     const s = Array.isArray(f.signed) ? f.signed : [];
-    return s.map((x) => (x.signer || '') + ': ' + (x.signed ? 'أقرّ' : 'امتنع' + (x.reason ? ' — ' + x.reason : '')) + (x.at_h ? ' · ' + x.at_h : ''));
+    return s.map((x) => typeof x === 'string' ? 'وقّع: ' + x
+      : (x.signer || '') + ': ' + (x.signed ? 'أقرّ' : 'امتنع' + (x.reason ? ' — ' + x.reason : '')) + (x.at_h ? ' · ' + x.at_h : ''));
   }
 
   function render() {
@@ -53,6 +55,7 @@
       c.appendChild(top);
       c.appendChild(el('div', 'meta', [f.student_ar, f.class_ar].filter(Boolean).join(' — ')));
       if (f.delivered_h) c.appendChild(el('div', 'meta', 'وصل في ' + f.delivered_h));
+      if (f.source) c.appendChild(el('div', 'meta', 'السند: ' + f.source));
 
       const d = el('details');
       d.appendChild(el('summary', null, 'اقرأ النموذج'));
@@ -77,7 +80,7 @@
         c.appendChild(a);
       }
       if (f.needs_reply) {
-        const opts = f.options || f.reply_options;
+        const opts = f.reply_options;
         if (Array.isArray(opts) && opts.length) {
           const a = el('div', 'acts ' + (opts.length === 2 ? 'two' : 'one'));
           for (const o of opts) {
@@ -88,7 +91,7 @@
           }
           c.appendChild(a);
         } else {
-          c.appendChild(el('div', 'notice err', 'لم تُرسل القاعدة خيارات الردّ (options).'));
+          c.appendChild(el('div', 'notice err', 'لم تُرسل القاعدة خيارات الردّ (reply_options).'));
         }
       }
       box.appendChild(c);

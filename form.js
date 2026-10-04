@@ -16,12 +16,8 @@
   };
   const ui = { doc: null, rows: [] };
 
-  // وجهات النماذج كما فهرستها القاعدة — للعرض فقط
-  const GOES_AR = {
-    guardian: 'بوّابة وليّ الأمر', student: 'الطالب', counselor: 'الموجّه الطلابي',
-    committee: 'لجنة التوجيه', external: 'جهة خارجية', school: 'يبقى في المدرسة',
-  };
-  function goesText(g) { return (g || []).map((k) => GOES_AR[k] || k).join(' · '); }
+  // الوجهة بأسمائها من القاعدة (goes_to_ar)
+  function goesText() { return ((ui.doc && ui.doc.goes_to_ar) || []).join(' · '); }
 
   function ask(dlg) {
     return new Promise((resolve) => {
@@ -116,7 +112,7 @@
         : e ? 'مسوّدة محفوظة' : 'جديد — لم يُحفظ بعد');
     sh.appendChild(st);
     // إلى من يصل — قبل الاعتماد لئلّا يُفاجأ
-    if (!fin && (d.goes_to || []).length) sh.appendChild(el('div', 'goes noprint', 'عند الاعتماد يصل إلى: ' + goesText(d.goes_to)));
+    if (!fin && goesText()) sh.appendChild(el('div', 'goes noprint', 'عند الاعتماد يصل إلى: ' + goesText()));
     if (!fin && !canEdit()) sh.appendChild(el('div', 'notice err noprint', 'لا تملك صفتك تعبئة هذا النموذج — يُعرض للاطّلاع.'));
 
     // الخانات
@@ -232,7 +228,7 @@
     sh.appendChild(signs);
 
     // المعتمد لا يُعدَّل — يُلغى بسبب مكتوب ثم يُعاد، والقاعدة تحكم بمن يلغي
-    if (fin && canEdit()) {
+    if (fin && ui.doc.can_void) {
       const v = el('button', 'btn-ghost wide noprint voidbtn', 'ألغِ النموذج بسبب');
       v.type = 'button';
       v.addEventListener('click', voidEntry);
@@ -266,7 +262,7 @@
     }, final ? 'اعتماد نموذج' : 'حفظ مسوّدة نموذج');
     if (error) { toast((final ? 'لم يُعتمد النموذج:\n' : 'لم تُحفظ المسوّدة:\n') + errText(error)); return; }
     if (final) {
-      const to = goesText(res && res.goes_to);
+      const to = goesText();
       toast('اعتُمد النموذج' + (to ? ' · وصل إلى: ' + to : '') +
         (res && res.delivered != null ? ' (' + res.delivered + ' نسخة)' : '') + '\nويُوقَّع الآن.', true);
     } else {
