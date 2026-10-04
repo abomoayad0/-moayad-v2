@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مؤيّد · رصد المخالفات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>مؤيّد · رصد المخالفات</h1>
+    <div class="who" id="who"></div>
+  </div>
+  <div class="hdr-acts">
+    <button id="logout" class="hbtn" type="button">خروج</button>
+  </div>
+</header>
+<nav class="screens" id="screens" aria-label="الشاشات" hidden></nav>
+<div class="testmode" id="testMode" hidden></div>
+<div class="gatebox"><div class="notice err" id="gateErr" hidden></div></div>
+
+<main id="dayView" class="wrap" hidden>
+  <div class="day">
+    <div class="full" id="schoolBox">
+      <label for="school">المدرسة</label>
+      <select id="school"></select>
+    </div>
+    <!-- الرصد بتاريخ اليوم في القاعدة — فلا يُختار يوم هنا -->
+    <div class="full" hidden><input id="date" type="date"></div>
+    <div class="full"><div class="dates" id="dates"></div></div>
+  </div>
+
+  <div class="notice err" id="loadErr" hidden></div>
+
+  <!-- خطوات الرصد -->
+  <ol class="steps" id="steps">
+    <li id="st1">الفصل</li><li id="st2">الطالب</li><li id="st3">المخالفة</li><li id="st4">المهامّ</li>
+  </ol>
+
+  <!-- ١ — الفصل -->
+  <section id="pickClass">
+    <div class="classes" id="classes"></div>
+  </section>
+
+  <!-- ٢ — الطالب -->
+  <section id="pickStudent" hidden>
+    <div class="cls-head">
+      <button type="button" class="back" id="backClass">→ الفصول</button>
+      <h2 id="clsTitle"></h2>
+    </div>
+    <input id="qStu" type="search" placeholder="ابحث بالاسم أو الرقم" aria-label="بحث">
+    <div id="students"></div>
+  </section>
+
+  <!-- ٣ — المخالفة -->
+  <section id="pickProblem" hidden>
+    <div class="cls-head">
+      <button type="button" class="back" id="backStudent">→ الطلاب</button>
+      <h2 id="stuTitle"></h2>
+    </div>
+    <div class="filters" id="degrees" role="group" aria-label="الدرجة"></div>
+    <input id="qProb" type="search" placeholder="ابحث في نصّ المخالفة" aria-label="بحث في المخالفات">
+    <div id="problems"></div>
+  </section>
+
+  <!-- ٤ — المهامّ المولَّدة -->
+  <section id="result" hidden>
+    <div class="panel">
+      <h2 class="ph">رُصدت المخالفة</h2>
+      <p id="resWho" class="name"></p>
+      <p id="resProb" class="detail"></p>
+      <h3 class="grp">المهامّ المولَّدة</h3>
+      <div id="tasks"></div>
+    </div>
+    <div class="dlg-acts">
+      <button type="button" class="btn-ghost" id="againStudent">طالب آخر من الفصل</button>
+      <button type="button" class="btn-ghost" id="againClass">فصل آخر</button>
+    </div>
+  </section>
+</main>
+
+<!-- تفاصيل الرصد -->
+<dialog id="recDlg">
+  <form method="dialog">
+    <h3>رصد المخالفة</h3>
+    <p id="recWho" class="name"></p>
+    <p id="recProb" class="quote"></p>
+    <label for="recPlace">المكان</label>
+    <input id="recPlace" type="text" placeholder="الفصل · الساحة · المقصف …">
+    <label for="recPeriod">الحصة (اختياري)</label>
+    <input id="recPeriod" type="number" min="1" max="8" inputmode="numeric">
+    <label for="recNote">ملاحظة (اختيارية)</label>
+    <textarea id="recNote" rows="2"></textarea>
+    <label class="check"><input type="checkbox" id="recInjury"> فيها إصابة</label>
+    <label class="check"><input type="checkbox" id="recDamage"> فيها إتلاف</label>
+    <label class="check"><input type="checkbox" id="recSeizure"> فيها مضبوطات</label>
+    <label class="check" id="recLegalBox" hidden><input type="checkbox" id="recLegal"> المضبوطات مما ورد فيه نصّ نظامي</label>
+    <div class="dlg-acts">
+      <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+      <button value="ok" type="submit" class="btn-danger" id="recOk">ارصد</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- إسقاط مهمّة -->
+<dialog id="skipDlg">
+  <form method="dialog">
+    <h3>إسقاط المهمّة</h3>
+    <p id="skipTask" class="quote"></p>
+    <label for="skipReason">السبب — إلزامي</label>
+    <textarea id="skipReason" rows="3"></textarea>
+    <div class="dlg-acts">
+      <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+      <button value="ok" type="submit" class="btn-danger" id="skipOk" disabled>أسقطها</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="vendor/supabase-2.117.2.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="suluk.js"></script>
+</body>
+</html>

@@ -223,3 +223,22 @@
   .acts button.a-go { background: var(--navy); color: #fff; border-color: transparent; }
   #arrDlg .name, #disDlg .name { font-weight: 700; }
   input[type=time] { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); min-height: 44px; font: inherit; }
+
+  /* ---------- رصد المخالفات ---------- */
+  .steps { display: flex; gap: 4px; list-style: none; padding: 0; margin: 12px 0; counter-reset: s; }
+  .steps li { flex: 1; text-align: center; font-size: 13px; padding: 6px 2px; border-radius: 8px; background: var(--line); color: var(--muted); }
+  .steps li.on { background: var(--navy); color: #fff; font-weight: 700; }
+  .steps li.done { background: #e3f6ee; color: #05774a; }
+  .pick { display: block; width: 100%; text-align: start; background: var(--card); color: var(--text); border: 1px solid var(--line);
+          border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; min-height: 52px; }
+  .pick b { display: block; font-size: 15px; }
+  .pick small { color: var(--muted); font-size: 12px; }
+  .prob { border-inline-start: 5px solid var(--grey); }
+  .prob.deg1 { border-inline-start-color: var(--teal); }
+  .prob.deg2 { border-inline-start-color: var(--blue); }
+  .prob.deg3 { border-inline-start-color: var(--sand); }
+  .prob.deg4 { border-inline-start-color: #e07b00; }
+  .prob.deg5 { border-inline-start-color: var(--danger); }
+  input[type=text], input[type=number] { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); min-height: 44px; font: inherit; }
+  .task.t-done { opacity: .7; }
+  #result .dlg-acts { margin-bottom: 24px; }

@@ -22,6 +22,8 @@
       href: 'wusul.html', allow: (c) => !!(c.record_arrival || c.record_dismissal) },
     { key: 'deputy', title: 'قرارات الوكيل', desc: 'الإقفال · إعادة الفتح · البتّ في الأعذار',
       href: 'deputy.html', allow: (c) => !!(c.close_day || c.reopen_day || c.decide_excuse) },
+    { key: 'suluk', title: 'رصد المخالفات', desc: 'الفصل ثم الطالب ثم المخالفة — والمهامّ المولَّدة',
+      href: 'suluk.html', allow: (c) => !!c.record_behavior },
   ];
 
   const state = { school: null, date: null, me: null };
@@ -110,36 +112,32 @@
 
     const roles = me.roles || [];
     const box = el('div', 'rolebox');
-    box.append(el('span', 'role-l', 'تعمل بصفة:'));
+    // الصفة نصّاً من role_ar دائماً — ولا تعتمد على ما يعرضه مربّع الاختيار في المتصفح
+    const cur = roles.find((r) => r.is_current === true);
+    box.append(el('span', 'role-l', 'تعمل بصفة:'),
+      el('span', 'role', (me.role_ar || 'بلا صفة') + (cur && cur.school ? ' — ' + cur.school : '')));
     if (roles.length > 1 && onRole) {
       const sel = document.createElement('select');
       sel.id = 'roleSel';
       sel.className = 'rolesel';
       sel.setAttribute('aria-label', 'بدّل صفتك');
-      const cur = roles.findIndex((r) => r.is_current === true);
-      if (cur < 0) {
-        // لم تُختر صفة بعد — تُعرض الصفة التي تحكم الآن (role_ar) ولا يُدّعى غيرها
-        const o = document.createElement('option');
-        o.value = '';
-        o.textContent = (me.role_ar || 'بلا صفة') + ' (لم تُختر بعد)';
-        o.disabled = true;
-        o.selected = true;
-        sel.appendChild(o);
-      }
+      const ph = document.createElement('option');
+      ph.value = '';
+      ph.textContent = 'بدّل الصفة';
+      ph.selected = true;
+      sel.appendChild(ph);
       roles.forEach((r, i) => {
         const o = document.createElement('option');
         o.value = String(i);
-        o.textContent = roleLabel(r);
-        if (i === cur) o.selected = true;
+        o.textContent = (r.is_current === true ? '✓ ' : '') + roleLabel(r);
         sel.appendChild(o);
       });
       sel.addEventListener('change', () => {
         const r = roles[Number(sel.value)];
-        if (r) onRole(r);
+        sel.value = '';
+        if (r && r.is_current !== true) onRole(r);
       });
       box.appendChild(sel);
-    } else {
-      box.appendChild(el('span', 'role', me.role_ar || 'بلا صفة'));
     }
     who.appendChild(box);
 
