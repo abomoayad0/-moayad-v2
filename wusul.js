@@ -46,10 +46,10 @@
     showLoadErr('');
     const args = { p_school: M.state.school, p_date: M.state.date };
     const [sum, cls, list, dis] = await Promise.all([
-      sb.rpc('v2_day_summary', args),
-      sb.rpc('v2_day_classes', args),
-      sb.rpc('v2_day_list', args),
-      canDis() ? sb.rpc('v2_day_dismissals', args) : Promise.resolve({ data: [] }),
+      M.rpc('v2_day_summary', args),
+      M.rpc('v2_day_classes', args),
+      M.rpc('v2_day_list', args),
+      canDis() ? M.rpc('v2_day_dismissals', args) : Promise.resolve({ data: [] }),
     ]);
     const err = sum.error || cls.error || list.error;
     if (err) { showLoadErr('تعذّر جلب اليوم: ' + errText(err)); return; }
@@ -151,7 +151,7 @@
     if (await ask($('arrDlg')) !== 'ok') return;
     if (!$('arrTime').value) { toast('لم يُسجَّل: وقت الوصول مطلوب.'); return; }
     const decision = document.querySelector('input[name=arrDec]:checked').value;
-    const { error } = await sb.rpc('v2_record_arrival', {
+    const { error } = await M.rpc('v2_record_arrival', {
       p_student: r.student_id, p_date: M.state.date, p_arrived: $('arrTime').value,
       p_decision: decision, p_note: $('arrNote').value.trim() || null,
     });
@@ -216,7 +216,7 @@
     $('disReason').value = '';
     if (await ask($('disDlg')) !== 'ok') return;
     if (!$('disTime').value) { toast('لم يُرصد: وقت الخروج مطلوب.'); return; }
-    const { data, error } = await sb.rpc('v2_record_dismissal', {
+    const { data, error } = await M.rpc('v2_record_dismissal', {
       p_student: r.student_id, p_date: M.state.date, p_left: $('disTime').value,
       p_reason: $('disReason').value.trim() || null,
     });

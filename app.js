@@ -26,9 +26,9 @@
     showLoadErr('');
     const args = { p_school: M.state.school, p_date: M.state.date };
     const [sum, cls, list] = await Promise.all([
-      sb.rpc('v2_day_summary', args),
-      sb.rpc('v2_day_classes', args),
-      sb.rpc('v2_day_list', args),
+      M.rpc('v2_day_summary', args),
+      M.rpc('v2_day_classes', args),
+      M.rpc('v2_day_list', args),
     ]);
     const err = sum.error || cls.error || list.error;
     if (err) {
@@ -222,7 +222,7 @@
     if (ui.busy.has(r.student_id)) return;
     ui.busy.add(r.student_id);
     renderList();
-    const { error } = await sb.rpc('v2_record_assembly', {
+    const { error } = await M.rpc('v2_record_assembly', {
       p_student: r.student_id, p_date: M.state.date, p_state: state,
     });
     ui.busy.delete(r.student_id);

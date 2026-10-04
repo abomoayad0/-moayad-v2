@@ -26,7 +26,40 @@
       href: 'suluk.html', allow: (c) => !!c.record_behavior },
   ];
 
-  const state = { school: null, date: null, me: null };
+  const state = { school: null, date: null, me: null, screen: null };
+
+  // ---------- كاشف الأخطاء ----------
+  // كل خطأ يُعرض للمستخدم كما هو، ويُسجَّل معه عبر v2_log_error.
+  // (وتسجيل الجسور لأخطائها يُنقض مع نقض الطلب، فالتسجيل من الشاشة هو الذي يبقى.)
+  function logError(x) {
+    try {
+      sb.rpc('v2_log_error', { p: Object.assign({
+        screen: state.screen, url: location.href, ua: navigator.userAgent, source: 'screen',
+      }, x) }).then(() => {}, () => {});
+    } catch (e) { /* لا يُكسر شيء بسبب التسجيل */ }
+  }
+
+  // استدعاء جسر: يُرجع { data, error } كما هو، ويُسجّل الفشل
+  async function rpc(fn, args, action) {
+    let res;
+    try { res = await sb.rpc(fn, args); } catch (e) { res = { data: null, error: { message: String(e && e.message || e) } }; }
+    if (res.error) {
+      logError({
+        message: res.error.message, fn, action: action || fn, params: args || null,
+        sqlstate: res.error.code || null, detail: res.error.details || null, hint: res.error.hint || null,
+        kind: res.error.code === 'P0001' ? 'guard' : 'error',
+      });
+    }
+    return res;
+  }
+
+  window.addEventListener('error', (e) => {
+    logError({ message: e.message || 'خطأ في الشاشة', action: 'js', params: { file: e.filename, line: e.lineno, col: e.colno }, kind: 'error' });
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    const r = e.reason;
+    logError({ message: String(r && r.message || r), action: 'js-promise', kind: 'error' });
+  });
 
   function store(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* لا شيء */ } }
   function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -83,14 +116,14 @@
 
   // ---------- الهوية ----------
   async function loadMe() {
-    const { data, error } = await sb.rpc('v2_me');
+    const { data, error } = await rpc('v2_me', undefined, 'جلب الحساب');
     if (error) throw error;
     return data || null;
   }
 
   // مرّة بعد الدخول وقبل v2_me: تُفرض صفة إن لم تكن مختارة، ولا يتغيّر شيء إن كانت
   async function defaultRole() {
-    const { error } = await sb.rpc('v2_default_role');
+    const { error } = await rpc('v2_default_role', undefined, 'فرض الصفة');
     if (error) throw error;
   }
 
@@ -163,7 +196,7 @@
 
   // تبديل الصفة: v2_act_as ثم v2_me من جديد — فـ can تتغيّر والشريط يُبنى من جديد
   async function actAs(r) {
-    const { data, error } = await sb.rpc('v2_act_as', { p_role: r.role_key, p_school: r.school_id || null });
+    const { data, error } = await rpc('v2_act_as', { p_role: r.role_key, p_school: r.school_id || null }, 'تبديل الصفة');
     if (error) { toast('لم تُبدَّل الصفة:\n' + errText(error)); return null; }
     toast(data || 'بُدّلت الصفة.', true);
     return loadMe();
@@ -183,6 +216,7 @@
   function start(opts) {
     const onChange = opts.onChange;
     const screen = SCREENS.find((x) => x.key === opts.screen);
+    state.screen = opts.screen;
 
     $('toast').addEventListener('click', () => { $('toast').hidden = true; });
     $('logout').addEventListener('click', signOut);
@@ -253,7 +287,7 @@
   }
 
   window.Moayad = {
-    sb, $, state, SCREENS, DAY_KIND_AR, toast, errText, ltr, el, showLoadErr, renderDates,
+    sb, rpc, logError, $, state, SCREENS, DAY_KIND_AR, toast, errText, ltr, el, showLoadErr, renderDates,
     loadMe, defaultRole, screensFor, renderHeader, renderNav, actAs, gate, signOut, start,
   };
 })();

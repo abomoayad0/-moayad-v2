@@ -5,6 +5,7 @@
 
   const M = window.Moayad;
   const { sb, $, el, errText } = M;
+  M.state.screen = 'entry';
 
   function showLogin() {
     $('loginView').hidden = false;

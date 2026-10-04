@@ -1,7 +1,7 @@
 // مؤيّد · رصد المخالفات السلوكية — الفصل ثم الطالب ثم المخالفة، ثم المهامّ المولَّدة.
 // الدرجة والخطوة والإجراء والمهامّ كلها من القاعدة:
 // v2_day_summary · v2_day_classes · v2_day_list · v2_conduct_list · v2_record_behavior
-// v2_task_done · v2_task_skip
+// ومهامّ الطالب وإغلاقها بإثبات في tasks.js
 (function () {
   'use strict';
 
@@ -12,7 +12,6 @@
 
   // رموز القاعدة بأسمائها — للعرض فقط
   const SCOPE_AR = { primary: 'ابتدائي', intermediate_secondary: 'متوسط وثانوي', all: 'الجميع' };
-  const TASK_AR = { open: 'مفتوحة', done: 'نُفّذت', skipped: 'أُسقطت' };
 
   function ask(dlg) {
     return new Promise((resolve) => {
@@ -37,11 +36,11 @@
     showLoadErr('');
     const args = { p_school: M.state.school, p_date: M.state.date };
     const [sum, cls, list, probs] = await Promise.all([
-      sb.rpc('v2_day_summary', args),
-      sb.rpc('v2_day_classes', args),
-      sb.rpc('v2_day_list', args),
+      M.rpc('v2_day_summary', args),
+      M.rpc('v2_day_classes', args),
+      M.rpc('v2_day_list', args),
       ui.problems ? Promise.resolve({ data: ui.problems })
-        : sb.rpc('v2_conduct_list', { p_stage: null, p_mode: 'onsite', p_target: 'general' }),
+        : M.rpc('v2_conduct_list', { p_stage: null, p_mode: 'onsite', p_target: 'general' }),
     ]);
     const err = sum.error || cls.error || list.error || probs.error;
     if (err) { showLoadErr('تعذّر الجلب: ' + errText(err)); return; }
@@ -145,7 +144,7 @@
     if (await ask($('recDlg')) !== 'ok') return;
 
     const period = $('recPeriod').value ? Number($('recPeriod').value) : null;
-    const { data, error } = await sb.rpc('v2_record_behavior', {
+    const { data, error } = await M.rpc('v2_record_behavior', {
       p_student: r.student_id, p_problem: p.id,
       p_place: $('recPlace').value.trim() || null, p_note: $('recNote').value.trim() || null,
       p_period: period, p_victim: null,
@@ -154,12 +153,19 @@
     });
     if (error) { toast('لم تُرصد المخالفة:\n' + errText(error)); return; }
     ui.prob = p;
-    ui.tasks = (data && data.tasks) || [];
+    showTasks('رُصدت المخالفة', 'الدرجة ' + p.degree_no + ': ' + p.text_ar);
+    toast('رُصدت المخالفة — ولّدت ' + (((data && data.tasks) || []).length) + ' مهمّة.', true);
+  }
+
+  // مهامّ الطالب كلها من القاعدة — وإغلاقها بإثبات
+  function showTasks(title, sub) {
+    const r = ui.stu;
+    $('resTitle').textContent = title;
     $('resWho').textContent = (r.display_name || r.full_name) + ' — ' + ui.cls.label_ar;
-    $('resProb').textContent = 'الدرجة ' + p.degree_no + ': ' + p.text_ar;
-    renderTasks();
-    toast('رُصدت المخالفة.', true);
+    $('resProb').textContent = sub || '';
+    $('resProb').hidden = !sub;
     step(4);
+    window.MoayadTasks.render($('tasks'), r.student_id);
   }
 
   $('recSeizure').addEventListener('change', () => {
@@ -167,57 +173,12 @@
     if (!$('recSeizure').checked) $('recLegal').checked = false;
   });
 
-  // ---------- ٤ المهامّ ----------
-  function renderTasks() {
-    const box = $('tasks');
-    box.textContent = '';
-    if (ui.tasks.length === 0) box.appendChild(el('div', 'empty', 'لم تُولَّد مهامّ.'));
-    for (const t of ui.tasks) {
-      const c = el('div', 'ev task t-' + t.status);
-      const top = el('div', 'row1');
-      top.append(el('div', 'detail', t.text), el('span', 'badge b-' + (t.status === 'open' ? 'late' : t.status === 'done' ? 'present' : 'unrecorded'), TASK_AR[t.status] || t.status));
-      c.appendChild(top);
-      c.appendChild(el('div', 'meta', 'المسؤول: ' + (t.owner || '—')));
-      if (t.status === 'open') {
-        const acts = el('div', 'acts two');
-        const ok = el('button', 'a-accept', 'نُفّذت');
-        ok.type = 'button';
-        ok.addEventListener('click', () => taskDone(t));
-        const no = el('button', 'a-reject', 'إسقاط بسبب');
-        no.type = 'button';
-        no.addEventListener('click', () => taskSkip(t));
-        acts.append(ok, no);
-        c.appendChild(acts);
-      }
-      box.appendChild(c);
-    }
-  }
-
-  async function taskDone(t) {
-    const { error } = await sb.rpc('v2_task_done', { p_task: t.id, p_note: null });
-    if (error) { toast('لم تُسجَّل المهمّة:\n' + errText(error)); return; }
-    t.status = 'done'; // ما أكّدته القاعدة بلا خطأ
-    renderTasks();
-  }
-
-  $('skipReason').addEventListener('input', () => { $('skipOk').disabled = $('skipReason').value.trim() === ''; });
-
-  async function taskSkip(t) {
-    $('skipTask').textContent = t.text;
-    $('skipReason').value = '';
-    $('skipOk').disabled = true;
-    if (await ask($('skipDlg')) !== 'ok') return;
-    const { error } = await sb.rpc('v2_task_skip', { p_task: t.id, p_reason: $('skipReason').value.trim() });
-    if (error) { toast('لم تُسقَط المهمّة:\n' + errText(error)); return; }
-    t.status = 'skipped'; // ما أكّدته القاعدة بلا خطأ
-    renderTasks();
-  }
-
   // ---------- التنقّل ----------
   $('backClass').addEventListener('click', () => step(1));
   $('backStudent').addEventListener('click', () => { renderStudents(); step(2); });
   $('againStudent').addEventListener('click', () => { renderStudents(); step(2); });
   $('againClass').addEventListener('click', () => step(1));
+  $('stuTasks').addEventListener('click', () => showTasks('مهامّ الطالب', ''));
   $('qStu').addEventListener('input', renderStudents);
   $('qProb').addEventListener('input', renderProblems);
 

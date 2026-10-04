@@ -54,9 +54,9 @@
     showLoadErr('');
     const args = { p_school: M.state.school, p_date: M.state.date };
     const [sum, cls, log] = await Promise.all([
-      sb.rpc('v2_day_summary', args),
-      sb.rpc('v2_day_classes', args),
-      sb.rpc('v2_day_log', args),
+      M.rpc('v2_day_summary', args),
+      M.rpc('v2_day_classes', args),
+      M.rpc('v2_day_log', args),
     ]);
     const err = sum.error || cls.error || log.error;
     if (err) { showLoadErr('تعذّر جلب اليوم: ' + errText(err)); return; }
@@ -69,7 +69,7 @@
   async function refreshExcuses() {
     if (!M.state.school) return;
     if (!M.state.me.can.decide_excuse) { $('excusePanel').hidden = true; return; }
-    const { data, error } = await sb.rpc('v2_pending_excuses', { p_school: M.state.school });
+    const { data, error } = await M.rpc('v2_pending_excuses', { p_school: M.state.school });
     if (error) { showLoadErr('تعذّر جلب الأعذار: ' + errText(error)); return; }
     ui.excuses = data || [];
     renderExcuses();
@@ -193,7 +193,7 @@
     if (await ask($('confirmClose')) !== 'ok') return;
 
     $('closeBtn').disabled = true;
-    const { data, error } = await sb.rpc('v2_close_day', { p_school: M.state.school, p_date: M.state.date });
+    const { data, error } = await M.rpc('v2_close_day', { p_school: M.state.school, p_date: M.state.date });
     $('closeBtn').disabled = false;
     if (error) { toast('لم يُقفل اليوم:\n' + errText(error)); return; }
     ui.lastResult = { kind: 'close', date: M.state.date, school: M.state.school, data: (data && data[0]) || {} };
@@ -212,7 +212,7 @@
     if (await ask($('confirmReopen')) !== 'ok') return;
 
     $('reopenBtn').disabled = true;
-    const { data, error } = await sb.rpc('v2_reopen_day', {
+    const { data, error } = await M.rpc('v2_reopen_day', {
       p_school: M.state.school, p_date: M.state.date, p_reason: reason,
     });
     if (error) {
@@ -302,7 +302,7 @@
     if (await ask($('decideDlg')) !== 'ok') return;
 
     const note = $('decideNote').value.trim();
-    const { data, error } = await sb.rpc('v2_decide_excuse', {
+    const { data, error } = await M.rpc('v2_decide_excuse', {
       p_claim: x.claim_id, p_accept: accept, p_note: note || null, p_principal_ext: $('decideExt').checked,
     });
     if (error) { toast('لم يُبتّ في العذر:\n' + errText(error)); return; }

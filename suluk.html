@@ -63,6 +63,7 @@
       <button type="button" class="back" id="backStudent">→ الطلاب</button>
       <h2 id="stuTitle"></h2>
     </div>
+    <button type="button" class="btn-ghost wide" id="stuTasks">مهامّ هذا الطالب</button>
     <div class="filters" id="degrees" role="group" aria-label="الدرجة"></div>
     <input id="qProb" type="search" placeholder="ابحث في نصّ المخالفة" aria-label="بحث في المخالفات">
     <div id="problems"></div>
@@ -71,10 +72,9 @@
   <!-- ٤ — المهامّ المولَّدة -->
   <section id="result" hidden>
     <div class="panel">
-      <h2 class="ph">رُصدت المخالفة</h2>
+      <h2 class="ph" id="resTitle">رُصدت المخالفة</h2>
       <p id="resWho" class="name"></p>
       <p id="resProb" class="detail"></p>
-      <h3 class="grp">المهامّ المولَّدة</h3>
       <div id="tasks"></div>
     </div>
     <div class="dlg-acts">
@@ -107,25 +107,13 @@
   </form>
 </dialog>
 
-<!-- إسقاط مهمّة -->
-<dialog id="skipDlg">
-  <form method="dialog">
-    <h3>إسقاط المهمّة</h3>
-    <p id="skipTask" class="quote"></p>
-    <label for="skipReason">السبب — إلزامي</label>
-    <textarea id="skipReason" rows="3"></textarea>
-    <div class="dlg-acts">
-      <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
-      <button value="ok" type="submit" class="btn-danger" id="skipOk" disabled>أسقطها</button>
-    </div>
-  </form>
-</dialog>
 
 <div class="toast" id="toast" hidden></div>
 
 <script src="vendor/supabase-2.117.2.js"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
+<script src="tasks.js"></script>
 <script src="suluk.js"></script>
 </body>
 </html>
