@@ -321,3 +321,11 @@
   .ev.meeting.st-approved .mstatus { background: var(--ok-bg); color: var(--ok); }
   .ev.meeting.st-cancel { opacity: .55; }
   #cView .btn-main { margin: 8px 0; }
+
+/* الموجّه الطلابي */
+  .ev.kcase.k-open .kstate { background: var(--warn-bg); color: var(--warn); }
+  .ev.kcase.k-done .kstate { background: var(--ok-bg); color: var(--ok); }
+  table.kvt { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.kvt th, table.kvt td { border-bottom: 1px solid var(--line); padding: 6px 4px; text-align: start; vertical-align: top; }
+  table.kvt th { width: 36%; color: var(--muted); font-weight: 600; }
+  #caseBox textarea { margin-bottom: 4px; }

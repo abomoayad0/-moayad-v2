@@ -26,6 +26,9 @@
       href: 'suluk.html', allow: (c) => !!c.record_behavior },
     { key: 'errors', title: 'لوحة الأخطاء', desc: 'ما سجّلته الشاشات والجسور — الأعطاب والحرّاس',
       href: 'errors.html', allow: (c) => !!c.view_errors },
+    // ولا مفتاحَ للموجّه في can بعد — فتظهر في الشريط حين يُضاف counsel، والقاعدةُ تحرس السرّ
+    { key: 'counsel', title: 'الموجّه الطلابي', desc: 'مؤشّر متابعة الحالات · دراسة الحالة والجلسات والتقرير',
+      href: 'counsel.html', allow: (c) => !!c.counsel },
     // ولا مفتاحَ للّجان في can بعد — فتظهر في الشريط حين يُضاف committees، والقاعدةُ تحرس كلّ فعل
     { key: 'committees', title: 'اللجان', desc: 'المجلس · الاجتماعات · المحاضر',
       href: 'committees.html', allow: (c) => !!c.committees },
