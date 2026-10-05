@@ -299,7 +299,10 @@
       const tl = it.tally || {};
       r.appendChild(el('div', 'meta', 'صوّت ' + (it.vote_count || 0) + ' من ' + (it.voters_total || 0) +
         ' · موافق ' + (tl['موافق'] || 0) + ' · مخالف ' + (tl['مخالف'] || 0) + ' · ممتنع ' + (tl['ممتنع'] || 0)));
-      for (const v of it.votes || []) r.appendChild(el('div', 'vote', v.name + ': ' + v.vote + (v.note ? ' — ' + v.note : '')));
+      for (const v of it.votes || []) {
+        r.appendChild(el('div', 'vote', v.name + ': ' + v.vote + (v.note ? ' — ' + v.note : '')));
+        if (v.prev_vote) r.appendChild(el('div', 'vote prev', 'بدّل صوتَه من «' + v.prev_vote + '»' + (v.change_note ? ' — ' + v.change_note : '') + (v.changed_at ? ' · ' + String(v.changed_at).slice(0, 10) : '')));
+      }
       if (it.body) r.appendChild(el('div', 'detail', 'المناقشة: ' + it.body));
       if (it.decision) r.appendChild(el('div', 'detail', 'القرار: ' + it.decision));
       if (it.recommend) r.appendChild(el('div', 'detail', 'التوصيات: ' + it.recommend + (it.due ? ' · الموعد ' + it.due : '')));
@@ -409,11 +412,19 @@
 
   async function vote(it, v) {
     let note = null;
+    let change = null;
+    // تبديلُ صوتٍ سبق يطلب سبباً مكتوباً — والأوّلُ يبقى في المحضر
+    const mine = (it.votes || []).find((x) => x.person_id && ui.me && x.person_id === ui.me.person_id);
+    if (mine && mine.vote === v) { toast('صوّتَّ «' + v + '» سلفاً.'); return; }
+    if (mine) {
+      change = await reason('تبديل الصوت', 'من «' + mine.vote + '» إلى «' + v + '»', 'سببُ التبديل — يُثبت في المحضر');
+      if (change == null) return;
+    }
     if (v === 'مخالف') {
       note = await reason('مخالفة القرار', it.title || '', 'رأيك المخالف — يُثبت في المحضر');
       if (note == null) return;
     }
-    const { error } = await M.rpc('v2_meeting_vote', { p_item: it.id, p_vote: v, p_note: note }, 'تصويت');
+    const { error } = await M.rpc('v2_meeting_vote', { p_item: it.id, p_vote: v, p_note: note, p_change_note: change }, 'تصويت');
     if (error) { toast('لم يُسجَّل صوتك:\n' + errText(error)); return; }
     toast('سُجّل صوتك: ' + v, true);
     await loadMeetings();

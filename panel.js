@@ -81,6 +81,7 @@
   function inputFor(v) {
     const c = document.createElement('input');
     if (typeof v === 'boolean') { c.type = 'checkbox'; c.checked = v; return c; }
+    if (typeof v === 'number') { c.type = 'number'; c.value = String(v); return c; }
     c.type = typeof v === 'string' && /^\d\d:\d\d(:\d\d)?$/.test(v) ? 'time' : 'text';
     if (c.type === 'time') c.step = 60;
     c.value = v == null ? '' : String(v);
@@ -89,6 +90,7 @@
   function valueOf(c, orig) {
     if (c.type === 'checkbox') return c.checked;
     const v = c.value.trim();
+    if (c.type === 'number') return v === '' ? null : Number(v);
     if (c.type === 'time' && typeof orig === 'string' && orig.length === 8 && v.length === 5) return v + ':00';
     return v === '' ? null : v;
   }
@@ -104,12 +106,18 @@
     const labels = (data && data.cols_ar) || {};
     if (!rows.length) { box.appendChild(el('div', 'empty', 'لا صفوف.')); return; }
     for (const row of rows) {
+      // معرّف الصفّ في __id (وفي id قديماً) — وما سوى الأعمدة المسموحة سياقٌ يُقرأ ولا يُكتب
+      const rid = row.__id != null ? row.__id : row.id;
       const card = el('div', 'prow');
+      const ctx = Object.keys(row).filter((k) => k !== '__id' && k !== 'id' && !cols.includes(k));
+      if (ctx.length) {
+        card.appendChild(el('div', 'pctx', ctx.map((k) => (labels[k] || k) + ': ' + (row[k] == null ? '—' : row[k])).join(' · ')));
+      }
       const ctl = {};
       for (const k of cols) {
         const lab = el('label', null, labels[k] || k);
         const c = inputFor(row[k]);
-        c.id = 'pr_' + row.id + '_' + k;
+        c.id = 'pr_' + rid + '_' + k;
         lab.htmlFor = c.id;
         ctl[k] = c;
         card.append(lab, c);
@@ -124,7 +132,7 @@
           if (v !== row[k] && !(v == null && row[k] == null)) patch[k] = v;
         }
         if (!Object.keys(patch).length) { toast('لم يتغيّر شيء في هذا الصفّ.'); return; }
-        const { error: e2 } = await M.rpc('v2_setting_update', { p_key: r.key, p_id: row.id, p_patch: patch }, 'تعديل ' + r.label_ar);
+        const { error: e2 } = await M.rpc('v2_setting_update', { p_key: r.key, p_id: String(rid), p_patch: patch }, 'تعديل ' + r.label_ar);
         if (e2) { toast('لم يُحفظ:\n' + errText(e2)); return; }
         toast('حُفظ في «' + r.label_ar + '».', true);
         openRows(r, box);

@@ -329,3 +329,5 @@
   table.kvt th, table.kvt td { border-bottom: 1px solid var(--line); padding: 6px 4px; text-align: start; vertical-align: top; }
   table.kvt th { width: 36%; color: var(--muted); font-weight: 600; }
   #caseBox textarea { margin-bottom: 4px; }
+  .pctx { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .vote.prev { color: var(--warn); font-size: 12.5px; }
