@@ -26,6 +26,9 @@
       href: 'suluk.html', allow: (c) => !!c.record_behavior },
     { key: 'errors', title: 'لوحة الأخطاء', desc: 'ما سجّلته الشاشات والجسور — الأعطاب والحرّاس',
       href: 'errors.html', allow: (c) => !!c.view_errors },
+    // ولا مفتاحَ للّجان في can بعد — فتظهر في الشريط حين يُضاف committees، والقاعدةُ تحرس كلّ فعل
+    { key: 'committees', title: 'اللجان', desc: 'المجلس · الاجتماعات · المحاضر',
+      href: 'committees.html', allow: (c) => !!c.committees },
     // ولا مفتاحَ للّوحة في can بعد — فتظهر في الشريط حين يُضاف manage_settings، والقاعدةُ تحرس الدخول
     { key: 'panel', title: 'لوحة التحكّم', desc: 'أبواب الإعداد — المقفلُ بسببه وسنده',
       href: 'panel.html', allow: (c) => !!c.manage_settings },

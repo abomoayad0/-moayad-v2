@@ -291,3 +291,20 @@
   .prow label { margin: 6px 0 2px; font-size: 13px; }
   .prow input[type=text], .prow input[type=time] { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; box-sizing: border-box; }
   .prow .btn-accept.wide { width: 100%; min-height: 40px; border-radius: 10px; margin-top: 8px; font-weight: 700; }
+
+/* اللجان */
+  .seatline { font-weight: 700; color: var(--navy); margin: 6px 0; }
+  .ev.seat.empty-seat { border-color: var(--danger); }
+  .holder { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 6px; font-size: 14px; }
+  .holder .rowdel { background: #fff; color: var(--danger); border: 1px solid var(--danger); border-radius: 8px; padding: 4px 10px; font-weight: 700; }
+  .meta.src { margin-top: 10px; }
+  .acts.three { grid-template-columns: 1fr 1fr 1fr; }
+  .acts.three button.on { background: var(--navy); color: #fff; border-color: transparent; }
+  .novote { color: var(--danger); font-weight: 700; font-size: 13px; margin-top: 6px; }
+  .vote { font-size: 13px; margin-top: 3px; }
+  .ev.meeting .mstatus { background: #eceff1; color: #455a64; }
+  .ev.meeting.st-held .mstatus { background: #fff4d6; color: #7a5a00; }
+  .ev.meeting.st-minuted .mstatus { background: #e5eef7; color: #2a5d8c; }
+  .ev.meeting.st-approved .mstatus { background: #dff3ea; color: #0d6b45; }
+  .ev.meeting.st-cancel { opacity: .55; }
+  #cView .btn-main { margin: 8px 0; }

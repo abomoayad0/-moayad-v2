@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مؤيّد · اللجان</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>مؤيّد · اللجان</h1>
+    <div class="who" id="who"></div>
+  </div>
+  <div class="hdr-acts">
+    <button id="logout" class="hbtn" type="button">خروج</button>
+  </div>
+</header>
+<nav class="screens" id="screens" aria-label="الشاشات" hidden></nav>
+<div class="testmode" id="testMode" hidden></div>
+<div class="gatebox"><div class="notice err" id="gateErr" hidden></div></div>
+
+<main id="cView" class="wrap" hidden>
+  <div class="seatline" id="seatLine"></div>
+  <label for="committee">اللجنة</label>
+  <select id="committee"></select>
+  <div class="notice err" id="loadErr" hidden></div>
+
+  <div class="filters tabs" role="tablist" id="tabs">
+    <button type="button" role="tab" data-tab="board" aria-pressed="true">مجلس اللجنة</button>
+    <button type="button" role="tab" data-tab="meetings" aria-pressed="false">الاجتماعات</button>
+    <button type="button" role="tab" data-tab="open" aria-pressed="false">اجتماعٌ مفتوح</button>
+    <button type="button" role="tab" data-tab="minutes" aria-pressed="false">المحاضر</button>
+  </div>
+
+  <section id="t_board"></section>
+  <section id="t_meetings" hidden></section>
+  <section id="t_open" hidden></section>
+  <section id="t_minutes" hidden></section>
+</main>
+
+<dialog id="seatDlg"><form method="dialog">
+  <h3 id="seatTitle">إجلاس عضو</h3>
+  <label for="seatPerson">من</label>
+  <select id="seatPerson"></select>
+  <div id="seatNomBox">
+    <label for="seatNom">من اختاره — إلزامي للمقعد المنتخَب</label>
+    <input id="seatNom" type="text" placeholder="قرار مدير المدرسة · التاريخ">
+  </div>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">أجلِسه</button>
+  </div>
+</form></dialog>
+
+<dialog id="reasonDlg"><form method="dialog">
+  <h3 id="reasonTitle"></h3>
+  <p class="quote" id="reasonWhat"></p>
+  <label for="reasonText" id="reasonLabel">السبب — إلزامي</label>
+  <textarea id="reasonText" rows="3"></textarea>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept" id="reasonOk" disabled>تأكيد</button>
+  </div>
+</form></dialog>
+
+<dialog id="callDlg"><form method="dialog">
+  <h3>الدعوة إلى اجتماع</h3>
+  <label for="callKind">نوعه</label>
+  <select id="callKind"><option value="شهري">شهري</option><option value="طارئ">طارئ</option></select>
+  <label for="callOn">التاريخ</label>
+  <input id="callOn" type="date">
+  <label for="callAt">الساعة</label>
+  <input id="callAt" type="time">
+  <label for="callPlace">المكان</label>
+  <input id="callPlace" type="text">
+  <label for="callAgenda">جدول الأعمال — إلزامي</label>
+  <textarea id="callAgenda" rows="3"></textarea>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept" id="callOk" disabled>ادعُ</button>
+  </div>
+</form></dialog>
+
+<dialog id="inviteDlg"><form method="dialog">
+  <h3>استدعاء من ليس عضواً</h3>
+  <p class="hint">يشارك في المناقشة ولا يصوّت على قرارات اللجنة — ص١٩</p>
+  <label for="invKind">من</label>
+  <select id="invKind"><option value="منسوب">منسوب</option><option value="طالب">طالب</option></select>
+  <label for="invWho">الاسم — من السجلّ</label>
+  <select id="invWho"></select>
+  <label for="invNote">سبب الاستدعاء</label>
+  <textarea id="invNote" rows="2"></textarea>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">استدعِ</button>
+  </div>
+</form></dialog>
+
+<dialog id="itemDlg"><form method="dialog">
+  <h3>بندٌ في جدول الأعمال</h3>
+  <label for="itemKind">نوعه</label>
+  <select id="itemKind"><option value="عام">عام</option><option value="طالب">طالب</option><option value="فرصة">فرصة</option><option value="تقرير">تقرير</option></select>
+  <label for="itemTitle">عنوانه</label>
+  <input id="itemTitle" type="text">
+  <div id="itemStuBox" hidden>
+    <label for="itemStu">الطالب — من السجلّ</label>
+    <select id="itemStu"></select>
+  </div>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">أضِف البند</button>
+  </div>
+</form></dialog>
+
+<dialog id="closeDlg"><form method="dialog">
+  <h3>قفل البند</h3>
+  <p class="quote" id="closeWhat"></p>
+  <label for="closeBody">ما دار من مناقشة — إلزامي</label>
+  <textarea id="closeBody" rows="3"></textarea>
+  <label for="closeDecision">القرار — إلزامي</label>
+  <textarea id="closeDecision" rows="2"></textarea>
+  <label for="closeRec">التوصيات ومن ينفّذها</label>
+  <textarea id="closeRec" rows="2"></textarea>
+  <label for="closeOwner">المنفّذ</label>
+  <select id="closeOwner"></select>
+  <label for="closeDue">الموعد</label>
+  <input id="closeDue" type="date">
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept" id="closeOk" disabled>اقفل البند</button>
+  </div>
+</form></dialog>
+
+<dialog id="minuteDlg"><form method="dialog">
+  <h3>توثيق المحضر</h3>
+  <label for="minuteEnd">انتهى الاجتماع الساعة</label>
+  <input id="minuteEnd" type="time">
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">وثّق</button>
+  </div>
+</form></dialog>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="vendor/supabase-2.117.2.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="committees.js"></script>
+</body>
+</html>
