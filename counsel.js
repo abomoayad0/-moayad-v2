@@ -199,7 +199,7 @@
     box.textContent = '';
     box.appendChild(el('h2', 'ph', 'السجلّ الزمنيّ للطالب'));
     if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
-    box.appendChild(el('div', 'meta', 'تنظر بصفة: ' + ((data && data.as) || '—')));
+    box.appendChild(el('div', 'meta', 'تنظر بصفة: ' + ((data && (data.as_ar || data.as)) || '—')));
     const ev = (data && data.events) || [];
     if (!ev.length) box.appendChild(el('div', 'empty', 'لا أحداث.'));
     for (const e of ev) {
