@@ -26,6 +26,9 @@
       href: 'suluk.html', allow: (c) => !!c.record_behavior },
     { key: 'errors', title: 'لوحة الأخطاء', desc: 'ما سجّلته الشاشات والجسور — الأعطاب والحرّاس',
       href: 'errors.html', allow: (c) => !!c.view_errors },
+    // ولا مفتاحَ للتعويض في can بعد — فتظهر حين يُضاف merit، والقاعدةُ تحرس كلّ فعل
+    { key: 'merit', title: 'التعويض والتميّز', desc: 'بنك الفرص · الإقرار · التقدير',
+      href: 'merit.html', allow: (c) => !!c.merit },
     // والقاعدةُ تحرس السرّ وراء counsel
     { key: 'counsel', title: 'الموجّه الطلابي', desc: 'مؤشّر متابعة الحالات · دراسة الحالة والجلسات والتقرير',
       href: 'counsel.html', allow: (c) => !!c.counsel },

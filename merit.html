@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مؤيّد · التعويض والسلوك المتميّز</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>مؤيّد · التعويض والسلوك المتميّز</h1>
+    <div class="who" id="who"></div>
+  </div>
+  <div class="hdr-acts">
+    <button id="logout" class="hbtn" type="button">خروج</button>
+  </div>
+</header>
+<nav class="screens" id="screens" aria-label="الشاشات" hidden></nav>
+<div class="testmode" id="testMode" hidden></div>
+<div class="gatebox"><div class="notice err" id="gateErr" hidden></div></div>
+
+<main id="mView" class="wrap" hidden>
+  <p class="hint">التعويضُ حقُّ الطالب لا تكليفٌ عليه — «عند رغبته بذلك» · ص١١ بند ١٣.</p>
+  <div class="notice err" id="loadErr" hidden></div>
+
+  <div class="filters tabs" role="tablist" id="tabs">
+    <button type="button" role="tab" data-tab="bank" aria-pressed="true">بنكُ الفرص</button>
+    <button type="button" role="tab" data-tab="verdict" aria-pressed="false">إقرارُ المشاركات</button>
+    <button type="button" role="tab" data-tab="mine" aria-pressed="false">فرصي</button>
+  </div>
+
+  <section id="t_bank"></section>
+  <section id="t_verdict" hidden></section>
+  <section id="t_mine" hidden></section>
+</main>
+
+<dialog id="openDlg"><form method="dialog">
+  <h3>فتحُ فرصة</h3>
+  <label for="oMerit">الممارسة</label>
+  <select id="oMerit"></select>
+  <p class="hint" id="oMeritInfo"></p>
+  <label for="oKind">بابُها</label>
+  <select id="oKind"><option value="منظَّمة">منظَّمة</option><option value="فرديّة">فرديّة</option><option value="آليّة">آليّة</option></select>
+  <label for="oTitle">عنوانها (اختياري)</label>
+  <input id="oTitle" type="text">
+  <label for="oWhen">موعدُها ومكانُها — إلزامي</label>
+  <input id="oWhen" type="text" placeholder="الإذاعة المدرسية · الأحد">
+  <label for="oCap">السعة — فارغةٌ بلا حدّ</label>
+  <input id="oCap" type="number" min="1" inputmode="numeric">
+  <label for="oHeld">من يقيمها</label>
+  <select id="oHeld"></select>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept" id="oOk" disabled>افتحها</button>
+  </div>
+</form></dialog>
+
+<dialog id="reasonDlg"><form method="dialog">
+  <h3 id="reasonTitle"></h3>
+  <p class="quote" id="reasonWhat"></p>
+  <label for="reasonText" id="reasonLabel">السبب — إلزامي</label>
+  <textarea id="reasonText" rows="3"></textarea>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept" id="reasonOk" disabled>تأكيد</button>
+  </div>
+</form></dialog>
+
+<dialog id="delegDlg"><form method="dialog">
+  <h3>إحالةُ الإقرار</h3>
+  <p class="quote" id="delegWhat"></p>
+  <label for="delegTo">إلى من حضر الفرصة</label>
+  <select id="delegTo"></select>
+  <label for="delegNote">السبب — إلزامي</label>
+  <textarea id="delegNote" rows="2"></textarea>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept" id="delegOk" disabled>أحِلها</button>
+  </div>
+</form></dialog>
+
+<dialog id="gradeDlg"><form method="dialog">
+  <h3>تقديرُ الدرجة</h3>
+  <p class="quote" id="gradeWhat"></p>
+  <p class="hint" id="gradeInfo"></p>
+  <label for="gradePts">الدرجة</label>
+  <input id="gradePts" type="number" min="0" step="0.5" inputmode="decimal">
+  <label for="gradeNote">توصيةُ اللجنة — إلزاميّةٌ لما لم يُذكر في الدليل</label>
+  <textarea id="gradeNote" rows="2"></textarea>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">قدّرها</button>
+  </div>
+</form></dialog>
+
+<dialog id="fileDlg"><form method="dialog">
+  <h3>نموذجُ المشاركة</h3>
+  <p class="quote" id="fileWhatFor"></p>
+  <label for="fWhat">ماذا فعلتَ بالتحديد</label>
+  <textarea id="fWhat" rows="3"></textarea>
+  <label for="fFile">الشاهدُ المرفق — ملفٌّ فعليّ</label>
+  <input id="fFile" type="file">
+  <label for="fDesc">وصفُ المرفق</label>
+  <input id="fDesc" type="text">
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept" id="fOk" disabled>ارفع النموذج</button>
+  </div>
+</form></dialog>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="vendor/supabase-2.117.2.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="merit.js"></script>
+</body>
+</html>
