@@ -1,5 +1,5 @@
 // مؤيّد · لوحة التحكّم — أبوابُ الإعداد كما فهرستها القاعدة.
-// v2_settings_catalog · v2_committee_board · v2_committee_quorum · v2_committee_seat_count
+// v2_settings_catalog · v2_setting_rows · v2_setting_update · v2_committee_board · v2_committee_quorum · v2_committee_seat_count
 // المقفلُ يُقرأ بسببه وسنده ولا زرَّ تعديلٍ عليه. ومن يدخل اللوحة تحكم به القاعدة، ورفضُها يُعرض بنصّه.
 (function () {
   'use strict';
@@ -59,14 +59,79 @@
     if (!r.editable && r.locked_why) s.appendChild(el('div', 'detail red', r.locked_why));
     if (r.source_ar) s.appendChild(el('div', 'meta', 'السند: ' + r.source_ar));
     if (r.note_ar) s.appendChild(el('div', 'meta', r.note_ar));
-    if (r.editable) {
-      // لا جسرَ يقرأ صفوف الباب بعد، و v2_setting_update يطلب رقم الصفّ — فالزرّ ينتظره
+    if (r.editable && r.own_bridge) {
+      // الباب الحسّاس له جسره الخاصّ بحرّاسه — لا يُعدَّل من هنا
+      s.appendChild(el('div', 'meta nocan', 'يُدار من جسره الخاصّ' + (r.bridge_ar ? ': ' + r.bridge_ar : '') + ' — لا من التعديل العامّ.'));
+    } else if (r.editable) {
       const b = el('button', 'btn-ghost wide', 'تعديل');
       b.type = 'button';
-      b.disabled = true;
-      s.append(b, el('div', 'meta nocan', 'التعديل ينتظر جسراً يقرأ صفوف هذا الباب من القاعدة.'));
+      const rowsBox = el('div', 'prows');
+      rowsBox.hidden = true;
+      b.addEventListener('click', () => {
+        rowsBox.hidden = !rowsBox.hidden;
+        b.textContent = rowsBox.hidden ? 'تعديل' : 'أغلق';
+        if (!rowsBox.hidden) openRows(r, rowsBox);
+      });
+      s.append(b, rowsBox);
     }
     return s;
+  }
+
+  // ---------- صفوف الباب: الأعمدة المسموحة وحدها كما أرجعتها القاعدة ----------
+  function inputFor(v) {
+    const c = document.createElement('input');
+    if (typeof v === 'boolean') { c.type = 'checkbox'; c.checked = v; return c; }
+    c.type = typeof v === 'string' && /^\d\d:\d\d(:\d\d)?$/.test(v) ? 'time' : 'text';
+    if (c.type === 'time') c.step = 60;
+    c.value = v == null ? '' : String(v);
+    return c;
+  }
+  function valueOf(c, orig) {
+    if (c.type === 'checkbox') return c.checked;
+    const v = c.value.trim();
+    if (c.type === 'time' && typeof orig === 'string' && orig.length === 8 && v.length === 5) return v + ':00';
+    return v === '' ? null : v;
+  }
+
+  async function openRows(r, box) {
+    box.textContent = '';
+    box.appendChild(el('div', 'meta', 'جارٍ جلب الصفوف…'));
+    const { data, error } = await M.rpc('v2_setting_rows', { p_key: r.key, p_school: ui.school }, 'صفوف ' + r.label_ar);
+    box.textContent = '';
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const cols = (data && data.cols) || [];
+    const rows = (data && data.rows) || [];
+    const labels = (data && data.cols_ar) || {};
+    if (!rows.length) { box.appendChild(el('div', 'empty', 'لا صفوف.')); return; }
+    for (const row of rows) {
+      const card = el('div', 'prow');
+      const ctl = {};
+      for (const k of cols) {
+        const lab = el('label', null, labels[k] || k);
+        const c = inputFor(row[k]);
+        c.id = 'pr_' + row.id + '_' + k;
+        lab.htmlFor = c.id;
+        ctl[k] = c;
+        card.append(lab, c);
+      }
+      const save = el('button', 'btn-accept wide', 'احفظ هذا الصفّ');
+      save.type = 'button';
+      save.addEventListener('click', async () => {
+        // يُرسل ما تغيّر وحده
+        const patch = {};
+        for (const k of cols) {
+          const v = valueOf(ctl[k], row[k]);
+          if (v !== row[k] && !(v == null && row[k] == null)) patch[k] = v;
+        }
+        if (!Object.keys(patch).length) { toast('لم يتغيّر شيء في هذا الصفّ.'); return; }
+        const { error: e2 } = await M.rpc('v2_setting_update', { p_key: r.key, p_id: row.id, p_patch: patch }, 'تعديل ' + r.label_ar);
+        if (e2) { toast('لم يُحفظ:\n' + errText(e2)); return; }
+        toast('حُفظ في «' + r.label_ar + '».', true);
+        openRows(r, box);
+      });
+      card.appendChild(save);
+      box.appendChild(card);
+    }
   }
 
   // ---------- اللجان: النصاب وسعة المقعد المنتخَب ----------
@@ -112,7 +177,7 @@
     if (await ask($('quorumDlg')) !== 'ok') return;
     const v = $('qMin').value.trim();
     const { error } = await M.rpc('v2_committee_quorum',
-      { p_committee: c.key, p_min: v === '' ? null : Number(v), p_note: $('qNote').value.trim() || null }, 'ضبط النصاب');
+      { p_school: ui.school, p_committee: c.key, p_min: v === '' ? null : Number(v), p_note: $('qNote').value.trim() || null }, 'ضبط النصاب');
     if (error) { toast('لم يُضبط النصاب:\n' + errText(error)); return; }
     toast('ضُبط نصاب ' + (c.label || c.key) + '.', true);
     loadCommittees();
@@ -125,7 +190,7 @@
     $('sOk').disabled = true;
     if (await ask($('seatDlg')) !== 'ok') return;
     const { error } = await M.rpc('v2_committee_seat_count', {
-      p_committee: c.key, p_seat_role: s.role, p_count: Number($('sCount').value), p_reason: $('sReason').value.trim(),
+      p_school: ui.school, p_committee: c.key, p_seat_role: s.role, p_count: Number($('sCount').value), p_reason: $('sReason').value.trim(),
     }, 'تعديل سعة مقعد');
     if (error) { toast('لم تُعدَّل السعة:\n' + errText(error)); return; }
     toast('عُدّلت السعة.', true);

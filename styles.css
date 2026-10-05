@@ -286,3 +286,8 @@
   .pgroup .psec .meta, .pgroup .psec .detail { font-size: 13px; margin-top: 4px; }
   .pgroup .psec .btn-ghost.wide { margin: 8px 0 0; }
   .ptool { margin-top: 12px; }
+  .prows { margin-top: 8px; }
+  .prow { border: 1px dashed var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; }
+  .prow label { margin: 6px 0 2px; font-size: 13px; }
+  .prow input[type=text], .prow input[type=time] { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; box-sizing: border-box; }
+  .prow .btn-accept.wide { width: 100%; min-height: 40px; border-radius: 10px; margin-top: 8px; font-weight: 700; }
