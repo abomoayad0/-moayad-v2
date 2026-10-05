@@ -1,0 +1,2561 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مؤيّد — جرّب الرصد</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);
+ padding-bottom:env(safe-area-inset-bottom,0px);
+ --bg:#f6f7f8;--card:#fff;--ink:#15445a;--mute:#6b7a83;--line:#e3e8ea;
+ --brand:#07a869;--warn:#b8860b;--bad:#c0392b;--soft:#f0f4f3;--chip:#eef2f4;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+ --bg:#0f1417;--card:#161d21;--ink:#e8eef1;--mute:#93a3ac;--line:#242e34;
+ --soft:#17251f;--chip:#1b2429;}}
+:root[data-theme="dark"]{--bg:#0f1417;--card:#161d21;--ink:#e8eef1;--mute:#93a3ac;
+ --line:#242e34;--soft:#17251f;--chip:#1b2429;}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;font-size:15px;line-height:1.75;
+ -webkit-text-size-adjust:100%}
+.wrap{max-width:720px;margin:0 auto;padding:0 14px 60px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--bg);
+ padding-top:12px;border-bottom:1px solid var(--line)}
+h1{font-size:18px;margin:0 0 2px;font-weight:700;letter-spacing:-.2px}
+.sub{color:var(--mute);font-size:12.5px;margin:0 0 10px}
+nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;border:1px solid var(--line);background:var(--card);color:var(--mute);
+ font-family:inherit;font-size:13px;font-weight:600;padding:7px 12px;border-radius:999px;cursor:pointer}
+nav button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+nav .n{display:inline-block;min-width:16px;height:16px;line-height:16px;border-radius:999px;
+ background:var(--bad);color:#fff;font-size:10px;margin-inline-start:5px;padding:0 4px}
+nav .n[hidden]{display:none}
+.role{display:flex;align-items:center;gap:8px;margin:14px 0 2px;font-size:12.5px;color:var(--mute)}
+.role b{color:var(--ink);font-weight:600}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--brand);flex:0 0 auto}
+section{display:none}section.on{display:block;animation:f .18s ease}
+@keyframes f{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+.card h3{margin:0 0 3px;font-size:15px;font-weight:700}
+.meta{color:var(--mute);font-size:12.5px;margin:0 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{background:var(--chip);border-radius:999px;padding:3px 10px;font-size:11.5px;color:var(--mute);font-weight:500}
+.chip.g{background:var(--soft);color:var(--brand)}
+.chip.w{background:#fdf4e3;color:var(--warn)}
+.chip.r{background:#fdeeec;color:var(--bad)}
+@media (prefers-color-scheme:dark){
+ :root:not([data-theme="light"]) .chip.w{background:#2a2213}
+ :root:not([data-theme="light"]) .chip.r{background:#2a1715}}
+.step{border-right:3px solid var(--line);padding:2px 12px 2px 0;margin:13px 0}
+.step.now{border-color:var(--brand)}.step.done{border-color:var(--chip);opacity:.78}
+.step.soon{opacity:.42}
+.step h4{margin:0 0 2px;font-size:13.5px;font-weight:700}
+.step p{margin:0;font-size:12.5px;color:var(--mute)}
+ul.acts{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+ul.acts li{display:flex;align-items:center;gap:8px;font-size:13px;background:var(--bg);
+ border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.tick{width:18px;height:18px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;
+ font-size:10px;font-weight:700;background:var(--chip);color:var(--mute)}
+.tick.ok{background:var(--brand);color:#fff}
+.tick.no{background:transparent;border:1.5px dashed var(--line)}
+li .who{margin-inline-start:auto;font-size:11px;color:var(--mute);white-space:nowrap}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--bg);font-family:inherit;
+ font-size:13px;font-weight:600;padding:9px 15px;border-radius:10px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.soft{background:var(--chip);border-color:var(--line);color:var(--ink)}
+.btn.big{width:100%;padding:12px;font-size:14px}
+.btn:disabled{opacity:.4;cursor:default}
+.row{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+select,textarea,input[type=text],input[type=number]{width:100%;font-family:inherit;font-size:13.5px;
+ padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);
+ color:var(--ink);margin-top:6px}
+textarea{min-height:60px;resize:vertical}
+input[type=file]{width:100%;font-family:inherit;font-size:12.5px;padding:9px 10px;border:1px dashed var(--line);border-radius:10px;background:var(--bg);color:var(--mute);margin-top:6px}
+label{font-size:12.5px;color:var(--mute);font-weight:600;display:block;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+td{padding:6px 0;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{color:var(--mute);width:42%;padding-inline-end:10px}
+tr:last-child td{border-bottom:0}
+.note{background:var(--soft);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--mute);margin-top:10px}
+.note b{color:var(--ink)}
+.flash{background:var(--soft);border:1px solid var(--brand);border-radius:10px;padding:10px 12px;
+ font-size:13px;margin:10px 0;color:var(--ink)}
+.bar{height:6px;border-radius:999px;background:var(--chip);overflow:hidden;margin:6px 0 4px;display:flex}
+.bar i{display:block;height:100%;background:var(--brand);transition:width .4s}
+.bar i.m{background:var(--warn)}
+.score{display:flex;align-items:baseline;gap:6px}
+.score b{font-size:28px;font-weight:700;letter-spacing:-1px}
+.score span{font-size:12px;color:var(--mute)}
+.empty{color:var(--mute);font-size:13px;text-align:center;padding:18px 0}
+.file{border:1px solid var(--line);border-radius:12px;padding:11px;margin:8px 0;background:var(--bg)}
+.file.sel{border-color:var(--brand);background:var(--soft)}
+.file.tap{cursor:pointer}
+.file h5{margin:0 0 2px;font-size:13.5px;font-weight:700}
+.file p{margin:0;font-size:12px;color:var(--mute)}
+.pick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pick span{border:1px solid var(--line);background:var(--bg);border-radius:999px;
+ padding:5px 11px;font-size:12px;cursor:pointer;user-select:none}
+.pick span.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.pick.pos span.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.pick.ico span{display:flex;flex-direction:column;align-items:center;gap:2px;
+ width:88px;padding:9px 6px;border-radius:12px;font-size:10.5px;line-height:1.35;text-align:center}
+.pick.ico span b{font-size:21px;font-weight:400;line-height:1.1}
+.tip{background:var(--soft);border-radius:10px;padding:9px 11px;font-size:12.5px;
+ color:var(--ink);margin-top:8px;min-height:38px}
+.ib{border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;
+ width:30px;height:30px;border-radius:9px;display:inline-grid;place-items:center;
+ padding:0;margin-inline-start:7px;flex:0 0 auto;transition:.15s}
+.ib:hover,.ib:focus{border-color:var(--brand);color:var(--brand)}
+.ib svg{width:16px;height:16px;display:block}
+.ib.lbl{width:auto;height:auto;padding:7px 12px;gap:7px;
+ display:inline-flex;align-items:center;font-family:inherit;font-size:12.5px;font-weight:600;margin:0}
+.tools{display:flex;gap:6px;flex:0 0 auto}
+.dt{background:var(--soft);border-radius:10px;padding:9px 12px;margin-top:10px;font-size:12.5px}
+.dt.g{border-right:3px solid var(--brand)}
+.dt summary{cursor:pointer;color:var(--mute);list-style:none}
+.dt summary::-webkit-details-marker{display:none}
+.dt summary::after{content:" ⌄";color:var(--mute)}
+.dt[open] summary::after{content:" ⌃"}
+.dt summary b{color:var(--ink)}
+.dtb{margin-top:7px;padding-top:7px;border-top:1px solid var(--line);color:var(--mute);line-height:1.9}
+.dtb b{color:var(--ink)}
+.addrow{display:flex;gap:7px;align-items:stretch;margin-top:6px}
+.addrow input{margin-top:0;flex:1}
+.addrow .btn{flex:0 0 auto;white-space:nowrap}
+.bank{background:var(--soft);border-radius:11px;padding:9px 11px;margin-top:7px}
+.bkh{font-size:11.5px;color:var(--mute);display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.bkh b{color:var(--ink)}
+.bkm{margin-inline-start:auto;border:1px solid var(--line);background:var(--card);
+ color:var(--ink);font-family:inherit;font-size:11px;padding:3px 10px;border-radius:999px;cursor:pointer}
+.bkl{display:flex;flex-direction:column;gap:5px}
+.bkl span{background:var(--card);border:1px solid var(--line);border-radius:9px;
+ padding:7px 10px;font-size:12px;line-height:1.7;cursor:pointer;transition:.15s}
+.bkl span:hover{border-color:var(--brand)}
+.lgd{margin-top:5px;display:flex;flex-wrap:wrap;gap:4px}
+.lgd i{font-style:normal;background:var(--chip);border-radius:999px;padding:2px 9px;
+ font-size:10.5px;color:var(--mute);white-space:nowrap}
+.lgd i.p{background:var(--soft);color:var(--brand)}
+.lgd i.k{background:transparent;padding:2px 0;color:var(--ink);font-weight:600}
+.hd{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.hd h3{margin:0}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:none;
+ align-items:flex-end;justify-content:center}
+.modal.on{display:flex}
+.sheet{background:var(--card);width:100%;max-width:720px;border-radius:16px 16px 0 0;
+ padding:16px 14px calc(18px + env(safe-area-inset-bottom,0px));max-height:88vh;overflow:auto}
+.sheet h3{margin:0 0 3px;font-size:16px}
+footer{color:var(--mute);font-size:11.5px;text-align:center;margin-top:24px;line-height:1.9}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>مؤيّد — جرّب الرصد</h1>
+  <p class="sub">شادي أحمد الزهراني · السادس الابتدائيّ أ</p>
+  <nav role="tablist">
+    <button role="tab" aria-selected="true" data-t="w">الوكيل <span class="n" id="nw" hidden>0</span></button>
+    <button role="tab" aria-selected="false" data-t="m">الموجّه <span class="n" id="nm" hidden>0</span></button>
+    <button role="tab" aria-selected="false" data-t="c">اللجنة <span class="n" id="nc" hidden>0</span></button>
+    <button role="tab" aria-selected="false" data-t="a">رائد النشاط <span class="n" id="na" hidden>0</span></button>
+    <button role="tab" aria-selected="false" data-t="k">المكلَّف <span class="n" id="nk" hidden>0</span></button>
+    <button role="tab" aria-selected="false" data-t="s">الطالب <span class="n" id="ns" hidden>0</span></button>
+    <button role="tab" aria-selected="false" data-t="g">وليّ الأمر <span class="n" id="ng" hidden>0</span></button>
+  </nav>
+</header>
+<section id="w" class="on"></section>
+<section id="m"></section>
+<section id="c"></section>
+<section id="a"></section>
+<section id="k"></section>
+<section id="s"></section>
+<section id="g"></section>
+<footer>محاكٍ للعرض · يحفظ حالته في جهازك<br>السند: قواعد السلوك والمواظبة ١٤٤٧ · م٥ ص١٦ · ص١٩ · م٦ ص٢٠ · ص١٢ · ص١٣</footer>
+</div>
+<div class="modal" id="mod"><div class="sheet" id="sheet"></div></div>
+
+<script>
+(function(){
+"use strict";
+
+var TX=[
+ ["تهيئةُ الزيّ من الليلة السابقة بمتابعةِ الأسرة","تذكيرٌ ودّيٌّ عند البوّابة قبل الاصطفاف",
+  "تعزيزٌ فوريٌّ في كلّ يومٍ يلتزم فيه","إشراكُه في لجنة متابعة المظهر بالفصل",
+  "تقريرٌ أسبوعيٌّ قصيرٌ لوليّ الأمر","مراجعةٌ بعد أسبوعين"],
+ ["ضبطُ موعد النوم بالاتّفاق مع الأسرة","منبّهٌ قبل موعد الخروج بعشر دقائق",
+  "عرضُ أيّام تأخّره عليه أسبوعيًّا ليرى أثرَ التزامه","تعزيزٌ عند كلّ ثلاثة أيّامٍ متتابعة",
+  "تقريرٌ أسبوعيٌّ لوليّ الأمر","مراجعةٌ بعد أسبوعين"],
+ ["تكليفُه بدورٍ في الاصطفاف يحبّه","توجيهُه إلى مكانه فور دخوله",
+  "تعزيزٌ عند حضوره الاصطفافَ كاملًا","متابعةُ رائد الفصل يوميًّا",
+  "إشعارُ وليّ الأمر أسبوعيًّا","مراجعةٌ بعد أسبوعين"],
+ ["تثبيتُ مكانه في مقدّمة الصفّ قربَ رائده — تقريبًا ومتابعةً لا إشهارًا",
+  "نداؤه باسمه أوّلَ المنادَين ليبادر إلى مكانه",
+  "تعزيزٌ عند وصوله في وقته",
+  "تذكيرُه بآداب الاصطفاف قبل بدئه",
+  "تعزيزٌ عند هدوئه طوال الاصطفاف",
+  "إشعارُ وليّ الأمر أسبوعيًّا · ومراجعةٌ بعد أسبوعين"],
+ ["تنظيمُ انتقاله بين الحصص بلا توقّف","متابعةُ معلّم الحصّة لدخوله",
+  "تعزيزٌ عند الدخول في الوقت","تقليلُ أسباب التأخّر في الممرّ",
+  "تقريرٌ أسبوعيٌّ لوليّ الأمر","مراجعةٌ بعد أسبوعين"],
+ ["تعليمُه صيغةَ الاستئذان وتدريبُه عليها",
+  "الاتّفاق على تناول وجبته في الفسحة",
+  "تذكيرٌ قبل بدء الحصّة",
+  "تعزيزٌ عند استئذانه أو انتظاره الفسحة",
+  "متابعةُ معلّم الحصّة",
+  "إشعارُ وليّ الأمر · ومراجعةٌ بعد أسبوعين"],
+ ["ضبطُ موعد النوم مع الأسرة","تقديمُ مقعده إلى الصفوف الأولى",
+  "إشراكُه في الحصّة بمهامَّ قصيرة","تعزيزٌ عند التركيز",
+  "إشعارُ وليّ الأمر","مراجعةٌ بعد أسبوعين"],
+ ["تعريفُه بأوقات الحضور والانصراف ومخاطر الخروج بينهما",
+  "بحثُ سبب خروجه معه — حاجةٌ أم مجاراةُ غيره",
+  "الاتّفاق مع أسرته على تلبية حاجته قبل الدوام",
+  "تعزيزٌ عند بقائه يومًا كاملًا",
+  "تكليفُه بمهمّةٍ تشغله في أوقات خروجه",
+  "إشعارُ وليّ الأمر · ومراجعةٌ بعد أسبوعين"],
+ ["توجيهُه إلى فصله فور وصوله","تنظيمُ لقاء الأصحاب في الفسحة",
+  "تعزيزٌ عند الالتزام","توعيةٌ بسلامة البوّابة",
+  "إشعارُ وليّ الأمر","مراجعةٌ بعد أسبوعين"]];
+var WANT=[
+ "أن يحضر الطالبُ بزيٍّ مدرسيٍّ كاملٍ ومرتَّبٍ كلَّ يوم",
+ "أن يصل الطالبُ قبل جرس الاصطفاف كلَّ يوم",
+ "أن يحضر الطالبُ الاصطفافَ الصباحيَّ كاملًا",
+ "أن يصل الطالبُ إلى الاصطفاف في وقته ويقف هادئًا ملتزمًا بمكانه",
+ "أن يدخل الطالبُ الحصّةَ مع المعلّم بلا تأخّر",
+ "أن يستأذن الطالبُ معلّمَه قبل الأكل أو الشرب في الحصّة",
+ "أن يبقى الطالبُ يقظًا مشاركًا طوال الحصّة",
+ "أن يبقى الطالبُ داخل المدرسة من حضوره إلى انصرافه، فلا يخرج في غير وقته",
+ "أن يتوجّه الطالبُ إلى فصله فور وصوله بلا تجمهر"];
+var SRC=["سجلُّ الزيّ عند البوّابة","سجلُّ اليوم — يُقفل يوميًّا",
+ "كشفُ الاصطفاف — يُرصد يوميًّا","كشفُ الاصطفاف — يُرصد يوميًّا",
+ "سجلُّ الحصّة — يرصده معلّمُ كلّ حصّةٍ عند دخولها",
+ "","","",""];
+var LOGGED=[true,true,true,true,true,false,false,false,false];
+var PROBLEMS=["عدم التقيّد بالزيّ المدرسيّ","التأخّر الصباحيّ","عدم حضور الاصطفاف الصباحيّ",
+"التأخّر عن الاصطفاف أو العبث أثناءه","التأخّر في الدخول إلى الحصص",
+"تناول الأطعمة أو المشروبات أثناء الدرس","النوم داخل الفصل",
+"تكرار الخروج والدخول من البوّابة","التجمهر أمام بوّابة المدرسة"];
+
+/* ممارسات السلوك المتميّز — ص١٩ · kind: org منظّمة · ind فرديّة · ext خارجيّة · auto آليّة */
+var MERITS=[
+ {t:"انضباطُ الطالب وعدمُ غيابه بدون عذرٍ خلال الفصل",p:6,kind:"auto"},
+ {t:"المشاركةُ في الخدمة المجتمعيّة خارج المدرسة",p:6,kind:"ext"},
+ {t:"تقديمُ فعاليّةٍ حواريّة",p:6,kind:"org"},
+ {t:"المشاركةُ في حملةٍ توعويّة",p:6,kind:"org"},
+ {t:"عرضُ تجاربَ شخصيّةٍ ناجحة",p:6,kind:"org"},
+ {t:"الالتحاقُ ببرنامجٍ أو دورة",p:6,kind:"ext"},
+ {t:"نشاطٌ — مهاراتُ الاتّصال",p:4,kind:"org"},
+ {t:"نشاطٌ — مهاراتُ القيادة والمسؤوليّة",p:4,kind:"org"},
+ {t:"نشاطٌ — المهاراتُ الرقميّة",p:4,kind:"org"},
+ {t:"نشاطٌ — مهارةُ إدارة الوقت",p:4,kind:"org"},
+ {t:"كتابةُ رسالة شكر",p:2,kind:"ind"},
+ {t:"المشاركةُ في الإذاعة",p:2,kind:"org"},
+ {t:"تقديمُ مقترحٍ لصالح المجتمع المدرسيّ",p:2,kind:"ind"},
+ {t:"التعاونُ مع الزملاء والمعلّمين وإدارة المدرسة",p:2,kind:"ind"},
+ {t:"سلوكٌ متميّزٌ غيرُ مذكورٍ في المقترح",p:6,kind:"ind",other:true}];
+var KIND_AR={org:"منظَّمة — من خطّة النشاط",ind:"فرديّة — يفعلها الطالب",
+  ext:"خارجيّة — من جهةٍ معتمدة",auto:"آليّة — تُحتسب من السجلّ"};
+
+function svg(d,extra){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '+
+  'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+d+(extra||'')+'</svg>'; }
+var ICO={
+ clip: svg('<path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1Z"/><path d="M8 6H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1h-2"/><path d="M9 12h6M9 16h4"/>'),
+ mail: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'),
+ phone:svg('<path d="M5 4h3l2 5-2 1a12 12 0 0 0 6 6l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>'),
+ scale:svg('<path d="M12 4v16M7 20h10M5 8h14M5 8l-2 6h4L5 8ZM19 8l-2 6h4l-2-6Z"/>'),
+ user: svg('<circle cx="10" cy="8" r="3.2"/><path d="M4 20a6 6 0 0 1 12 0M18 8v6M15 11h6"/>'),
+ link: svg('<path d="M10 13a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.7-5.7l-1.7 1.7"/><path d="M14 11a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.7 5.7l1.7-1.7"/>'),
+ check:svg('<path d="M20 6 9 17l-5-5"/>')};
+
+var NEGI=[
+ {i:"⏰",t:"التأخّر عن الحصّة",d:"يدخل بعد بدء المعلّم، فيفوته أوّلُ الشرح ويقطع انتباهَ الصفّ."},
+ {i:"💬",t:"الحديثُ الجانبيّ",d:"يتحدّث مع زميله أثناء الشرح، فيشغل نفسَه ومن حوله."},
+ {i:"🎒",t:"عدمُ إحضار الأدوات",d:"يأتي بلا كتابٍ أو دفترٍ أو قلم، فيعجز عن المشاركة."},
+ {i:"📝",t:"عدمُ أداء الواجبات",d:"لا يُنجز ما كُلّف به في البيت، فيتراكم عليه الدرس."},
+ {i:"✋",t:"مقاطعةُ المعلّم",d:"يتكلّم بلا استئذانٍ أثناء الشرح ويقطع تسلسلَ الدرس."},
+ {i:"🔄",t:"التنقّلُ بين المقاعد",d:"يغادر مكانَه بلا إذنٍ فيُحدث حركةً تشتّت الصفّ."},
+ {i:"✏️",t:"العبثُ بأدوات زملائه",d:"يأخذ أدواتِ غيره أو يعبث بها بلا إذنٍ منهم."},
+ {i:"📢",t:"رفعُ الصوت في الفصل",d:"يرفع صوتَه بالكلام أو الضحك فيُحدث فوضى."},
+ {i:"😶",t:"الانشغالُ عن الدرس",d:"ينشغل برسمٍ أو لعبٍ أو نظرٍ خارج الفصل، فلا يتابع."},
+ {i:"👕",t:"إهمالُ النظافة أو الزيّ",d:"يأتي بزيٍّ غيرِ مرتَّبٍ أو مظهرٍ غيرِ لائق."}];
+var POSI=[
+ {i:"🙋",t:"المبادرةُ بالإجابة",d:"يرفع يدَه ويشارك من نفسه بلا أن يُطلب منه."},
+ {i:"🤝",t:"مساعدةُ زملائه",d:"يشرح لزميلٍ تأخّر، أو يعيره ما يحتاج."},
+ {i:"🧹",t:"المحافظةُ على نظافة الفصل",d:"يلتقط ما سقط ويترك مقعدَه نظيفًا."},
+ {i:"🎙️",t:"الالتزامُ بالدور في الحديث",d:"ينتظر دورَه ولا يقاطع، ويُنصت لغيره."},
+ {i:"📚",t:"إحضارُ الأدوات كاملةً",d:"يأتي بكلّ ما يحتاجه الدرسُ مرتَّبًا."},
+ {i:"✅",t:"أداءُ الواجبات في وقتها",d:"يُسلّم ما كُلّف به في موعده بلا تذكير."},
+ {i:"📻",t:"المشاركةُ في الإذاعة أو النشاط",d:"يتقدّم للمشاركة في برامج المدرسة."},
+ {i:"🫱",t:"احترامُ المعلّمين والزملاء",d:"يخاطبهم بأدبٍ ويلتزم آدابَ الحديث."},
+ {i:"🏫",t:"المحافظةُ على ممتلكات المدرسة",d:"لا يُتلف ولا يكتب على الجدران والأثاث."},
+ {i:"💛",t:"الصدقُ والاعتذارُ عند الخطأ",d:"يُقرّ بخطئه ويعتذر بلا مكابرة."}];
+var NEG=NEGI.map(function(x){return x.t;});
+var POS=POSI.map(function(x){return x.t;});
+var STAFF=["سعيد زنبيل — الموجّه الطلابيّ","عبدالله عبدالرحمن — معلّم الدراسات",
+"يحيى الصالبي — رائد النشاط","غرم الله الزهراني — المساعد الإداريّ","أحمد عوض — رائد الفصل"];
+var HD=["١٤٤٨/٤/٩","١٤٤٨/٤/١٦","١٤٤٨/٤/٢٣","١٤٤٨/٥/١"];
+
+var ADVICE=[
+ ["زيُّك المدرسيُّ عنوانُك — هيّئه من الليل تَرتَح في الصباح.","الالتزامُ بالزيّ احترامٌ لمدرستك ولنفسك.","من ضبط صغارَ الأمور ضبط كبارَها."],
+ ["بكّر بالنوم تبكّر بالاستيقاظ — والتأخّرُ يسرق أوّلَ الحصّة وأنفسَها.","اجعل لك موعدًا ثابتًا للخروج، واستعن بتنبيهٍ قبله بعشر دقائق.","أوّلُ اليوم بركةٌ — ومن فاته أوّلُه فاته أحسنُه."],
+ ["الاصطفافُ بدايةُ يومك وفيه ذكرُك ونشاطُك.","حضورُك الاصطفافَ يُشعرك أنّك جزءٌ من جماعة.","النظامُ في الصفّ يعلّمك النظامَ في حياتك."],
+ ["بادر إلى مكانك في الصفّ أوّلَ ما يُنادى — فالمتأخّرُ يشغل نفسَه ومن ينتظره.","الوقوفُ الهادئُ أدبٌ — والعبثُ يشغلك ويشغل غيرَك.","من ملك نفسَه في الصفّ ملكها في الفصل."],
+ ["أوّلُ الحصّة مفتاحُها — فمن فاته أوّلُها فاته بابُها.","اجعل انتقالك بين الحصص مباشرًا.","دقيقةٌ تتأخّرها قد تكلّفك فهمَ الدرس كلِّه."],
+ ["إن احتجتَ ماءً أو طعامًا فاستأذن معلّمَك — فالأدبُ أن تسأل لا أن تبادر.","اشبع في الفسحة تستغنِ عن الاستئذان في الحصّة.","أدبُ المجلس أن تُقبل على معلّمك بكلّك."],
+ ["النومُ في الفصل علامةُ سهرٍ — فبكّر بنومك.","إن غلبك النعاسُ فاستأذن واغسل وجهك.","جسدُك أمانةٌ — أعطه حقَّه من النوم."],
+ ["للحضور وقتٌ وللانصراف وقت — والخروجُ بينهما يعرّضك لما لا تحمد.","مكانُك في فصلك، وكثرةُ الخروج تقطع عليك الدرس.","الانضباطُ أن تكون حيث ينبغي أن تكون."],
+ ["التجمهرُ يعطّل الحركةَ ويعرّضك للخطر — امضِ إلى فصلك.","اجعل لقاءَ أصحابك في الفسحة لا في الممرّ.","السلامةُ أوّلًا — والبوّابةُ موضعُ مرورٍ لا وقوف."]];
+
+var LAD=[
+ {t:"تنبيهٌ شفهيٌّ أوّل",d:0,it:"التنبيهُ الشفهيُّ الأوّل عن السلوك والأضرارِ المترتّبة عليه",acts:[]},
+ {t:"تنبيهٌ ثانٍ · وحصرُ السلوكيّات",d:0,
+  it:"التنبيهُ الثاني · وملاحظةُ الطالب وحصرُ السلوكيّات ومسبّباتها · وتعزيزُ الإيجابيّ",
+  acts:[{k:"note",t:"نموذجُ حصر السلوكيّات",who:"الوكيل",form:"survey"}]},
+ {t:"التدوينُ والإشعار · وحسمُ درجة",d:1,
+  it:"تدوينُ المشكلة وتوقيعُ الطالب · وإشعارُ وليّه · وحسمُ درجةٍ مع التعويض · ثمّ التحويلُ للموجّه",
+  acts:[{k:"deduct",t:"حسمُ درجة",who:"آليّ",auto:true},
+        {k:"comp",t:"فرصةُ تعويضٍ فُتحت",who:"آليّ",auto:true},
+        
+        {k:"refer",t:"إحالةُ الملفّ إلى الموجّه لدراسة حالته",who:"آليّ",auto:true},
+        {k:"session",t:"جلسةُ توعيةٍ بحقّ التعويض",who:"الموجّه",form:"session"},
+        {k:"sign",t:"توقيعُ الطالب على ما دُوّن في سجلّ المشكلات",who:"الطالب"},
+        {k:"call",t:"الاتّصالُ بوليّ الأمر هاتفيًّا",who:"الوكيل",form:"call"}]},
+ {t:"دعوةُ وليّ الأمر وخطّةُ تعديل · واللجنة",d:1,
+  it:"دعوةُ وليّه والاتّفاقُ على خطّةٍ يقوم بها الموجّه · وحسمٌ ثانٍ · والإحالةُ للّجنة",
+  acts:[{k:"deduct2",t:"حسمُ درجةٍ ثانية",who:"آليّ",auto:true},
+        {k:"comp2",t:"فرصةُ تعويضٍ ثانية",who:"آليّ",auto:true},
+        {k:"summon",t:"خطابُ دعوة وليّ الأمر (١٠) — أُرسل آليًّا",who:"آليّ",auto:true},
+        {k:"reply",t:"ردُّ وليّ الأمر",who:"وليّ الأمر"},
+        {k:"plan",t:"خطّةُ تعديل السلوك (٣)",who:"الموجّه"},
+        {k:"committee",t:"الإحالةُ للجنة التوجيه",who:"الوكيل",form:"refer"}]}];
+
+var REC_BY="المعلّم المباشر للموقف";
+var ABSENT_TODAY=false;
+var KEY="moayad_live_v5", S, cur=0, flashMsg=null;
+function fresh(){ return {files:[],pos:80,merit:0,evid:[],minutes:[],shared:[],
+  opps:[],props:[],sessions:[],absDays:0}; }
+function load(){ try{var r=localStorage.getItem(KEY);S=r?JSON.parse(r):fresh();}catch(e){S=fresh();}
+  if(!S||!S.files)S=fresh();
+  ["evid","minutes","shared","opps","props","sessions"].forEach(function(k){ if(!S[k])S[k]=[]; });
+  if(S.absDays==null)S.absDays=0; }
+function save(){ try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){} }
+/* ═══ بنكُ العبارات التربويّة — لكلّ الفريق إلّا الطالبَ ووليَّ الأمر ═══ */
+var BANK={
+ cause:{ p:[
+  ["لم يُهيَّأ الزيُّ من الليلة السابقة فيخرج على عجل","الزيُّ غيرُ مكتملٍ لدى الأسرة ولم يُستبدل","يُغيّر في زيّه مجاراةً لزملائه","لا يرى في الزيّ أثرًا فلا يبالي به","ضيقُ وقت الصباح يجعله يخرج بما وجد","تكرّرُ تنبيهه بلا متابعةٍ أسريّةٍ أضعف أثرَه"],
+  ["سهرٌ متأخّرٌ يجعل الاستيقاظَ شاقًّا","بُعدُ المنزل عن المدرسة وازدحامُ الطريق","لا موعدَ ثابتًا للخروج في بيته","ينتظر من يوصله فيتأخّر بتأخّره","لا يستشعر أثرَ التأخّر لأنّه لا يفوته شيءٌ ظاهر","انشغالُ الأسرة صباحًا بمن هو أصغرُ منه"],
+  ["يدخل المدرسةَ ثمّ ينصرف إلى الممرّات","لا يجد في الاصطفاف ما يشدّه","يستثقل الوقوفَ طويلًا","يتبع زملاءَ يتخلّفون عنه","لم يُعرَّف بمكانه في الصفّ فيحتار","يرى الاصطفافَ أمرًا شكليًّا لا قيمةَ له"],
+  ["يصل المدرسةَ قبيل الجرس فلا يلحق بالصفّ","مكانُه في آخر الصفّ فيغيب عن عين رائده","يشغله الحديثُ مع من بجواره","حركةٌ زائدةٌ لا يملكها في وقوفٍ طويل","يستلفت انتباهَ زملائه بالعبث","لا يُنبَّه لحظةَ العبث فيتمادى"],
+  ["يقف في الممرّ مع زملائه بين الحصص","بُعدُ الفصل عن موضع الفسحة","يستغرق في الحديث فلا ينتبه للجرس","يتأخّر في دورة المياه بلا تقدير","يتبع زملاءَ يتأخّرون","لا يُتابَع دخولُه فيتكرّر"],
+  ["يخرج من بيته بلا فطور","لا يجد في الفسحة ما يكفيه","يشرب أثناء الدرس لعادةٍ لا لحاجة","يقلّد زملاءَه في الفصل","لا يعرف أنّ له أن يستأذن","تكرّرُ الفعل بلا تنبيهٍ جعله مألوفًا"],
+  ["سهرٌ متأخّرٌ على الأجهزة","حصّةٌ متأخّرةٌ في اليوم يقلّ فيها نشاطُه","مكانُه في آخر الفصل بعيدًا عن المعلّم","لا يشارك في الحصّة فيستسلم للنعاس","جوُّ الفصل يبعث على الخمول","تعبٌ بدنيٌّ من يومه السابق"],
+  ["يخرج لشراء حاجةٍ نسيها","لا يعرف أوقاتَ الحضور والانصراف","يتبع زملاءَ يخرجون","لا يجد من يمنعه عند البوّابة","يستثقل انتظارَ الجرس","حاجةٌ لم تُلبَّ في بيته قبل الدوام"],
+  ["ينتظر من يقلّه فيقف عند البوّابة","يلتقي أصحابَه هناك عادةً","لا يرى في التجمهر خطرًا","يتبع الجماعةَ بلا سبب","لا يُنبَّه فيستمرّ","يستعجل الخروجَ قبل انصراف الحافلات"]],
+  g:["ضعفُ المتابعة الأسريّة لسلوكه اليوميّ","تقليدُ زملاءَ يسلكون السلوكَ نفسَه","لفتُ انتباه من حوله والظهورُ أمامهم","عدمُ إدراكه لأثر سلوكه على نفسه وعلى غيره","تكرارُ السلوك بلا تنبيهٍ فوريٍّ جعله عادةً","غيابُ قدوةٍ قريبةٍ يحتذيها في هذا الجانب","ضعفُ الدافعيّة نحو اليوم الدراسيّ عامّةً","ظروفٌ أسريّةٌ تشغله عن الانضباط"]},
+
+ limit:{ g:["الاتّفاقُ مع الأسرة على متابعةٍ يوميّةٍ قصيرةٍ تُثبت الالتزام","تعزيزُ كلِّ يومٍ يلتزم فيه تعزيزًا فوريًّا ملموسًا","إشراكُه في مهمّةٍ يوميّةٍ تشعره بالمسؤوليّة","تقريبُ مكانه ممّن يتابعه ليكون تحت عين راعيه","تذكيرُه قبل الموقف لا بعده، فالوقايةُ خيرٌ من التنبيه","ربطُه بزميلٍ ملتزمٍ يسير معه ويذكّره","عرضُ أثر التزامه عليه بالأرقام أسبوعيًّا ليرى تقدّمَه","تدريبُه على البديل الصحيح عمليًّا لا وعظًا","تقليلُ المثيرات المحيطة التي تستدعي السلوك","إشعارُ وليّ الأمر أسبوعيًّا بما تحقّق لا بما أُخفق"]},
+
+ taskWhat:{ g:[
+  "لاحظ الطالبَ في حصصك أسبوعًا، واحصر سلوكيّاته السلبيّةَ والإيجابيّةَ ومسبّباتِها، ثمّ ارفعها.",
+  "تابع الطالبَ في المواقف التي يتكرّر فيها السلوك، وسجّل ما تلاحظه بدقّةٍ بلا تعميم.",
+  "اجلس مع الطالب جلسةً قصيرةً تستبين فيها سببَ سلوكه، ثمّ احصر ما ظهر لك.",
+  "راقب تعاملَ الطالب مع زملائه ومعلّميه، وبيّن ما يعزّز سلوكَه وما يحدّ منه.",
+  "قارن سلوكَ الطالب في حصّتك بسلوكه في غيرها، واكتب ما وجدتَ من فرق."]},
+
+ callWhat:{ g:[
+  "أُشعر وليُّ الأمر بالمشكلة وبما اتُّخذ من إجراءات، وأبدى تعاونَه ووعد بالمتابعة في البيت.",
+  "نُوقشت المشكلةُ مع وليّ الأمر، وأفاد بأنّ الطالبَ يعاني من الأمر نفسِه في البيت وطلب المساعدة.",
+  "أُشعر وليُّ الأمر بالحسم وبحقّ ابنه في التعويض، وشكر المدرسةَ على إشعاره مبكّرًا.",
+  "أُبلغ وليُّ الأمر وطلب مهلةً لمعالجة الأمر أسريًّا قبل اتّخاذ إجراءٍ أشدّ.",
+  "أُشعر وليُّ الأمر واتُّفق معه على خطوةٍ عمليّةٍ يبدأ بها من الغد.",
+  "أُشعر وليُّ الأمر وأفاد بأنّه نبّه ابنَه مرارًا، واتُّفق على متابعةٍ مشتركة."]},
+
+ referWhy:{ g:[
+  "لم يستجب الطالبُ لإجراءات تعديل السلوك رغم استنفاد ما بيد المدرسة من وسائل.",
+  "تكرّر السلوكُ بعد اعتماد خطّة التعديل ومتابعتها، ولم تظهر استجابةٌ كافية.",
+  "استُنفدت الإجراءاتُ التربويّةُ والإرشاديّةُ الفرديّةُ دون أثرٍ ملموسٍ على السلوك.",
+  "ظهرت للموجّه عواملُ تتجاوز ما تملكه المدرسةُ وحدَها، فاحتاج الأمرُ نظرَ اللجنة."]},
+
+ referAsk:{ g:[
+  "بحثُ أسباب عدم الاستجابة، وإيجادُ الحلول المناسبة وفق تقرير دراسة الحالة.",
+  "النظرُ في إجراءٍ تربويٍّ أنسبَ مع إشراك وليّ الأمر في القرار.",
+  "تقديرُ ما يناسب الحالةَ من تدخّلٍ بعد الاطّلاع على ما اتُّخذ.",
+  "دراسةُ الحالة وإقرارُ ما تراه اللجنةُ من توصياتٍ ومتابعةُ تنفيذها."]},
+
+ sessionT:{ g:[
+  "أُعلم الطالبُ بما حُسم منه، وبحقِّه في تعويضه بممارسات السلوك المتميّز، وبما هو متاحٌ له منها.",
+  "نُوقش مع الطالب أثرُ سلوكه على درجته وعلى يومه الدراسيّ، وبُيّن له بابُ التعويض.",
+  "عُرضت على الطالب الفرصُ المتاحةُ ودرجةُ كلٍّ منها، وتُرك له الاختيار.",
+  "ذُكّر الطالبُ بأنّ التعويضَ حقٌّ له لا عقوبةً عليه، وأنّه يبدأ متى رغب."]},
+
+ sessionR:{ g:[
+  "اتُّفق على أن يختار الطالبُ فرصةً تناسبه من المعروض خلال الأسبوع.",
+  "قرّر الطالبُ المشاركةَ في الإذاعة المدرسيّة تعويضًا عمّا حُسم منه.",
+  "اتُّفق على متابعةٍ أسبوعيّةٍ قصيرةٍ حتى يستردّ ما حُسم.",
+  "تُرك للطالب أن يختار، على أن يُراجَع معه بعد أسبوع."]},
+
+ csSay:{ g:[
+  "يرى الطالبُ أنّه لا يقصد السلوكَ وأنّه يقع منه بلا انتباه.",
+  "يقرّ الطالبُ بالسلوك ويعزوه إلى ظرفٍ في بيته لا يملك تغييرَه.",
+  "يرى الطالبُ أنّ زملاءَه يفعلون مثلَه ولا يُنبَّهون، فيشعر بأنّه استُفرد.",
+  "ينكر الطالبُ تعمّدَ السلوك ويذكر أنّه نبّه نفسَه مرارًا ولم يفلح.",
+  "يذكر الطالبُ أنّه نسي، وأنّه لم يدرك أنّ الأمرَ بهذي الأهمّيّة.",
+  "يربط الطالبُ سلوكَه بضيقه من موقفٍ وقع له في المدرسة."]},
+
+ csSeen:{ g:[
+  "الطالبُ متعاونٌ في الحديث، مقرٌّ بسلوكه، ويبدو عليه الرغبةُ في تغييره.",
+  "يميل الطالبُ إلى تبرير سلوكه وإلقاءِ سببه على غيره.",
+  "يظهر على الطالب خجلٌ وانكماشٌ عند مناقشة السلوك.",
+  "الطالبُ هادئٌ في الجلسة، نشِطٌ خارجَها، ويستجيب للتوجيه المباشر.",
+  "يبدو على الطالب تعبٌ ظاهرٌ وقلّةُ نومٍ تنعكس على يومه.",
+  "الطالبُ محبٌّ للظهور أمام زملائه، ويستجيب للتعزيز أكثرَ من التنبيه."]},
+
+ csFactors:{ g:[
+  "ضعفُ المتابعة الأسريّة، وغيابُ نظامٍ ثابتٍ في البيت.",
+  "تأثّرُه بجماعة الرفاق وميلُه إلى مجاراتهم.",
+  "ضعفُ الدافعيّة نحو اليوم الدراسيّ عامّةً لا نحو هذا السلوك وحدَه.",
+  "حاجتُه إلى لفت الانتباه وشعورُه بأنّه غيرُ ملحوظ.",
+  "ظرفٌ أسريٌّ طارئٌ انعكس على انضباطه هذا الفصل.",
+  "عدمُ إدراكه لأثر سلوكه، فهو عنده أمرٌ هيّن.",
+  "تكرارُ السلوك بلا أثرٍ فوريٍّ جعله عادةً راسخة."]},
+
+ csPlan:{ g:[
+  "جلساتٌ فرديّةٌ أسبوعيّةٌ قصيرة، مع تعزيزٍ فوريٍّ عند الالتزام، ومتابعةٍ أسريّةٍ مشتركة.",
+  "تدريبُ الطالب على البديل الصحيح عمليًّا، وتكليفُه بمهمّةٍ تشعره بالمسؤوليّة.",
+  "ربطُه بزميلٍ ملتزمٍ يسير معه، مع مراجعةٍ أسبوعيّةٍ لما تحقّق.",
+  "تقليلُ المثيرات المحيطة، وتقريبُ مكانه ممّن يتابعه، وتعزيزُ كلّ تقدّم.",
+  "التنسيقُ مع رائد النشاط لإشراكه في نشاطٍ يصرف طاقتَه وجهةً نافعة."]},
+
+ fwT:{ g:[
+  "روجع مع الطالب ما اتُّفق عليه في الجلسة السابقة، وما تحقّق منه وما تعثّر.",
+  "نُوقش مع الطالب موقفٌ وقع له هذا الأسبوع وكيف تصرّف فيه.",
+  "عُرضت على الطالب أرقامُ التزامه هذا الأسبوع مقارنةً بالذي قبله.",
+  "دُرّب الطالبُ على البديل الصحيح بأسلوب التمثيل، وأبدى تجاوبًا.",
+  "نُوقشت مع الطالب العقباتُ التي تحول دون التزامه، وسُبلُ تذليلها.",
+  "عُزّز الطالبُ على ما تحقّق، وذُكّر بما بقي عليه."]},
+
+ fwN:{ g:[
+  "متابعةٌ أسبوعيّةٌ قصيرة، وتعزيزٌ فوريٌّ عند كلّ التزام.",
+  "التواصلُ مع وليّ الأمر لإطلاعه على ما تحقّق وطلبِ متابعته.",
+  "جلسةٌ بعد أسبوعين لتقويم أثر الخطّة والنظرِ في تعديلها.",
+  "تكليفُه بمهمّةٍ محدّدةٍ يراجَع عليها في الجلسة القادمة.",
+  "التنسيقُ مع معلّميه لمتابعة سلوكه في الحصص وإفادة الموجّه.",
+  "الاستمرارُ على الخطّة نفسِها لظهور بوادر تحسّن."]},
+
+ rpV:{ g:[
+  "استُنفدت الأدواتُ والأساليبُ الإرشاديّةُ الفرديّةُ والمتابعةُ المتاحةُ دون أثرٍ كافٍ على السلوك.",
+  "ظهر تحسّنٌ طفيفٌ لا يكفي لإنهاء أثر المشكلة داخل البيئة المدرسيّة.",
+  "لم يستجب الطالبُ للبرامج العلاجيّة، واستمرّ ارتكابُ السلوك المخالف.",
+  "تبيّن أنّ للمشكلة عواملَ تتجاوز ما تملكه المدرسةُ وحدَها من وسائل.",
+  "أظهر الطالبُ تعاونًا في الجلسات، غير أنّ الأثرَ لم ينتقل إلى الواقع بالقدر المطلوب."]},
+
+ rpR:{ g:[
+  "نوصي بإحالة الطالب إلى لجنة التوجيه الطلابيّ للنظر في الإجراء المناسب، وإشراكِ وليّ الأمر في القرار النهائيّ.",
+  "نوصي باستمرار الخطّة مع تعديل إجراءاتها، ومتابعةٍ أسريّةٍ أوثق.",
+  "نوصي ببرنامجٍ وقائيٍّ مشتركٍ مع الأسرة، ومراجعةٍ بعد شهر.",
+  "نوصي بالنظر في نقل الطالب إلى فصلٍ آخرَ إن رأت اللجنةُ ذلك مناسبًا.",
+  "نوصي بإشراك رائد النشاط في تهيئة فرصٍ تصرف طاقتَه وجهةً نافعة."]},
+
+ cmT:{ g:[
+  "اطّلعت اللجنةُ على تقرير دراسة الحالة وما اتُّخذ من إجراءاتٍ تربويّةٍ وإرشاديّة، وناقشت أسبابَ عدم الاستجابة.",
+  "استمعت اللجنةُ إلى الموجّه الطلابيّ ومعلّم الفصل، وبحثت ما يناسب حالةَ الطالب.",
+  "راجعت اللجنةُ خطّةَ تعديل السلوك ونتائجَ متابعتها، وبحثت ما يمكن تعديلُه فيها.",
+  "ناقشت اللجنةُ ظروفَ الطالب وما ذكره وليُّ أمره، وبحثت سبلَ التعاون معه."]},
+
+ cmR:{ g:[
+  "يتابع الموجّهُ الطلابيُّ تنفيذَ القرار ويرفع للّجنة ما يستجدّ خلال شهر.",
+  "يُشرَك وليُّ الأمر في المتابعة الأسبوعيّة، ويوقّع على ما اتُّفق عليه.",
+  "يُعاد النظرُ في إجراءات خطّة تعديل السلوك بما يناسب ما ظهر للّجنة.",
+  "يُنسَّق مع رائد النشاط لإشراك الطالب في برنامجٍ يناسب ميولَه.",
+  "تُراجَع الحالةُ بعد شهرٍ وتُرفع نتيجةُ المتابعة لمدير المدرسة."]},
+
+ gN:{ g:[
+  "تحقّقت اللجنةُ من الشاهد المرفق ومن إقرار المقرّ، فقدّرت الدرجةَ المقرّرةَ للممارسة كاملةً.",
+  "قُدّرت الدرجةُ وفق ما ورد في جدول ممارسات السلوك المتميّز، ص١٩.",
+  "نظرًا لتنفيذ الطالب الممارسةَ جزئيًّا، قُدّرت له درجةٌ دون المقرّر.",
+  "تُمنح الدرجةُ تعويضًا عمّا حُسم، ويُرحّل الفائضُ اكتسابًا.",
+  "أوصت اللجنةُ بتشجيع الطالب على تكرار الممارسة لاكتساب المزيد."]},
+
+ ctT:{ g:[
+  "حضر الطالبُ وشارك مشاركةً كاملةً، ويشهد المقرُّ بتنفيذه الممارسةَ على الوجه المطلوب.",
+  "شارك الطالبُ بجزءٍ من الممارسة ولم يكملها، والتقديرُ متروكٌ للّجنة.",
+  "لم يحضر الطالبُ في الموعد المحدّد ولم يعتذر.",
+  "حضر الطالبُ غير أنّه لم ينفّذ ما كُلّف به.",
+  "أدّى الطالبُ الممارسةَ بإتقانٍ وأثرُها ظاهرٌ على زملائه."]},
+
+ plDesc:{ g:[
+  "يكرّر الطالبُ السلوكَ المخالف رغم تطبيق إجراءات الدرجة كاملةً، ويظهر أثرُه على يومه الدراسيّ.",
+  "تكرّر السلوكُ خلال الفصل الدراسيّ بوتيرةٍ تستدعي خطّةً مكتوبةً لتعديله.",
+  "السلوكُ ظاهرٌ ومتكرّرٌ، ويقع في مواقفَ متشابهةٍ يمكن التنبّؤُ بها."]},
+
+ plAnte:{ g:[
+  "يقع السلوكُ غالبًا في أوّل اليوم وعند الانتقال بين المواضع.",
+  "يسبق السلوكَ وجودُ زملاءَ بعينهم يشجّعونه عليه.",
+  "يسبقه شعورٌ بالملل أو طولُ انتظارٍ بلا مهمّة.",
+  "يسبقه تعبٌ وقلّةُ نومٍ تظهر على الطالب."]},
+
+ plPost:{ g:[
+  "يلقى السلوكُ ضحكًا من زملائه فيتعزّز عنده.",
+  "ينتهي الموقفُ بتنبيهٍ شفهيٍّ لا أثرَ له، فيتكرّر.",
+  "يحصل الطالبُ على إعفاءٍ من مهمّةٍ لا يحبّها، فيتعزّز السلوك.",
+  "يلفت السلوكُ انتباهَ المعلّم إليه، وهو ما يسعى إليه."]},
+
+ plGain:{ g:[
+  "يحقّق الطالبُ لفتَ الانتباه وظهورَه أمام زملائه.",
+  "يتهرّب الطالبُ بسلوكه من مهمّةٍ يراها شاقّة.",
+  "يفرّغ الطالبُ طاقةً زائدةً لا يجد لها متنفَّسًا.",
+  "يثبت الطالبُ لنفسه موقعًا بين أقرانه."]}
+};
+
+function pick(key,pi){
+  var b=BANK[key]; if(!b) return [];
+  var out=[];
+  if(b.p && pi!=null && b.p[pi]) out=out.concat(b.p[pi]);
+  if(b.g) out=out.concat(b.g);
+  return out;
+}
+function bankBox(key,target,pi,id){
+  var a=pick(key,pi); if(!a.length) return "";
+  var bid=id||("bk_"+key+"_"+Math.floor(Math.random()*9999));
+  var h='<div class="bank" id="'+bid+'" data-t="'+target+'" data-k="'+key+'" data-p="'+(pi==null?'':pi)+'">'+
+    '<div class="bkh"><b>بنكُ العبارات</b> — المسها فتُضاف · ولك أن تعدّل'+
+    '<button class="bkm" data-more="'+bid+'">غيّرها</button></div><div class="bkl">';
+  var idx=[]; while(idx.length<Math.min(4,a.length)){
+    var r=Math.floor(Math.random()*a.length); if(idx.indexOf(r)<0) idx.push(r); }
+  idx.forEach(function(r){ h+='<span data-v="'+esc(a[r])+'">'+esc(a[r])+'</span>'; });
+  return h+'</div></div>';
+}
+function bindBanks(){
+  document.querySelectorAll(".bank").forEach(function(bx){
+    var t=document.getElementById(bx.getAttribute("data-t"));
+    bx.querySelectorAll("span").forEach(function(sp){
+      sp.onclick=function(){
+        if(!t) return;
+        var v=sp.getAttribute("data-v");
+        t.value = t.value.trim() ? (t.value.trim()+" "+v) : v;
+        sp.style.opacity=".45";
+      };});
+  });
+  document.querySelectorAll("[data-more]").forEach(function(b){
+    b.onclick=function(ev){ if(ev&&ev.preventDefault)ev.preventDefault();
+      var bx=document.getElementById(b.getAttribute("data-more"));
+      if(!bx) return;
+      var key=bx.getAttribute("data-k"), pi=parseInt(bx.getAttribute("data-p"),10);
+      var a=pick(key, isNaN(pi)?null:pi); if(!a.length) return;
+      var lst=bx.querySelector(".bkl"); lst.innerHTML="";
+      var idx=[]; while(idx.length<Math.min(4,a.length)){
+        var r=Math.floor(Math.random()*a.length); if(idx.indexOf(r)<0) idx.push(r); }
+      idx.forEach(function(r){
+        var sp=document.createElement("span");
+        sp.textContent=a[r]; sp.setAttribute("data-v",a[r]);
+        lst.appendChild(sp); });
+      bindBanks();
+    };});
+}
+
+function AR(n){ return String(n).replace(/\d/g,function(d){
+  return "٠١٢٣٤٥٦٧٨٩"[+d]; }); }
+var VERD={ok:"نفّذ — مشهودٌ له",partial:"نفّذ جزئيًّا",no:"لم يشارك",absent:"لم يحضر"};
+function chips(d){
+  var o="";
+  (d.neg||[]).forEach(function(t){ o+='<i>'+esc(t)+'</i>'; });
+  (d.pos||[]).forEach(function(t){ o+='<i class="p">'+esc(t)+'</i>'; });
+  if(d.cause) o+='<i class="k">المسبّبات:</i><i>'+esc(d.cause)+'</i>';
+  if(d.plan)  o+='<i class="k">الحدُّ منها:</i><i>'+esc(d.plan)+'</i>';
+  return o;
+}
+function sumRows(a){ return (a||[]).reduce(function(t,r){return t+(r.n||0);},0); }
+function respond(f){
+  if(!f||!f.plan||!f.plan.final) return {state:"no-plan"};
+  var pre=f.recs.length, post=(f.after||0), auto=LOGGED[f.p];
+  var dates=(f.extra||[]).map(function(x){return x.d;}).join(" · ");
+  if(!auto && !f.teacherSaid) return {state:"ask-teacher",pre:pre,post:post,dates:dates};
+  if(!auto) return {state: f.teacherSaid==="yes"?"failed":"improved", pre:pre,
+    post: f.teacherSaid==="yes"?Math.max(1,post):0, by:"شهادةُ معلّم الفصل", dates:dates};
+  return {state: post>0 ? "failed":"improved", pre:pre, post:post, dates:dates,
+    by:(SRC[f.p]||"سجلٌّ يوميٌّ يُقفل")+" — فسكوتُه إثباتُ التزام"};
+}
+function OLOG(o,what,who,extra){
+  if(!o) return; if(!o.log) o.log=[];
+  o.log.push({d:extra&&extra.d?extra.d:"١٤٤٨/٥/٣", t:what, by:who,
+    more:extra&&extra.more?extra.more:""});
+  save();
+}
+function LOG(f,what,who,role,extra){
+  if(!f) return;
+  if(!f.log) f.log=[];
+  f.log.push({d:extra&&extra.d?extra.d:"١٤٤٨/٤/٢٣", t:what, by:who, role:role,
+    more:extra&&extra.more?extra.more:"", detail:extra&&extra.detail?extra.detail:""});
+  save();
+}
+function logHtml(f){
+  if(!f||!f.log||!f.log.length) return '<p class="empty">لا أحداثَ بعد</p>';
+  var h='<ul class="acts">';
+  f.log.slice().reverse().forEach(function(x){
+    h+='<li style="align-items:flex-start"><i class="tick ok">✓</i><span style="flex:1">'+esc(x.t)+
+       (x.more?'<br><span style="color:var(--mute);font-size:11.5px">'+esc(x.more)+'</span>':'')+
+       (x.detail?'<div class="lgd">'+x.detail+'</div>':'')+
+       '</span><span class="who">'+esc(x.by)+' · '+esc(x.d)+' هـ</span></li>';});
+  return h+'</ul>';
+}
+function award(p,kind){
+  var gotC=0,gotM=0;
+  if(deducted()>0){ var room=Math.min(p, deducted()); S.pos+=room; gotC=room; p-=room; }
+  if(p>0){ var room2=Math.min(p, 20-S.merit, 100-total()); room2=Math.max(0,room2);
+    S.merit+=room2; gotM=room2; }
+  return {comp:gotC,merit:gotM,total:gotC+gotM};
+}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function flash(m){flashMsg=m;setTimeout(function(){flashMsg=null;render();},3000);}
+function total(){ return S.pos + S.merit; }
+function F(){ return S.files[cur]; }
+function step(f){ return Math.min(f.recs.length,4); }
+function done(f,k){ return !!f.acts[k]; }
+function sheet(h){document.getElementById("sheet").innerHTML=h;
+  document.getElementById("mod").classList.add("on");
+  try{ bindBanks(); }catch(e){}}
+function closeSheet(){document.getElementById("mod").classList.remove("on");}
+function deducted(){ return 80 - S.pos; }
+
+function record(pi){
+  if(ABSENT_TODAY){
+    flash("الطالبُ غائبٌ اليوم — فلا يُرصد عليه شيء");
+    return;
+  }
+  var f=null,i;
+  for(i=0;i<S.files.length;i++) if(S.files[i].p===pi) f=S.files[i];
+  if(!f){ f={p:pi,recs:[],acts:{},survey:null,task:null,by:REC_BY,log:[]}; S.files.push(f); }
+  cur=S.files.indexOf(f);
+  if(f.recs.length>=4){
+    if(!f.extra) f.extra=[];
+    var dd=["١٤٤٨/٥/٦","١٤٤٨/٥/٩","١٤٤٨/٥/١٢","١٤٤٨/٥/١٣","١٤٤٨/٥/١٤"];
+    var nd=dd[Math.min(f.extra.length,dd.length-1)];
+    f.extra.push({d:nd,by:REC_BY});
+    var after = (f.plan&&f.plan.final);
+    if(after) f.after=(f.after||0)+1;
+    LOG(f, after ? "تكرّر السلوكُ بعد اعتماد الخطّة · المرّةُ "+AR(f.after)
+                 : "رُصد بلا حسم — بلغ السلّمُ منتهاه", REC_BY,"راصد",{d:nd});
+    save(); render();
+    flash(after?"رُصد بعد الخطّة — المرّةُ "+AR(f.after):"رُصد وقُيّد · ولا حسمَ بعد الرابعة");
+    return; }
+  var adv=ADVICE[pi]||[];
+  f.recs.push({d:HD[f.recs.length], a:adv[Math.min(f.recs.length,adv.length-1)]||""});
+  var L=LAD[f.recs.length-1];
+  L.acts.forEach(function(a){ if(a.auto) f.acts[a.k]=true; });
+  S.pos=Math.max(0,S.pos-L.d);
+  LOG(f,"رُصدت المخالفة — "+PROBLEMS[pi]+" · الرصدةُ "+AR(f.recs.length),REC_BY,"راصد",
+    {d:f.recs[f.recs.length-1].d});
+  if(L.d>0) LOG(f,"حُسمت "+AR(L.d)+" درجة من السلوك الإيجابيّ","آليّ","النظام",
+    {d:f.recs[f.recs.length-1].d});
+  if(L.acts.some(function(a){return a.k==="comp"||a.k==="comp2";}))
+    LOG(f,"فُتحت فرصةُ تعويضٍ للطالب","آليّ","النظام",{d:f.recs[f.recs.length-1].d});
+  if(L.acts.some(function(a){return a.k==="refer";})){
+    LOG(f,"أُحيل الملفُّ إلى الموجّه الطلابيّ لدراسة حالته","آليّ","النظام",
+      {d:f.recs[f.recs.length-1].d});
+    if(!f.cs) f.cs={state:"open",opened:f.recs[f.recs.length-1].d,
+      say:"",seen:"",factors:"",plan:"",filed:false};
+  }
+  if(L.acts.some(function(a){return a.k==="summon";}) && !f.summon){
+    var days=workdaysAfter(f.recs[f.recs.length-1].d,5);
+    var pick=days[2]||days[days.length-1]||{h:"١٤٤٨/٥/٥",d:"الثلاثاء"};
+    f.summon={d:pick.h+" هـ — "+pick.d, t:"٩:٣٠ صباحًا",
+      p:"مناقشةُ خطّة تعديل السلوك والاتّفاق عليها", reply:null, autoSent:true};
+    LOG(f,"أُرسل خطابُ دعوة وليّ الأمر (١٠) آليًّا","آليّ","النظام",
+      {d:f.recs[f.recs.length-1].d, more:f.summon.d+" · "+f.summon.t});
+  }
+  save(); render();
+  flash("رُصدت «"+PROBLEMS[pi]+"» — الرصدةُ "+AR(f.recs.length));
+}
+function pending(f,who){ var out=[],st=step(f),i;
+  for(i=1;i<=st;i++) (LAD[i-1].acts||[]).forEach(function(a){
+    if(a.who===who && !f.acts[a.k]) out.push(a); });
+  return out; }
+function pendAll(who){ var n=0; S.files.forEach(function(f){ n+=pending(f,who).length; }); return n; }
+
+/* ═══ اللجنة: فتحُ فرصة ═══ */
+function openOpp(){
+  var h='<h3>فتحُ فرصةٍ للطلبة</h3>'+
+    '<p class="meta">«توفيرُ فرص تحسين درجات السلوك» — ص١٢ بند ١٠</p>'+
+    '<label>الممارسة</label><select id="opM">';
+  MERITS.forEach(function(m,i){ if(m.kind==="auto") return;
+    h+='<option value="'+i+'">'+esc(m.t)+' — '+m.p+' درجات · '+esc(KIND_AR[m.kind].split(" — ")[0])+'</option>';});
+  h+='</select><label>التاريخ</label><select id="opH">'+
+     ["١٤٤٨/٥/٣ هـ — الأحد","١٤٤٨/٥/٤ هـ — الاثنين","١٤٤٨/٥/٥ هـ — الثلاثاء",
+      "١٤٤٨/٥/١٠ هـ — الأحد","١٤٤٨/٥/١١ هـ — الاثنين","١٤٤٨/٥/١٧ هـ — الأحد",
+      "١٤٤٨/٥/١٨ هـ — الاثنين"].map(function(x){return '<option>'+x+'</option>';}).join('')+
+     '</select><div class="note" style="margin-top:6px">اليومُ يُحسب من التاريخ — ولا يُكتب باليد</div>'+
+     '<label>المكان</label><select id="opP">'+
+     ["الإذاعة المدرسيّة","المسرح","الساحة","الفصل","المختبر","قاعة النشاط","خارج المدرسة"]
+       .map(function(x){return '<option>'+x+'</option>';}).join('')+'</select>'+
+     '<label>السعة (عددُ الطلبة)</label><input type="number" id="opC" value="5" min="1" max="60">'+
+     '<label>من يُقيمها</label><select id="opBy">'+
+     '<option>رائد النشاط — يحيى الصالبي</option>'+
+     '<option>جهةٌ خارجيّةٌ معتمدة</option>'+
+     '<option>المدرسة — المعلّم المباشر</option></select>'+
+     '<div class="note">المنظَّمةُ يُقيمها رائدُ النشاط بالتنسيق مع اللجنة — ص١٢ بند ٦</div>'+
+     '<div class="row"><button class="btn" id="opOk">افتحها</button>'+
+     '<button class="btn ghost" id="opX">تراجع</button></div>';
+  sheet(h);
+  document.getElementById("opOk").onclick=function(){
+    var w=document.getElementById("opP").value+" · "+document.getElementById("opH").value;
+    S.opps.push({mi:parseInt(document.getElementById("opM").value,10),
+      when:w, cap:parseInt(document.getElementById("opC").value,10)||5,
+      by:document.getElementById("opBy").value, taken:0, open:true, joined:false, done:false, members:[], planned:false, log:[]});
+    OLOG(S.opps[S.opps.length-1],"فُتحت الفرصة","لجنةُ التوجيه الطلابيّ",
+      {more:w+" · السعة "+AR(parseInt(document.getElementById("opC").value,10)||5)});
+    save(); closeSheet(); render(); flash("فُتحت الفرصة");
+  };
+  document.getElementById("opX").onclick=closeSheet;
+}
+
+/* ═══ النموذج ١٠ — خطابُ دعوة وليّ الأمر ═══ */
+function openSummon(fi){
+  var f=S.files[fi]; if(!f) return;
+  var DATES=["١٤٤٨/٥/٣ هـ — الأحد","١٤٤٨/٥/٤ هـ — الاثنين","١٤٤٨/٥/٥ هـ — الثلاثاء",
+    "١٤٤٨/٥/٦ هـ — الأربعاء","١٤٤٨/٥/٧ هـ — الخميس"];
+  var TIMES=["٧:٣٠ صباحًا","٨:٣٠ صباحًا","٩:٣٠ صباحًا","١٠:٣٠ صباحًا","١١:٣٠ صباحًا","١٢:٣٠ ظهرًا"];
+  var PURP=["مناقشةُ خطّة تعديل السلوك والاتّفاق عليها",
+    "إخطارُكم بسلوك الطالب غير المرغوب فيه",
+    "وضعُ برنامجٍ وقائيٍّ مشتركٍ مع الأسرة",
+    "بحثُ أسباب عدم استجابة الطالب للإجراءات"];
+  var h='<h3>خطابُ دعوة وليّ أمر الطالب</h3>'+
+    '<p class="meta">نموذج رقم ١٠ · CONDUCT-1447-OFF · ص٦٧</p>'+
+    '<table><tr><td>وليُّ أمر الطالب</td><td>أحمد راجح الزهراني</td></tr>'+
+    '<tr><td>اسم الطالب</td><td>شادي أحمد راجح الزهراني</td></tr>'+
+    '<tr><td>الصف</td><td>السادس الابتدائيّ — أ</td></tr>'+
+    '<tr><td>المدرسة</td><td>ابتدائيّة الإمام مالك</td></tr></table>'+
+    '<label>التاريخ</label><select id="smD">'+
+    DATES.map(function(x){return '<option>'+x+'</option>';}).join('')+'</select>'+
+    '<div class="note" style="margin-top:6px">اليومُ يُحسب من التاريخ</div>'+
+    '<label>الساعة</label><select id="smT">'+
+    TIMES.map(function(x){return '<option>'+x+'</option>';}).join('')+'</select>'+
+    '<label>هدفُ المقابلة</label><select id="smP">'+
+    PURP.map(function(x){return '<option>'+esc(x)+'</option>';}).join('')+'</select>'+
+    '<label>ردُّ وليّ الأمر</label>'+
+    '<div class="note">بانتظار ردّه من بوّابته — <b>لا تملؤه المدرسة</b></div>'+
+    '<div class="note"><b>الموقّعون:</b> مدير/مديرة المدرسة · وليّ الأمر</div>'+
+    '<div class="row"><button class="btn" id="smOk">أرسله إلى وليّ الأمر</button>'+
+    '<button class="btn ghost" id="smX">تراجع</button></div>';
+  sheet(h);
+  document.getElementById("smOk").onclick=function(){
+    f.summon={d:document.getElementById("smD").value,
+      t:document.getElementById("smT").value,
+      p:document.getElementById("smP").value, reply:null};
+    f.acts.summon=true;
+    LOG(f,"أُرسل خطابُ دعوة وليّ الأمر (١٠)","الوكيل لشؤون الطلّاب","وكيل",
+      {d:"١٤٤٨/٥/١",more:f.summon.d+" · "+f.summon.t});
+    save(); closeSheet(); render();
+    flash("أُرسل خطابُ الدعوة إلى بوّابة وليّ الأمر");
+  };
+  document.getElementById("smX").onclick=closeSheet;
+}
+
+/* ═══ أيّامُ العمل من التقويم الدراسيّ ═══ */
+var CAL=[
+ {h:"١٤٤٨/٥/٣",d:"الأحد",k:"study"},   {h:"١٤٤٨/٥/٤",d:"الاثنين",k:"study"},
+ {h:"١٤٤٨/٥/٥",d:"الثلاثاء",k:"study"},{h:"١٤٤٨/٥/٦",d:"الأربعاء",k:"holiday",why:"إجازةُ اليوم الوطنيّ"},
+ {h:"١٤٤٨/٥/٧",d:"الخميس",k:"study"},  {h:"١٤٤٨/٥/٨",d:"الجمعة",k:"weekend"},
+ {h:"١٤٤٨/٥/٩",d:"السبت",k:"weekend"}, {h:"١٤٤٨/٥/١٠",d:"الأحد",k:"study"},
+ {h:"١٤٤٨/٥/١١",d:"الاثنين",k:"study"},{h:"١٤٤٨/٥/١٢",d:"الثلاثاء",k:"study"},
+ {h:"١٤٤٨/٥/١٣",d:"الأربعاء",k:"study"},{h:"١٤٤٨/٥/١٤",d:"الخميس",k:"study"}];
+function workdaysAfter(fromH,n){
+  var i=0,out=[],start=-1;
+  for(i=0;i<CAL.length;i++) if(fromH.indexOf(CAL[i].h)>=0){ start=i; break; }
+  if(start<0) start=0;
+  for(i=start+1;i<CAL.length && out.length<n;i++)
+    if(CAL[i].k==="study") out.push(CAL[i]);
+  return out;
+}
+function skipped(fromH,n){
+  var i,start=-1,out=[],cnt=0;
+  for(i=0;i<CAL.length;i++) if(fromH.indexOf(CAL[i].h)>=0){ start=i; break; }
+  if(start<0) start=0;
+  for(i=start+1;i<CAL.length && cnt<n;i++){
+    if(CAL[i].k==="study"){ cnt++; }
+    else out.push(CAL[i]);
+  }
+  return out;
+}
+
+function openReschedule(fi){
+  var f=S.files[fi]; if(!f||!f.summon) return;
+  var days=workdaysAfter(f.summon.d,5), skip=skipped(f.summon.d,5);
+  var TIMES=["٧:٣٠ صباحًا","٨:٣٠ صباحًا","٩:٣٠ صباحًا","١٠:٣٠ صباحًا","١١:٣٠ صباحًا","١٢:٣٠ ظهرًا"];
+  var h='<h3>تغييرُ موعد المقابلة</h3>'+
+    '<p class="meta">الموعدُ الأصليّ: '+esc(f.summon.d)+' · '+esc(f.summon.t)+'</p>'+
+    '<div class="note"><b>خمسةُ أيّام عملٍ لا غير</b> — تُحسب من التقويم الدراسيّ، '+
+    'ولا تُعدّ فيها الإجازاتُ ولا نهايةُ الأسبوع</div>'+
+    '<label>الموعدُ الجديد</label><select id="rsD">';
+  days.forEach(function(d,i){
+    h+='<option>'+d.h+' هـ — '+d.d+' · يومُ العمل '+(i+1)+'</option>';});
+  h+='</select><label>الساعة</label><select id="rsT">'+
+     TIMES.map(function(x){return '<option>'+x+'</option>';}).join('')+'</select>'+
+     '<label>سببُ التغيير</label><textarea id="rsW"></textarea>';
+  if(skip.length){
+    h+='<div class="note"><b>لم تُحسب:</b> '+
+       skip.map(function(x){return x.h+' هـ — '+x.d+' ('+
+         (x.k==="holiday"?(x.why||"إجازة"):"نهايةُ الأسبوع")+')';}).join(' · ')+'</div>';}
+  h+='<div class="row"><button class="btn" id="rsOk">أرسل الموعدَ المقترح</button>'+
+     '<button class="btn ghost" id="rsX">تراجع</button></div>';
+  sheet(h);
+  document.getElementById("rsOk").onclick=function(){
+    var w=document.getElementById("rsW").value.trim();
+    if(!w){flash("اكتب سببَ التغيير");return;}
+    f.summon.reply="أرغب بتغيير الموعد";
+    f.summon.newD=document.getElementById("rsD").value;
+    f.summon.newT=document.getElementById("rsT").value;
+    f.summon.why=w; f.acts.reply=true;
+    save(); closeSheet(); render(); flash("أُرسل الموعدُ المقترح إلى المدرسة");
+  };
+  document.getElementById("rsX").onclick=closeSheet;
+}
+
+/* ═══ إثباتُ الاتّصال بوليّ الأمر ═══ */
+function openCall(fi){
+  var f=S.files[fi]; if(!f) return;
+  var TIMES=["٧:٣٠ صباحًا","٨:٣٠ صباحًا","٩:٣٠ صباحًا","١٠:٣٠ صباحًا","١١:٣٠ صباحًا",
+    "١٢:٣٠ ظهرًا","١:٣٠ ظهرًا","٢:٣٠ ظهرًا"];
+  var h='<h3>إثباتُ الاتّصال بوليّ الأمر</h3>'+
+    '<p class="meta">«إشعارُ وليّ أمر الطالب هاتفيًّا بمشكلته السلوكيّة» — ص٢٠</p>'+
+    '<table><tr><td>وليُّ الأمر</td><td>أحمد راجح الزهراني</td></tr>'+
+    '<tr><td>الجوّال</td><td>٠٥٠٥٥٥١٢٣٤</td></tr>'+
+    '<tr><td>الطالب</td><td>شادي أحمد راجح الزهراني · السادس أ</td></tr>'+
+    '<tr><td>المشكلة</td><td>'+esc(PROBLEMS[f.p])+' — الدرجة ١</td></tr></table>'+
+    '<label>التاريخ</label><select id="clD">'+
+    CAL.filter(function(x){return x.k==="study";}).map(function(x){
+      return '<option>'+x.h+' هـ — '+x.d+'</option>';}).join('')+'</select>'+
+    '<label>الساعة</label><select id="clT">'+
+    TIMES.map(function(x){return '<option>'+x+'</option>';}).join('')+'</select>'+
+    '<label>نتيجةُ الاتّصال</label><select id="clR">'+
+    ["ردَّ وأُشعر بالمشكلة والإجراءات","ردَّ ووعد بالمتابعة",
+     "لم يردّ — وسيُعاد الاتّصال","الرقمُ مغلق"].map(function(x){
+      return '<option>'+esc(x)+'</option>';}).join('')+'</select>'+
+    '<label>ما دار في المكالمة</label><textarea id="clW"></textarea>'+
+    bankBox("callWhat","clW",f.p)+
+    '<div class="row"><button class="btn" id="clOk">أثبت الاتّصال</button>'+
+    '<button class="btn ghost" id="clX">تراجع</button></div>';
+  sheet(h);
+  document.getElementById("clOk").onclick=function(){
+    var w=document.getElementById("clW").value.trim();
+    if(!w){flash("اكتب ما دار في المكالمة");return;}
+    var d=document.getElementById("clD").value, t=document.getElementById("clT").value,
+        r=document.getElementById("clR").value;
+    f.call={d:d,t:t,r:r,w:w}; f.acts.call=true;
+    LOG(f,"اتُّصل بوليّ الأمر هاتفيًّا · "+t,"الوكيل لشؤون الطلّاب","وكيل",
+      {d:d.split(" هـ")[0],more:r+" · "+w});
+    save(); closeSheet(); render(); flash("أُثبت الاتّصال");
+  };
+  document.getElementById("clX").onclick=closeSheet;
+}
+
+/* ═══ دراسةُ الحالة — سرّيّةٌ عند الموجّه ═══ */
+function openCase(fi){
+  var f=S.files[fi]; if(!f||!f.cs) return;
+  var cs=f.cs;
+  var h='<h3>دراسةُ حالة الطالب</h3>'+
+    '<p class="meta">سرّيّةٌ — لا يراها غيرُك · ويخرج منها التقريرُ وحدَه</p>'+
+    '<div class="note"><b>اجتهادٌ لا نصّ:</b> شكلُ هذي الدراسة من تصميمنا — '+
+    'والدليلُ يوجب الفعلَ («تحويلُه للموجّه لدراسة حالته» · ص٢٠) <b>ولا نموذجَ له</b> '+
+    'في النماذج السبعةَ عشر، ولا في نور</div>'+
+    '<div class="note"><b>أوّلًا: ما يعرفه النظام</b></div>'+
+    '<table><tr><td>الطالب</td><td>شادي أحمد راجح الزهراني</td></tr>'+
+    '<tr><td>الصف</td><td>السادس الابتدائيّ — أ</td></tr>'+
+    '<tr><td>وليُّ الأمر</td><td>أحمد راجح الزهراني</td></tr>'+
+    '<tr><td>المشكلة</td><td>'+esc(PROBLEMS[f.p])+' — الدرجة ١</td></tr>'+
+    '<tr><td>الرصدات</td><td>'+AR(f.recs.length)+' · '+
+      esc(f.recs.map(function(r){return r.d;}).join(" · "))+'</td></tr>'+
+    '<tr><td>دوّنها</td><td>'+esc(f.by||"—")+'</td></tr>'+
+    '<tr><td>المحسوم</td><td>'+AR(deducted())+' درجة</td></tr>'+
+    '<tr><td>حصرُ الوكيل</td><td>'+(f.survey?esc(f.survey.neg.join(" · ")):'لم يُكتب')+'</td></tr>'+
+    '<tr><td>المسبّبات</td><td>'+(f.survey&&f.survey.cause?esc(f.survey.cause):'—')+'</td></tr>'+
+    (f.taskSurvey?'<tr><td>حصرُ المكلَّف</td><td>'+esc(f.taskSurvey.neg.join(" · "))+'</td></tr>':'')+
+    (f.call?'<tr><td>الاتّصالُ بوليّه</td><td>'+esc(f.call.r)+' — '+esc(f.call.w)+'</td></tr>':'')+
+    '</table>'+
+    '<div class="note"><b>ثانيًا: ما تكتبه أنت</b></div>'+
+    '<label>تفسيرُ الطالب للمشكلة — بلسانه</label><textarea id="csSay">'+esc(cs.say)+'</textarea>'+
+    bankBox("csSay","csSay",f.p)+
+    '<label>ما لاحظتَه أنت</label><textarea id="csSeen">'+esc(cs.seen)+'</textarea>'+
+    bankBox("csSeen","csSeen",f.p)+
+    '<label>العواملُ التي تراها</label><textarea id="csF">'+esc(cs.factors)+'</textarea>'+
+    bankBox("csFactors","csF",f.p)+
+    '<label>التدخّلُ المخطَّط</label><textarea id="csP">'+esc(cs.plan)+'</textarea>'+
+    bankBox("csPlan","csP",f.p)+
+    '<div class="note">لا حقلَ للأسرة ولا للحالة الصحّيّة — '+
+    '<b>فلا سندَ نظاميًّا يأذن بجمعها، ونور نفسُه لا يسألها</b></div>'+
+    '<div class="row"><button class="btn" id="csOk">احفظ الدراسة</button>'+
+    '<button class="btn ghost" id="csX">تراجع</button></div>';
+  sheet(h);
+  document.getElementById("csOk").onclick=function(){
+    cs.say=document.getElementById("csSay").value.trim();
+    cs.seen=document.getElementById("csSeen").value.trim();
+    cs.factors=document.getElementById("csF").value.trim();
+    cs.plan=document.getElementById("csP").value.trim();
+    if(!cs.say||!cs.seen||!cs.factors||!cs.plan){
+      flash("أكمل الحقولَ الأربعةَ — فالدراسةُ لا تُحفظ ناقصة"); return; }
+    cs.filed=true; f.acts.casestudy=true;
+    LOG(f,"دُرست حالةُ الطالب","سعيد زنبيل — الموجّه","موجّه",
+      {d:"١٤٤٨/٤/٢٦",more:"سرّيّةٌ عند الموجّه — ويخرج منها التقريرُ وحدَه"});
+    save(); closeSheet(); render(); flash("حُفظت دراسةُ الحالة");
+  };
+  document.getElementById("csX").onclick=closeSheet;
+}
+
+/* ═══ جلساتُ المتابعة — سرّيّةٌ عند الموجّه ═══ */
+function openFollow(fi){
+  var f=S.files[fi]; if(!f||!f.cs) return;
+  if(!f.cs.filed){ flash("لا تُفتح جلسةٌ قبل أن تُكتب دراسةُ الحالة"); return; }
+  if(!f.cs.sessions) f.cs.sessions=[];
+  var DATES=["١٤٤٨/٥/٣ هـ — الأحد","١٤٤٨/٥/٥ هـ — الثلاثاء","١٤٤٨/٥/١٠ هـ — الأحد",
+    "١٤٤٨/٥/١٢ هـ — الثلاثاء","١٤٤٨/٥/١٧ هـ — الأحد"];
+  var h='<h3>جلسةُ متابعة</h3>'+
+    '<p class="meta">سرّيّةٌ — لا يراها غيرُك · ويخرج منها التقريرُ وحدَه</p>'+
+    '<div class="note"><b>اجتهادٌ لا نصّ:</b> شكلُ الجلسة من تصميمنا — '+
+    'والدليلُ يوجب الفعلَ («متابعةُ حالته لتقديم الخدمات التربويّة» · ص٢٠) '+
+    '<b>ولا نموذجَ له</b>؛ والدليلُ الإجرائيُّ ص١٤٥ يقول للجلسات التوجيهيّة: «لا يوجد نموذج»</div>'+
+    '<table><tr><td>الطالب</td><td>شادي أحمد راجح الزهراني · السادس أ</td></tr>'+
+    '<tr><td>المشكلة</td><td>'+esc(PROBLEMS[f.p])+'</td></tr>'+
+    '<tr><td>التدخّلُ المخطَّط</td><td>'+esc(f.cs.plan||"—")+'</td></tr>'+
+    '<tr><td>رقمُ الجلسة</td><td>'+AR(f.cs.sessions.length+1)+'</td></tr></table>'+
+    '<label>التاريخ</label><select id="fwD">'+
+    DATES.map(function(x){return '<option>'+x+'</option>';}).join('')+'</select>'+
+    '<label>المدّة</label><select id="fwM">'+
+    ["١٠ دقائق","١٥ دقيقة","٢٠ دقيقة","٣٠ دقيقة"].map(function(x){
+      return '<option>'+x+'</option>';}).join('')+'</select>'+
+    '<label>ما نُوقش</label><textarea id="fwT"></textarea>'+
+    bankBox("fwT","fwT",f.p)+
+    '<label>مدى الاستجابة</label><select id="fwR">'+
+    ["تحسّنٌ ملحوظ","تحسّنٌ طفيف","السلوكُ مستمرّ","تراجُع"].map(function(x){
+      return '<option>'+esc(x)+'</option>';}).join('')+'</select>'+
+    '<label>الخطوةُ التالية</label><textarea id="fwN"></textarea>'+
+    bankBox("fwN","fwN",f.p)+
+    '<div class="row"><button class="btn" id="fwOk">قيّد الجلسة</button>'+
+    '<button class="btn ghost" id="fwX">تراجع</button></div>';
+  sheet(h);
+  document.getElementById("fwOk").onclick=function(){
+    var t=document.getElementById("fwT").value.trim(),
+        n=document.getElementById("fwN").value.trim();
+    if(!t||!n){ flash("اكتب ما نُوقش والخطوةَ التالية"); return; }
+    f.cs.sessions.push({no:f.cs.sessions.length+1,
+      d:document.getElementById("fwD").value,
+      m:document.getElementById("fwM").value,
+      t:t, r:document.getElementById("fwR").value, n:n});
+    f.acts.followup=true;
+    LOG(f,"جلسةُ متابعةٍ رقم "+AR(f.cs.sessions.length),"سعيد زنبيل — الموجّه","موجّه",
+      {d:document.getElementById("fwD").value.split(" هـ")[0],
+       more:"سرّيّةٌ عند الموجّه — "+document.getElementById("fwR").value});
+    save(); closeSheet(); render();
+    flash("قُيّدت الجلسةُ رقم "+AR(f.cs.sessions.length));
+  };
+  document.getElementById("fwX").onclick=closeSheet;
+}
+
+/* ═══ تقريرُ دراسة الحالة — يُرفع للّجنة ═══ */
+function openReport(fi){
+  var f=S.files[fi]; if(!f||!f.cs) return;
+  if(!f.cs.filed){ flash("لا يُرفع تقريرٌ قبل أن تُكتب دراسةُ الحالة"); return; }
+  var ss=(f.cs.sessions||[]);
+  if(!ss.length){ flash("لا يُرفع تقريرٌ بلا جلسةِ متابعةٍ واحدةٍ على الأقلّ"); return; }
+  var R=respond(f), last=ss[ss.length-1];
+  var rp=f.cs.report||{view:"",rec:""};
+  var h='<h3>تقريرُ دراسة الحالة</h3>'+
+    '<p class="meta">يُرفع إلى لجنة التوجيه الطلابيّ — ص٢٠</p>'+
+    '<div class="note"><b>نصٌّ لا اجتهاد:</b> الدليلُ يوجب التقريرَ صراحةً — '+
+    '«التحويلُ للّجنة <b>وفق تقرير دراسة الحالة من الموجّه</b>» · ص٢٠. '+
+    '<br><b>واجتهادُنا شكلُه وحدَه</b> — فلا نموذجَ له في النماذج السبعةَ عشر.</div>'+
+    '<div class="note"><b>أوّلًا: ما وقع</b> — آليًّا</div>'+
+    '<table><tr><td>الطالب</td><td>شادي أحمد راجح الزهراني · السادس أ</td></tr>'+
+    '<tr><td>المشكلة</td><td>'+esc(PROBLEMS[f.p])+' — الدرجة ١ · حضوريّ</td></tr>'+
+    '<tr><td>عددُ الرصدات</td><td>'+AR(f.recs.length)+
+      (f.after?' · وتكرّر '+AR(f.after)+' بعد الخطّة':'')+'</td></tr>'+
+    '<tr><td>المحسوم</td><td>'+AR(deducted())+' درجة</td></tr></table>'+
+    '<div class="note"><b>ثانيًا: ما فُعل</b> — آليًّا</div>'+
+    '<table><tr><td>حصرُ السلوكيّات</td><td>'+(f.survey?'كُتب':'لم يُكتب')+'</td></tr>'+
+    '<tr><td>إشعارُ وليّ الأمر</td><td>'+(f.call?'هاتفيًّا · '+esc(f.call.d):'لم يقع')+'</td></tr>'+
+    '<tr><td>دعوةُ وليّ الأمر</td><td>'+(f.summon?(f.summon.reply?esc(f.summon.reply):'أُرسلت — بانتظار ردّه'):'لم تقع')+'</td></tr>'+
+    '<tr><td>خطّةُ تعديل السلوك</td><td>'+(f.plan&&f.plan.final?'معتمدة':'لم تُعتمد')+'</td></tr>'+
+    '<tr><td>دراسةُ الحالة</td><td>مكتوبةٌ '+esc(f.cs.opened)+' هـ</td></tr>'+
+    '<tr><td>جلساتُ المتابعة</td><td><b>'+AR(ss.length)+'</b> جلسة · من '+
+      esc(ss[0].d.split(" هـ")[0])+' إلى '+esc(last.d.split(" هـ")[0])+'</td></tr></table>'+
+    '<div class="note"><b>ثالثًا: مدى الاستجابة</b> — آليًّا</div>'+
+    '<table><tr><td>آخرُ تقديرٍ في الجلسات</td><td><b>'+esc(last.r)+'</b></td></tr>'+
+    '<tr><td>قياسُ الرصدات</td><td>'+(R.state==="improved"?'<b style="color:var(--brand)">لم يتكرّر بعد الخطّة</b>'
+      :R.state==="failed"?'<b style="color:var(--bad)">تكرّر '+AR(R.post||0)+' بعد الخطّة</b>'
+      :'بانتظار الحكم')+'</td></tr>'+
+    '<tr><td>مستندُ الحكم</td><td>'+esc(R.by||"—")+'</td></tr></table>'+
+    '<div class="note">لا تفاصيلَ للجلسات ولا للدراسة — <b>ملخَّصُها لا نصُّها</b>؛ '+
+    'فالدراسةُ والجلساتُ سرّيّتان عند الموجّه</div>'+
+    '<div class="note"><b>رابعًا: ما تكتبه أنت</b></div>'+
+    '<label>الرأيُ الفنّيّ</label><textarea id="rpV">'+esc(rp.view)+'</textarea>'+
+    bankBox("rpV","rpV",f.p)+
+    '<label>التوصية</label><textarea id="rpR">'+esc(rp.rec)+'</textarea>'+
+    bankBox("rpR","rpR",f.p)+
+    '<div class="note"><b>الموقّع:</b> سعيد زنبيل — الموجّه الطلابيّ</div>'+
+    '<div class="row"><button class="btn" id="rpOk">ارفعه إلى اللجنة</button>'+
+    '<button class="btn ghost" id="rpX">تراجع</button></div>';
+  sheet(h);
+  document.getElementById("rpOk").onclick=function(){
+    var v=document.getElementById("rpV").value.trim(),
+        r=document.getElementById("rpR").value.trim();
+    if(!v||!r){ flash("اكتب الرأيَ الفنّيَّ والتوصية"); return; }
+    f.cs.report={view:v,rec:r,filed:true,d:"١٤٤٨/٥/٦",
+      sessions:ss.length, span:ss[0].d.split(" هـ")[0]+" — "+last.d.split(" هـ")[0],
+      lastR:last.r, judge:(R.state==="failed"?"لم يستجب":R.state==="improved"?"استجاب":"—")};
+    f.acts.casereport=true;
+    LOG(f,"رُفع تقريرُ دراسة الحالة إلى لجنة التوجيه","سعيد زنبيل — الموجّه","موجّه",
+      {d:"١٤٤٨/٥/٦",more:"عن "+AR(ss.length)+" جلسة · "+last.r});
+    save(); closeSheet(); render(); flash("رُفع التقريرُ إلى اللجنة");
+  };
+  document.getElementById("rpX").onclick=closeSheet;
+}
+
+/* ═══ ملفُّ الفرصة — سجلُّ المجموعة ═══ */
+function openOppFile(oi,asStudent){
+  var o=S.opps[oi]; if(!o) return;
+  var m=MERITS[o.mi];
+  var list=(o.members||[]);
+  if(asStudent) list=list.filter(function(p){return p.isMe;});
+  var h='<h3>ملفُّ الفرصة</h3>'+
+    '<p class="meta">'+esc(m.t)+(asStudent?' — نسختُك':'')+'</p>'+
+    '<table><tr><td>الممارسة</td><td>'+esc(m.t)+'</td></tr>'+
+    '<tr><td>نوعُها</td><td>'+esc(KIND_AR[m.kind]||"—")+'</td></tr>'+
+    '<tr><td>الدرجةُ المقرّرة</td><td>'+AR(m.p)+' · ص١٩</td></tr>'+
+    '<tr><td>موعدُها ومكانُها</td><td>'+esc(o.when)+'</td></tr>'+
+    (asStudent?'':'<tr><td>السعة</td><td>'+AR(o.cap)+'</td></tr>'+
+      '<tr><td>المشاركون</td><td>'+AR((o.members||[]).length)+'</td></tr>')+
+    '<tr><td>من أقامها</td><td>'+esc(o.by)+'</td></tr>'+
+    '<tr><td>فتحَها</td><td>لجنةُ التوجيه الطلابيّ</td></tr>'+
+    '<tr><td>حالُها</td><td>'+(o.open?'مفتوحة':'مُغلقة — '+esc(o.closeWhy||"—"))+'</td></tr></table>'+
+    '<div class="note"><b>'+(asStudent?'مشاركتي':'المشاركون وإثباتاتُهم')+'</b></div>';
+  if(!list.length) h+='<p class="empty">لا مشاركين</p>';
+  list.forEach(function(p){
+    h+='<div class="file"><h5>'+esc(p.name)+'</h5>'+
+       '<p>'+(p.verdict?'<b style="color:var('+(p.cert?'--brand':'--bad')+')">'+esc(VERD[p.verdict])+'</b>'
+             :(p.filed?'<b style="color:var(--warn)">رفع نموذجَه — بانتظار الإقرار</b>':'لم يرفع بعد'))+
+       (p.graded?' · <b>قُدّرت '+AR(p.pts)+' درجة</b>':'')+'</p>';
+    if(p.filed) h+='<div class="lgd"><i class="k">ما كتبه:</i><i>'+esc(p.txt||"")+'</i>'+
+      (p.attDesc?'<i class="k">المرفق:</i><i>'+esc(p.attDesc)+'</i>':'')+
+      (p.att?'<i class="p">'+esc(p.att)+'</i>':'')+'</div>';
+    if(p.note) h+='<div class="lgd"><i class="k">ملاحظةُ المقرّ:</i><i>'+esc(p.note)+'</i>'+
+      (p.dlg?'<i class="k">أقرّها:</i><i>'+esc(p.dlg)+'</i>':'')+
+      (p.file?'<i class="p">'+esc(p.file)+'</i>':'')+'</div>';
+    h+='</div>';});
+  if(!asStudent){
+    var gr=list.filter(function(p){return p.graded;});
+    if(gr.length||o.note){
+      h+='<div class="note"><b>تقديرُ اللجنة</b></div>'+
+         '<table><tr><td>مُنحت درجاتُهم</td><td>'+AR(gr.length)+' من '+AR(list.length)+'</td></tr>'+
+         '<tr><td>مجموعُ ما مُنح</td><td>'+AR(gr.reduce(function(a,p){return a+(p.pts||0);},0))+'</td></tr>'+
+         (o.note?'<tr><td>التوصية</td><td>'+esc(o.note)+'</td></tr>':'')+
+         '<tr><td>اعتمادُ المخطّط</td><td>'+(o.planned?'معتمد':'لم يُعتمد بعد')+'</td></tr></table>';
+    }
+  }
+  h+='<div class="note"><b>سجلُّ الفرصة</b></div>';
+  if(!o.log||!o.log.length) h+='<p class="empty">لا أحداثَ بعد</p>';
+  else { h+='<ul class="acts">';
+    o.log.slice().reverse().forEach(function(x){
+      if(asStudent && x.me===false) return;
+      h+='<li style="align-items:flex-start"><i class="tick ok">✓</i><span style="flex:1">'+esc(x.t)+
+         (x.more?'<br><span style="color:var(--mute);font-size:11.5px">'+esc(x.more)+'</span>':'')+
+         '</span><span class="who">'+esc(x.by)+' · '+esc(x.d)+' هـ</span></li>';});
+    h+='</ul>'; }
+  h+='<div class="row"><button class="btn ghost" id="ofX">إغلاق</button></div>';
+  sheet(h);
+  document.getElementById("ofX").onclick=closeSheet;
+}
+
+/* ═══ الطالبُ يملأ نموذجَ مشاركته ═══ */
+function openFile(oi){
+  var o=S.opps[oi]; if(!o) return;
+  var me=null,j=-1;
+  (o.members||[]).forEach(function(p,i){ if(p.isMe){me=p;j=i;} });
+  if(!me) return;
+  var m=MERITS[o.mi];
+  var h='<h3>نموذجُ مشاركتي</h3>'+
+    '<p class="meta">تملؤه بنفسك — ويقرّه رائدُ النشاط · ص١٦ بند ٦</p>'+
+    '<table><tr><td>الممارسة</td><td>'+esc(m.t)+'</td></tr>'+
+    '<tr><td>موعدُها ومكانُها</td><td>'+esc(o.when)+'</td></tr>'+
+    '<tr><td>الدرجةُ المقرّرة</td><td>'+AR(m.p)+' · ص١٩</td></tr>'+
+    '<tr><td>الطالب</td><td>شادي أحمد راجح الزهراني · السادس أ</td></tr></table>'+
+    '<label>ماذا فعلتَ بالتحديد</label><textarea id="fiT">'+esc(me.txt||"")+'</textarea>'+
+    '<label>الشاهدُ المرفق — إلزاميّ</label>'+
+    '<input type="file" id="fiF" accept="image/*,application/pdf">'+
+    '<div class="note" id="fiN">'+(me.att?'<b>أُرفق:</b> '+esc(me.att):'لم يُرفق شيءٌ بعد — <b>لا يُرفع نموذجٌ بلا مرفق</b>')+'</div>'+
+    '<label>وصفُ المرفق</label>'+
+    '<input type="text" id="fiA" value="'+esc(me.attDesc||"")+'" placeholder="صورةٌ من الإذاعة · شهادةٌ من الجهة…">'+
+    '<div class="note">'+(deducted()>0
+      ?'<b>تعويضُ المحسوم</b> — '+AR(deducted())+' درجة · فإذا رجعتَ إلى ٨٠ فتحَ لك الاكتساب'
+      :'<b>اكتسابُ سلوكٍ متميّز</b> — لا محسومَ عليك')+'</div>'+
+    '<div class="row"><button class="btn" id="fiOk">ارفع نموذجَك</button>'+
+    '<button class="btn ghost" id="fiX">تراجع</button></div>';
+  sheet(h);
+  var picked=me.att||null;
+  document.getElementById("fiF").onchange=function(ev){
+    var fl=ev.target.files&&ev.target.files[0]; if(!fl) return;
+    picked=fl.name;
+    document.getElementById("fiN").innerHTML='<b>أُرفق:</b> '+esc(fl.name);
+  };
+  document.getElementById("fiOk").onclick=function(){
+    var t=document.getElementById("fiT").value.trim(),
+        a=document.getElementById("fiA").value.trim();
+    if(!t){flash("اكتب ماذا فعلتَ بالتحديد");return;}
+    if(!picked){flash("أرفق شاهدَك — المرفقُ إلزاميّ");return;}
+    if(!a){flash("اكتب وصفَ المرفق");return;}
+    me.txt=t; me.att=picked; me.attDesc=a; me.filed=true;
+    OLOG(o,"رفع شادي أحمد نموذجَ مشاركته","شادي أحمد الزهراني",{d:"١٤٤٨/٥/٤",more:t});
+    save(); closeSheet(); render(); flash("رُفع نموذجُك — بانتظار إقرار رائد النشاط");
+  };
+  document.getElementById("fiX").onclick=closeSheet;
+}
+
+/* ═══ شهادةُ رائد النشاط بالتنفيذ ═══ */
+function openCertify(oi,j,pre){
+  var o=S.opps[oi]; if(!o||!o.members[j]) return;
+  var p=o.members[j], m=MERITS[o.mi];
+  var sel = pre || p.verdict || "ok";
+  var h='<h3>إقرارُ مشاركة الطالب</h3>'+
+    '<p class="meta">'+esc(m.t)+' · '+esc(o.when)+'</p>'+
+    '<table><tr><td>الطالب</td><td>'+esc(p.name)+'</td></tr>'+
+    '<tr><td>الدرجةُ المقرّرة</td><td>'+AR(m.p)+' · ص١٩</td></tr>'+
+    '<tr><td>المقرّ</td><td>'+esc(p.dlg||"رائد النشاط — يحيى الصالبي")+'</td></tr></table>'+
+    '<div class="note"><b>ما كتبه الطالب:</b> '+esc(p.txt||"—")+
+    (p.attDesc?'<br><b>المرفق:</b> '+esc(p.attDesc):'')+
+    (p.att?' · '+esc(p.att):'')+'</div>'+
+    (p.dlg?'<div class="note"><b>المطلوب:</b> '+esc(p.dlgWhat||"")+'</div>':'')+
+    '<label>إقرارُك</label><select id="ctK">'+
+    ['ok|نفّذ الممارسةَ — أشهد له','partial|نفّذ جزئيًّا','no|لم يشارك',
+     'absent|لم يحضر'].map(function(x){var q=x.split("|");
+      return '<option value="'+q[0]+'"'+(sel===q[0]?' selected':'')+'>'+q[1]+'</option>';}).join('')+
+    '</select>'+
+    '<label>ما لاحظتَه</label><textarea id="ctT"></textarea>'+
+    bankBox("ctT","ctT",null)+
+    '<label>مرفقُ الشاهد (صورةٌ أو ملفّ)</label>'+
+    '<input type="file" id="ctF" accept="image/*,application/pdf">'+
+    '<div class="note" id="ctN">اختياريٌّ مع الشهادة · <b>إلزاميٌّ مع الرفض</b></div>'+
+    '<div class="row"><button class="btn" id="ctOk">قيّد شهادتك</button>'+
+    '<button class="btn ghost" id="ctX">تراجع</button></div>';
+  sheet(h);
+  var picked=null;
+  document.getElementById("ctF").onchange=function(ev){
+    var fl=ev.target.files&&ev.target.files[0]; if(!fl) return;
+    picked=fl.name;
+    document.getElementById("ctN").innerHTML='<b>أُرفق:</b> '+esc(fl.name);
+  };
+  document.getElementById("ctOk").onclick=function(){
+    var k=document.getElementById("ctK").value,
+        t=document.getElementById("ctT").value.trim();
+    if(!t){ flash("اكتب ما لاحظتَه"); return; }
+    if(k!=="ok" && !t){ flash("لا يقع الرفضُ بلا سبب"); return; }
+    p.verdict=k; p.note=t; p.file=picked;
+    p.cert = (k==="ok"||k==="partial");
+    p.partial = (k==="partial");
+    if(p.isMe) o.done = p.cert;
+    OLOG(o,"أُقرّت مشاركةُ "+p.name.split(" ")[0]+" — "+VERD[k],
+      (p.dlg||"رائد النشاط — يحيى الصالبي"),{d:"١٤٤٨/٥/٥",more:t});
+    save(); closeSheet(); render();
+    flash(p.cert ? (k==="partial"?"شُهد بتنفيذٍ جزئيّ":"شُهد بالتنفيذ") : "قُيّد أنّه لم ينفّذ");
+  };
+  document.getElementById("ctX").onclick=closeSheet;
+}
+
+/* ═══ طلبُ رأي معلّمٍ أو أكثر ═══ */
+var TEACHERS=["عبدالله عبدالرحمن — الدراسات الإسلاميّة","أحمد عوض — رائد الفصل",
+ "سعد الغامدي — الرياضيّات","ماجد الزهراني — اللغة العربيّة",
+ "خالد القرني — العلوم","فهد الشهري — التربية البدنيّة"];
+function openAskTeachers(fi){
+  var f=S.files[fi]; if(!f||!f.plan) return;
+  if(!f.plan.teachers) f.plan.teachers=[];
+  var have=f.plan.teachers.map(function(t){return t.who;});
+  var h='<h3>طلبُ رأي المعلّمين</h3>'+
+    '<p class="meta">نموذج ٣ · القسمُ السادس — تقييمُ فاعليّة الخطّة</p>'+
+    '<div class="note">اختر معلّمًا أو أكثر · <b>ومن طُلب منه لا يُطلب منه ثانيةً</b></div>'+
+    '<label>المعلّمون</label><div class="pick" id="tkP">';
+  TEACHERS.forEach(function(t){
+    var done=have.indexOf(t)>=0;
+    h+='<span data-v="'+esc(t)+'"'+(done?' class="on" data-lock="1"':'')+'>'+
+       esc(t.split(" — ")[0])+(done?' ✓':'')+'</span>';});
+  h+='</div><div class="tip" id="tkT">من اختير بعلامةٍ ✓ طُلب منه سلفًا</div>'+
+     '<div class="row"><button class="btn" id="tkOk">اطلب منهم</button>'+
+     '<button class="btn ghost" id="tkX">تراجع</button></div>';
+  sheet(h);
+  var box=document.getElementById("tkP"), tip=document.getElementById("tkT");
+  box.querySelectorAll("span").forEach(function(sp){
+    sp.onclick=function(){
+      if(sp.getAttribute("data-lock")){ tip.textContent="طُلب منه سلفًا — ولا يُكرَّر"; return; }
+      sp.classList.toggle("on");
+      tip.textContent="المختار: "+AR(box.querySelectorAll("span.on:not([data-lock])").length);
+    };});
+  document.getElementById("tkOk").onclick=function(){
+    var picks=[];
+    box.querySelectorAll("span.on").forEach(function(sp){
+      if(!sp.getAttribute("data-lock")) picks.push(sp.getAttribute("data-v"));});
+    if(!picks.length){ flash("اختر معلّمًا واحدًا على الأقلّ"); return; }
+    picks.forEach(function(w){ f.plan.teachers.push({who:w,op:""}); });
+    LOG(f,"طُلب رأيُ "+AR(picks.length)+" من المعلّمين في خطّة تعديل السلوك",
+      "سعيد زنبيل — الموجّه","موجّه",
+      {d:"١٤٤٨/٥/٣",detail:picks.map(function(x){
+        return '<i>'+esc(x.split(" — ")[0])+'</i>';}).join("")});
+    save(); closeSheet(); render(); flash("طُلب رأيُ "+AR(picks.length));
+  };
+  document.getElementById("tkX").onclick=closeSheet;
+}
+
+/* ═══ كتابةُ رأيٍ في خطّة تعديل السلوك ═══ */
+function openOpinion(fi,role,ti){
+  var f=S.files[fi]; if(!f||!f.plan) return;
+  var who = role==="D"?"الوكيل لشؤون الطلّاب"
+            :role==="G"?"أحمد راجح الزهراني — وليّ الأمر"
+            :((f.plan.teachers||[])[ti]||{}).who||"معلّم الفصل";
+  var h='<h3>رأيُك في خطّة تعديل السلوك</h3>'+
+    '<p class="meta">نموذج ٣ · القسمُ السادس — تقييمُ فاعليّة الخطّة · ص٦١</p>'+
+    '<table><tr><td>الطالب</td><td>شادي أحمد راجح الزهراني</td></tr>'+
+    '<tr><td>المشكلة</td><td>'+esc(PROBLEMS[f.p])+'</td></tr>'+
+    '<tr><td>السلوكُ المرغوب</td><td>'+esc(f.plan.target||"—")+'</td></tr>'+
+    '<tr><td>أوّلُ إجراء</td><td>'+esc((f.plan.tx||[])[0]||"—")+'</td></tr>'+
+    '<tr><td>أعدّها</td><td>سعيد زنبيل — الموجّه الطلابيّ</td></tr></table>'+
+    '<label>رأيُك</label><textarea id="opT"></textarea>'+
+    '<div class="note">الرأيُ لصاحبه — <b>'+esc(who)+'</b></div>'+
+    '<div class="row"><button class="btn" id="opOk">أرسل رأيَك</button>'+
+    '<button class="btn ghost" id="opX">تراجع</button></div>';
+  sheet(h);
+  document.getElementById("opOk").onclick=function(){
+    var t=document.getElementById("opT").value.trim();
+    if(!t){flash("اكتب رأيَك");return;}
+    if(role==="D") f.plan.vDeputy=t;
+    else if(role==="G") f.plan.vGuardian=t;
+    else { if(f.plan.teachers&&f.plan.teachers[ti]) f.plan.teachers[ti].op=t; f.plan.vTeacher=t; }
+    LOG(f,"كتب "+who.split(" — ")[0]+" رأيَه في خطّة تعديل السلوك",who,role,{d:"١٤٤٨/٥/٤",more:t});
+    save(); closeSheet(); render(); flash("أُرسل رأيُك");
+  };
+  document.getElementById("opX").onclick=closeSheet;
+}
+
+/* ═══ إحالةُ إثبات المشاركة ═══ */
+function openDelegate(oi,j){
+  var o=S.opps[oi]; if(!o||!o.members[j]) return;
+  var p=o.members[j], m=MERITS[o.mi];
+  var h='<h3>إحالةُ إثبات المشاركة</h3>'+
+    '<p class="meta">هذا الجزءُ وحدَه — ومن يُحال إليه يثبت ولا يرى سواه</p>'+
+    '<table><tr><td>الطالب</td><td>'+esc(p.name)+'</td></tr>'+
+    '<tr><td>الممارسة</td><td>'+esc(m.t)+'</td></tr>'+
+    '<tr><td>موعدُها</td><td>'+esc(o.when)+'</td></tr></table>'+
+    '<label>من يثبتها</label><select id="dgWho">';
+  STAFF.concat(["مشرفُ الإذاعة","معلّمُ الحصّة","رائدُ الفصل"]).forEach(function(x){
+    h+='<option>'+esc(x)+'</option>';});
+  h+='</select><label>المطلوبُ منه صريحًا</label>'+
+     '<textarea id="dgWhat">أثبت مشاركةَ الطالب في هذي الممارسة أو عدمَها، وأرفق ما يشهد بذلك.</textarea>'+
+     '<div class="row"><button class="btn" id="dgOk">أحِلها</button>'+
+     '<button class="btn ghost" id="dgX">تراجع</button></div>';
+  sheet(h);
+  document.getElementById("dgOk").onclick=function(){
+    var w=document.getElementById("dgWhat").value.trim();
+    if(!w){flash("اكتب المطلوبَ صريحًا");return;}
+    p.dlg=document.getElementById("dgWho").value; p.dlgWhat=w;
+    save(); closeSheet(); render(); flash("أُحيلت إلى "+p.dlg.split(" — ")[0]);
+  };
+  document.getElementById("dgX").onclick=closeSheet;
+}
+
+/* ═══ إحالةُ الملفّ إلى اللجنة ═══ */
+function openRefer(fi){
+  var f=S.files[fi]; if(!f) return;
+  var R=respond(f);
+  if(R.state==="no-plan"){
+    var why = "لم تُعتمد خطّةُ تعديل السلوك بعد";
+    var hb='<h3>لا تُفتح الإحالةُ بعد</h3>'+
+      '<p class="meta">«لبحث أسباب <b>عدم استجابة</b> الطالب لإجراءات تعديل السلوك» — ص٢٠</p>'+
+      '<div class="note" style="border-right:3px solid var(--bad)"><b>السبب:</b> '+esc(why)+'</div>'+
+      '<div class="note">عدمُ الاستجابة يُثبَت بما وقع بعد الخطّة: '+
+      '<b>رُصد بعدها ⇒ لم يتعدّل</b> · <b>ولم يُرصد ⇒ تعدّل</b></div>';
+    if(R.pre!=null) hb+='<table><tr><td>قبل الخطّة</td><td>'+AR(R.pre)+'</td></tr>'+
+      (R.post!=null?'<tr><td>بعد الخطّة</td><td>'+AR(R.post)+'</td></tr>':'')+'</table>';
+    hb+='<div class="row"><button class="btn ghost" id="rbX">فهمت</button></div>';
+    sheet(hb); document.getElementById("rbX").onclick=closeSheet; return;
+  }
+  var h='<h3>إحالةُ الملفّ إلى لجنة التوجيه</h3>'+
+    '<p class="meta">«لبحث أسباب عدم استجابة الطالب · وفق تقرير دراسة الحالة» — ص٢٠</p>'+
+    '<table><tr><td>الطالب</td><td>شادي أحمد راجح الزهراني</td></tr>'+
+    '<tr><td>السلوك</td><td>'+esc(PROBLEMS[f.p])+'</td></tr>'+
+    '<tr><td>التكرار</td><td>'+AR(step(f))+' رصدات</td></tr>'+
+    '<tr><td>المحسوم</td><td>'+AR(deducted())+' درجة</td></tr>'+
+    '<tr><td>حصرُ الوكيل</td><td>'+(f.survey?'مرفقٌ معها':'لم يُكتب')+'</td></tr>'+
+    '<tr><td>خطّةُ تعديل السلوك</td><td>معتمدةٌ ومرفقةٌ معها</td></tr>'+
+    '<tr><td>رصداتٌ قبل الخطّة</td><td>'+AR(R.pre)+'</td></tr>'+
+    '<tr><td>تكرّر بعدها</td><td><b>'+AR(R.post||0)+'</b> مرّة'+
+      (R.dates?'<br>'+esc(R.dates):'')+'</td></tr>'+
+    '<tr><td>مستندُ الحكم</td><td>'+esc(R.by||"—")+'</td></tr>'+
+    '<tr><td>رأيُ الوكيل</td><td>'+esc(f.plan.vDeputy||"—")+'</td></tr>'+
+    '<tr><td>رأيُ معلّم الفصل</td><td>'+esc(f.plan.vTeacher||"—")+'</td></tr>'+
+    '<tr><td>رأيُ وليّ الأمر</td><td>'+esc(f.plan.vGuardian||"—")+'</td></tr></table>'+
+    '<label>سببُ الإحالة</label><textarea id="rfW">لم يستجب الطالبُ لإجراءات تعديل السلوك — '+
+    'تكرّر السلوكُ '+AR(R.post||0)+' مرّةً بعد اعتماد الخطّة.</textarea>'+
+    bankBox("referWhy","rfW",f.p)+
+    '<label>المطلوبُ من اللجنة</label><textarea id="rfQ">بحثُ أسباب عدم الاستجابة وإيجادُ الحلول المناسبة.</textarea>'+
+    bankBox("referAsk","rfQ",f.p)+
+    '<div class="row"><button class="btn" id="rfOk">أحِل الملفَّ</button>'+
+    '<button class="btn ghost" id="rfX">تراجع</button></div>';
+  sheet(h);
+  document.getElementById("rfOk").onclick=function(){
+    var w=document.getElementById("rfW").value.trim(),
+        q=document.getElementById("rfQ").value.trim();
+    if(!w||!q){flash("اكتب السببَ والمطلوب");return;}
+    f.refer={why:w,ask:q,d:"١٤٤٨/٥/٧",decided:false,pre:R.pre,post:R.post};
+    f.acts.committee=true;
+    LOG(f,"أُحيل الملفُّ إلى لجنة التوجيه","الوكيل لشؤون الطلّاب","وكيل",{d:"١٤٤٨/٥/٧",more:w});
+    save(); closeSheet(); render();
+    flash("أُحيل الملفُّ إلى لجنة التوجيه");
+  };
+  document.getElementById("rfX").onclick=closeSheet;
+}
+
+/* ═══ محضرُ اللجنة في الإحالة — نموذج ١٢ ═══ */
+function openCaseMinutes(fi){
+  var f=S.files[fi]; if(!f||!f.refer) return;
+  var h='<h3>محضرُ اجتماع لجنة التوجيه</h3>'+
+    '<p class="meta">نموذج رقم ١٢ · ص٦٩</p>'+
+    '<table><tr><td>الطالب</td><td>شادي أحمد راجح الزهراني · السادس أ</td></tr>'+
+    '<tr><td>السلوك</td><td>'+esc(PROBLEMS[f.p])+'</td></tr>'+
+    '<tr><td>سببُ الإحالة</td><td>'+esc(f.refer.why)+'</td></tr>'+
+    '<tr><td>المطلوب</td><td>'+esc(f.refer.ask)+'</td></tr>'+
+    (f.refer.pre!=null?'<tr><td>التكرارُ قبل الخطّة</td><td>'+AR(f.refer.pre)+'</td></tr>'+
+     '<tr><td>التكرارُ بعدها</td><td><b>'+AR(f.refer.post)+'</b></td></tr>':'')+'</table>'+
+    '<label>الحاضرون</label><input type="text" id="cmA" '+
+    'value="وكيل شؤون الطلبة · الموجّه الطلابيّ · رائد النشاط · معلّم الفصل">'+
+    '<label>ما دار في الاجتماع</label><textarea id="cmT"></textarea>'+
+    bankBox("cmT","cmT",f.p)+
+    '<label>قرارُ اللجنة</label><select id="cmD">'+
+    ["استمرارُ خطّة تعديل السلوك مع تعديل إجراءاتها",
+     "نقلُ الطالب إلى فصلٍ آخر",
+     "برنامجٌ وقائيٌّ مشتركٌ مع الأسرة",
+     "إحالةٌ إلى جهةٍ مختصّة"].map(function(x){return '<option>'+esc(x)+'</option>';}).join('')+
+    '</select><label>التوصياتُ ومن ينفّذها</label><textarea id="cmR"></textarea>'+
+    bankBox("cmR","cmR",f.p)+
+    '<div class="note">«إعدادُ المحاضر ورفعُ التوصيات لمدير المدرسة» — ص١٢ بند ١٢ · '+
+    'و«متابعةُ تنفيذ التوصيات» بند ١٤ · والموجّه يفعّلها — ص١٣ بند ٩</div>'+
+    '<div class="row"><button class="btn" id="cmOk">قيّد المحضرَ وارفع التوصيات</button>'+
+    '<button class="btn ghost" id="cmX">تراجع</button></div>';
+  sheet(h);
+  document.getElementById("cmOk").onclick=function(){
+    var t=document.getElementById("cmT").value.trim(),
+        r=document.getElementById("cmR").value.trim();
+    if(!t||!r){flash("اكتب ما دار والتوصيات");return;}
+    f.refer.decided=true; f.refer.dec=document.getElementById("cmD").value;
+    f.refer.rec=r; f.refer.att=document.getElementById("cmA").value;
+    S.minutes.push({d:"١٤٤٨/٥/٨",t:"إحالةُ طالب — "+PROBLEMS[f.p],
+      dec:f.refer.dec, note:r});
+    LOG(f,"قرارُ لجنة التوجيه: "+f.refer.dec,"لجنةُ التوجيه الطلابيّ","لجنة",
+      {d:"١٤٤٨/٥/٨",more:r});
+    save(); closeSheet(); render(); flash("قُيّد المحضرُ ورُفعت التوصيات");
+  };
+  document.getElementById("cmX").onclick=closeSheet;
+}
+
+/* ═══ مخطّطُ الفرصة — اللجنة تقدّر لمشاركيها ═══ */
+function openOppPlan(oi){
+  var o=S.opps[oi]; if(!o) return;
+  var m=MERITS[o.mi];
+  function draw(){
+    var h='<h3>مخطّطُ الفرصة</h3>'+
+      '<p class="meta">'+esc(m.t)+' · '+esc(o.when)+'</p>'+
+      '<table><tr><td>الدرجةُ المقرّرة</td><td>'+AR(m.p)+' · ص١٩</td></tr>'+
+      '<tr><td>السعة</td><td>'+AR(o.cap)+'</td></tr>'+
+      '<tr><td>المشاركون</td><td>'+AR(o.members.length)+'</td></tr>'+
+      '<tr><td>سببُ الإغلاق</td><td>'+esc(o.closeWhy||"—")+'</td></tr></table>'+
+      '<div class="note">لا تُقدَّر درجةٌ لمن لم يشهد له رائدُ النشاط بالتنفيذ</div>';
+    o.members.forEach(function(p,i){
+      h+='<div class="file"><h5>'+esc(p.name)+'</h5><p>'+
+         (p.verdict?'<b style="color:var('+(p.cert?'--brand':'--bad')+')">'+esc(VERD[p.verdict])+'</b>'
+                   :'لم يُشهد له')+
+         (p.graded?' · قُدّرت '+AR(p.pts)+' درجة':'')+
+         (p.note?'<br>'+esc(p.note):'')+'</p>';
+      if(p.cert&&!p.graded)
+        var dv = p.partial ? Math.ceil(m.p/2) : m.p;
+        h+='<div class="row"><input type="number" id="gp'+i+'" value="'+dv+'" min="0" max="'+m.p+
+           '" style="width:84px"><button class="btn" data-gm="'+oi+'|'+i+'">قدّر</button></div>'+
+           (p.partial?'<div class="note">نفّذ جزئيًّا — والتقديرُ للّجنة</div>':'');
+      h+='</div>';});
+    h+='<label>توصيةُ اللجنة في المحضر</label><textarea id="opN">'+esc(o.note||"")+'</textarea>'+
+      '<div class="row"><button class="btn" id="opFin">اعتمد المخطّطَ وقيّد المحضر</button>'+
+      '<button class="btn ghost" id="opX">تراجع</button></div>';
+    sheet(h);
+    document.querySelectorAll("[data-gm]").forEach(function(b){
+      b.onclick=function(){ var pr=b.getAttribute("data-gm").split("|");
+        var oo=S.opps[parseInt(pr[0],10)], idx=parseInt(pr[1],10);
+        var v=parseInt(document.getElementById("gp"+idx).value,10)||0;
+        if(v>m.p){flash("لا تتجاوز "+AR(m.p)+" درجات");return;}
+        oo.members[idx].graded=true; oo.members[idx].pts=v;
+        OLOG(oo,"قُدّرت "+AR(v)+" درجة لـ"+oo.members[idx].name.split(" ")[0],
+          "لجنةُ التوجيه الطلابيّ",{d:"١٤٤٨/٥/١٢"});
+        if(oo.members[idx].isMe){
+          var g=award(v, deducted()>0?"comp":"merit");
+          if(g.total<v) flash("قُيّد "+AR(g.total)+" — بلغ المجموعُ سقفَ ١٠٠");
+          oo.members[idx].split=g;
+        }
+        save(); draw(); render(); flash("قُدّرت "+AR(v)+" درجة لـ"+oo.members[idx].name.split(" ")[0]); };});
+    document.getElementById("opFin").onclick=function(){
+      var n=document.getElementById("opN").value.trim();
+      if(!n){flash("اكتب توصيةَ اللجنة");return;}
+      var ung=o.members.filter(function(x){return x.cert&&!x.graded;});
+      if(ung.length){flash("بقي "+AR(ung.length)+" لم تُقدَّر درجتُهم");return;}
+      o.planned=true; o.note=n;
+      OLOG(o,"اعتُمد مخطّطُ الفرصة وقُيّد المحضر","لجنةُ التوجيه الطلابيّ",{d:"١٤٤٨/٥/١٢",more:n});
+      S.minutes.push({d:"١٤٤٨/٥/١٢",t:"مخطّطُ فرصة — "+m.t,
+        dec:"قُدّرت درجاتُ "+AR(o.members.filter(function(x){return x.graded;}).length)+" مشاركًا",note:n});
+      save(); closeSheet(); render(); flash("اعتُمد المخطّطُ وقُيّد المحضر"); };
+    document.getElementById("opX").onclick=closeSheet;
+  }
+  draw();
+}
+
+/* ═══ الموجّه: محضرُ جلسة ═══ */
+function openSession(fi){
+  var f=S.files[fi]; if(!f) return;
+  var h='<h3>محضرُ جلسةِ توعيةٍ بحقّ التعويض</h3>'+
+    '<p class="meta">«توعيةُ الطلبة المخالفين بحقِّهم في فرص التعويض» — ص١٣ بند ٧</p>'+
+    '<table><tr><td>الطالب</td><td>شادي أحمد راجح الزهراني</td></tr>'+
+    '<tr><td>الصف</td><td>السادس الابتدائيّ — أ</td></tr>'+
+    '<tr><td>السلوك</td><td>'+esc(PROBLEMS[f.p])+'</td></tr>'+
+    '<tr><td>المحسوم</td><td>'+deducted()+' درجة</td></tr></table>'+
+    '<label>مدّةُ الجلسة</label><select id="ssD">'+
+    '<option>٥ دقائق</option><option selected>١٠ دقائق</option></select>'+
+    '<label>ما نُوقش</label><textarea id="ssT">أُعلم الطالبُ بما حُسم منه، وبحقِّه في تعويضه بممارسات السلوك المتميّز.</textarea>'+
+    bankBox("sessionT","ssT",f.p)+
+    '<label>ما اقترحتُه عليه</label><div class="pick pos" id="ssP">';
+  MERITS.forEach(function(m,i){ if(m.kind==="auto") return;
+    h+='<span data-v="'+i+'">'+esc(m.t)+' · '+m.p+'</span>';});
+  h+='</div><label>ما قرّراه معًا</label><textarea id="ssR"></textarea>'+
+     bankBox("sessionR","ssR",f.p)+
+     '<div class="note">المقترحاتُ تظهر في صفحة الطالب موسومةً <b>«اقترحها الموجّه»</b> — والاختيارُ له، '+
+     'فالتعويضُ حقٌّ «عند رغبته» · ص١١ بند ١٣</div>'+
+     '<div class="row"><button class="btn" id="ssOk">قيّد المحضر</button>'+
+     '<button class="btn ghost" id="ssX">تراجع</button></div>';
+  sheet(h);
+  document.getElementById("ssP").querySelectorAll("span").forEach(function(s){
+    s.onclick=function(){s.classList.toggle("on");};});
+  document.getElementById("ssOk").onclick=function(){
+    var t=document.getElementById("ssT").value.trim(),
+        r=document.getElementById("ssR").value.trim(),
+        picks=[];
+    document.getElementById("ssP").querySelectorAll("span.on").forEach(function(s){
+      picks.push(parseInt(s.getAttribute("data-v"),10));});
+    if(!t||!r){flash("اكتب ما نوقش وما قرّرتماه");return;}
+    if(!picks.length){flash("اقترح ممارسةً واحدةً على الأقلّ");return;}
+    S.sessions.push({d:"١٤٤٨/٤/٢٤",dur:document.getElementById("ssD").value,
+      txt:t,res:r,picks:picks,p:f.p});
+    picks.forEach(function(mi){ if(S.props.indexOf(mi)<0) S.props.push(mi); });
+    f.acts.session=true;
+    LOG(f,"جلسةُ توعيةٍ بحقّ التعويض · "+document.getElementById("ssD").value,
+      "سعيد زنبيل — الموجّه","موجّه",{d:"١٤٤٨/٤/٢٤",more:r});
+    save(); closeSheet(); render();
+    flash("قُيّد المحضر — وظهرت المقترحاتُ للطالب");
+  };
+  document.getElementById("ssX").onclick=closeSheet;
+}
+
+/* ═══ النموذج ٣ — خطّةُ تعديل السلوك · ص٦٠–٦١ ═══ */
+function openPlan(fi){
+  var f=S.files[fi]; if(!f) return;
+  var pl=f.plan||{desc:"",signs:"",ante:"",post:"",gain:"",prior:"",target:"",
+    tx:["","","","","",""],pre:[],post2:[],vDeputy:"",vTeacher:"",vGuardian:""};
+  var DAYS=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"];
+  function rows(arr,key,title){
+    var h='<label>'+title+'</label><table><tr><td style="width:26%">اليوم</td>'+
+      '<td style="width:30%">فترةُ الملاحظة</td><td>التكرار</td></tr>';
+    arr.forEach(function(r,i){
+      h+='<tr><td>'+esc(r.day)+'</td><td>'+esc(r.win)+'</td><td><b>'+r.n+'</b></td></tr>';});
+    h+='</table>'+
+      '<div class="row" style="margin-top:6px"><select id="'+key+'D" style="width:auto;flex:1">'+
+      DAYS.map(function(d){return '<option>'+d+'</option>';}).join('')+'</select>'+
+      '<select id="'+key+'W" style="width:auto;flex:1">'+
+      ["الحصّة الأولى","الحصّة الثانية","الفسحة","الحصّة الخامسة","اليوم كلّه"]
+        .map(function(x){return '<option>'+x+'</option>';}).join('')+'</select>'+
+      '<select id="'+key+'N" style="width:auto;flex:0 0 72px">'+
+      [1,2,3,4,5].map(function(n){return '<option>'+n+'</option>';}).join('')+'</select>'+
+      '<button class="btn soft" data-addrow="'+key+'">أضف</button></div>'+
+      '<div class="note" style="margin-top:6px">المجموع: <b>'+
+      arr.reduce(function(a,r){return a+r.n;},0)+'</b></div>';
+    return h;
+  }
+  function draw(){
+    var h='<h3>نموذجُ خطّة تعديل السلوك</h3>'+
+      '<p class="meta">نموذج رقم ٣ · CONDUCT-1447-OFF · ص٦٠–٦١</p>'+
+      '<div class="note"><b>أوّلًا: البيانات الأوّليّة</b></div><table>'+
+      '<tr><td>اسم الطالب</td><td>شادي أحمد راجح الزهراني</td></tr>'+
+      '<tr><td>الصف والفصل</td><td>السادس الابتدائيّ — أ</td></tr>'+
+      '<tr><td>تاريخ الميلاد</td><td>١٤٣٦/٣/١٢ هـ</td></tr>'+
+      '<tr><td>العمر الزمنيّ</td><td>١٢ سنة و٢ أشهر</td></tr>'+
+      '<tr><td>تاريخ البداية</td><td>١٤٤٨/٥/٣ هـ</td></tr>'+
+      '<tr><td>تاريخ النهاية</td><td>١٤٤٨/٦/٣ هـ</td></tr></table>'+
+      '<div class="note"><b>ثانيًا: تحديدُ المشكلة السلوكيّة</b></div><table>'+
+      '<tr><td>المشكلة</td><td>'+esc(PROBLEMS[f.p])+'</td></tr>'+
+      '<tr><td>درجتُها</td><td>الدرجة الأولى</td></tr></table>'+
+      '<label>وصفُ المشكلة السلوكيّة *</label><textarea id="plD">'+esc(pl.desc)+'</textarea>'+
+      '<label>المظاهرُ السلوكيّة التي تبدو عند الطالب *</label><textarea id="plS">'+esc(pl.signs)+'</textarea>'+
+      '<div class="note"><b>ثالثًا: قياسُ شدّة السلوك أو تكراره</b></div>'+
+      rows(pl.pre,"pre","قياسٌ قبل العلاج")+
+      '<div class="note"><b>رابعًا: تحليلُ المشكلة</b></div>'+
+      '<label>١ · المثيراتُ القبليّة — ما يسبّب السلوك *</label><textarea id="plA">'+esc(pl.ante)+'</textarea>'+
+      '<label>٢ · المثيراتُ البعديّة — ما يحدث بعده *</label><textarea id="plB">'+esc(pl.post)+'</textarea>'+
+      '<label>٣ · ما الذي يحقّقه الطالبُ منه *</label><textarea id="plG">'+esc(pl.gain)+'</textarea>'+
+      '<label>٤ · الإجراءاتُ السابقة من المعلّم</label><textarea id="plP">'+esc(pl.prior)+'</textarea>'+
+      '<div class="note"><b>خامسًا: تصميمُ الخطّة</b></div>'+
+      '<label>السلوكُ المرغوبُ إكسابُه — إجرائيًّا *</label><textarea id="plT">'+esc(pl.target)+'</textarea>';
+    ["الأوّل","الثاني","الثالث","الرابع","الخامس","السادس"].forEach(function(n,i){
+      h+='<label>الإجراء '+n+(i===0?' *':'')+'</label>'+
+         '<input type="text" id="plX'+i+'" value="'+esc(pl.tx[i]||"")+'">';});
+    h+=rows(pl.post2,"pst","متابعةُ السلوك بعد العلاج")+
+      '<div class="note"><b>سادسًا: تقييمُ فاعليّة الخطّة</b></div>'+
+      '<label>رأيُ الوكيل</label>'+
+      '<div class="note">'+(pl.vDeputy?'<b>رأيُه:</b> '+esc(pl.vDeputy)
+        :(pl.askD?'<b>طُلب منه — بانتظار رأيه</b>':'لم يُطلب منه بعد'))+'</div>'+
+      (pl.vDeputy?'':'<div class="row"><button class="btn soft" id="plAskD">اطلب رأيَ الوكيل</button></div>')+
+      '<label>رأيُ المعلّمين</label>'+
+      '<div class="note">'+((pl.teachers&&pl.teachers.length)
+        ? pl.teachers.map(function(t){return '<b>'+esc(t.who.split(" — ")[0])+':</b> '+
+            (t.op?esc(t.op):'<span style="color:var(--warn)">بانتظار رأيه</span>');}).join('<br>')
+        :'لم يُطلب من أحدٍ بعد')+'</div>'+
+      '<div class="row"><button class="btn soft" id="plAskT">اطلب رأيَ معلّمٍ أو أكثر</button></div>'+
+      '<label>رأيُ وليّ الأمر</label>'+
+      '<div class="note">يأتي من بوّابته — <b>لا يملؤه الموجّه</b>'+
+      (pl.vGuardian?'<br><b>ردّه:</b> '+esc(pl.vGuardian):'<br>يُطلب بعد الاعتماد')+'</div>'+
+      '<div class="note"><b>القائمُ بتعديل السلوك:</b> سعيد زنبيل — الموجّه الطلابيّ</div>'+
+      '<div class="row"><button class="btn" id="plOk">اعتمد الخطّةَ وأرسلها لوليّ الأمر</button>'+
+      '<button class="btn soft" id="plAuto">جهّز مسوّدةً آليًّا</button>'+
+      '<button class="btn soft" id="plSave">احفظ مسوّدة</button>'+
+      '<button class="btn ghost" id="plX">تراجع</button></div>';
+    sheet(h);
+    function grab(){
+      pl.desc=document.getElementById("plD").value.trim();
+      pl.signs=document.getElementById("plS").value.trim();
+      pl.ante=document.getElementById("plA").value.trim();
+      pl.post=document.getElementById("plB").value.trim();
+      pl.gain=document.getElementById("plG").value.trim();
+      pl.prior=document.getElementById("plP").value.trim();
+      pl.target=document.getElementById("plT").value.trim();
+      for(var i=0;i<6;i++) pl.tx[i]=document.getElementById("plX"+i).value.trim();
+    }
+    document.querySelectorAll("[data-addrow]").forEach(function(b){
+      b.onclick=function(){ grab();
+        var k=b.getAttribute("data-addrow");
+        var arr = k==="pre" ? pl.pre : pl.post2;
+        arr.push({day:document.getElementById(k+"D").value,
+          win:document.getElementById(k+"W").value,
+          n:parseInt(document.getElementById(k+"N").value,10)||1});
+        draw(); };});
+    var bD=document.getElementById("plAskD");
+    if(bD) bD.onclick=function(){ grab(); pl.askD=true; f.plan=pl;
+      LOG(f,"طُلب رأيُ الوكيل في خطّة تعديل السلوك","سعيد زنبيل — الموجّه","موجّه",{d:"١٤٤٨/٥/٣"});
+      save(); draw(); render(); flash("طُلب رأيُ الوكيل"); };
+    var bT=document.getElementById("plAskT");
+    if(bT) bT.onclick=function(){ grab(); f.plan=pl; openAskTeachers(S.files.indexOf(f)); };
+    document.getElementById("plAuto").onclick=function(){
+      grab();
+      var sv=f.survey||{neg:[],pos:[],cause:"",plan:""};
+      if(!pl.desc) pl.desc="يُكرّر الطالبُ "+PROBLEMS[f.p]+"، وقد رُصد عليه "+AR(f.recs.length)+
+        " مرّاتٍ خلال الفصل، وطُبّقت عليه إجراءاتُ الدرجة الأولى كاملةً.";
+      if(!pl.signs) pl.signs = sv.neg.length ? sv.neg.join(" · ") : "لم تُحصر بعد";
+      if(!pl.ante) pl.ante= sv.cause || "بانتظار ما يرصده الموجّه من مثيراتٍ قبليّة";
+      if(!pl.gain) pl.gain="بانتظار تحليل الموجّه — ما الذي يحقّقه الطالبُ من هذا السلوك";
+      if(!pl.post) pl.post="بانتظار تحليل الموجّه — ما يحدث بعد السلوك فيثبّته";
+      if(!pl.prior) pl.prior="تنبيهان شفهيّان · حصرُ السلوكيّات · تدوينٌ وتوقيعٌ · حسمُ درجة · اتّصالٌ بوليّ الأمر";
+      if(!pl.target) pl.target=WANT[f.p]||"";
+      (TX[f.p]||[]).forEach(function(t,i){ if(!pl.tx[i]) pl.tx[i]=t; });
+      if(!pl.pre.length){
+        f.recs.forEach(function(r){ pl.pre.push({day:"—",win:"اليوم كلّه",n:1}); });
+      }
+      draw(); flash("جُهّزت المسوّدة — راجعها وأكمل ما تركه النظامُ لك");
+    };
+    document.getElementById("plSave").onclick=function(){
+      grab(); f.plan=pl; save(); closeSheet(); render(); flash("حُفظت مسوّدةُ الخطّة"); };
+    document.getElementById("plOk").onclick=function(){
+      grab();
+      var miss=[];
+      if(!pl.desc)miss.push("وصفُ المشكلة");
+      if(!pl.signs)miss.push("المظاهرُ السلوكيّة");
+      if(!pl.ante)miss.push("المثيراتُ القبليّة");
+      if(!pl.post)miss.push("المثيراتُ البعديّة");
+      if(!pl.gain)miss.push("ما يحقّقه الطالب");
+      if(!pl.target)miss.push("السلوكُ المرغوب إجرائيًّا");
+      if(!pl.tx[0])miss.push("الإجراءُ الأوّل");
+      if(!pl.pre.length)miss.push("قياسٌ قبل العلاج");
+      if(!pl.vDeputy)miss.push("رأيُ الوكيل");
+      if(!(pl.teachers||[]).some(function(t){return !!t.op;}))miss.push("رأيُ معلّمٍ واحدٍ على الأقلّ");
+      if(miss.length){ flash("لا تُعتمد الخطّةُ بلا: "+miss.join(" · ")); return; }
+      pl.final=true; f.plan=pl; f.acts.plan=true;
+      LOG(f,"اعتُمدت خطّةُ تعديل السلوك (٣)","سعيد زنبيل — الموجّه","موجّه",
+        {d:"١٤٤٨/٥/٣",more:pl.target});
+      save(); closeSheet(); render();
+      flash("اعتُمدت الخطّةُ — وأُرسلت لوليّ الأمر لرأيه"); };
+    document.getElementById("plX").onclick=closeSheet;
+  }
+  draw();
+}
+
+/* ═══ الطالب: تقديمُ شاهد ═══ */
+function openEvidence(mi){
+  var m=MERITS[mi];
+  var h='<h3>تقديمُ شاهدِ سلوكٍ متميّز</h3>'+
+    '<p class="meta">تُقدَّم لوكيل شؤون الطلبة — ص١٦ بند ٦</p>'+
+    '<table><tr><td>الممارسة</td><td>'+esc(m.t)+'</td></tr>'+
+    '<tr><td>نوعُها</td><td>'+esc(KIND_AR[m.kind])+'</td></tr>'+
+    '<tr><td>الدرجةُ المقرّرة</td><td>'+m.p+(m.other?' بحدٍّ أقصى':'')+'</td></tr></table>'+
+    '<label>وصفُ ما قمتَ به</label><textarea id="evT"></textarea>'+
+    '<label>الشاهدُ المرفق — إلزاميّ</label>'+
+    '<input type="file" id="evF" accept="image/*,application/pdf">'+
+    '<div class="note" id="evN">لم يُرفق شيءٌ بعد — <b>لا يُقدَّم شاهدٌ بلا مرفق</b></div>'+
+    '<label>وصفُ المرفق وجهتُه</label>'+
+    '<input type="text" id="evA" placeholder="شهادةٌ من جمعيّة البرّ · خطابُ شكرٍ من المدرسة…">'+
+    '<label>الغرض</label>'+
+    (deducted()>0
+      ? '<div class="note" style="border-right:3px solid var(--warn)">'+
+        '<b>تعويضُ المحسوم</b> — '+AR(deducted())+' درجة<br>'+
+        'عليك أن تعوّض ما حُسم أوّلًا · <b>فإذا رجعتَ إلى ٨٠ فتحَ لك الاكتساب</b></div>'+
+        '<input type="hidden" id="evK" value="comp">'
+      : '<div class="note" style="border-right:3px solid var(--brand)">'+
+        '<b>اكتسابُ سلوكٍ متميّز</b> — لا محسومَ عليك، فدرجتُك تامّة</div>'+
+        '<input type="hidden" id="evK" value="merit">')+
+    '<div class="note">إرفاقُ ما يثبت المشاركة من جهاتٍ معتمدةٍ داخل المدرسة أو خارجها — ص١٩</div>'+
+    '<div class="row"><button class="btn" id="evOk">قدّمه للوكيل</button>'+
+    '<button class="btn ghost" id="evX">تراجع</button></div>';
+  sheet(h);
+  var picked=null;
+  document.getElementById("evF").onchange=function(ev){
+    var fl=ev.target.files&&ev.target.files[0];
+    if(!fl) return;
+    picked={name:fl.name,size:Math.round(fl.size/1024)};
+    document.getElementById("evN").innerHTML='<b>أُرفق:</b> '+esc(fl.name)+' · '+AR(picked.size)+' ك.ب';
+  };
+  document.getElementById("evOk").onclick=function(){
+    var t=document.getElementById("evT").value.trim(),
+        a=document.getElementById("evA").value.trim();
+    if(!t){flash("اكتب وصفَ ما قمتَ به");return;}
+    if(!picked){flash("أرفق ما يثبت مشاركتك — المرفقُ إلزاميّ");return;}
+    if(!a){flash("اكتب وصفَ المرفق وجهتَه");return;}
+    S.evid.push({mi:mi,txt:t,att:a,file:picked.name,size:picked.size,
+      kind:document.getElementById("evK").value,
+      state:"submitted",pts:null,note:"",d:"١٤٤٨/٥/٤"});
+    save(); closeSheet(); render(); flash("قُدّم الشاهدُ للوكيل");
+  };
+  document.getElementById("evX").onclick=closeSheet;
+}
+
+/* ═══ اللجنة: التقدير ═══ */
+function openGrade(ei){
+  var e=S.evid[ei], m=MERITS[e.mi], cap=m.p;
+  var h='<h3>تقديرُ درجة السلوك المتميّز</h3>'+
+    '<p class="meta">لجنةُ التوجيه الطلابيّ — ص١٢ بند ٨ و٩ و١٠</p>'+
+    '<table><tr><td>الطالب</td><td>شادي أحمد راجح الزهراني</td></tr>'+
+    '<tr><td>الممارسة</td><td>'+esc(m.t)+'</td></tr>'+
+    '<tr><td>ما قام به</td><td>'+esc(e.txt)+'</td></tr>'+
+    '<tr><td>الشاهد</td><td>'+esc(e.att)+(e.file?'<br><b>المرفق:</b> '+esc(e.file):'')+'</td></tr>'+
+    '<tr><td>الغرض</td><td>'+(e.kind==="comp"?"تعويضُ المحسوم":"اكتسابُ متميّز")+'</td></tr></table>'+
+    '<label>الدرجةُ المقدَّرة</label><input type="number" id="gP" value="'+cap+'" min="0" max="'+cap+'">'+
+    '<div class="note">'+(m.other?
+      '<b>غيرُ مذكورٍ في المقترح</b> — تقدّر المدرسةُ بتوصية اللجنة <b>بما لا يتجاوز ستّ درجات</b> · ص١٩'
+      :'الدرجةُ المقرّرة لهذي الممارسة <b>'+m.p+'</b> · ص١٩')+'</div>'+
+    '<label>توصيةُ اللجنة في المحضر</label><textarea id="gN"></textarea>'+
+    bankBox("gN","gN",null)+
+    '<div class="row"><button class="btn" id="gOk">اعتمد وقيّد المحضر</button>'+
+    '<button class="btn ghost" id="gX">تراجع</button></div>';
+  sheet(h);
+  document.getElementById("gOk").onclick=function(){
+    var p=parseInt(document.getElementById("gP").value,10)||0,
+        n=document.getElementById("gN").value.trim();
+    if(!n){flash("اكتب توصيةَ اللجنة — ولا يُقيَّد محضرٌ بلا توصية");return;}
+    if(p>cap){flash("لا تتجاوز "+cap+" درجات");return;}
+    var g=award(p,e.kind);
+    if(g.total<p) flash("قُيّد "+AR(g.total)+" — بلغ المجموعُ سقفَ ١٠٠");
+    else if(g.merit>0 && e.kind==="comp")
+      flash("عُوّض "+AR(g.comp)+" ورُحّل الفائضُ "+AR(g.merit)+" اكتسابًا");
+    e.state="graded"; e.pts=g.total; e.note=n; e.split=g;
+    S.minutes.push({d:"١٤٤٨/٥/٥",t:"تقديرُ سلوكٍ متميّز — "+m.t,
+      dec:"مُنح الطالبُ "+p+" درجة · "+(e.kind==="comp"?"تعويضًا للمحسوم":"اكتسابًا"),note:n});
+    save(); closeSheet(); render(); flash("اعتُمد · مُنح "+p+" درجة");
+  };
+  document.getElementById("gX").onclick=closeSheet;
+}
+
+/* ═══ الحصر والتكليف ═══ */
+function openSurvey(asDeputy){
+  var f=F(); if(!f) return;
+  var byTask = (asDeputy===false);
+  var sv = byTask ? (f.taskSurvey||{neg:[],pos:[],cause:"",plan:""})
+                  : (f.survey||{neg:[],pos:[],cause:"",plan:""});
+  var h='<h3>نموذجُ حصر السلوكيّات</h3>'+
+    '<p class="meta">'+esc(PROBLEMS[f.p])+' · الرصدةُ الثانية</p>'+
+    (byTask?'<div class="note">تحصر <b>بنفسك</b> — ولا تُعرض عليك اختياراتُ الوكيل حتى ترفع حصرَك</div>':'')+
+    '<label>السلوكيّات السلبيّة</label>'+
+    '<p class="meta" style="margin:2px 0 0">المس الأيقونةَ ليظهر شرحُها · والمسةُ الثانيةُ تختارها</p>'+
+    '<div class="pick ico" id="pn">';
+  NEGI.forEach(function(x){h+='<span data-v="'+esc(x.t)+'" data-d="'+esc(x.d)+'" class="'+
+    (sv.neg.indexOf(x.t)>=0?'on':'')+'"><b>'+x.i+'</b>'+esc(x.t)+'</span>';});
+  h+='</div><div class="tip" id="tipN">—</div>'+
+     '<div class="addrow"><input type="text" id="addN" placeholder="أضف سلوكًا سلبيًّا">'+
+     '<button class="btn soft" id="addNB">أضف</button></div>'+
+     '<label>السلوكيّات الإيجابيّة</label><div class="pick pos ico" id="pp">';
+  POSI.forEach(function(x){h+='<span data-v="'+esc(x.t)+'" data-d="'+esc(x.d)+'" class="'+
+    (sv.pos.indexOf(x.t)>=0?'on':'')+'"><b>'+x.i+'</b>'+esc(x.t)+'</span>';});
+  h+='</div><div class="tip" id="tipP">—</div>'+
+     '<div class="addrow"><input type="text" id="addP" placeholder="أضف سلوكًا إيجابيًّا">'+
+     '<button class="btn soft" id="addPB">أضف</button></div>'+
+     '<label>مسبّباتُ حدوثها</label><textarea id="cause">'+esc(sv.cause)+'</textarea>'+
+     bankBox("cause","cause",f.p)+
+     '<label>البدءُ بالحدّ من المسبّبات</label><textarea id="plan">'+esc(sv.plan)+'</textarea>'+
+     bankBox("limit","plan",f.p)+
+     '<div class="row"><button class="btn" id="svOk">'+(byTask?'ارفع حصرَك للوكيل':'احفظ الحصر')+'</button>'+
+     (byTask?'':'<button class="btn soft" id="svAs">كلّف به أحدًا</button>')+
+     '<button class="btn ghost" id="svX">تراجع</button></div>';
+  sheet(h);
+  [["pn","tipN"],["pp","tipP"]].forEach(function(pr){
+    var tip=document.getElementById(pr[1]);
+    function count(){ return document.getElementById(pr[0]).querySelectorAll("span.on").length; }
+    document.getElementById(pr[0]).querySelectorAll("span").forEach(function(s){
+      s.onmouseenter=function(){ var d=s.getAttribute("data-d"); if(d&&tip) tip.textContent=d; };
+      s.onclick=function(){
+        s.classList.toggle("on");
+        if(tip) tip.textContent=(s.classList.contains("on")?"✓ ":"")+
+          (s.getAttribute("data-d")||s.getAttribute("data-v"))+" · المختار: "+count();
+      };});});
+  function addItem(inpId,boxId,tipId){
+    var inp=document.getElementById(inpId); if(!inp) return false;
+    var v=(inp.value||"").trim(); if(!v) return false;
+    var box=document.getElementById(boxId);
+    var dup=false;
+    box.querySelectorAll("span").forEach(function(x){
+      if(x.getAttribute("data-v")===v){ x.classList.add("on"); dup=true; }});
+    if(!dup){
+      var sp=document.createElement("span");
+      sp.textContent=v; sp.setAttribute("data-v",v); sp.setAttribute("data-d",v);
+      sp.className="on";
+      sp.onclick=function(){sp.classList.toggle("on");};
+      box.appendChild(sp);
+    }
+    inp.value="";
+    var tip=document.getElementById(tipId);
+    if(tip) tip.textContent="✓ أُضيف: "+v+" · المختار: "+box.querySelectorAll("span.on").length;
+    return true;
+  }
+  [["addN","pn","tipN","addNB"],["addP","pp","tipP","addPB"]].forEach(function(pr){
+    var inp=document.getElementById(pr[0]), btn=document.getElementById(pr[3]);
+    if(btn) btn.onclick=function(ev){ if(ev&&ev.preventDefault)ev.preventDefault();
+      if(!addItem(pr[0],pr[1],pr[2])) flash("اكتب شيئًا قبل الإضافة"); };
+    if(inp){
+      inp.onkeydown=function(ev){ if(ev.key==="Enter"||ev.keyCode===13){
+        ev.preventDefault(); addItem(pr[0],pr[1],pr[2]); } };
+      inp.onchange=function(){ addItem(pr[0],pr[1],pr[2]); };
+    }});
+  function grab(){
+    addItem("addN","pn","tipN"); addItem("addP","pp","tipP");
+    var g=function(id){var o=[];
+      document.getElementById(id).querySelectorAll("span.on").forEach(function(s){
+        o.push(s.getAttribute("data-v"));});return o;};
+    return {neg:g("pn"),pos:g("pp"),cause:document.getElementById("cause").value.trim(),
+      plan:document.getElementById("plan").value.trim()};}
+  document.getElementById("svOk").onclick=function(){
+    var d=grab(); if(!d.neg.length){flash("اختر سلوكًا سلبيًّا واحدًا على الأقلّ");return;}
+    if(byTask){ f.taskSurvey=d; if(f.task) f.task.done=true;
+      LOG(f,"رفع المكلَّفُ حصرَه",(f.task?f.task.who:"المكلَّف"),"مكلَّف",
+        {d:"١٤٤٨/٤/١٨",more:AR(d.neg.length)+" سلبيّةً · "+AR(d.pos.length)+" إيجابيّةً",
+         detail:chips(d)});
+      save(); closeSheet(); render(); flash("رُفع حصرُك إلى الوكيل"); return; }
+    f.survey=d; f.acts.note=true;
+    LOG(f,"حُصرت السلوكيّات","الوكيل لشؤون الطلّاب","وكيل",
+      {d:"١٤٤٨/٤/١٦",more:AR(d.neg.length)+" سلبيّةً · "+AR(d.pos.length)+" إيجابيّةً",
+       detail:chips(d)});
+    save(); closeSheet(); render(); flash("حُفظ الحصر");};
+  var svAs=document.getElementById("svAs");
+  if(svAs) svAs.onclick=function(){ f.survey=grab(); save(); openAssign(); };
+  document.getElementById("svX").onclick=closeSheet;
+}
+function openAssign(){
+  var f=F(); if(!f) return;
+  var h='<h3>تكليفٌ بحصر السلوكيّات</h3><p class="meta">هذا الجزءُ وحدَه</p>'+
+    '<table><tr><td>الطالب</td><td>شادي أحمد راجح الزهراني</td></tr>'+
+    '<tr><td>السلوك</td><td>'+esc(PROBLEMS[f.p])+'</td></tr></table>'+
+    '<label>المكلَّف</label><select id="asWho">';
+  STAFF.forEach(function(s){h+='<option>'+esc(s)+'</option>';});
+  h+='</select><label>المطلوبُ منه صريحًا</label>'+
+     '<textarea id="asWhat">لاحظ الطالبَ في حصصك، واحصر سلوكيّاته ومسبّباتِها، ثمّ ارفعها.</textarea>'+
+     bankBox("taskWhat","asWhat",f.p)+
+     '<label>المدّة (أيّام)</label><input type="number" id="asDays" value="5" min="1" max="30">'+
+     '<div class="note">تُغلق بعد المدّة وتُلغى من عنده، <b>وتعود إليك</b>.</div>'+
+     '<div class="row"><button class="btn" id="asOk">كلّفه</button>'+
+     '<button class="btn ghost" id="asX">تراجع</button></div>';
+  sheet(h);
+  document.getElementById("asOk").onclick=function(){
+    var i=S.files.indexOf(f); if(i<0){closeSheet();return;}
+    var what=document.getElementById("asWhat").value.trim();
+    if(!what){flash("اكتب المطلوبَ صريحًا");return;}
+    S.files[i].task={who:document.getElementById("asWho").value,what:what,
+      days:parseInt(document.getElementById("asDays").value,10)||5,done:false};
+    LOG(S.files[i],"كُلّف "+S.files[i].task.who.split(" — ")[0]+" بالحصر",
+      "الوكيل لشؤون الطلّاب","وكيل",{d:"١٤٤٨/٤/١٧",more:what+" · المدّة "+AR(S.files[i].task.days)+" أيّام"});
+    save(); closeSheet(); render(); flash("كُلّف "+S.files[i].task.who.split(" — ")[0]);};
+  document.getElementById("asX").onclick=closeSheet;
+}
+function openShare(){
+  var h='<h3>مشاركةُ ملفّ الطالب</h3><label>شاركه مع</label><select id="shWho">';
+  STAFF.forEach(function(s){h+='<option>'+esc(s)+'</option>';});
+  h+='</select><div class="row"><button class="btn" id="shOk">شارك</button>'+
+     '<button class="btn ghost" id="shX">تراجع</button></div>';
+  if(S.shared.length) h+='<div class="note"><b>مشاركٌ معهم:</b> '+esc(S.shared.join(" · "))+'</div>';
+  sheet(h);
+  document.getElementById("shOk").onclick=function(){
+    var v=document.getElementById("shWho").value;
+    if(S.shared.indexOf(v)<0)S.shared.push(v);
+    save(); closeSheet(); render(); flash("شُورك الملفّ");};
+  document.getElementById("shX").onclick=closeSheet;
+}
+
+/* ═══ الوكيل ═══ */
+function viewW(){
+  var h='<p class="role"><i class="dot"></i> تعمل بصفة <b>الوكيل لشؤون الطلّاب</b> · رئيسُ لجنة التوجيه</p>';
+  if(flashMsg) h+='<div class="flash">'+esc(flashMsg)+'</div>';
+  h+='<div class="card"><h3>ارصد مخالفة</h3>'+
+     '<p class="meta">كلُّ سلوكٍ ملفٌّ مستقلٌّ بسلّمه</p><select id="pb">';
+  PROBLEMS.forEach(function(p,i){h+='<option value="'+i+'">'+esc(p)+'</option>';});
+  h+='</select><label>من يدوّن</label><select id="by">'+
+     ['المعلّم المباشر للموقف','الوكيل لشؤون الطلّاب','المساعد الإداريّ','الموجّه الطلابيّ']
+       .map(function(x){return '<option>'+x+'</option>';}).join('')+'</select>'+
+     '<div class="note">مداخلُ متعدّدةٌ ومخرجٌ واحد — <b>وأوّلُ من يدوّن يُقفل البابَ على الباقين</b>، '+
+     'ويُحفظ من دوّن وبأيّ صفة</div>'+
+     '<div class="row"><button class="btn big" id="rec">ارصد</button></div>'+
+     '<div class="row"><button class="btn ghost" id="rst">ابدأ من جديد</button></div></div>';
+
+  var sub=S.evid.filter(function(e){return e.state==="submitted";});
+  if(sub.length){
+    h+='<div class="card"><h3>شواهدُ بانتظارك</h3><p class="meta">تستلمها ثمّ ترفعها للّجنة — ص١٦ بند ٦</p>';
+    sub.forEach(function(e){ var i=S.evid.indexOf(e);
+      h+='<div class="file"><h5>'+esc(MERITS[e.mi].t)+'</h5><p>'+esc(e.txt)+
+         '<br>الشاهد: '+esc(e.att)+(e.file?' · <b>'+esc(e.file)+'</b>':'')+' · '+(e.kind==="comp"?"تعويضًا":"اكتسابًا")+'</p>'+
+         '<div class="row"><button class="btn" data-fwd="'+i+'">ارفعه للّجنة</button>'+
+         '<button class="btn ghost" data-rej="'+i+'">ردّه</button></div></div>';});
+    h+='</div>';}
+
+  if(!S.files.length) return h+'<div class="card"><p class="empty">لا ملفّاتٍ — ارصد لترى</p></div>';
+
+  h+='<div class="card"><h3>سجلُّ المشكلات السلوكيّة</h3>'+
+     '<p class="meta">مصبٌّ واحدٌ لكلّ ما يطلب الدليلُ توثيقَه · ويُطبع منه النموذج ٥ — ص٦٢</p>'+
+     '<div style="overflow-x:auto"><table style="min-width:520px">'+
+     '<tr><td>المشكلة</td><td>نوعُها ودرجتُها</td><td>تاريخُها</td><td>المحسوم</td>'+
+     '<td>الإجراءات</td><td>توقيعُ الطالب</td><td>توقيعُ وليّه</td></tr>';
+  S.files.forEach(function(f){
+    f.recs.forEach(function(r,j){
+      h+='<tr><td>'+esc(PROBLEMS[f.p])+'</td><td>حضوريّ · الدرجة ١</td><td>'+esc(r.d)+' هـ</td>'+
+         '<td>'+AR(j>=2?1:0)+'</td><td>'+esc(LAD[j].t)+'</td>'+
+         '<td>'+(f.acts.sign?'✓':'—')+'</td>'+
+         '<td>'+(f.summon&&f.summon.reply?'✓':'—')+'</td></tr>';});});
+  h+='</table></div><div class="note">دوّنها: <b>'+esc(F()?(F().by||"—"):"—")+'</b></div></div>';
+  h+='<div class="card"><h3>ملفّاتُ شادي السلوكيّة</h3><p class="meta">'+S.files.length+' ملفًّا</p>';
+  S.files.forEach(function(f,i){
+    h+='<div class="file tap '+(i===cur?'sel':'')+'" data-f="'+i+'"><h5>'+esc(PROBLEMS[f.p])+'</h5>'+
+       '<p>'+AR(f.recs.length)+" رصدات"+
+       ' · الخطوة '+AR(step(f))+
+       (pending(f,"الوكيل").length?' · <b style="color:var(--warn)">عليك '+AR(pending(f,"الوكيل").length)+'</b>':'')+
+       '</p></div>';});
+  h+='</div>';
+
+  var ACTI={
+    note:{i:ICO.clip,d:"تحصر سلوكيّات الطالب السلبيّةَ والإيجابيّةَ ومسبّباتِها — الرصدةُ الثانية"},
+    summon:{i:ICO.mail,d:"نموذج ١٠ — خطابُ دعوةٍ يصل بوّابةَ وليّ الأمر، ويردّ هو بالحضور أو التأجيل"},
+    call:{i:ICO.phone,d:"الاتّصالُ بوليّ الأمر هاتفيًّا وإشعارُه بمشكلة ابنه"},
+    committee:{i:ICO.scale,d:"لا تُفتح إلّا بعد اعتماد الخطّة وملء جدول المتابعة وثبوتِ عدم انخفاض التكرار"}};
+  var f=F(); if(!f) return h;
+  h+='<div class="card"><div class="hd"><h3>'+esc(PROBLEMS[f.p])+'</h3>'+
+     '<div class="tools"><button class="ib" id="assign" title="كلّف أحدًا بالحصر" '+
+     'data-d="تحوّل الحصرَ إلى منسوبٍ تختاره، بمطلوبٍ مكتوبٍ ومدّةٍ تحدّدها — ويرى هذا الجزءَ وحدَه ثمّ يعود إليك">'+
+     ICO.user+'</button>'+
+     '<button class="ib" id="share" title="شارك الملفّ" '+
+     'data-d="الملفُّ مكشوفٌ بينك وبين الموجّه — وتشاركه مع من تشاء من المنسوبين">'+
+     ICO.link+'</button></div></div>'+
+     '<p class="meta">أدواتُ الملفّ — لا تخصُّ خطوةً بعينها</p>';
+  for(var i=1;i<=4;i++){
+    var cls=i<step(f)?'done':(i===step(f)?'now':'soon');
+    h+='<div class="step '+cls+'"><h4>'+AR(i)+' '+esc(LAD[i-1].t)+
+       (i<=step(f)?' — '+esc(f.recs[i-1].d)+' هـ':' — لم تقع')+'</h4><p>'+esc(LAD[i-1].it)+'</p>';
+    if(i<=step(f)&&LAD[i-1].acts.length){ h+='<ul class="acts">';
+      LAD[i-1].acts.forEach(function(a){ var ok=done(f,a.k);
+        var m=ACTI[a.k];
+        h+='<li><i class="tick '+(ok?'ok':'no')+'">'+(ok?'✓':'')+'</i> '+esc(a.t);
+        if(!ok && a.who==="الوكيل" && m){
+          var at = a.form==="call" ? 'data-call="'+cur+'"' :
+               a.form==="refer" ? 'data-refer="'+cur+'"' :
+               a.form==="survey" ? 'data-survey="1"' :
+                   a.form==="summon" ? 'data-sm="'+cur+'"' : 'data-do="'+a.k+'"';
+          h+='<button class="ib" '+at+' data-d="'+esc(m.d)+'" title="'+esc(m.d)+'">'+m.i+'</button>';
+        }
+        h+='<span class="who">'+esc(a.who)+(ok?' · تمّ':'')+'</span></li>';});
+      h+='</ul>';}
+    h+='</div>';}
+  h+='<div class="tip" id="tipW">—</div>';
+  if(f.summon){
+    h+='<div class="note"><b>خطابُ الدعوة (١٠) '+(f.summon.autoSent?'أُرسل آليًّا':'أُرسل')+':</b> '+esc(f.summon.d)+
+       ' · '+esc(f.summon.t)+'<br>'+esc(f.summon.p)+
+       '<br><b>ردُّ وليّ الأمر:</b> '+(f.summon.reply?esc(f.summon.reply):'بانتظاره');
+    if(f.summon.newD) h+='<br><b>الموعدُ المقترح:</b> '+esc(f.summon.newD)+' · '+esc(f.summon.newT)+
+      '<br><b>السبب:</b> '+esc(f.summon.why)+
+      (f.summon.okd?'<br><b style="color:var(--brand)">أقررتَه</b>':'');
+    h+='</div>';
+    h+='<div class="row">'+
+       (f.summon.newD && !f.summon.okd
+         ?'<button class="btn" data-okd="'+cur+'">أقرّ الموعدَ المقترح</button>':'')+
+       '<button class="btn soft" data-sm="'+cur+'">عدّل الخطابَ وأعِد إرساله</button></div>';
+  }
+  if(f.task) h+='<div class="note"><b>'+(f.task.done?'أُعيد إليك':'مُكلَّفٌ به')+':</b> '+
+    esc(f.task.who)+' · '+f.task.days+' أيّام<br>'+esc(f.task.what)+'</div>';
+  if(f.plan&&f.plan.askD&&!f.plan.vDeputy)
+    h+='<div class="note" style="border-right:3px solid var(--warn)">'+
+       '<b>طلب الموجّهُ رأيَك</b> في خطّة تعديل السلوك</div>'+
+       '<div class="row"><button class="btn" data-op="'+cur+'|D">اكتب رأيك</button></div>';
+  if(f.plan&&f.plan.vDeputy) h+='<div class="note"><b>رأيُك في الخطّة:</b> '+esc(f.plan.vDeputy)+'</div>';
+  if(f.plan&&f.plan.askT&&!f.plan.vTeacher)
+    h+='<div class="note">طُلب رأيُ معلّم الفصل — بانتظاره</div>';
+  if(f.call) h+='<div class="note"><b>الاتّصالُ بوليّ الأمر:</b> '+esc(f.call.d)+' · '+esc(f.call.t)+
+    '<br>'+esc(f.call.r)+'<br>'+esc(f.call.w)+'</div>';
+  if(f.survey) h+='<details class="dt"><summary><b>حصرُك:</b> '+AR(f.survey.neg.length)+
+    ' سلبيّةً · '+AR(f.survey.pos.length)+' إيجابيّةً</summary><div class="dtb">'+
+    (f.survey.neg.length?'<b>السلبيّة:</b> '+esc(f.survey.neg.join(" · "))+'<br>':'')+
+    (f.survey.pos.length?'<b>الإيجابيّة:</b> '+esc(f.survey.pos.join(" · "))+'<br>':'')+
+    (f.survey.cause?'<b>المسبّبات:</b> '+esc(f.survey.cause)+'<br>':'')+
+    (f.survey.plan?'<b>البدءُ بالحدّ منها:</b> '+esc(f.survey.plan):'')+'</div></details>';
+  if(f.taskSurvey) h+='<details class="dt g"><summary><b>حصرُ المكلَّف</b> ('+
+    esc(f.task?f.task.who.split(" — ")[0]:"")+'): '+AR(f.taskSurvey.neg.length)+
+    ' سلبيّةً · '+AR(f.taskSurvey.pos.length)+' إيجابيّةً</summary><div class="dtb">'+
+    (f.taskSurvey.neg.length?'<b>السلبيّة:</b> '+esc(f.taskSurvey.neg.join(" · "))+'<br>':'')+
+    (f.taskSurvey.pos.length?'<b>الإيجابيّة:</b> '+esc(f.taskSurvey.pos.join(" · "))+'<br>':'')+
+    (f.taskSurvey.cause?'<b>المسبّبات:</b> '+esc(f.taskSurvey.cause)+'<br>':'')+
+    (f.taskSurvey.plan?'<b>البدءُ بالحدّ منها:</b> '+esc(f.taskSurvey.plan):'')+'</div></details>';
+  var R=respond(f);
+  if(R.state!=="no-plan"){
+    h+='<div class="card" style="margin:0 0 10px"><h3>هل تعدّل؟</h3>'+
+       '<p class="meta">'+(LOGGED[f.p]
+         ?'مستندُه '+esc(SRC[f.p]||"سجلٌّ يوميّ")+' — فالحكمُ آليٌّ'
+         :'لا سجلَّ يوميَّ لهذا السلوك — فيُسأل معلّمُ الفصل')+'</p><table>'+
+       '<tr><td>رصداتٌ قبل الخطّة</td><td>'+AR(R.pre)+'</td></tr>'+
+       '<tr><td>رصداتٌ بعدها</td><td>'+AR(R.post||0)+'</td></tr>'+
+       '<tr><td>الحكم</td><td>'+(R.state==="improved"
+         ?'<b style="color:var(--brand)">تعدّل</b>'
+         :R.state==="failed"?'<b style="color:var(--bad)">تكرّر بعد الخطّة</b>'
+         :'<b style="color:var(--warn)">بانتظار شهادة معلّم الفصل</b>')+'</td></tr>'+
+       (R.dates?'<tr><td>تواريخُ التكرار</td><td>'+esc(R.dates)+'</td></tr>':'')+
+       (R.by?'<tr><td>مستندُ الحكم</td><td>'+esc(R.by)+'</td></tr>':'')+'</table>'+
+       '<div class="note">النظامُ يعرض — <b>والقرارُ لك</b>: الإحالةُ مفتوحةٌ بعد اعتماد الخطّة</div>';
+    if(R.state==="ask-teacher")
+      h+='<div class="note">سؤالٌ واحدٌ لمعلّم الفصل — لا جدولَ يُملأ</div>'+
+         '<div class="row"><button class="btn" data-tq="'+cur+'|yes">تكرّر</button>'+
+         '<button class="btn ghost" data-tq="'+cur+'|no">لم يتكرّر</button></div>';
+    h+='</div>';
+  }
+  h+='<div class="note"><b>السند:</b> م٦ · ص٢٠</div></div>';
+  h+='<div class="card"><h3>سجلُّ الملفّ</h3>'+
+     '<p class="meta">كلُّ فعلٍ وقع — ومن فعله وبأيّ صفة ومتى · ولا يُحذف منه شيء</p>'+
+     logHtml(f)+'</div>';
+  return h;
+}
+
+/* ═══ الموجّه ═══ */
+function viewM(){
+  var h='<p class="role"><i class="dot"></i> تعمل بصفة <b>الموجّه الطلابيّ</b> · سعيد زنبيل</p>';
+  h+='<div class="card"><h3>دوري في التعزيز</h3><ul class="acts">'+
+     '<li><i class="tick ok">✓</i> توعيةُ المخالف بحقّه في التعويض<span class="who">بند ٧</span></li>'+
+     '<li><i class="tick ok">✓</i> تطبيقُ فنيّات الإرشاد وتعديلِ السلوك<span class="who">بند ٥</span></li>'+
+     '<li><i class="tick ok">✓</i> تفعيلُ قرارات اللجنة ومتابعتُها<span class="who">بند ٩</span></li>'+
+     '<li><i class="tick ok">✓</i> التنسيقُ للاستفادة من الأنشطة<span class="who">بند ١١</span></li>'+
+     '</ul><div class="note">لا أقدّر الدرجةَ — <b>التقديرُ للّجنة</b> · ص١٣ وص١٢</div></div>';
+  var cases=S.files.filter(function(f){return !!f.cs;});
+  if(cases.length){
+    h+='<div class="card"><h3>مؤشّرُ متابعة حالات الطلاب</h3>'+
+       '<p class="meta">تُولَّد آليًّا من مؤشّر السلوك — كما في نور</p>'+
+       '<div style="overflow-x:auto"><table style="min-width:420px">'+
+       '<tr><td>الطالب</td><td>المؤشّر</td><td>الرصدات</td><td>الحالة</td></tr>';
+    cases.forEach(function(f){
+      h+='<tr><td>شادي أحمد</td><td>السلوك — '+esc(PROBLEMS[f.p])+'</td>'+
+         '<td>'+AR(f.recs.length)+'</td><td>'+
+         (f.cs.filed?'<b style="color:var(--brand)">تمّت المعالجة</b>'
+                    :'<b style="color:var(--warn)">قيد المعالجة</b>')+'</td></tr>';});
+    h+='</table></div>';
+    cases.forEach(function(f){ var i=S.files.indexOf(f);
+      var ss=(f.cs.sessions||[]);
+      h+='<div class="file"><h5>'+esc(PROBLEMS[f.p])+'</h5>'+
+         '<p>'+(f.cs.filed?'دراسةُ الحالة مكتوبة':'<b style="color:var(--warn)">دراسةُ الحالة لم تُكتب</b>')+
+         ' · جلساتُ المتابعة: '+AR(ss.length)+'</p>'+
+         '<div class="row"><button class="'+(f.cs.filed?'btn ghost':'btn')+'" data-cs="'+i+'">'+
+         (f.cs.filed?'عدّل الدراسة':'ادرس الحالة')+'</button>'+
+         (f.cs.filed?'<button class="btn" data-fw="'+i+'">قيّد جلسةَ متابعة</button>':'')+
+         (f.cs.filed&&ss.length?'<button class="btn soft" data-rp="'+i+'">'+
+           ((f.cs.report&&f.cs.report.filed)?'عدّل التقرير':'ارفع تقريرَ دراسة الحالة')+'</button>':'')+
+         '</div>'+
+         ((f.cs.report&&f.cs.report.filed)
+           ?'<div class="note"><b>رُفع التقريرُ للّجنة</b> · '+esc(f.cs.report.d)+' هـ · '+
+            'عن '+AR(f.cs.report.sessions)+' جلسة</div>':'');
+      if(ss.length){
+        h+='<div class="note" style="padding:0;background:transparent"><ul class="acts">';
+        ss.slice().reverse().forEach(function(x){
+          h+='<li style="align-items:flex-start"><i class="tick ok">✓</i><span style="flex:1">'+
+             'الجلسةُ '+AR(x.no)+' · '+esc(x.m)+
+             '<div class="lgd"><i class="k">ما نُوقش:</i><i>'+esc(x.t)+'</i>'+
+             '<i class="k">الاستجابة:</i><i class="p">'+esc(x.r)+'</i>'+
+             '<i class="k">التالي:</i><i>'+esc(x.n)+'</i></div>'+
+             '</span><span class="who">'+esc(x.d)+'</span></li>';});
+        h+='</ul></div>';}
+      h+='</div>';});
+    h+='<div class="note"><b>اجتهادٌ لا نصّ:</b> هيكلُ المؤشّر مأخوذٌ من شاشة نور، '+
+       'وشكلُ الدراسة من تصميمنا — <b>فالدليلُ يوجب الفعلَ ولا نموذجَ له</b></div>';
+    h+='</div>';}
+  var shown=false;
+  S.files.forEach(function(f,i){
+    var p=pending(f,"الموجّه"); if(!done(f,"refer")&&!p.length) return; shown=true;
+    h+='<div class="card"><h3>'+esc(PROBLEMS[f.p])+'</h3>'+
+       '<p class="meta">شادي أحمد · السادس أ · أُحيل آليًّا</p><table>'+
+       '<tr><td>التكرار</td><td>'+AR(step(f))+" رصدات"+'</td></tr>'+
+       '<tr><td>حصرُ الوكيل</td><td>'+(f.survey?
+         esc(f.survey.neg.join(" · "))+
+         (f.survey.pos.length?'<br><span style="color:var(--brand)">الإيجابيّة: '+
+           esc(f.survey.pos.join(" · "))+'</span>':'')+
+         (f.survey.cause?'<br>المسبّبات: '+esc(f.survey.cause):'')
+         :'<span style="color:var(--warn)">لم يُكتب</span>')+'</td></tr>'+
+       '<tr><td>المحسوم</td><td>'+AR(deducted())+' درجة</td></tr>'+
+       (f.cs?'<tr><td>دراسةُ الحالة</td><td>'+(f.cs.filed
+         ?'<b style="color:var(--brand)">مكتوبةٌ — سرّيّةٌ عندك</b>'
+         :'<b style="color:var(--warn)">لم تُكتب بعد</b>')+'</td></tr>':'')+
+       '</table>';
+    if(p.length){ h+='<div class="row">';
+      p.forEach(function(a){
+        var at = a.form==="session" ? 'data-ss="'+i+'"' :
+                 a.k==="plan" ? 'data-pl="'+i+'"' : 'data-do="'+a.k+'" data-fi="'+i+'"';
+        h+='<button class="btn" '+at+'>'+esc(a.t)+'</button>';});
+      h+='</div>';
+    } else h+='<div class="note">لا شيءَ عليك في هذا الملفّ</div>';
+    h+='</div>';});
+  if(!shown) h+='<div class="card"><p class="empty">لم يُحَل إليك شيءٌ بعد<br>'+
+    '<span style="font-size:12px">يُحال الملفُّ آليًّا عند الرصدة الثالثة</span></p></div>';
+  if(S.sessions.length){
+    h+='<div class="card"><h3>جلساتي</h3>';
+    S.sessions.forEach(function(s){
+      h+='<div class="step done" style="opacity:1"><h4>'+esc(PROBLEMS[s.p])+' — '+esc(s.d)+' هـ · '+esc(s.dur)+'</h4>'+
+         '<p>'+esc(s.txt)+'</p><div class="note"><b>ما قرّرناه:</b> '+esc(s.res)+
+         '<br><b>المقترحات:</b> '+esc(s.picks.map(function(i){return MERITS[i].t;}).join(" · "))+'</div></div>';});
+    h+='</div>';}
+  S.files.forEach(function(f){ if(!done(f,"refer")) return;
+    h+='<div class="card"><h3>سجلُّ الملفّ — '+esc(PROBLEMS[f.p])+'</h3>'+
+       '<p class="meta">مكشوفٌ بينك وبين الوكيل</p>'+logHtml(f)+'</div>';});
+  return h;
+}
+
+/* ═══ اللجنة ═══ */
+function viewC(){
+  var h='<p class="role"><i class="dot"></i> <b>لجنةُ التوجيه الطلابيّ</b> · رئيسُها وكيلُ شؤون الطلبة</p>';
+  h+='<div class="card"><h3>اختصاصُها</h3><ul class="acts">'+
+     '<li><i class="tick ok">✓</i> استلامُ الشواهد وتقديرُ الدرجة<span class="who">بند ٨</span></li>'+
+     '<li><i class="tick ok">✓</i> ما لم يُذكر — بما لا يزيد على ٦<span class="who">بند ٩</span></li>'+
+     '<li><i class="tick ok">✓</i> توفيرُ فرص التحسين<span class="who">بند ١٠</span></li>'+
+     '<li><i class="tick ok">✓</i> استثمارُ خطط النشاط بالتنسيق مع رائده<span class="who">بند ٦</span></li>'+
+     '<li><i class="tick ok">✓</i> توثيقُ المحاضر ومتابعةُ التوصيات<span class="who">بند ١٤</span></li>'+
+     '</ul><div class="row"><button class="btn" id="oppNew">افتح فرصةً للطلبة</button></div></div>';
+
+  var fw=S.evid.filter(function(e){return e.state==="forwarded";});
+  if(fw.length){
+    h+='<div class="card"><h3>شواهدُ بانتظار التقدير</h3>';
+    fw.forEach(function(e){ var i=S.evid.indexOf(e);
+      h+='<div class="file"><h5>'+esc(MERITS[e.mi].t)+'</h5><p>'+esc(e.txt)+
+         '<br>الشاهد: '+esc(e.att)+(e.file?' · <b>'+esc(e.file)+'</b>':'')+' · '+(e.kind==="comp"?"تعويضًا":"اكتسابًا")+'</p>'+
+         '<div class="row"><button class="btn" data-grade="'+i+'">قدّر الدرجة</button></div></div>';});
+    h+='</div>';}
+
+  if(S.opps.length){
+    h+='<div class="card"><h3>الفرص</h3><p class="meta">تُقفل باكتمال العدد أو انتهاء الوقت</p>';
+    S.opps.forEach(function(o,i){
+      var cert=(o.members||[]).filter(function(x){return x.cert;}).length;
+      h+='<div class="file"><h5>'+esc(MERITS[o.mi].t)+' — '+AR(MERITS[o.mi].p)+' درجات</h5>'+
+         '<p>'+esc(o.when)+' · '+AR(o.taken)+' من '+AR(o.cap)+' · '+esc(o.by)+
+         (o.open?' · <b style="color:var(--brand)">مفتوحة</b>'
+               :' · <b>مُغلقة ('+esc(o.closeWhy||"—")+')</b>')+
+         (o.members&&o.members.length?'<br>شُهد لـ'+AR(cert)+' من '+AR(o.members.length):'')+
+         (o.planned?' · <b style="color:var(--brand)">اعتُمد مخطّطُها</b>':'')+'</p>';
+      h+='<div class="row">'+
+         (o.open?'<button class="btn ghost" data-close="'+i+'">أغلقها — انتهى الوقت</button>':'')+
+         (!o.open&&!o.planned&&cert>0?'<button class="btn" data-oplan="'+i+'">افتح مخطّطَ الفرصة</button>':'')+
+         '<button class="btn soft" data-ofile="'+i+'">ملفُّ الفرصة</button></div>'+
+         (!o.open&&!o.planned&&cert===0?'<div class="note">بانتظار إقرار المشاركات</div>':'');
+      h+='</div>';});
+    h+='</div>';}
+
+  var refs=S.files.filter(function(f){return f.refer;});
+  if(refs.length){
+    h+='<div class="card"><h3>إحالاتٌ إليك</h3>';
+    refs.forEach(function(f){ var i=S.files.indexOf(f);
+      var rp=(f.cs&&f.cs.report&&f.cs.report.filed)?f.cs.report:null;
+      h+='<div class="file"><h5>'+esc(PROBLEMS[f.p])+'</h5>'+
+         '<p>شادي أحمد · السادس أ · أُحيل '+esc(f.refer.d)+' هـ<br>'+esc(f.refer.why)+'</p>'+
+         (rp?'<div class="note" style="border-right:3px solid var(--brand)">'+
+           '<b>تقريرُ دراسة الحالة</b> — من الموجّه · '+esc(rp.d)+' هـ'+
+           '<br><b>الجلسات:</b> '+AR(rp.sessions)+' · '+esc(rp.span)+
+           '<br><b>آخرُ تقدير:</b> '+esc(rp.lastR)+' · <b>الحكم:</b> '+esc(rp.judge)+
+           '<br><b>الرأيُ الفنّيّ:</b> '+esc(rp.view)+
+           '<br><b>التوصية:</b> '+esc(rp.rec)+'</div>'
+          :'<div class="note" style="border-right:3px solid var(--warn)">'+
+           '<b>لم يُرفع تقريرُ دراسة الحالة بعد</b> — واللجنةُ تبحث على أساسه · ص٢٠</div>')+
+         (f.refer.decided
+           ?'<div class="note"><b>قرارُ اللجنة:</b> '+esc(f.refer.dec)+'<br>'+esc(f.refer.rec)+'</div>'
+           :'<div class="row"><button class="btn" data-cmin="'+i+'">اعقد الاجتماعَ وقيّد المحضر (١٢)</button></div>')+
+         '<div class="note" style="padding:0;background:transparent">'+logHtml(f)+'</div>'+
+         '</div>';});
+    h+='</div>';}
+
+  if(S.absDays===0 && S.files.length){
+    h+='<div class="card"><h3>فرصةٌ تُحتسب آليًّا</h3>'+
+       '<p class="meta">«انضباطُ الطالب وعدمُ غيابه بدون عذرٍ خلال الفصل — ستُّ درجات»</p>'+
+       '<div class="note">سجلُّ المواظبة: <b>لا غيابَ بلا عذر</b> — فتُعرض للإقرار بلا شاهدٍ ولا تسجيل</div>'+
+       '<div class="row"><button class="btn" id="autoGrant">أقرّ الستّ درجات</button></div></div>';}
+
+  if(S.minutes.length){
+    h+='<div class="card"><h3>محاضرُ اللجنة</h3>';
+    S.minutes.forEach(function(m){
+      h+='<div class="step done" style="opacity:1"><h4>'+esc(m.t)+' — '+esc(m.d)+' هـ</h4>'+
+         '<p>'+esc(m.dec)+'</p><div class="note">'+esc(m.note)+'</div></div>';});
+    h+='</div>';}
+  return h;
+}
+
+/* ═══ رائد النشاط ═══ */
+function viewA(){
+  var h='<p class="role"><i class="dot"></i> تعمل بصفة <b>رائد النشاط</b> · يحيى الصالبي</p>';
+  var mine=S.opps.filter(function(o){return o.by.indexOf("رائد النشاط")>=0;});
+  h+='<div class="card"><h3>دوري</h3><div class="note">'+
+     'اللجنةُ «تستثمر خططَ الأنشطة الطلابيّة… <b>بالتنسيق مع رائد النشاط</b>» — ص١٢ بند ٦'+
+     '<br>فأنا أُقيم الفرصةَ وأشهد بتنفيذ الطالب لها.</div></div>';
+  if(!mine.length) return h+'<div class="card"><p class="empty">لا فرصَ أُسندت إليك<br>'+
+    '<span style="font-size:12px">تفتحها اللجنةُ وتسندها إليك</span></p></div>';
+  mine.forEach(function(o){ var i=S.opps.indexOf(o);
+    h+='<div class="card"><h3>'+esc(MERITS[o.mi].t)+'</h3>'+
+       '<p class="meta">'+esc(o.when)+' · '+MERITS[o.mi].p+' درجات</p>'+
+       '<div class="chips"><span class="chip'+(o.taken>=o.cap?' r':' g')+'">'+o.taken+' من '+o.cap+'</span>'+
+       '<span class="chip">'+(o.open?'مفتوحة':'مُغلقة')+'</span></div>';
+    if(!o.members||!o.members.length) h+='<div class="note">لم يسجّل فيها أحدٌ بعد</div>';
+    else { h+='<div class="note">المشاركون — اشهد بتنفيذ كلٍّ منهم</div>';
+      o.members.forEach(function(p,j){
+        var vd=p.verdict?VERD[p.verdict]:null;
+        h+='<div class="file"><h5>'+esc(p.name)+'</h5><p>'+
+           (vd?'<b style="color:var('+(p.cert?'--brand':'--bad')+')">'+esc(vd)+'</b>'
+             :(p.filed?'<b style="color:var(--warn)">رفع نموذجَه — بانتظار إقرارك</b>'
+                      :'لم يرفع نموذجَه بعد'))+
+           (p.graded?' · قُدّرت '+AR(p.pts)+' درجة':'')+'</p>'+
+           (p.filed?'<div class="lgd"><i class="k">ما كتبه:</i><i>'+esc(p.txt||"")+'</i>'+
+             (p.attDesc?'<i class="k">المرفق:</i><i>'+esc(p.attDesc)+'</i>':'')+
+             (p.att?'<i class="p">'+esc(p.att)+'</i>':'')+'</div>':'')+
+           (p.note?'<div class="note"><b>ملاحظتُك:</b> '+esc(p.note)+'</div>':'')+
+           (p.filed
+             ?'<div class="row"><button class="'+(p.verdict?'btn ghost':'btn')+'" data-cert="'+i+'|'+j+'|">'+
+              (p.verdict?'عدّل إقرارك':'أقرّ مشاركتَه')+'</button>'+
+              (p.verdict?'':'<button class="btn soft" data-dlg="'+i+'|'+j+'">أحِلها لمن يقرّها</button>')+'</div>'
+             :'<div class="note">لا تُقرّ قبل أن يرفع الطالبُ نموذجَه</div>')+
+           (p.dlg?'<div class="note">مُحالةٌ إلى <b>'+esc(p.dlg)+'</b> لإقرارها</div>':'')+
+           '</div>';});
+      var allc=o.members.every(function(x){return x.verdict;});
+      if(allc&&!o.open) h+='<div class="note"><b>أُقرّ للجميع</b> — ترفع اللجنةُ مخطّطَ الفرصة وتقدّر الدرجات</div>';
+    }
+    h+='<div class="row"><button class="btn soft" data-ofile="'+i+'">ملفُّ الفرصة</button></div>';
+    h+='</div>';});
+  return h;
+}
+
+/* ═══ المكلَّف ═══ */
+function viewK(){
+  var h='<p class="role"><i class="dot"></i> صفحة <b>المكلَّف</b></p>';
+  var dlgs=[];
+  S.opps.forEach(function(o,i){ (o.members||[]).forEach(function(p,j){
+    if(p.dlg) dlgs.push({o:o,p:p,i:i,j:j}); });});
+  if(dlgs.length){
+    h+='<div class="card"><h3>إثباتُ مشاركة طالب</h3>'+
+       '<p class="meta">أُحيلت إليك من رائد النشاط · ترى هذا الجزءَ وحدَه</p>';
+    dlgs.forEach(function(x){
+      h+='<div class="file"><h5>'+esc(x.p.name)+'</h5><p>'+
+         esc(MERITS[x.o.mi].t)+'<br>'+esc(x.o.when)+'<br>المكلَّف: '+esc(x.p.dlg)+
+         '<br>'+esc(x.p.dlgWhat||"")+'</p>'+
+         (x.p.verdict
+           ?'<div class="note"><b>'+esc(VERD[x.p.verdict])+'</b>'+(x.p.note?'<br>'+esc(x.p.note):'')+'</div>'
+           :'<div class="row"><button class="btn" data-cert="'+x.i+'|'+x.j+'|">أثبت المشاركة</button></div>')+
+         '</div>';});
+    h+='</div>';}
+  var ops=[];
+  S.files.forEach(function(f,i){ ((f.plan&&f.plan.teachers)||[]).forEach(function(t,j){
+    if(!t.op) ops.push({f:f,i:i,t:t,j:j}); });});
+  if(ops.length){
+    h+='<div class="card"><h3>رأيٌ مطلوبٌ منك</h3>'+
+       '<p class="meta">خطّةُ تعديل السلوك — نموذج ٣ · القسمُ السادس</p>';
+    ops.forEach(function(x){
+      h+='<div class="file"><h5>'+esc(x.t.who)+'</h5>'+
+         '<p>'+esc(PROBLEMS[x.f.p])+' · شادي أحمد الزهراني — السادس أ<br>'+
+         'طلبها الموجّهُ الطلابيّ</p>'+
+         '<div class="row"><button class="btn" data-op="'+x.i+'|T|'+x.j+'">اكتب رأيك</button></div></div>';});
+    h+='</div>';}
+  var any=S.files.filter(function(f){return !!f.task;});
+  if(!any.length&&!dlgs.length&&!ops.length) return h+'<div class="card"><p class="empty">لا تكاليفَ عليك</p></div>';
+  if(!any.length) return h;
+  any.forEach(function(f){ var t=f.task, i=S.files.indexOf(f);
+    h+='<div class="card"><h3>'+(t.done?'تكليفٌ أُعيد':'كُلّفتَ بحصر سلوكيّات طالب')+'</h3>'+
+       '<p class="meta">من الوكيل · المدّة '+t.days+' أيّام</p><table>'+
+       '<tr><td>المكلَّف</td><td>'+esc(t.who)+'</td></tr>'+
+       '<tr><td>الطالب</td><td>شادي أحمد راجح الزهراني</td></tr>'+
+       '<tr><td>السلوك</td><td>'+esc(PROBLEMS[f.p])+'</td></tr>'+
+       '<tr><td>المطلوب</td><td>'+esc(t.what)+'</td></tr></table>'+
+       '<div class="note">ترى <b>هذا الجزءَ وحدَه</b></div>';
+    if(!t.done) h+='<div class="row"><button class="btn" data-kdo="'+i+'">افتح نموذجَ الحصر</button>'+
+      '<button class="btn ghost" data-kback="'+i+'">أعِدها للوكيل</button></div>';
+    h+='</div>';});
+  return h;
+}
+
+/* ═══ الطالب ═══ */
+function viewS(){
+  var h='<p class="role"><i class="dot"></i> صفحة <b>شادي أحمد الزهراني</b> · السادس أ</p>';
+  h+='<div class="card"><h3>درجةُ سلوكي</h3>'+
+     '<div class="score"><b>'+total()+'</b><span>من ١٠٠</span></div>'+
+     '<div class="bar"><i style="width:'+S.pos+'%"></i><i class="m" style="width:'+S.merit+'%"></i></div>'+
+     '<div class="chips"><span class="chip'+(S.pos<80?' w':' g')+'">الإيجابيّ '+S.pos+' من ٨٠</span>'+
+     '<span class="chip g">المتميّز '+S.merit+' من ٢٠</span></div>'+
+     '<p class="meta">'+(deducted()?'حُسم '+deducted()+' — ويمكنك تعويضها':'لم يُحسم شيء')+'</p></div>';
+
+  var sign=[];
+  S.files.forEach(function(f,i){ pending(f,"الطالب").forEach(function(a){ sign.push({f:f,i:i,a:a}); }); });
+  if(sign.length){
+    h+='<div class="card" style="border-color:var(--brand)"><h3>بانتظار توقيعك</h3>'+
+       '<p class="meta">سجلُّ المشكلات السلوكيّة — نموذج ٥ · ص٦٢</p>';
+    sign.forEach(function(x){
+      var r=x.f.recs[x.f.recs.length-1];
+      h+='<div class="note" style="border-right:3px solid var(--brand)">'+
+         '<b>دُوّنت عليك:</b> '+esc(PROBLEMS[x.f.p])+' — الدرجة ١'+
+         '<br>دوّنها: '+esc(x.f.by||"المعلّم المباشر للموقف")+' · '+esc(r?r.d:"")+' هـ'+
+         '<br>المحسوم: '+AR(deducted())+' درجة'+
+         '<br><span style="color:var(--mute)">توقيعُك إقرارٌ بالاطّلاع لا إقرارٌ بالذنب</span></div>'+
+         '<div class="note">نسخةٌ منه <b>ظاهرةٌ لوليّ أمرك</b> في بوّابته — لا تحتاج أن تعرضها</div>'+
+         '<div class="row"><button class="btn" data-do="'+x.a.k+'" data-fi="'+x.i+'">أقرّ بالاطّلاع وأوقّع</button></div>';});
+    h+='</div>';}
+
+  if(S.props.length){
+    h+='<div class="card"><h3>اقترحها الموجّه لك</h3><p class="meta">والاختيارُ لك — فالتعويضُ حقٌّ لا تكليف</p><ul class="acts">';
+    S.props.forEach(function(mi){
+      h+='<li><i class="tick no"></i> '+esc(MERITS[mi].t)+'<span class="who">'+MERITS[mi].p+' درجات</span></li>';});
+    h+='</ul></div>';}
+
+  var mine=S.opps.filter(function(o){return o.joined;});
+  var avail=S.opps.filter(function(o){return !o.joined&&o.open&&o.taken<o.cap;});
+  if(mine.length){
+    h+='<div class="card"><h3>فرصٌ سجّلتُ فيها</h3>';
+    mine.forEach(function(o){
+      var me=(o.members||[]).filter(function(x){return x.isMe;})[0]||{};
+      h+='<div class="file"><h5>'+esc(MERITS[o.mi].t)+' — '+AR(MERITS[o.mi].p)+' درجات</h5>'+
+         '<p>'+esc(o.when)+' · '+AR(o.taken)+' من '+AR(o.cap)+'</p>';
+      if(o.open) h+='<div class="note"><b>مسجَّلٌ · الفرصةُ مفتوحة</b> — تُقفل باكتمال العدد أو انتهاء الوقت</div>';
+      else if(!me.filed) h+='<div class="note"><b>أُغلقت ('+esc(o.closeWhy||"—")+')</b> — '+
+        'املأ نموذجَك وأرفق شاهدَك · <b>ثمّ يقرّ رائدُ النشاط</b></div>'+
+        '<div class="row"><button class="btn" data-fil="'+S.opps.indexOf(o)+'">املأ نموذجَك</button></div>';
+      else if(!me.verdict) h+='<div class="note"><b>رُفع نموذجُك</b> — بانتظار إقرار رائد النشاط'+
+        (me.txt?'<br>'+esc(me.txt):'')+(me.att?'<br>المرفق: '+esc(me.att):'')+'</div>';
+      else if(!me.graded) h+='<div class="note"><b>'+esc(VERD[me.verdict])+'</b> — بانتظار تقدير اللجنة</div>';
+      else h+='<div class="note" style="border-right:3px solid var(--brand)"><b>تمّ</b> — '+
+        'قدّرت لك اللجنةُ '+AR(me.pts)+' درجة</div>';
+      h+='<div class="row"><button class="btn soft" data-ofileme="'+S.opps.indexOf(o)+'">ملفُّ مشاركتي</button></div>';
+      h+='</div>';});
+    h+='</div>';}
+  h+='<div class="card"><h3>الفرصُ المتاحة الآن</h3>';
+  if(!avail.length) h+='<p class="empty">لا فرصَ مفتوحةً الآن — تابع صفحتك</p>';
+  else avail.forEach(function(o){ var i=S.opps.indexOf(o);
+    h+='<div class="file"><h5>'+esc(MERITS[o.mi].t)+' — '+AR(MERITS[o.mi].p)+' درجات</h5>'+
+       '<p>'+esc(o.when)+' · بقي '+AR(o.cap-o.taken)+' من '+AR(o.cap)+' · '+esc(KIND_AR[MERITS[o.mi].kind])+'</p>'+
+       '<div class="row"><button class="btn" data-join="'+i+'">سجّل فيها</button></div></div>';});
+  h+='</div>';
+
+  h+='<div class="card"><h3>ممارسةٌ فرديّة</h3>'+
+     '<p class="meta">تفعلها وحدَك وتقدّم شاهدَها</p><ul class="acts">';
+  MERITS.forEach(function(m,i){ if(m.kind!=="ind") return;
+    h+='<li><i class="tick no"></i> '+esc(m.t)+'<span class="who">'+m.p+' درجات</span>'+
+       '<button class="btn soft" style="padding:4px 9px;font-size:11.5px" data-ev="'+i+'">قدّم</button></li>';});
+  h+='</ul></div>';
+
+  if(S.evid.length){
+    h+='<div class="card"><h3>شواهدي</h3><ul class="acts">';
+    S.evid.forEach(function(e){
+      var st=e.state==="graded"?"قُدّرت "+e.pts+" درجة":
+             e.state==="forwarded"?"عند اللجنة":e.state==="rejected"?"رُدّت":"عند الوكيل";
+      h+='<li><i class="tick '+(e.state==="graded"?'ok':'no')+'">'+(e.state==="graded"?'✓':'')+'</i> '+
+         esc(MERITS[e.mi].t)+'<span class="who">'+esc(st)+'</span></li>';});
+    h+='</ul></div>';}
+
+  S.files.forEach(function(f,i){
+    h+='<div class="card"><h3>'+esc(PROBLEMS[f.p])+'</h3><ul class="acts">';
+    f.recs.forEach(function(r,j){
+      h+='<li><i class="tick ok">✓</i> '+["تنبيهٌ أوّل","تنبيهٌ ثانٍ","تدوينٌ وحسم","دعوةُ وليّ الأمر"][j]+
+         '<span class="who">'+esc(r.d)+' هـ</span></li>';});
+    h+='</ul>';
+    var last=f.recs[f.recs.length-1];
+    if(last&&last.a) h+='<div class="note" style="border-right:3px solid var(--brand)">'+
+      '<b>نصيحةٌ لك:</b> '+esc(last.a)+'</div>';
+    if(f.acts.sign) h+='<div class="note"><b>وقّعتَ على التدوين</b> — سجلُّ المشكلات (٥)</div>';
+    h+='</div>';});
+  return h;
+}
+
+/* ═══ وليّ الأمر ═══ */
+function viewG(){
+  var h='<p class="role"><i class="dot"></i> بوّابة <b>أحمد راجح الزهراني</b> · وليّ أمر</p>';
+  h+='<div class="card"><h3>شادي — السادس الابتدائيّ أ</h3><div class="chips">'+
+     '<span class="chip'+(S.pos<80?' w':' g')+'">الإيجابيّ '+S.pos+' من ٨٠</span>'+
+     '<span class="chip g">المتميّز '+S.merit+' من ٢٠</span>'+
+     '<span class="chip">المجموع '+total()+' من ١٠٠</span></div></div>';
+  if(S.files.length){
+    h+='<div class="card"><h3>رصداتُ ابني</h3><p class="meta">تظهر لك من أوّل رصدة</p>';
+    S.files.forEach(function(f){
+      h+='<div class="step done" style="opacity:1"><h4>'+esc(PROBLEMS[f.p])+'</h4><ul class="acts">';
+      f.recs.forEach(function(r,j){
+        h+='<li><i class="tick ok">✓</i> '+["تنبيهٌ أوّل","تنبيهٌ ثانٍ","تدوينٌ وحسم","دعوةُ وليّ الأمر"][j]+
+           '<span class="who">'+esc(r.d)+' هـ</span></li>';});
+      h+='</ul>';
+      var last=f.recs[f.recs.length-1];
+      if(last&&last.a) h+='<div class="note"><b>ما نُصح به ابنُك:</b> '+esc(last.a)+'</div>';
+      h+='</div>';});
+    h+='</div>';
+    S.files.forEach(function(f){
+      h+='<div class="card"><h3>ما فعلته المدرسةُ — '+esc(PROBLEMS[f.p])+'</h3>'+
+         '<p class="meta">كلُّ إجراءٍ اتُّخذ مع ابنك بتاريخه</p>'+logHtml(f)+'</div>';});
+  }
+  var gr=S.evid.filter(function(e){return e.state==="graded";});
+  if(gr.length){
+    h+='<div class="card"><h3>سلوكٌ متميّزٌ لابني</h3><ul class="acts">';
+    gr.forEach(function(e){ h+='<li><i class="tick ok">✓</i> '+esc(MERITS[e.mi].t)+
+      '<span class="who">+'+e.pts+' درجة</span></li>';});
+    h+='</ul><div class="note">قدّرتها <b>لجنةُ التوجيه الطلابيّ</b></div></div>';}
+  S.files.forEach(function(f,i){
+    if(f.call) h+='<div class="card"><h3>اتّصلت بك المدرسة</h3>'+
+       '<p class="meta">'+esc(f.call.d)+' · '+esc(f.call.t)+'</p><table>'+
+       '<tr><td>المشكلة</td><td>'+esc(PROBLEMS[f.p])+' — الدرجة ١</td></tr>'+
+       '<tr><td>نتيجةُ الاتّصال</td><td>'+esc(f.call.r)+'</td></tr>'+
+       '<tr><td>ما دار</td><td>'+esc(f.call.w)+'</td></tr>'+
+       '<tr><td>المحسوم</td><td>'+AR(deducted())+' · <b>وفُتحت فرصةُ تعويض</b></td></tr></table></div>';
+    if(step(f)>=3) h+='<div class="card"><h3>دُوّنت على ابنك</h3>'+
+       '<p class="meta">سجلُّ المشكلات — '+esc(f.recs[2].d)+' هـ</p><table>'+
+       '<tr><td>المشكلة</td><td>'+esc(PROBLEMS[f.p])+' — الدرجة ١</td></tr>'+
+       '<tr><td>دوّنها</td><td>'+esc(f.by||"المعلّم المباشر")+'</td></tr>'+
+       '<tr><td>توقيعُ ابنك</td><td>'+(f.acts.sign?'<b style="color:var(--brand)">وقّع</b>':'بانتظاره')+'</td></tr>'+
+       '</table></div>';
+    if(f.plan&&f.plan.final){
+      h+='<div class="card" style="border-color:var(--brand)"><h3>خطّةُ تعديل السلوك</h3>'+
+         '<p class="meta">نموذج ٣ · ص٦٠ · أعدّها الموجّهُ الطلابيّ</p><table>'+
+         '<tr><td>المشكلة</td><td>'+esc(PROBLEMS[f.p])+'</td></tr>'+
+         '<tr><td>السلوكُ المرغوب</td><td>'+esc(f.plan.target)+'</td></tr>'+
+         '<tr><td>الإجراءُ الأوّل</td><td>'+esc(f.plan.tx[0])+'</td></tr></table>'+
+         (f.plan.vGuardian?'<div class="note"><b>رأيُك:</b> '+esc(f.plan.vGuardian)+'</div>'
+          :'<div class="row"><button class="btn" data-op="'+i+'|G">اكتب رأيك</button></div>')+'</div>';}
+    if(f.summon){
+      h+='<div class="card" style="border-color:var(--brand)"><h3>خطابُ دعوة</h3>'+
+         '<p class="meta">نموذج ١٠ · ص٦٧ · من مدير المدرسة</p><table>'+
+         '<tr><td>التاريخ</td><td>'+esc(f.summon.d)+'</td></tr>'+
+         '<tr><td>الساعة</td><td>'+esc(f.summon.t)+'</td></tr>'+
+         '<tr><td>هدفُ المقابلة</td><td>'+esc(f.summon.p)+'</td></tr></table>';
+      if(f.summon.reply){
+        h+='<div class="note"><b>ردُّك:</b> '+esc(f.summon.reply);
+        if(f.summon.newD) h+='<br><b>الموعدُ المقترح:</b> '+esc(f.summon.newD)+' · '+esc(f.summon.newT)+
+          '<br><b>السبب:</b> '+esc(f.summon.why);
+        if(f.summon.okd) h+='<br><b style="color:var(--brand)">أقرّته المدرسة</b>';
+        else if(f.summon.newD) h+='<br>بانتظار إقرار المدرسة';
+        h+='</div>';
+      } else h+='<div class="row"><button class="btn" data-rep="'+i+'|أقرّ وسأحضر">أقرّ وسأحضر</button>'+
+        '<button class="btn ghost" data-rs="'+i+'">أرغب بتغيير الموعد</button></div>';
+      h+='</div>';}});
+  if(!S.files.length) h+='<div class="card"><p class="empty">لا شيءَ بعد</p></div>';
+  return h;
+}
+
+function badge(id,n){var e=document.getElementById(id);if(!e)return;
+  if(n>0){e.textContent=AR(n);e.hidden=false;e.removeAttribute('hidden');}
+  else {e.textContent='';e.hidden=true;e.setAttribute('hidden','');}}
+
+function safeView(id,fn,name){
+  var el=document.getElementById(id); if(!el) return;
+  try{ el.innerHTML=fn(); }
+  catch(e){ el.innerHTML='<div class="card"><h3>تعذّر عرضُ '+name+'</h3>'+
+    '<p class="meta">خللٌ في العرض — وبقيّةُ الشاشات تعمل</p>'+
+    '<div class="note">'+esc(String(e&&e.message||e))+'</div></div>';
+    if(window.console) console.error(name,e); }
+}
+function render(){
+  safeView("w",viewW,"شاشة الوكيل");
+  safeView("m",viewM,"شاشة الموجّه");
+  safeView("c",viewC,"شاشة اللجنة");
+  safeView("a",viewA,"شاشة رائد النشاط");
+  safeView("k",viewK,"شاشة المكلَّف");
+  safeView("s",viewS,"شاشة الطالب");
+  safeView("g",viewG,"بوّابة وليّ الأمر");
+  badge("nw",S.files.filter(function(f){return f.plan&&f.plan.askD&&!f.plan.vDeputy;}).length+pendAll("الوكيل")+S.evid.filter(function(e){return e.state==="submitted";}).length);
+  badge("nm",pendAll("الموجّه")+S.files.filter(function(f){return f.cs&&!f.cs.filed;}).length+S.files.filter(function(f){return f.cs&&f.cs.filed&&step(f)>=4&&!(f.cs.sessions||[]).length;}).length);
+  badge("nc",S.evid.filter(function(e){return e.state==="forwarded";}).length+S.files.filter(function(f){return f.refer&&!f.refer.decided;}).length+S.opps.filter(function(o){return !o.open&&!o.planned&&(o.members||[]).some(function(x){return x.cert;});}).length);
+  badge("na",S.opps.filter(function(o){return o.by.indexOf("رائد النشاط")>=0 && (o.members||[]).some(function(x){return x.filed&&!x.verdict;});}).length);
+  badge("nk",S.files.filter(function(f){return f.task&&!f.task.done;}).length+S.opps.reduce(function(t,o){return t+(o.members||[]).filter(function(p){return p.dlg&&!p.verdict;}).length;},0)
+    +S.files.reduce(function(t,f){return t+((f.plan&&f.plan.teachers)||[])
+    .filter(function(x){return !x.op;}).length;},0));
+  badge("ns",pendAll("الطالب")+S.opps.filter(function(o){return !o.open && (o.members||[]).some(function(x){return x.isMe&&!x.filed;});}).length);
+  badge("ng",pendAll("وليّ الأمر")+S.files.filter(function(f){return f.call;}).length);
+
+  try{ bindAll(); }catch(e){ if(window.console) console.error("bind",e); }
+}
+function bindAll(){
+  var r=document.getElementById("rec");
+  if(r) r.onclick=function(){ var bs=document.getElementById("by");
+    if(bs) REC_BY=bs.value;
+    record(parseInt(document.getElementById("pb").value,10)); };
+  var rs=document.getElementById("rst");
+  if(rs) rs.onclick=function(ev){ if(ev&&ev.preventDefault)ev.preventDefault();
+    try{localStorage.removeItem(KEY);}catch(e){}
+    S=fresh(); cur=0; flashMsg=null; save(); closeSheet(); render(); flash("صُفّر كلُّ شيء");
+    window.scrollTo({top:0,behavior:"smooth"});};
+  var on=document.getElementById("oppNew"); if(on) on.onclick=openOpp;
+  var sh=document.getElementById("share"); if(sh) sh.onclick=openShare;
+  var asg=document.getElementById("assign");
+  if(asg) asg.onclick=function(){ if(F()) openAssign(); else flash("ارصد أوّلًا"); };
+  var ag=document.getElementById("autoGrant");
+  if(ag) ag.onclick=function(){
+    var room=Math.min(6,20-S.merit,100-total());
+    S.merit+=room;
+    S.minutes.push({d:"١٤٤٨/٥/٦",t:"انضباطٌ بلا غيابٍ بدون عذر",
+      dec:"مُنح الطالبُ "+room+" درجة اكتسابًا",note:"محتسبةٌ آليًّا من سجلّ المواظبة · ص١٩"});
+    save(); render(); flash("أُقرّت "+room+" درجة"); };
+
+  var tipW=document.getElementById("tipW");
+  if(tipW) document.querySelectorAll(".ib[data-d]").forEach(function(s){
+    s.onmouseenter=function(){ tipW.textContent=s.getAttribute("data-d")||"—"; };
+    s.addEventListener("click",function(){ tipW.textContent=s.getAttribute("data-d")||"—"; },true);});
+
+  document.querySelectorAll("[data-f]").forEach(function(d){
+    d.onclick=function(){cur=parseInt(d.getAttribute("data-f"),10);render();};});
+  document.querySelectorAll("[data-survey]").forEach(function(b){ b.onclick=openSurvey; });
+  document.querySelectorAll("[data-op]").forEach(function(b){
+    b.onclick=function(){ var pr=b.getAttribute("data-op").split("|");
+      openOpinion(parseInt(pr[0],10), pr[1], pr[2]!=null?parseInt(pr[2],10):null); };});
+  document.querySelectorAll("[data-rp]").forEach(function(b){
+    b.onclick=function(){ openReport(parseInt(b.getAttribute("data-rp"),10)); };});
+  document.querySelectorAll("[data-fw]").forEach(function(b){
+    b.onclick=function(){ openFollow(parseInt(b.getAttribute("data-fw"),10)); };});
+  document.querySelectorAll("[data-cs]").forEach(function(b){
+    b.onclick=function(){ openCase(parseInt(b.getAttribute("data-cs"),10)); };});
+  document.querySelectorAll("[data-ofile]").forEach(function(b){
+    b.onclick=function(){ openOppFile(parseInt(b.getAttribute("data-ofile"),10),false); };});
+  document.querySelectorAll("[data-ofileme]").forEach(function(b){
+    b.onclick=function(){ openOppFile(parseInt(b.getAttribute("data-ofileme"),10),true); };});
+  document.querySelectorAll("[data-fil]").forEach(function(b){
+    b.onclick=function(){ openFile(parseInt(b.getAttribute("data-fil"),10)); };});
+  document.querySelectorAll("[data-dlg]").forEach(function(b){
+    b.onclick=function(){ var pr=b.getAttribute("data-dlg").split("|");
+      openDelegate(parseInt(pr[0],10), parseInt(pr[1],10)); };});
+  document.querySelectorAll("[data-tq]").forEach(function(b){
+    b.onclick=function(){ var pr=b.getAttribute("data-tq").split("|");
+      var f=S.files[parseInt(pr[0],10)]; if(!f) return;
+      f.teacherSaid=pr[1];
+      if(pr[1]==="yes") f.after=Math.max(1,f.after||0);
+      LOG(f,"شهد معلّمُ الفصل: "+(pr[1]==="yes"?"تكرّر السلوكُ بعد الخطّة":"لم يتكرّر"),
+        "عبدالله عبدالرحمن — معلّم الفصل","معلّم",{d:"١٤٤٨/٥/٦"});
+      save(); render(); flash("قُيّدت شهادةُ معلّم الفصل"); };});
+  document.querySelectorAll("[data-call]").forEach(function(b){
+    b.onclick=function(){openCall(parseInt(b.getAttribute("data-call"),10));};});
+  document.querySelectorAll("[data-rs]").forEach(function(b){
+    b.onclick=function(){openReschedule(parseInt(b.getAttribute("data-rs"),10));};});
+  document.querySelectorAll("[data-okd]").forEach(function(b){
+    b.onclick=function(){ var f=S.files[parseInt(b.getAttribute("data-okd"),10)];
+      if(f&&f.summon){ f.summon.okd=true; f.summon.d=f.summon.newD; f.summon.t=f.summon.newT;
+        save(); render(); flash("أُقرّ الموعدُ الجديد"); } };});
+  document.querySelectorAll("[data-pl]").forEach(function(b){
+    b.onclick=function(){openPlan(parseInt(b.getAttribute("data-pl"),10));};});
+  document.querySelectorAll("[data-sm]").forEach(function(b){
+    b.onclick=function(){openSummon(parseInt(b.getAttribute("data-sm"),10));};});
+  document.querySelectorAll("[data-rep]").forEach(function(b){
+    b.onclick=function(){ var p=b.getAttribute("data-rep").split("|");
+      var f=S.files[parseInt(p[0],10)];
+      if(f&&f.summon){ f.summon.reply=p[1]; f.acts.reply=true;
+        LOG(f,"ردَّ وليُّ الأمر: "+p[1],"أحمد راجح الزهراني","وليّ أمر",{d:"١٤٤٨/٥/٢"});
+        save(); render(); flash("أُرسل ردُّك");} };});
+  document.querySelectorAll("[data-ss]").forEach(function(b){
+    b.onclick=function(){openSession(parseInt(b.getAttribute("data-ss"),10));};});
+  document.querySelectorAll("[data-grade]").forEach(function(b){
+    b.onclick=function(){openGrade(parseInt(b.getAttribute("data-grade"),10));};});
+  document.querySelectorAll("[data-ev]").forEach(function(b){
+    b.onclick=function(){openEvidence(parseInt(b.getAttribute("data-ev"),10));};});
+  document.querySelectorAll("[data-join]").forEach(function(b){
+    b.onclick=function(){var o=S.opps[parseInt(b.getAttribute("data-join"),10)];
+      if(!o||o.joined||o.taken>=o.cap) return;
+      if(!o.members) o.members=[];
+      o.members.push({name:"شادي أحمد راجح الزهراني",isMe:true,cert:false,graded:false,pts:0});
+      var others=["نواف سعيد الزهراني","وسام أحمد الزهراني","بدر مساعد الزهراني",
+                  "جسّار محمد الزهراني","أحمد سعدي الزهراني"];
+      while(o.members.length<o.cap && Math.random()<0.75 && others.length)
+        o.members.push({name:others.shift(),isMe:false,cert:false,graded:false,pts:0});
+      o.joined=true; o.taken=o.members.length;
+      OLOG(o,"سجّل شادي أحمد الزهراني في الفرصة","شادي أحمد الزهراني",
+        {more:"المسجَّلون "+AR(o.taken)+" من "+AR(o.cap)});
+      if(o.taken>=o.cap){ o.open=false; o.closeWhy="اكتمل العدد";
+        OLOG(o,"أُغلقت الفرصة — اكتمل العدد","آليّ"); }
+      save(); render();
+      flash(o.open?"سُجّلت في الفرصة":"سُجّلت — واكتمل العددُ فأُغلقت");};});
+  document.querySelectorAll("[data-cert]").forEach(function(b){
+    b.onclick=function(){ var pr=b.getAttribute("data-cert").split("|");
+      openCertify(parseInt(pr[0],10), parseInt(pr[1],10), pr[2]||""); };});
+  document.querySelectorAll("[data-refer]").forEach(function(b){
+    b.onclick=function(){openRefer(parseInt(b.getAttribute("data-refer"),10));};});
+  document.querySelectorAll("[data-cmin]").forEach(function(b){
+    b.onclick=function(){openCaseMinutes(parseInt(b.getAttribute("data-cmin"),10));};});
+  document.querySelectorAll("[data-oplan]").forEach(function(b){
+    b.onclick=function(){openOppPlan(parseInt(b.getAttribute("data-oplan"),10));};});
+  document.querySelectorAll("[data-close]").forEach(function(b){
+    b.onclick=function(){var o=S.opps[parseInt(b.getAttribute("data-close"),10)];
+      if(o){o.open=false;o.closeWhy="انتهى الوقت";
+        OLOG(o,"أُغلقت الفرصة — انتهى الوقت","لجنةُ التوجيه الطلابيّ");
+        save();render();flash("أُغلقت الفرصة — انتهى الوقت");}};});
+  document.querySelectorAll("[data-fwd]").forEach(function(b){
+    b.onclick=function(){var e=S.evid[parseInt(b.getAttribute("data-fwd"),10)];
+      if(e){e.state="forwarded";save();render();flash("رُفع الشاهدُ إلى اللجنة");}};});
+  document.querySelectorAll("[data-rej]").forEach(function(b){
+    b.onclick=function(){var e=S.evid[parseInt(b.getAttribute("data-rej"),10)];
+      if(e){e.state="rejected";save();render();flash("رُدّ الشاهد");}};});
+  document.querySelectorAll("[data-kdo]").forEach(function(b){
+    b.onclick=function(){cur=parseInt(b.getAttribute("data-kdo"),10);openSurvey(false);};});
+  document.querySelectorAll("[data-kback]").forEach(function(b){
+    b.onclick=function(){var f=S.files[parseInt(b.getAttribute("data-kback"),10)];
+      if(f&&f.task){f.task.done=true;save();render();flash("أُعيدت إلى الوكيل");}};});
+  document.querySelectorAll("[data-do]").forEach(function(b){
+    b.onclick=function(){ var fi=b.getAttribute("data-fi");
+      var f = fi!=null ? S.files[parseInt(fi,10)] : F();
+      if(f){ var k=b.getAttribute("data-do"); f.acts[k]=true;
+        if(k==="sign") LOG(f,"وقّع الطالبُ على ما دُوّن في سجلّ المشكلات",
+          "شادي أحمد الزهراني","طالب",{d:"١٤٤٨/٤/٢٥"});
+
+        save(); render(); } };});
+}
+
+var tabs=document.querySelectorAll('nav button'),secs=document.querySelectorAll('section');
+tabs.forEach(function(b){b.addEventListener('click',function(){
+  tabs.forEach(function(x){x.setAttribute('aria-selected','false');});
+  b.setAttribute('aria-selected','true');
+  secs.forEach(function(s){s.classList.remove('on');});
+  var el=document.getElementById(b.dataset.t); if(el) el.classList.add('on');
+  window.scrollTo({top:0,behavior:'smooth'});});});
+document.getElementById("mod").addEventListener("click",function(e){
+  if(e.target.id==="mod") closeSheet();});
+
+/* حارسٌ دائمٌ لزرّ التصفير — يعمل ولو تعثّر الربطُ العاديّ */
+document.addEventListener("click",function(e){
+  var t=e.target; while(t && t.id!=="rst" && t!==document.body) t=t.parentNode;
+  if(!t||t.id!=="rst") return;
+  e.preventDefault();
+  try{ localStorage.removeItem(KEY); }catch(x){}
+  S=fresh(); cur=0; flashMsg=null; REC_BY="المعلّم المباشر للموقف";
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(x){}
+  closeSheet(); render(); flash("صُفّر كلُّ شيء");
+  window.scrollTo({top:0,behavior:"smooth"});
+},true);
+
+load(); render();
+})();
+</script>
+</body>
+</html>

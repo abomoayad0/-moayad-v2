@@ -1,0 +1,257 @@
+/* ═══════════════════════════════════════════════════════════════
+   مؤيّد — ملفُّ التنسيق الموحَّد
+   مستخرَجٌ من المحاكي المعتمد · ٥/١٠/٢٠٢٦
+   يُلبَس للشاشات كلِّها فتتوحّد هيئتُها
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap');
+
+/* ─── ① الألوان والأساس ─────────────────────────────────────── */
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+
+  --bg:#f6f7f8;        /* خلفيّةُ الصفحة */
+  --card:#fff;         /* البطاقة */
+  --ink:#15445a;       /* النصُّ — كحليُّ الوزارة */
+  --mute:#6b7a83;      /* النصُّ الثانويّ */
+  --line:#e3e8ea;      /* الحدود */
+  --brand:#07a869;     /* أخضرُ الوزارة — للنجاح والإيجابيّ */
+  --warn:#b8860b;      /* المنبِّه — ما ينتظر */
+  --bad:#c0392b;       /* الخطأُ والحسم */
+  --soft:#f0f4f3;      /* خلفيّةُ الملاحظة */
+  --chip:#eef2f4;      /* الشريط */
+}
+*,*::before,*::after{box-sizing:inherit}
+
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;
+  font-size:15px; line-height:1.75;
+  -webkit-text-size-adjust:100%;
+}
+
+.wrap{max-width:720px;margin:0 auto;padding:0 14px 60px}
+
+/* ─── ② الرأسُ والشريط ──────────────────────────────────────── */
+.top{
+  display:flex; align-items:flex-start; justify-content:space-between;
+  gap:10px; padding:14px 0 6px;
+}
+.top h1{margin:0;font-size:17px;font-weight:700}
+.who{color:var(--mute);font-size:12.5px;margin-top:2px}
+
+/* شريطُ الشاشات — يُمرَّر أفقيًّا ولا يُطوى */
+nav.screens{
+  display:flex; gap:6px; overflow-x:auto;
+  padding-bottom:10px; scrollbar-width:none;
+}
+nav.screens::-webkit-scrollbar{display:none}
+nav.screens button{
+  flex:0 0 auto; border:1px solid var(--line); background:var(--card);
+  color:var(--mute); font-family:inherit; font-size:12.5px; font-weight:600;
+  padding:7px 13px; border-radius:999px; cursor:pointer; position:relative;
+  transition:.15s;
+}
+nav.screens button[aria-current="true"]{
+  background:var(--ink); color:var(--bg); border-color:var(--ink);
+}
+nav.screens .n{
+  display:inline-block; min-width:16px; text-align:center;
+  border-radius:999px; background:var(--bad); color:#fff;
+  font-size:10px; margin-inline-start:5px; padding:0 4px;
+}
+nav.screens .n[hidden]{display:none}   /* 🔴 لازمة — وإلا ظهر الصفر */
+
+/* ─── ③ البطاقة — وحدةُ البناء ──────────────────────────────── */
+.card{
+  background:var(--card); border:1px solid var(--line);
+  border-radius:14px; padding:14px; margin:10px 0;
+}
+.hd{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+h3{margin:0 0 3px;font-size:15px;font-weight:700}
+h5{margin:0 0 4px;font-size:13.5px;font-weight:700}
+.meta{color:var(--mute);font-size:12.5px;margin:0 0 10px}
+.empty{color:var(--mute);font-size:13px;text-align:center;padding:18px 0;margin:0}
+
+/* بطاقةٌ داخل بطاقة — الملفّ أو العنصر */
+.file{
+  border:1px solid var(--line); border-radius:12px;
+  padding:11px; margin:8px 0; background:var(--bg);
+}
+.file p{margin:0;font-size:12.5px;color:var(--mute);line-height:1.9}
+
+/* ─── ④ الملاحظة — السندُ والتنبيه ──────────────────────────── */
+.note{
+  background:var(--soft); border-radius:10px; padding:10px 12px;
+  font-size:12.5px; color:var(--mute); margin-top:10px; line-height:1.9;
+}
+.note b{color:var(--ink)}
+.note.warn{border-right:3px solid var(--warn)}
+.note.ok{border-right:3px solid var(--brand)}
+.note.bad{border-right:3px solid var(--bad)}
+
+/* ─── ⑤ الأزرار ─────────────────────────────────────────────── */
+.row{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.btn{
+  border:1px solid var(--ink); background:var(--ink); color:var(--bg);
+  font-family:inherit; font-size:13px; font-weight:600;
+  padding:9px 15px; border-radius:10px; cursor:pointer; transition:.15s;
+}
+.btn:active{transform:scale(.98)}
+.btn.soft{background:var(--card);color:var(--ink)}
+.btn.ghost{background:transparent;color:var(--mute);border-color:var(--line)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+
+/* ─── ⑥ الجداول — تُمرَّر ولا تكسر الصفحة ───────────────────── */
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+td{padding:7px 2px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td:first-child{color:var(--mute);width:38%}
+
+/* ─── ⑦ الحقول ──────────────────────────────────────────────── */
+label{
+  font-size:12.5px; color:var(--mute); font-weight:600;
+  display:block; margin-top:10px;
+}
+input[type=text],input[type=number],input[type=email],input[type=password],
+input[type=date],input[type=time],input[type=file],textarea,select{
+  width:100%; font-family:inherit; font-size:13.5px;
+  padding:9px 10px; border:1px solid var(--line); border-radius:10px;
+  background:var(--bg); color:var(--ink); margin-top:6px;
+}
+textarea{min-height:72px;resize:vertical;line-height:1.8}
+.addrow{display:flex;gap:7px;align-items:stretch;margin-top:6px}
+.addrow input{margin-top:0;flex:1}
+.addrow .btn{flex:0 0 auto;white-space:nowrap}
+
+/* ─── ⑧ الاختيارُ بالشرائط ──────────────────────────────────── */
+.pick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pick span{
+  border:1px solid var(--line); background:var(--card); color:var(--mute);
+  border-radius:999px; padding:6px 12px; font-size:12px; cursor:pointer;
+  transition:.15s;
+}
+.pick span.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.pick span[data-lock]{opacity:.55;cursor:default}
+.tip{font-size:11.5px;color:var(--mute);margin-top:6px}
+
+/* ─── ⑨ قائمةُ الأفعال — السجلُّ الزمنيّ ────────────────────── */
+ul.acts{
+  list-style:none; margin:8px 0 0; padding:0;
+  display:flex; flex-direction:column; gap:6px;
+}
+ul.acts li{
+  display:flex; align-items:flex-start; gap:8px;
+  font-size:12.5px; line-height:1.85;
+}
+.tick{
+  flex:0 0 auto; width:17px; height:17px; border-radius:50%;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:10px; font-style:normal; margin-top:3px;
+  background:var(--chip); color:var(--mute);
+}
+.tick.ok{background:var(--brand);color:#fff}
+.tick.wait{background:var(--warn);color:#fff}
+.who{flex:0 0 auto;color:var(--mute);font-size:11px;white-space:nowrap}
+
+/* تفصيلٌ تحت سطر السجلّ — شرائطُ متراصّةٌ تلتفّ */
+.lgd{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.lgd i{
+  font-style:normal; background:var(--chip); border-radius:999px;
+  padding:2px 9px; font-size:10.5px; color:var(--mute); white-space:nowrap;
+}
+.lgd i.p{background:var(--soft);color:var(--brand)}
+.lgd i.k{background:transparent;padding:2px 0;color:var(--ink);font-weight:600}
+
+/* ─── ⑩ الطيُّ — للقوائم الطويلة وحدَها ─────────────────────── */
+.dt{background:var(--soft);border-radius:10px;padding:9px 12px;margin-top:10px;font-size:12.5px}
+.dt.g{border-right:3px solid var(--brand)}
+.dt summary{cursor:pointer;color:var(--mute);list-style:none}
+.dt summary::-webkit-details-marker{display:none}
+.dt summary::after{content:" ⌄";color:var(--mute)}
+.dt[open] summary::after{content:" ⌃"}
+.dt summary b{color:var(--ink)}
+.dtb{
+  margin-top:7px;padding-top:7px;border-top:1px solid var(--line);
+  color:var(--mute);line-height:1.9;
+}
+.dtb b{color:var(--ink)}
+
+/* ─── ⑪ بنكُ العبارات ───────────────────────────────────────── */
+.bank{background:var(--soft);border-radius:11px;padding:9px 11px;margin-top:7px}
+.bkh{font-size:11.5px;color:var(--mute);display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.bkh b{color:var(--ink)}
+.bkm{
+  margin-inline-start:auto; border:1px solid var(--line); background:var(--card);
+  color:var(--ink); font-family:inherit; font-size:11px;
+  padding:3px 10px; border-radius:999px; cursor:pointer;
+}
+.bkl{display:flex;flex-direction:column;gap:5px}
+.bkl span{
+  background:var(--card); border:1px solid var(--line); border-radius:9px;
+  padding:7px 10px; font-size:12px; line-height:1.7; cursor:pointer; transition:.15s;
+}
+.bkl span:hover{border-color:var(--brand)}
+
+/* ─── ⑫ النافذة ─────────────────────────────────────────────── */
+.mod{
+  position:fixed; inset:0; background:rgba(21,68,90,.4);
+  display:none; align-items:flex-end; justify-content:center; z-index:50;
+}
+.mod.on{display:flex}
+.sheet{
+  background:var(--card); width:100%; max-width:720px;
+  border-radius:18px 18px 0 0; padding:18px 16px;
+  padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  max-height:86vh; overflow-y:auto;
+}
+
+/* ─── ⑬ الوسمُ والتنبيه ─────────────────────────────────────── */
+.testmode{
+  background:var(--warn); color:#fff; font-size:12px; font-weight:600;
+  padding:6px 12px; border-radius:8px; margin:8px 0; text-align:center;
+}
+.toast{
+  position:fixed; bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  left:50%; transform:translateX(-50%);
+  background:var(--ink); color:var(--bg); font-size:12.5px;
+  padding:10px 16px; border-radius:12px; z-index:60; max-width:92%;
+  line-height:1.8;
+}
+.toast.ok{background:var(--brand)}
+.toast.err{background:var(--bad)}
+
+/* ─── ⑭ ما يرفضه النظام — يُعرض ولا يُخفى ───────────────────── */
+.why{
+  background:var(--soft); border-right:3px solid var(--warn);
+  border-radius:10px; padding:9px 12px; font-size:12px;
+  color:var(--mute); margin-top:8px; line-height:1.9;
+}
+.locked{opacity:.75}
+.locked .btn{display:none}
+
+/* ─── ⑮ الظلامُ — يتبع الجهاز ───────────────────────────────── */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1b22; --card:#15242c; --ink:#e8eef1; --mute:#93a5ae;
+    --line:#22333c; --soft:#192a33; --chip:#1d2f39;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1b22; --card:#15242c; --ink:#e8eef1; --mute:#93a5ae;
+  --line:#22333c; --soft:#192a33; --chip:#1d2f39;
+}
+
+/* ─── ⑯ قواعدُ الكتابة — لا تُخالَف ─────────────────────────── */
+/*
+  · الأعدادُ بالأرقام العربيّة: ٠١٢٣٤٥٦٧٨٩ — ولا تُخلط بالحروف
+  · الجملةُ الواحدةُ بصيغةٍ واحدة: «٣ رصدات» لا «ثلاث رصدات (3)»
+  · السندُ يُذكر حيث يُعرض الحكم: «ص٢٠» · «ORG-1442-OFF ص19»
+  · وخطأُ القاعدة يُعرض بنصّه — لا يُبتلع ولا يُلطّف
+  · وإن غاب زرٌّ فسببُه مكتوبٌ مكانَه — ولا يُطلب تبديلُ صفة
+*/
