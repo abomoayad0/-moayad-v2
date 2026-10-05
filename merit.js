@@ -168,8 +168,8 @@
       if (x.verdict) r.appendChild(el('div', 'meta', 'الحكم: ' + x.verdict + (x.note ? ' — ' + x.note : '') + (x.by ? ' · ' + x.by : '')));
       if (x.delegated) r.appendChild(el('div', 'meta', 'أُحيل الإقرار: ' + x.delegated));
       if (x.verdict && !x.graded) r.appendChild(btn('btn-accept wide', 'قدّر درجته', () => grade(x, m)));
-      // رفعُ الشاهد نيابةً يلزمه معرّفُ الطالب في المخطّط لبناء مسار المخزن
-      if (!x.filed && o.state !== 'مفتوحة' && x.student_id) r.appendChild(btn('btn-ghost wide', 'ارفع نموذجه نيابةً', () => fileFor(x.entry, x.student_id, x.name)));
+      // رفعُ الشاهد نيابةً — والمسارُ من القاعدة (upload_to) لا يُبنى في الشاشة
+      if (!x.filed && o.state !== 'مفتوحة' && x.upload_to) r.appendChild(btn('btn-ghost wide', 'ارفع نموذجه نيابةً', () => fileFor(x.entry, x.upload_to, x.name)));
       box.appendChild(r);
     }
     if (o.state !== 'مفتوحة' && !o.plan_note) box.appendChild(btn('btn-main', 'اعتمد المخطّط', plan));
@@ -211,8 +211,9 @@
     loadCard();
   }
 
-  // نموذجُ المشاركة: يُرفع الملفُّ إلى مساره المفروض ثم يُمرَّر المسار
-  async function fileFor(entry, student, label) {
+  // نموذجُ المشاركة: يُرفع الملفُّ إلى المسار الذي ترجعه القاعدة (upload_to) ثم يُمرَّر المسار.
+  // المسارُ ملكُ القاعدة: إن غيّرته يوماً تبعته الشاشة بلا تعديل.
+  async function fileFor(entry, uploadTo, label) {
     $('fileWhatFor').textContent = label || '';
     $('fWhat').value = '';
     $('fDesc').value = '';
@@ -221,7 +222,7 @@
     if (await ask($('fileDlg')) !== 'ok') return;
     const f = $('fFile').files[0];
     const safe = f.name.replace(/[^\w.-]+/g, '_');
-    const path = 'merit/' + ui.school + '/' + student + '/' + entry + '/' + Date.now() + '-' + safe;
+    const path = uploadTo + Date.now() + '-' + safe;
     const up = await M.sb.storage.from(BUCKET).upload(path, f, { upsert: false });
     if (up.error) {
       M.logError({ message: up.error.message, fn: 'storage.upload', action: 'رفع الشاهد', params: { path } });
