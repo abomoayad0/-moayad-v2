@@ -277,3 +277,12 @@
 
 /* سبب غياب الزرّ بالصفة */
   .nocan { color: var(--muted); font-style: normal; }
+
+/* لوحة التحكّم */
+  .pgroup .psec { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+  .pgroup .psec.locked { background: var(--bg); }
+  .pgroup .psec .row1 { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .pgroup .psec .name { font-weight: 700; }
+  .pgroup .psec .meta, .pgroup .psec .detail { font-size: 13px; margin-top: 4px; }
+  .pgroup .psec .btn-ghost.wide { margin: 8px 0 0; }
+  .ptool { margin-top: 12px; }

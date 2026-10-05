@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مؤيّد · لوحة التحكّم</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>مؤيّد · لوحة التحكّم</h1>
+    <div class="who" id="who"></div>
+  </div>
+  <div class="hdr-acts">
+    <button id="logout" class="hbtn" type="button">خروج</button>
+  </div>
+</header>
+<nav class="screens" id="screens" aria-label="الشاشات" hidden></nav>
+<div class="testmode" id="testMode" hidden></div>
+<div class="gatebox"><div class="notice err" id="gateErr" hidden></div></div>
+
+<main id="panelView" class="wrap" hidden>
+  <div class="notice err" id="loadErr" hidden></div>
+  <p class="hint">كلّ بابٍ كما أرجعته القاعدة: المقفلُ 🔒 يُقرأ ومعه سببُه وسندُه، والمفتوحُ ✅ يُعدَّل.</p>
+  <div id="groups"></div>
+</main>
+
+<dialog id="quorumDlg"><form method="dialog">
+  <h3>نصاب اللجنة</h3>
+  <p class="quote" id="qWhat"></p>
+  <p class="hint" id="qNow"></p>
+  <label for="qMin">أقلّ عددٍ ينعقد به الاجتماع — فارغٌ يُلغي النصاب</label>
+  <input id="qMin" type="number" min="0" inputmode="numeric">
+  <label for="qNote">السبب — إلزاميٌّ مع العدد</label>
+  <textarea id="qNote" rows="3"></textarea>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">احفظ النصاب</button>
+  </div>
+</form></dialog>
+
+<dialog id="seatDlg"><form method="dialog">
+  <h3>سعة المقعد المنتخَب</h3>
+  <p class="quote" id="sWhat"></p>
+  <label for="sCount">السعة الجديدة</label>
+  <input id="sCount" type="number" min="0" inputmode="numeric">
+  <label for="sReason">السبب — إلزامي</label>
+  <textarea id="sReason" rows="3"></textarea>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept" id="sOk" disabled>احفظ السعة</button>
+  </div>
+</form></dialog>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="vendor/supabase-2.117.2.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="panel.js"></script>
+</body>
+</html>

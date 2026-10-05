@@ -26,6 +26,9 @@
       href: 'suluk.html', allow: (c) => !!c.record_behavior },
     { key: 'errors', title: 'لوحة الأخطاء', desc: 'ما سجّلته الشاشات والجسور — الأعطاب والحرّاس',
       href: 'errors.html', allow: (c) => !!c.view_errors },
+    // ولا مفتاحَ للّوحة في can بعد — فتظهر في الشريط حين يُضاف manage_settings، والقاعدةُ تحرس الدخول
+    { key: 'panel', title: 'لوحة التحكّم', desc: 'أبواب الإعداد — المقفلُ بسببه وسنده',
+      href: 'panel.html', allow: (c) => !!c.manage_settings },
   ];
 
   const state = { school: null, date: null, me: null, screen: null };
