@@ -22,6 +22,9 @@
     // جدولُ الحصص بأبوابه الخمسة — المفتاحُ manage_settings، وهو صفاتُ جسور الجدول نفسُها
     { key: 'jadwal', title: 'جدول الحصص', desc: 'الشبكة · النصاب · خطّة المواد · التخصّصات · التوزيع الآليّ',
       href: 'jadwal.html', allow: (c) => !!c.manage_settings },
+    // الإنابةُ في الصفات — الإضافةُ والإلغاءُ للمدير والوكيلين، وحارسُها في القاعدة
+    { key: 'inaba', title: 'الإنابة في الصفات', desc: 'من يعمل بصفة غيره، وإلى متى، وبأيّ سبب',
+      href: 'inaba.html', allow: (c) => !!c.manage_settings },
     { key: 'deputy', title: 'قرارات الوكيل', desc: 'الإقفال · إعادة الفتح · البتّ في الأعذار',
       href: 'deputy.html', allow: (c) => !!(c.close_day || c.reopen_day || c.decide_excuse) },
     // شاشةُ الوكيل (viewW) — حلّت محلّ «رصد المخالفات» القديمة. مفتاحُها wakeel: الوكيلُ والمدير
