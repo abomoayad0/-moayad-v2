@@ -29,39 +29,29 @@
   <div hidden><div id="schoolBox"><select id="school"></select></div><input id="date" type="date"><div id="dates"></div></div>
   <div class="notice err" id="loadErr" hidden></div>
 
-  <p class="hint"><b>عطب</b> (error): يُصلَح · <b>حارس</b> (guard): رفضٌ عمل كما يجب، فلا يُصلَح.</p>
-  <div class="filters" id="fDays" role="group" aria-label="المدة">
-    <button type="button" data-d="1" aria-pressed="false">اليوم</button>
-    <button type="button" data-d="7" aria-pressed="true">أسبوع</button>
-    <button type="button" data-d="30" aria-pressed="false">شهر</button>
-  </div>
-  <div class="filters" id="fKind" role="group" aria-label="النوع">
-    <button type="button" data-k="" aria-pressed="true">الكل</button>
-    <button type="button" data-k="error" aria-pressed="false">أعطاب</button>
-    <button type="button" data-k="guard" aria-pressed="false">حرّاس</button>
-  </div>
-  <h3 class="grp" id="errTitle"></h3>
-  <div id="errs"></div>
-</main>
+  <p class="role" id="roleLine" hidden><i class="dot"></i><span id="roleText"></span></p>
+  <div class="flash" id="flash" hidden></div>
 
-<dialog id="fixDlg">
-  <form method="dialog">
-    <h3>وُسم الخطأ: أُصلح</h3>
-    <p class="quote" id="fixMsg"></p>
-    <label for="fixNote">ما الذي أُصلح (اختياري)</label>
-    <textarea id="fixNote" rows="3"></textarea>
-    <div class="dlg-acts">
-      <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
-      <button value="ok" type="submit" class="btn-accept">أُصلح</button>
-    </div>
-  </form>
-</dialog>
+  <section class="rs-card">
+    <h3>لوحةُ الأخطاء</h3>
+    <p class="rs-meta"><b>عطب</b>: يُصلَح · <b>حارس</b>: رفضٌ عمل كما يجب، فلا يُصلَح.</p>
+    <div class="rs-label">المدّة</div>
+    <div class="rs-pick" id="fDays" role="group" aria-label="المدّة"></div>
+    <div class="rs-label">النوع</div>
+    <div class="rs-pick" id="fKind" role="group" aria-label="النوع"></div>
+  </section>
+  <section class="rs-card">
+    <h3 id="errTitle"></h3>
+    <div id="errs"></div>
+  </section>
+</main>
 
 <div class="toast" id="toast" hidden></div>
 
 <script src="vendor/supabase-2.117.2.js"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
+<script src="views.js"></script>
 <script src="errors.js"></script>
 </body>
 </html>

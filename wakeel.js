@@ -479,6 +479,9 @@
       ],
       ok: 'أثبته',
       onOk: async (v) => {
+        // الوسيلةُ والنتيجةُ لازمتان — وبلاهما ترفضه القاعدةُ برسالة قيدٍ إنجليزيّة (سُجّل في لوحة الأخطاء ٦/١٠)
+        if (!v.channel) return { message: 'اختر الوسيلة' };
+        if (!v.outcome) return { message: 'اختر النتيجة' };
         const { data, error } = await M.rpc('v2_contact_log', {
           p_student: stu.student_id, p_task: v.task || null, p_channel: v.channel, p_outcome: v.outcome,
           p_summary: v.summary, p_guardian_say: v.say, p_at: v.at,
