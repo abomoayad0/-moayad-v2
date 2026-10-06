@@ -1,17 +1,16 @@
 -- public.v2_slot_save(p_school uuid, p_slot uuid, p_weekday smallint, p_period smallint, p_section uuid, p_person uuid, p_kind text, p_subject text, p_room text, p_note text, p_force boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 bc74b204b7c4d7b968683ac3856dcefd
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e27dea61a209c5a92ea9a575932b507c
 CREATE OR REPLACE FUNCTION public.v2_slot_save(p_school uuid, p_slot uuid, p_weekday smallint, p_period smallint, p_section uuid, p_person uuid, p_kind text, p_subject text, p_room text, p_note text, p_force boolean)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'v2', 'public'
 AS $function$
-declare nid uuid; chk jsonb; yid uuid; tm smallint;
+declare nid uuid; chk jsonb; yid uuid; tm smallint; fz boolean;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy','deputy_academic'],
                          'ضبطَ جدول الحصص');
   if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
-  -- 🔑 الأحدُ ٠ والخميسُ ٤
   if p_weekday is null or p_weekday not between 0 and 4 then
     raise exception 'اليوم: الأحدُ (٠) إلى الخميس (٤)'; end if;
   if p_period is null then raise exception 'اختر الحصّة'; end if;
@@ -30,17 +29,19 @@ begin
     raise exception 'هذا الفصلُ ليس من فصول مدرستك'; end if;
 
   chk := public.v2_slot_check(p_school,p_slot,p_weekday,p_period,p_section,p_person,p_kind);
+  fz := coalesce(p_force,false) and not (chk->>'ok')::boolean;
   if not (chk->>'ok')::boolean and not coalesce(p_force,false) then
     raise exception '%', (select string_agg(x->>'text',' · ')
                             from jsonb_array_elements(chk->'conflicts') x);
   end if;
+  -- 🔑 يُمرَّر الإقرارُ إلى الحارس في هذي المعاملة وحدَها
+  if fz then perform set_config('v2.force_clash','on',true); end if;
 
   select e.year_id into yid from v2.enrolments e
    where e.school_id=p_school and e.status='active' limit 1;
   tm := coalesce(v2.term_of_strict(p_school,current_date),1);
 
   if p_slot is null then
-    -- 🔑 weekday_ar عمودٌ مولَّدٌ — لا يُكتب
     insert into v2.timetable(school_id,year_id,term_no,weekday,period_no,
         section_id,person_id,subject_ar,room_ar,note,slot_kind,is_activity)
     values (p_school,yid,tm,p_weekday,p_period,p_section,p_person,
@@ -48,8 +49,8 @@ begin
         nullif(btrim(coalesce(p_note,'')),''),coalesce(p_kind,'teaching'),
         (coalesce(p_kind,'teaching')='activity'))
     returning id into nid;
-    return jsonb_build_object('ok',true,'slot',nid,'mode','أُضيفت',
-      'forced', coalesce(p_force,false) and not (chk->>'ok')::boolean);
+    if fz then perform set_config('v2.force_clash','off',true); end if;
+    return jsonb_build_object('ok',true,'slot',nid,'mode','أُضيفت','forced',fz);
   end if;
 
   if not exists (select 1 from v2.timetable where id=p_slot and school_id=p_school) then
@@ -63,7 +64,7 @@ begin
     slot_kind=coalesce(p_kind,slot_kind),
     is_activity=(coalesce(p_kind,slot_kind)='activity')
    where id=p_slot;
-  return jsonb_build_object('ok',true,'slot',p_slot,'mode','عُدّلت',
-    'forced', coalesce(p_force,false) and not (chk->>'ok')::boolean);
+  if fz then perform set_config('v2.force_clash','off',true); end if;
+  return jsonb_build_object('ok',true,'slot',p_slot,'mode','عُدّلت','forced',fz);
 end $function$
 ;

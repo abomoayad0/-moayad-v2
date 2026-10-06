@@ -1,5 +1,5 @@
 -- public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 1f0a33cb275f96358dab6082d2acc272
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 38fa2479e73d0a6af32ec3e0828d98e0
 CREATE OR REPLACE FUNCTION public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -43,7 +43,6 @@ begin
       coalesce((select test_mode from v2.schools where id=sc),false))
   returning id into nid;
 
-  -- 🔑 نوعٌ خاصٌّ — فتُبنى منه بطاقةُ «اتّصلت بك المدرسة»
   insert into v2.events(school_id,kind,on_date,student_id,title_ar,body_ar,
       ref_table,ref_id,visible_to,is_test)
   values (sc,'guardian_contact',current_date,p_student,
@@ -54,7 +53,8 @@ begin
   if p_task is not null and p_outcome = 'ردّ وعلم' then
     update v2.behavior_tasks set status='done', done_at=now(),
         done_by=v2.current_person(),
-        evidence_note='أُثبت الاتّصالُ بوليّ الأمر — '||p_channel||' · '||btrim(p_summary)
+        ev_on=coalesce(ev_on,current_date),
+        ev_text='أُثبت الاتّصالُ بوليّ الأمر — '||p_channel||' · '||btrim(p_summary)
      where id=p_task and status<>'done';
     closed := found;
   end if;

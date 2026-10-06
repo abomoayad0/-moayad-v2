@@ -196,6 +196,7 @@
     $('evHint').textContent = (t.evidence_ar ? 'الإثبات: ' + t.evidence_ar : '') + (t.hint_ar ? ' — ' + t.hint_ar : '');
     $('evForm').hidden = !t.form_no;
     $('evForm').textContent = t.form_no ? 'النموذج رقم ' + t.form_no + (t.form_title ? ': ' + t.form_title : '') : '';
+    if (window.MoayadView) window.MoayadView.arabize($('evForm'));
     buildFields(t);
     formChanged = false;
     if (await ask($('evDlg')) !== 'ok') { if (formChanged) await onChanged(); return; }
@@ -252,9 +253,6 @@
     await onChanged();
   }
 
-  // حقولُ لوح الإثبات كما يجب أن يُرجعها الجسر — needs_* · lbl_* · form_no
-  const EV_KEYS = ['needs_date', 'needs_text', 'needs_people', 'needs_ref', 'needs_file', 'needs_signature', 'form_no'];
-
   function card(kind, t, onChanged, studentId) {
     const c = el('div', 'ev task t-' + t.status);
     const top = el('div', 'row1');
@@ -285,13 +283,7 @@
         const acts = el('div', 'acts two');
         const ok = el('button', 'a-accept', 'أغلقها بإثبات');
         ok.type = 'button';
-        // لوحُ الإثبات يُبنى من needs_* · lbl_* · form_no — فإن لم يُرجعها الجسرُ بقي معطَّلًا ولا تُفترض لها بدائل
-        const gap = EV_KEYS.filter((k) => !(k in t));
-        if (gap.length) {
-          ok.disabled = true;
-          ok.title = 'ينتظر حقولَ الإثبات من القاعدة';
-          c.appendChild(el('div', 'meta nocan', 'الإغلاقُ بإثباتٍ معطَّلٌ — لم يُبنَ بعد: ينتظر حقولَ الإثبات من القاعدة (' + gap.join(' · ') + ').'));
-        } else ok.addEventListener('click', () => closeTask(kind, t, onChanged, studentId));
+        ok.addEventListener('click', () => closeTask(kind, t, onChanged, studentId));
         const no = el('button', 'a-reject', 'إسقاط بسبب');
         no.type = 'button';
         no.addEventListener('click', () => skipTask(kind, t, onChanged));
@@ -312,8 +304,8 @@
   }
 
   // تعرض مهامّ الطالب كلّها: السلوك ثم الغياب
-  // v2_student_tasks صار يرجع jsonb بأسماءٍ جديدة (task · text · problem · owner · kind_ar …):
-  // تُطابَق هنا على أسماء البطاقة، وما لم يُرجعه (needs_* · lbl_* · form_no · owner_ar) يبقى فارغًا — والقاعدةُ تحكم بالإثبات
+  // v2_student_tasks يرجع jsonb بأسمائه (task · record · text · problem …) ومعها needs_* · lbl_* · ev_* · form_no · form_title كما هي:
+  // تُطابَق الأسماءُ الأولى على أسماء البطاقة، والنموذجُ برقمه من القاعدة — وما لا نموذجَ له يرجع فارغًا فلا رابطَ له
   const norm = (t) => Object.assign({}, t, {
     task_id: t.task_id || t.task, record_id: t.record_id || t.record, text_ar: t.text_ar || t.text,
     problem_ar: t.problem_ar || t.problem, owner_role: t.owner_role || t.owner,

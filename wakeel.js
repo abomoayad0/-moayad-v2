@@ -386,18 +386,23 @@
       }
       c.appendChild(ul);
       const open = ts.filter((t) => t.status === 'open').length;
-      if (open) {
-        const tbox = el('div');
-        const b = btn('أنجز المهامّ (' + open + ')', 'rs-btn soft', () => { b.hidden = true; window.MoayadTasks.render(tbox, ui.stu.student_id); });
-        c.append(b, tbox);
-      }
+      const tbox = el('div');
+      const showTasks = () => { if (b) b.hidden = true; window.MoayadTasks.render(tbox, ui.stu.student_id); tbox.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+      const b = open ? btn('أنجز المهامّ (' + open + ')', 'rs-btn soft', showTasks) : null;
+      // أفعالُ الوكيل: زرٌّ لكلّ مهمّةٍ مفتوحةٍ في tasks بنوعها، ولا زرَّ بلا مهمّة
+      const acts = el('div', 'rs-row');
+      const has = (kind) => ts.find((t) => t.kind === kind && t.status === 'open');
+      const tn = has('notify_guardian');
+      if (tn) acts.appendChild(btn('إثباتُ الاتّصال', 'rs-btn soft', () => contactForm(tn.task_id)));
+      const tf = has('follow_up');
+      if (tf && ui.full) acts.appendChild(btn('التكليفُ بالحصر', 'rs-btn soft', () => assignCensus(tf.task_id)));
+      // خطابُ الدعوة (نموذج ١٠) والإحالةُ للّجنة (نموذج ١٢): يُنجزان من لوح المهمّة — إثباتُها ونموذجُها من القاعدة
+      if (has('summon_guardian')) acts.appendChild(btn('خطابُ الدعوة', 'rs-btn soft', showTasks));
+      if (has('committee')) acts.appendChild(btn('الإحالةُ للّجنة', 'rs-btn soft', showTasks));
+      if (b) c.appendChild(b);
+      if (acts.childNodes.length) c.appendChild(acts);
+      c.appendChild(tbox);
     }
-    // أفعالُ الوكيل: الاتّصالُ والحصرُ مبنيّان (بطاقتاهما تحت الملفّات)، والثلاثةُ الأخرى لم تُبنَ فتُعرض معطَّلةً بسببها
-    const acts = el('div', 'rs-row');
-    acts.append(btn('إثباتُ الاتّصال', 'rs-btn soft', () => $('contactCard').scrollIntoView({ behavior: 'smooth', block: 'start' })));
-    if (ui.full) acts.appendChild(btn('التكليفُ بالحصر', 'rs-btn soft', () => $('censusCard').scrollIntoView({ behavior: 'smooth', block: 'start' })));
-    for (const a of ['خطابُ الدعوة', 'الإحالةُ للّجنة', 'مشاركةُ الملفّ']) acts.appendChild(notBuilt(a));
-    c.appendChild(acts);
     const det = el('details', 'rs-dt');
     det.appendChild(el('summary', null, 'رصداتُه (' + f.all.length + ')'));
     const body = el('div', 'rs-dtb');
@@ -448,23 +453,24 @@
       }
       box.appendChild(ul);
     }
-    box.appendChild(btn('أثبت اتّصالًا', 'rs-btn', contactForm));
+    // ولا إثباتَ بلا مهمّة «إشعار وليّ الأمر» مفتوحة
+    if (openTasks('notify_guardian').length) box.appendChild(btn('أثبت اتّصالًا', 'rs-btn', () => contactForm()));
     arabize(box);
   }
 
   // مهامُّ الطالب المفتوحةُ من نوعٍ بعينه — ليُقرن بها الإثباتُ فتُقفل بالقاعدة
   const openTasks = (kind) => ((ui.files && ui.files.tasks) || []).filter((t) => t.kind === kind && t.status === 'open')
     .map((t) => [t.task_id, (t.problem_ar ? t.problem_ar + ' — ' : '') + (t.text_ar || t.kind_ar), t.step_ar ? 'الإجراء ' + t.step_ar : '']);
-  const taskField = (kind) => {
+  const taskField = (kind, pre) => {
     const items = openTasks(kind);
-    return items.length ? [{ key: 'task', type: 'choose', label: 'عن مهمّة (' + (kind === 'notify_guardian' ? 'إشعارُ وليّ الأمر' : 'حصرُ السلوكيّات') + ')', items, value: items[0][0], hint: 'تُقفل المهمّةُ بالقاعدة متى تمّ ما يقفلها' }] : [];
+    return items.length ? [{ key: 'task', type: 'choose', label: 'عن مهمّة (' + (kind === 'notify_guardian' ? 'إشعارُ وليّ الأمر' : 'حصرُ السلوكيّات') + ')', items, value: items.some((x) => x[0] === pre) ? pre : items[0][0], hint: 'تُقفل المهمّةُ بالقاعدة متى تمّ ما يقفلها' }] : [];
   };
 
-  function contactForm() {
+  function contactForm(pre) {
     const stu = ui.stu;
     V.form({
       title: 'إثباتُ الاتّصال بوليّ الأمر', what: stu.display_name || stu.full_name,
-      fields: [...taskField('notify_guardian'),
+      fields: [...taskField('notify_guardian', pre),
         { key: 'channel', type: 'pick', label: 'الوسيلة', items: CHANNELS.map((x) => [x, x]) },
         { key: 'outcome', type: 'pick', label: 'النتيجة', items: OUTCOMES.map((x) => [x, x]) },
         { key: 'summary', type: 'textarea', label: 'ما دار' },
@@ -514,11 +520,12 @@
       }
       box.appendChild(f);
     }
-    if (ui.full) box.appendChild(btn('كلّف بالحصر', 'rs-btn', assignCensus));
+    // ولا تكليفَ بلا مهمّة «حصر السلوكيّات» مفتوحة
+    if (ui.full && openTasks('follow_up').length) box.appendChild(btn('كلّف بالحصر', 'rs-btn', () => assignCensus()));
     arabize(box);
   }
 
-  async function assignCensus() {
+  async function assignCensus(pre) {
     const stu = ui.stu;
     if (!ui.staff) {
       const { data, error } = await M.rpc('v2_staff_list', { p_school: M.state.school }, 'قائمة المنسوبين');
@@ -527,7 +534,7 @@
     }
     V.form({
       title: 'التكليفُ بحصر السلوكيّات', what: stu.display_name || stu.full_name,
-      fields: [...taskField('follow_up'),
+      fields: [...taskField('follow_up', pre),
         { key: 'who', type: 'choose', label: 'المكلَّف', items: ui.staff.map((p) => [p.person_id, p.name_ar, p.post_ar || p.roles_ar || '']) },
         { key: 'days', type: 'number', label: 'المدّةُ بالأيّام', value: 5, hint: 'من يومٍ إلى ثلاثين' },
       ],

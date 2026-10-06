@@ -1,5 +1,5 @@
 -- public.v2_draft_apply(p_draft uuid, p_confirm text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 3eae8c54f2ee34edc490a975d6d3283c
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 825600bd7e932c74d04df2641ed1b664
 CREATE OR REPLACE FUNCTION public.v2_draft_apply(p_draft uuid, p_confirm text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -16,6 +16,7 @@ begin
   if btrim(coalesce(p_confirm,'')) <> 'أقرّ' then
     raise exception 'إقرارُ المقترح يستبدل جدولَ مدرستك كلَّه — اكتب «أقرّ» لتأكيده'; end if;
 
+  perform set_config('v2.force_clash','on',true);
   delete from v2.timetable where school_id=d.school_id;
   insert into v2.timetable(school_id,year_id,term_no,weekday,period_no,
       section_id,person_id,subject_ar,slot_kind,is_activity)
@@ -27,6 +28,7 @@ begin
      (x.slot_kind='activity')
   from v2.timetable_draft_slots x where x.draft_id=p_draft;
   get diagnostics n = row_count;
+  perform set_config('v2.force_clash','off',true);
 
   update v2.timetable_drafts set state='مُقَرّ', applied_at=now(),
       applied_by=v2.current_person() where id=p_draft;
