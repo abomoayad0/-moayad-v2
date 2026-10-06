@@ -1,5 +1,7 @@
 // مؤيّد · لوحة التحكّم — أبوابُ الإعداد كما فهرستها القاعدة.
 // v2_settings_catalog · v2_setting_rows · v2_setting_update · v2_committee_board · v2_committee_seat_count
+// v2_staff_board · v2_staff_save · v2_posts_list · v2_assign_add · v2_assign_end · v2_students_board · v2_student_save · v2_enrolment_end
+// v2_guardians_of · v2_guardian_save · v2_accounts_board · v2_account_toggle · v2_portal_toggle · v2_school_card
 // v2_practices(p_school,…) · v2_practices_hidden · v2_practice_save · v2_practice_state · v2_practice_scopes · v2_scope_upsert · v2_committee_rules · v2_committee_rules_get
 // المقفلُ يُقرأ بسببه وسنده ولا زرَّ تعديلٍ عليه. ومن يدخل اللوحة تحكم به القاعدة، ورفضُها يُعرض بنصّه.
 (function () {
@@ -60,7 +62,7 @@
     if (!r.editable && r.locked_why) s.appendChild(el('div', 'detail red', r.locked_why));
     if (r.source_ar) s.appendChild(el('div', 'meta', 'السند: ' + r.source_ar));
     if (r.note_ar) s.appendChild(el('div', 'meta', r.note_ar));
-    if (r.editable && r.own_bridge) {
+    if (r.editable && (r.own_bridge || OWN_TOOLS[r.key])) {
       // الباب الحسّاس له جسره الخاصّ بحرّاسه — لا يُعدَّل من التعديل العامّ
       s.appendChild(el('div', 'meta nocan', 'يُدار من جسره الخاصّ' + (r.bridge_ar ? ': ' + r.bridge_ar : '') + ' — لا من التعديل العامّ.'));
       const tool = OWN_TOOLS[r.key];
@@ -463,8 +465,329 @@
     scopesTool(box);
   }
 
-  // الأبوابُ ذواتُ الجسر الخاصّ التي لها أداةٌ هنا
-  const OWN_TOOLS = { class_practices: practicesTool, practice_scopes: scopesTool };
+  // ---------- أبوابُ الأساس: المنسوبون · التكاليف · الطلّابُ والقيد · أولياءُ الأمور · الحسابات · بطاقةُ المدرسة ----------
+  // كلُّ حارسٍ في القاعدة، والشاشةُ تعرض رفضَها بنصّه. ولا حذفَ لطالب، ولا صلاحيّةَ تُرفع، ولا كلمةَ مرورٍ تُنشأ أو تُعرض.
+  const ASSIGN_END = [
+    ['transferred', 'نُقل'], ['resigned', 'استقال'], ['assignment_ended', 'انتهى التكليف'], ['deceased', 'توفّي'],
+    ['leave', 'إجازة'], ['year_closed', 'أُغلق العام'], ['other', 'أخرى'],
+  ];
+  const ENROL_END = ['نقل', 'تخرّج', 'طيّ قيد', 'انقطاع', 'سفر', 'أخرى'];
+  const base = { posts: null, staffQ: '', stuQ: '', stuGrade: '', stuSection: '' };
+
+  function noSchool(box) {
+    if (ui.school) return false;
+    box.appendChild(el('div', 'notice err', 'لم تُحدَّد مدرستُك — بدّل صفتك إلى صفةٍ في مدرسة.'));
+    return true;
+  }
+  function btn(text, cls, fn) {
+    const b = el('button', cls || null, text);
+    b.type = 'button';
+    b.addEventListener('click', fn);
+    return b;
+  }
+  function searchBar(value, placeholder, onGo) {
+    const bar = el('div', 'prow');
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.placeholder = placeholder;
+    inp.value = value;
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') onGo(inp.value.trim()); });
+    bar.append(inp, btn('ابحث', 'btn-ghost wide', () => onGo(inp.value.trim())));
+    return bar;
+  }
+  const val = (id) => { const t = $(id).value.trim(); return t === '' ? null : t; };
+  const num = (id) => { const t = $(id).value.trim(); return t === '' ? null : Number(t); };
+
+  // ----- المنسوبون والتكاليف -----
+  async function loadPosts() {
+    if (base.posts) return base.posts;
+    const { data, error } = await M.rpc('v2_posts_list', undefined, 'الوظائف في الملاك');
+    if (error) { toast('تعذّر جلب الوظائف:\n' + errText(error)); return []; }
+    base.posts = data || [];
+    return base.posts;
+  }
+
+  async function staffTool(box) {
+    box.textContent = '';
+    if (noSchool(box)) return;
+    box.appendChild(searchBar(base.staffQ, 'اسمٌ أو هويّة', (q) => { base.staffQ = q; staffTool(box); }));
+    box.appendChild(btn('أضف منسوبًا', 'btn-accept wide', () => editStaff(null, box)));
+    const { data, error } = await M.rpc('v2_staff_board', { p_school: ui.school, p_q: base.staffQ || null }, 'كشف المنسوبين');
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const rows = data || [];
+    box.appendChild(el('div', 'meta', rows.length + ' منسوبًا بتكليفٍ قائمٍ في مدرستك'));
+    for (const p of rows) {
+      const row = el('div', 'ev');
+      const top = el('div', 'row1');
+      top.append(el('div', 'name', p.name), el('span', 'badge ' + (p.has_account ? 'b-present' : 'b-absent'), p.has_account ? 'له حساب' : 'بلا حساب'));
+      row.appendChild(top);
+      const bits = [];
+      if (p.national_id) bits.push('الهويّة ' + p.national_id);
+      if (p.employee_no) bits.push('الرقم الوظيفيّ ' + p.employee_no);
+      if (p.phone) bits.push('الجوّال ' + p.phone);
+      if (p.email) bits.push(p.email);
+      if (bits.length) row.appendChild(el('div', 'meta', bits.join(' · ')));
+      const more = [p.major, p.rank, p.qualification].filter(Boolean);
+      if (more.length) row.appendChild(el('div', 'meta', more.join(' · ')));
+      for (const a of (p.posts || [])) {
+        const line = el('div', 'prow');
+        line.appendChild(el('div', 'meta', (a.post_ar || a.post) + ' — ' + (a.school || '') + ' · خطاب ' + (a.letter_no || '—') +
+          (a.letter_date ? ' في ' + a.letter_date : '') + ' · منذ ' + (a.started_on || '—') + (a.entitled === false ? ' · غيرُ مستحقّ' : '')));
+        if (a.school_id === ui.school) line.appendChild(btn('أنهِ هذا التكليف', 'btn-ghost wide', () => endAssignment(a, p, box)));
+        row.appendChild(line);
+      }
+      const acts = el('div', 'acts two');
+      acts.append(btn('عدّل بياناته', null, () => editStaff(p, box)), btn('أسند تكليفًا', null, () => addAssignment(p.person, p.name, box)));
+      row.appendChild(acts);
+      box.appendChild(row);
+    }
+  }
+
+  async function editStaff(p, box) {
+    $('stWhat').textContent = p ? p.name : 'منسوبٌ جديد — ولا يعمل حتى يُسند له تكليف';
+    const v = p || {};
+    $('stName').value = v.name || '';
+    $('stNid').value = v.national_id || '';
+    $('stEmp').value = v.employee_no || '';
+    $('stPhone').value = v.phone || '';
+    $('stEmail').value = v.email || '';
+    $('stMajor').value = v.major || '';
+    $('stRank').value = v.rank || '';
+    $('stQual').value = v.qualification || '';
+    if (await ask($('staffDlg')) !== 'ok') return;
+    const { data, error } = await M.rpc('v2_staff_save', {
+      p_school: ui.school, p_person: p ? p.person : null, p_full_name: $('stName').value.trim(),
+      p_national_id: val('stNid'), p_employee_no: val('stEmp'), p_phone: val('stPhone'), p_email: val('stEmail'),
+      p_major: val('stMajor'), p_rank: val('stRank'), p_qualification: val('stQual'),
+    }, p ? 'تعديل منسوب' : 'إضافة منسوب');
+    if (error) { toast('لم يُحفظ:\n' + errText(error)); return; }
+    toast(((data && data.mode) || 'حُفظ') + (data && data.note ? '\n' + data.note : ''), true);
+    if (!p && data && data.person) {
+      // المضافُ لا يظهر في الكشف حتى يُسند له تكليف — فيُفتح نموذجُ التكليف الآن
+      await addAssignment(data.person, $('stName').value.trim(), box);
+      return;
+    }
+    staffTool(box);
+  }
+
+  async function addAssignment(person, name, box) {
+    const posts = await loadPosts();
+    const ps = $('asPost');
+    ps.textContent = '';
+    for (const x of posts) ps.appendChild(new Option(x.label, x.key));
+    $('asWhat').textContent = name || '';
+    $('asLetter').value = '';
+    $('asLetterDate').value = '';
+    $('asStart').value = '';
+    $('asEntitled').checked = true;
+    $('asReason').value = '';
+    if (await ask($('assignDlg')) !== 'ok') { staffTool(box); return; }
+    const { error } = await M.rpc('v2_assign_add', {
+      p_school: ui.school, p_person: person, p_post: ps.value, p_letter_no: $('asLetter').value.trim(),
+      p_letter_date: val('asLetterDate'), p_started_on: val('asStart'), p_entitled: $('asEntitled').checked,
+      p_reason: val('asReason'),
+    }, 'إسناد تكليف');
+    if (error) { toast('لم يُسنَد:\n' + errText(error)); staffTool(box); return; }
+    toast('أُسند التكليف.', true);
+    staffTool(box);
+  }
+
+  async function endAssignment(a, p, box) {
+    $('aeWhat').textContent = p.name + ' — ' + (a.post_ar || a.post);
+    const rs = $('aeReason');
+    rs.textContent = '';
+    for (const [k, l] of ASSIGN_END) rs.appendChild(new Option(l, k));
+    $('aeDate').value = '';
+    if (await ask($('assignEndDlg')) !== 'ok') return;
+    const { error } = await M.rpc('v2_assign_end', { p_assignment: a.assignment, p_ended_on: val('aeDate'), p_reason: rs.value }, 'إنهاء تكليف');
+    if (error) { toast('لم يُنهَ:\n' + errText(error)); return; }
+    toast('أُنهي التكليف.', true);
+    staffTool(box);
+  }
+
+  // ----- الطلّابُ والقيد، وأولياءُ الأمور -----
+  async function studentsTool(box) {
+    box.textContent = '';
+    if (noSchool(box)) return;
+    box.appendChild(searchBar(base.stuQ, 'اسمٌ أو رقمُ نورٍ أو هويّة', (q) => { base.stuQ = q; studentsTool(box); }));
+    const f = el('div', 'prow');
+    const gl = el('label', null, 'الصفّ');
+    const g = document.createElement('input');
+    g.type = 'number'; g.id = 'sbGrade'; gl.htmlFor = g.id; g.value = base.stuGrade;
+    const sl = el('label', null, 'الشعبة');
+    const s = document.createElement('input');
+    s.type = 'text'; s.id = 'sbSection'; sl.htmlFor = s.id; s.value = base.stuSection;
+    f.append(gl, g, sl, s, btn('صفِّ', 'btn-ghost wide', () => { base.stuGrade = g.value.trim(); base.stuSection = s.value.trim(); studentsTool(box); }));
+    box.appendChild(f);
+    box.appendChild(btn('قيّد طالبًا', 'btn-accept wide', () => editStudent(null, box)));
+    const { data, error } = await M.rpc('v2_students_board', {
+      p_school: ui.school, p_grade: base.stuGrade === '' ? null : Number(base.stuGrade),
+      p_section: base.stuSection || null, p_q: base.stuQ || null,
+    }, 'كشف الطلّاب');
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const rows = data || [];
+    box.appendChild(el('div', 'meta', rows.length + ' طالبًا مقيَّدًا'));
+    for (const st of rows) {
+      const row = el('div', 'ev');
+      const top = el('div', 'row1');
+      top.append(el('div', 'name', st.name), el('span', 'badge ' + (st.portal ? 'b-present' : 'b-permitted'), st.portal ? 'بوّابتُه مفتوحة' : 'بوّابتُه مغلقة'));
+      row.appendChild(top);
+      row.appendChild(el('div', 'meta', ['نور ' + (st.student_no || '—'), 'الصفّ ' + (st.grade == null ? '—' : st.grade) + (st.section ? ' / ' + st.section : ''),
+        st.national_id ? 'الهويّة ' + st.national_id : null, st.nationality, st.birth_hijri ? 'مولده ' + st.birth_hijri : null,
+        'أولياؤه ' + (st.guardians || 0)].filter(Boolean).join(' · ')));
+      const gbox = el('div');
+      const acts = el('div', 'acts three');
+      acts.append(btn('عدّل', null, () => editStudent(st, box)),
+        btn('أولياؤه', null, () => guardiansOf(st, gbox)),
+        btn('أنهِ القيد', 'a-reject', () => endEnrolment(st, box)));
+      row.appendChild(acts);
+      row.appendChild(btn(st.portal ? 'أغلق بوّابةَ الطالب' : 'افتح بوّابةَ الطالب', 'btn-ghost wide', () => togglePortal('student', st.student, !st.portal, () => studentsTool(box))));
+      row.appendChild(gbox);
+      box.appendChild(row);
+    }
+  }
+
+  async function editStudent(st, box) {
+    $('suWhat').textContent = st ? st.name : 'قيدُ طالبٍ جديد';
+    const v = st || {};
+    $('suName').value = v.name || '';
+    $('suNo').value = v.student_no || '';
+    $('suNo').disabled = !!st;
+    $('suNid').value = v.national_id || '';
+    $('suNat').value = v.nationality || '';
+    $('suBirth').value = v.birth_hijri || '';
+    $('suSex').value = v.sex || '';
+    $('suPhone').value = v.phone || '';
+    $('suGrade').value = v.grade == null ? '' : v.grade;
+    $('suSection').value = v.section || '';
+    if (await ask($('studentDlg')) !== 'ok') return;
+    const { data, error } = await M.rpc('v2_student_save', {
+      p_school: ui.school, p_student: st ? st.student : null, p_full_name: $('suName').value.trim(),
+      p_student_no: st ? null : val('suNo'), p_national_id: val('suNid'), p_nationality: val('suNat'),
+      p_birth_hijri: val('suBirth'), p_sex: val('suSex'), p_phone: val('suPhone'),
+      p_grade: num('suGrade'), p_section: val('suSection'),
+    }, st ? 'تعديل طالب' : 'قيد طالب');
+    if (error) { toast('لم يُحفظ:\n' + errText(error)); return; }
+    toast((data && data.mode) || 'حُفظ', true);
+    studentsTool(box);
+  }
+
+  async function endEnrolment(st, box) {
+    $('eeWhat').textContent = st.name + ' — لا يُحذف طالب: يُنهى قيدُه بسبب، وتُغلق بوّابتُه وبوّابةُ وليّه، والسجلُّ باقٍ.';
+    const rs = $('eeReason');
+    rs.textContent = '';
+    for (const r of ENROL_END) rs.appendChild(new Option(r, r));
+    $('eeNote').value = '';
+    if (await ask($('enrolEndDlg')) !== 'ok') return;
+    const { data, error } = await M.rpc('v2_enrolment_end', { p_school: ui.school, p_student: st.student, p_reason: rs.value, p_note: val('eeNote') }, 'إنهاء قيد');
+    if (error) { toast('لم يُنهَ القيد:\n' + errText(error)); return; }
+    toast((data && data.note) || 'أُنهي القيد.', true);
+    studentsTool(box);
+  }
+
+  async function guardiansOf(st, gbox) {
+    gbox.textContent = '';
+    const { data, error } = await M.rpc('v2_guardians_of', { p_student: st.student }, 'أولياء الأمر');
+    if (error) { gbox.appendChild(el('div', 'notice err', errText(error))); return; }
+    gbox.appendChild(el('h3', 'grp', 'أولياءُ ' + (st.display || st.name)));
+    for (const g of (data || [])) {
+      const row = el('div', 'prow');
+      const top = el('div', 'row1');
+      top.append(el('div', 'name', g.name + (g.relation ? ' — ' + g.relation : '')),
+        el('span', 'badge ' + (g.is_primary ? 'b-present' : 'b-permitted'), g.is_primary ? 'الأساسيّ' : 'غيرُ أساسيّ'));
+      row.appendChild(top);
+      row.appendChild(el('div', 'meta', [g.phone && 'الجوّال ' + g.phone, g.work_phone && 'العمل ' + g.work_phone,
+        g.home_phone && 'المنزل ' + g.home_phone, g.workplace, g.national_id && 'الهويّة ' + g.national_id].filter(Boolean).join(' · ') || '—'));
+      row.appendChild(el('div', 'meta', (g.has_account ? 'له حساب' : 'بلا حساب') + ' · ' + (g.portal ? 'بوّابتُه مفتوحة' : 'بوّابتُه مغلقة')));
+      const acts = el('div', 'acts two');
+      acts.append(btn('عدّل', null, () => editGuardian(st, g, gbox)),
+        btn(g.portal ? 'أغلق بوّابتَه' : 'افتح بوّابتَه', null, () => togglePortal('guardian', g.guardian, !g.portal, () => guardiansOf(st, gbox))));
+      row.appendChild(acts);
+      gbox.appendChild(row);
+    }
+    gbox.appendChild(btn('أضف وليَّ أمر', 'btn-ghost wide', () => editGuardian(st, null, gbox)));
+  }
+
+  async function editGuardian(st, g, gbox) {
+    $('gdWhat').textContent = (g ? g.name : 'وليُّ أمرٍ جديد') + ' — لـ' + (st.display || st.name);
+    const v = g || {};
+    $('gdName').value = v.name || '';
+    $('gdRel').value = v.relation || '';
+    $('gdNid').value = v.national_id || '';
+    $('gdPhone').value = v.phone || '';
+    $('gdWork').value = v.work_phone || '';
+    $('gdHome').value = v.home_phone || '';
+    $('gdPlace').value = v.workplace || '';
+    $('gdPrimary').checked = !!v.is_primary;
+    if (await ask($('guardianDlg')) !== 'ok') return;
+    const { error } = await M.rpc('v2_guardian_save', {
+      p_student: st.student, p_guardian: g ? g.guardian : null, p_full_name: $('gdName').value.trim(),
+      p_relation: $('gdRel').value.trim(), p_national_id: val('gdNid'), p_phone: val('gdPhone'),
+      p_work_phone: val('gdWork'), p_home_phone: val('gdHome'), p_workplace: val('gdPlace'),
+      p_is_primary: $('gdPrimary').checked,
+    }, 'حفظ وليّ أمر');
+    if (error) { toast('لم يُحفظ:\n' + errText(error)); return; }
+    toast('حُفظ وليُّ الأمر.', true);
+    guardiansOf(st, gbox);
+  }
+
+  async function togglePortal(kind, id, open, after) {
+    const { error } = await M.rpc('v2_portal_toggle', { p_kind: kind, p_id: id, p_open: open }, open ? 'فتح بوّابة' : 'إغلاق بوّابة');
+    if (error) { toast('لم يقع:\n' + errText(error)); return; }
+    toast(open ? 'فُتحت البوّابة.' : 'أُغلقت البوّابة.', true);
+    after();
+  }
+
+  // ----- الحساباتُ والبوّابات: تفعيلٌ وإيقافٌ لا غير -----
+  async function accountsTool(box) {
+    box.textContent = '';
+    if (noSchool(box)) return;
+    box.appendChild(el('div', 'meta', 'تفعيلٌ وإيقافٌ فقط. ولا تُرفع صلاحيّةٌ من هنا، ولا تُنشأ كلمةُ مرورٍ ولا تُعرض — فإنشاءُ الحسابات بيد المالك.'));
+    const { data, error } = await M.rpc('v2_accounts_board', { p_school: ui.school }, 'كشف الحسابات');
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const r = data || {};
+    const cnt = (o) => o ? ('الكلّ ' + o.total + ' · لهم حساب ' + o.with_account + ' · بوّاباتُهم مفتوحة ' + o.portal_open) : '—';
+    box.appendChild(el('div', 'meta', 'أولياءُ الأمور: ' + cnt(r.guardians)));
+    box.appendChild(el('div', 'meta', 'الطلّاب: ' + cnt(r.students)));
+    box.appendChild(el('h3', 'grp', 'حساباتُ المنسوبين'));
+    for (const s of (r.staff || [])) {
+      const row = el('div', 'ev');
+      const top = el('div', 'row1');
+      top.append(el('div', 'name', s.name), el('span', 'badge ' + (s.active ? 'b-present' : 'b-absent'), s.active ? 'مفعَّل' : 'موقوف'));
+      row.appendChild(top);
+      row.appendChild(el('div', 'meta', (s.posts || '—') + ' · الصلاحيّة: ' + (s.role || '—')));
+      row.appendChild(btn(s.active ? 'أوقف الحساب' : 'فعِّل الحساب', s.active ? 'btn-ghost wide' : 'btn-accept wide', async () => {
+        const { error: e2 } = await M.rpc('v2_account_toggle', { p_person: s.person, p_active: !s.active }, s.active ? 'إيقاف حساب' : 'تفعيل حساب');
+        if (e2) { toast('لم يقع:\n' + errText(e2)); return; }
+        toast(s.active ? 'أُوقف الحساب.' : 'فُعِّل الحساب.', true);
+        accountsTool(box);
+      }));
+      box.appendChild(row);
+    }
+  }
+
+  // ----- بطاقةُ المدرسة -----
+  async function schoolCardTool(box) {
+    box.textContent = '';
+    if (noSchool(box)) return;
+    const { data, error } = await M.rpc('v2_school_card', { p_school: ui.school }, 'بطاقة المدرسة');
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const c = data || {};
+    const row = el('div', 'ev');
+    row.appendChild(el('div', 'name', c.name || '—'));
+    row.appendChild(el('div', 'meta', ['المرحلة: ' + (c.stage || '—'), 'الفئة: ' + (c.category || '—'), 'الهيكل: ' + (c.structure || '—'),
+      'مسار التقويم: ' + (c.calendar_scope || '—')].join(' · ')));
+    row.appendChild(el('div', 'meta', 'الفصول ' + (c.sections ?? '—') + ' · الطلّاب ' + (c.students ?? '—') + ' · المنسوبون ' + (c.staff ?? '—')));
+    if (c.test_mode) row.appendChild(el('div', 'notice', 'المدرسةُ في وضع التجربة.'));
+    box.appendChild(row);
+  }
+
+  // الأبوابُ التي لها أداةٌ هنا بجسورها — وتُقدَّم على التعديل العامّ
+  const OWN_TOOLS = {
+    class_practices: practicesTool, practice_scopes: scopesTool,
+    staff: staffTool, assignments_panel: staffTool, students: studentsTool, guardians: studentsTool,
+    accounts: accountsTool, school_card: schoolCardTool,
+  };
 
   $('sReason').addEventListener('input', () => { $('sOk').disabled = $('sReason').value.trim() === ''; });
   $('toast').addEventListener('click', () => { $('toast').hidden = true; });

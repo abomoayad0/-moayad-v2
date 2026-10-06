@@ -341,3 +341,5 @@
   label.chk input { width: auto; min-height: 0; }
   #practiceDlg { max-height: calc(100vh - 32px); overflow: auto; }
   .prow select { width: 100%; margin-bottom: 4px; }
+/* أبوابُ الأساس في اللوحة */
+  .prows > .btn-accept.wide, .prows > .btn-ghost.wide { width: 100%; min-height: 40px; border-radius: 10px; margin: 8px 0; font-weight: 700; }

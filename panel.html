@@ -111,6 +111,95 @@
   </div>
 </form></dialog>
 
+<dialog id="staffDlg"><form method="dialog">
+  <h3>منسوب</h3>
+  <p class="quote" id="stWhat"></p>
+  <label for="stName">الاسمُ كاملًا</label><input id="stName" type="text">
+  <label for="stNid">رقمُ الهويّة (عشرةُ أرقام)</label><input id="stNid" type="text" inputmode="numeric" maxlength="10">
+  <label for="stEmp">الرقمُ الوظيفيّ</label><input id="stEmp" type="text">
+  <label for="stPhone">الجوّال</label><input id="stPhone" type="text" inputmode="tel">
+  <label for="stEmail">البريد</label><input id="stEmail" type="text" inputmode="email">
+  <label for="stMajor">التخصّص</label><input id="stMajor" type="text">
+  <label for="stRank">الرتبة</label><input id="stRank" type="text">
+  <label for="stQual">المؤهّل</label><input id="stQual" type="text">
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">احفظ</button>
+  </div>
+</form></dialog>
+
+<dialog id="assignDlg"><form method="dialog">
+  <h3>إسنادُ تكليف</h3>
+  <p class="quote" id="asWhat"></p>
+  <label for="asPost">الوظيفةُ في الملاك</label><select id="asPost"></select>
+  <label for="asLetter">رقمُ الخطاب — واكتب «بلا رقم» إن لم يكن له رقم</label><input id="asLetter" type="text" required>
+  <label for="asLetterDate">تاريخُ الخطاب</label><input id="asLetterDate" type="date" required>
+  <label for="asStart">يبدأ في (فارغٌ = اليوم)</label><input id="asStart" type="date">
+  <label class="chk"><input id="asEntitled" type="checkbox" checked> مستحقّ</label>
+  <label for="asReason">ملاحظة</label><textarea id="asReason" rows="2"></textarea>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost" formnovalidate>تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">أسنِد</button>
+  </div>
+</form></dialog>
+
+<dialog id="assignEndDlg"><form method="dialog">
+  <h3>إنهاءُ تكليف</h3>
+  <p class="quote" id="aeWhat"></p>
+  <label for="aeReason">السبب</label><select id="aeReason"></select>
+  <label for="aeDate">تاريخُ الإنهاء (فارغٌ = اليوم)</label><input id="aeDate" type="date">
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">أنهِ التكليف</button>
+  </div>
+</form></dialog>
+
+<dialog id="studentDlg"><form method="dialog">
+  <h3>طالب</h3>
+  <p class="quote" id="suWhat"></p>
+  <label for="suName">الاسمُ كاملًا</label><input id="suName" type="text">
+  <label for="suNo">رقمُ الطالب في نور (تسعةُ أرقام)</label><input id="suNo" type="text" inputmode="numeric" maxlength="9">
+  <label for="suNid">رقمُ الهويّة (عشرةُ أرقام)</label><input id="suNid" type="text" inputmode="numeric" maxlength="10">
+  <label for="suNat">الجنسيّة</label><input id="suNat" type="text">
+  <label for="suBirth">تاريخُ الميلاد (هجريّ)</label><input id="suBirth" type="text">
+  <label for="suSex">الجنس</label><select id="suSex"><option value=""></option><option value="ذكر">ذكر</option><option value="أنثى">أنثى</option></select>
+  <label for="suPhone">جوّالُ الطالب</label><input id="suPhone" type="text" inputmode="tel">
+  <label for="suGrade">الصفّ</label><input id="suGrade" type="number" min="1" max="12" inputmode="numeric" required>
+  <label for="suSection">الشعبة</label><input id="suSection" type="text" required>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost" formnovalidate>تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">احفظ</button>
+  </div>
+</form></dialog>
+
+<dialog id="enrolEndDlg"><form method="dialog">
+  <h3>إنهاءُ قيد</h3>
+  <p class="quote" id="eeWhat"></p>
+  <label for="eeReason">السبب</label><select id="eeReason"></select>
+  <label for="eeNote">نصُّ السبب — إلزاميٌّ مع «أخرى»</label><textarea id="eeNote" rows="2"></textarea>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">أنهِ القيد</button>
+  </div>
+</form></dialog>
+
+<dialog id="guardianDlg"><form method="dialog">
+  <h3>وليُّ أمر</h3>
+  <p class="quote" id="gdWhat"></p>
+  <label for="gdName">الاسمُ كاملًا</label><input id="gdName" type="text">
+  <label for="gdRel">صلتُه بالطالب</label><input id="gdRel" type="text">
+  <label for="gdNid">رقمُ الهويّة (عشرةُ أرقام)</label><input id="gdNid" type="text" inputmode="numeric" maxlength="10">
+  <label for="gdPhone">الجوّال</label><input id="gdPhone" type="text" inputmode="tel">
+  <label for="gdWork">هاتفُ العمل</label><input id="gdWork" type="text" inputmode="tel">
+  <label for="gdHome">هاتفُ المنزل</label><input id="gdHome" type="text" inputmode="tel">
+  <label for="gdPlace">جهةُ العمل</label><input id="gdPlace" type="text">
+  <label class="chk"><input id="gdPrimary" type="checkbox"> الوليُّ الأساسيّ</label>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">احفظ</button>
+  </div>
+</form></dialog>
+
 <div class="toast" id="toast" hidden></div>
 
 <script src="vendor/supabase-2.117.2.js"></script>
