@@ -335,3 +335,9 @@
 /* التعويض */
   .linkbtn { background: none; border: 0; color: var(--info); text-decoration: underline; font: inherit; font-size: 13px; padding: 0 6px; cursor: pointer; }
   #mView .btn-main { margin: 8px 0; }
+
+/* ممارسات الصفّ ومجالاتها في اللوحة */
+  label.chk { display: flex; gap: 8px; align-items: center; margin: 10px 0 4px; }
+  label.chk input { width: auto; min-height: 0; }
+  #practiceDlg { max-height: calc(100vh - 32px); overflow: auto; }
+  .prow select { width: 100%; margin-bottom: 4px; }

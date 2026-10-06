@@ -57,6 +57,54 @@
   </div>
 </form></dialog>
 
+<dialog id="practiceDlg"><form method="dialog">
+  <h3>ممارسة الصفّ</h3>
+  <p class="quote" id="pcWhat"></p>
+  <label for="pcTitle">نصّ الممارسة</label>
+  <input id="pcTitle" type="text">
+  <label for="pcPolarity">النوع</label>
+  <select id="pcPolarity"><option value="positive">إيجابيّة</option><option value="negative">سلبيّة</option></select>
+  <label for="pcScope">المجال</label>
+  <select id="pcScope"></select>
+  <label for="pcKind">الصنف</label>
+  <select id="pcKind"><option value="practice">ممارسة</option><option value="state">حالة</option></select>
+  <label for="pcPoints">النقاط</label>
+  <input id="pcPoints" type="number" step="0.25" inputmode="decimal">
+  <label for="pcZone">الموضع</label>
+  <input id="pcZone" type="text">
+  <label class="chk"><input id="pcOnce" type="checkbox"> مرّةً واحدةً في اليوم</label>
+  <label for="pcThrCount">الحدّ: عدد المرّات</label>
+  <input id="pcThrCount" type="number" min="0" inputmode="numeric">
+  <label for="pcThrDays">خلال أيّام</label>
+  <input id="pcThrDays" type="number" min="0" inputmode="numeric">
+  <label for="pcEsc">تُصعَّد إلى المخالفة رقم</label>
+  <input id="pcEsc" type="number" min="1" inputmode="numeric">
+  <label for="pcEscNote">ملاحظة التصعيد</label>
+  <textarea id="pcEscNote" rows="2"></textarea>
+  <label for="pcNote">ملاحظة</label>
+  <textarea id="pcNote" rows="2"></textarea>
+  <label for="pcOrd">الترتيب</label>
+  <input id="pcOrd" type="number" min="0" inputmode="numeric">
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">احفظ</button>
+  </div>
+</form></dialog>
+
+<dialog id="scopeDlg"><form method="dialog">
+  <h3>مجال الممارسة</h3>
+  <p class="quote" id="scWhat"></p>
+  <label for="scLabel">اسم المجال</label>
+  <input id="scLabel" type="text">
+  <label for="scOrd">الترتيب</label>
+  <input id="scOrd" type="number" min="0" inputmode="numeric">
+  <label class="chk"><input id="scActive" type="checkbox" checked> نافذ</label>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">احفظ المجال</button>
+  </div>
+</form></dialog>
+
 <div class="toast" id="toast" hidden></div>
 
 <script src="vendor/supabase-2.117.2.js"></script>
