@@ -22,11 +22,9 @@
       href: 'wusul.html', allow: (c) => !!(c.record_arrival || c.record_dismissal) },
     { key: 'deputy', title: 'قرارات الوكيل', desc: 'الإقفال · إعادة الفتح · البتّ في الأعذار',
       href: 'deputy.html', allow: (c) => !!(c.close_day || c.reopen_day || c.decide_excuse) },
-    // شاشةُ الوكيل الجديدة (viewW) — تبقى «رصد المخالفات» القديمةُ بجانبها حتى تُقرّ
+    // شاشةُ الوكيل (viewW) — حلّت محلّ «رصد المخالفات» القديمة
     { key: 'wakeel', title: 'شاشة الوكيل', desc: 'الرصد · الشواهد · النموذج ٥ · ملفّات الطالب · سجلّ الملفّ',
       href: 'wakeel.html', allow: (c) => !!c.record_behavior },
-    { key: 'suluk', title: 'رصد المخالفات', desc: 'الفصل ثم الطالب ثم المخالفة — والمهامّ المولَّدة',
-      href: 'suluk.html', allow: (c) => !!c.record_behavior },
     { key: 'errors', title: 'لوحة الأخطاء', desc: 'ما سجّلته الشاشات والجسور — الأعطاب والحرّاس',
       href: 'errors.html', allow: (c) => !!c.view_errors },
     // ولا مفتاحَ للتعويض في can بعد — فتظهر حين يُضاف merit، والقاعدةُ تحرس كلّ فعل
