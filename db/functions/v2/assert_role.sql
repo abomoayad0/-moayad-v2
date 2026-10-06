@@ -1,5 +1,5 @@
 -- v2.assert_role(p_allowed text[], p_what text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 863207a79f7458005708c281931aa906
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e9ddbe71389037f03f59809060e63e5f
 CREATE OR REPLACE FUNCTION v2.assert_role(p_allowed text[], p_what text)
  RETURNS void
  LANGUAGE plpgsql
@@ -8,9 +8,16 @@ CREATE OR REPLACE FUNCTION v2.assert_role(p_allowed text[], p_what text)
 AS $function$
 declare g text; r text; mine text[]; chosen text; allowed_ar text;
 begin
-  if auth.uid() is null then return; end if;
+  -- 🔴 كانت تخرج صامتةً هنا
+  if auth.uid() is null then
+    raise exception 'لا بدّ من تسجيل الدخول — ولا يُقبل % بلا هويّة', p_what; end if;
+
   g := v2.my_grant();
+  -- 🔴 ومن لا حسابَ له ترجع له null فيمرّ
+  if g is null then
+    raise exception 'لا حسابَ فعّالٌ لك في هذا النظام — ولا يُقبل %', p_what; end if;
   if g = 'viewer' then raise exception 'صلاحيتك اطّلاع فقط — لا يُقبل %', p_what; end if;
+
   select role_key into chosen from v2.session_role where user_id = auth.uid();
   r := v2.my_role();
   select string_agg(coalesce(v2.role_ar(x),x),' أو ') into allowed_ar from unnest(p_allowed) x;

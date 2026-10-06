@@ -190,8 +190,8 @@ CREATE POLICY class_sections_t ON v2.class_sections AS PERMISSIVE FOR ALL TO aut
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 
--- ── committee_meetings · md5 66f13e631b4823e26d13cb6db3bd0323
-CREATE POLICY committee_meetings_tenant ON v2.committee_meetings AS PERMISSIVE FOR ALL TO public
+-- ── committee_meetings · md5 6e3a22aeec7463f18a23829c25121ea4
+CREATE POLICY committee_meetings_tenant ON v2.committee_meetings AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 
@@ -200,8 +200,8 @@ CREATE POLICY committee_members_tenant ON v2.committee_members AS PERMISSIVE FOR
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 
--- ── committee_school_rules · md5 4ade04ce04232817a2a177a57c69677b
-CREATE POLICY csr_tenant ON v2.committee_school_rules AS PERMISSIVE FOR ALL TO public
+-- ── committee_school_rules · md5 f8582dbd42cf39e2cbdfdd4a5a78c356
+CREATE POLICY csr_tenant ON v2.committee_school_rules AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 
@@ -241,13 +241,13 @@ CREATE POLICY conduct_rules_read ON v2.conduct_rules AS PERMISSIVE FOR SELECT TO
 CREATE POLICY conduct_universal_read ON v2.conduct_universal AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
 
--- ── counsel_cases · md5 4e3c02da70f259513d5b4ec0852ec002
-CREATE POLICY counsel_cases_tenant ON v2.counsel_cases AS PERMISSIVE FOR ALL TO public
+-- ── counsel_cases · md5 c5f3365b88bc6077b01671793e0a2b24
+CREATE POLICY counsel_cases_tenant ON v2.counsel_cases AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 
--- ── counsel_reports · md5 527225edcd90ec60265a4ba1fbca45b3
-CREATE POLICY counsel_reports_tenant ON v2.counsel_reports AS PERMISSIVE FOR ALL TO public
+-- ── counsel_reports · md5 9b1254cc5405b1158b03a953d5c9c639
+CREATE POLICY counsel_reports_tenant ON v2.counsel_reports AS PERMISSIVE FOR ALL TO authenticated
     USING ((EXISTS ( SELECT 1
    FROM v2.counsel_cases c
   WHERE ((c.id = counsel_reports.case_id) AND v2.my_school(c.school_id)))))
@@ -255,8 +255,8 @@ CREATE POLICY counsel_reports_tenant ON v2.counsel_reports AS PERMISSIVE FOR ALL
    FROM v2.counsel_cases c
   WHERE ((c.id = counsel_reports.case_id) AND v2.my_school(c.school_id)))));
 
--- ── counsel_sessions · md5 e8f5da77608869bd7f2852ba596f1b45
-CREATE POLICY counsel_sessions_tenant ON v2.counsel_sessions AS PERMISSIVE FOR ALL TO public
+-- ── counsel_sessions · md5 b0cdf470d44d8aef58d46a7c6000528e
+CREATE POLICY counsel_sessions_tenant ON v2.counsel_sessions AS PERMISSIVE FOR ALL TO authenticated
     USING ((EXISTS ( SELECT 1
    FROM v2.counsel_cases c
   WHERE ((c.id = counsel_sessions.case_id) AND v2.my_school(c.school_id)))))
@@ -402,12 +402,12 @@ CREATE POLICY fs_t ON v2.form_signatures AS PERMISSIVE FOR ALL TO authenticated
           WHERE ((guardians.user_id = auth.uid()) AND guardians.portal_active)))))))
     WITH CHECK (true);
 
--- ── gaps · md5 fcca053ea5ac74d31c8b04803de5c0cd
+-- ── gaps · md5 ffcccda76c669aa2fa723b594eaa93de
 CREATE POLICY gaps_read ON v2.gaps AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
 CREATE POLICY gaps_write ON v2.gaps AS PERMISSIVE FOR ALL TO authenticated
-    USING (true)
-    WITH CHECK (true);
+    USING ((v2.my_grant() = ANY (ARRAY['owner'::text, 'admin'::text])))
+    WITH CHECK ((v2.my_grant() = ANY (ARRAY['owner'::text, 'admin'::text])));
 
 -- ── grading_models · md5 f5562437480fe626a6e665053463a66e
 CREATE POLICY grading_models_read ON v2.grading_models AS PERMISSIVE FOR SELECT TO authenticated
@@ -510,8 +510,8 @@ CREATE POLICY mt_t ON v2.mail_targets AS PERMISSIVE FOR ALL TO authenticated
      JOIN v2.incoming_mail m ON ((m.id = i.mail_id)))
   WHERE ((i.id = mail_targets.item_id) AND v2.my_school(m.school_id)))));
 
--- ── meeting_attendance · md5 b43dbbf70d8cea26c9a0f2b1dcc2bd7d
-CREATE POLICY meeting_attendance_tenant ON v2.meeting_attendance AS PERMISSIVE FOR ALL TO public
+-- ── meeting_attendance · md5 fe36d4ff00ad28f5d612cb5087f9cfcd
+CREATE POLICY meeting_attendance_tenant ON v2.meeting_attendance AS PERMISSIVE FOR ALL TO authenticated
     USING ((EXISTS ( SELECT 1
    FROM v2.committee_meetings m
   WHERE ((m.id = meeting_attendance.meeting_id) AND v2.my_school(m.school_id)))))
@@ -519,8 +519,8 @@ CREATE POLICY meeting_attendance_tenant ON v2.meeting_attendance AS PERMISSIVE F
    FROM v2.committee_meetings m
   WHERE ((m.id = meeting_attendance.meeting_id) AND v2.my_school(m.school_id)))));
 
--- ── meeting_items · md5 1a389322101edb39f4fa5614c4a1c92a
-CREATE POLICY meeting_items_tenant ON v2.meeting_items AS PERMISSIVE FOR ALL TO public
+-- ── meeting_items · md5 0c99a732bc30c9d0631562fdc207310f
+CREATE POLICY meeting_items_tenant ON v2.meeting_items AS PERMISSIVE FOR ALL TO authenticated
     USING ((EXISTS ( SELECT 1
    FROM v2.committee_meetings m
   WHERE ((m.id = meeting_items.meeting_id) AND v2.my_school(m.school_id)))))
@@ -528,8 +528,8 @@ CREATE POLICY meeting_items_tenant ON v2.meeting_items AS PERMISSIVE FOR ALL TO 
    FROM v2.committee_meetings m
   WHERE ((m.id = meeting_items.meeting_id) AND v2.my_school(m.school_id)))));
 
--- ── meeting_votes · md5 bfa963b58d107dfe906d65e7c4bd445f
-CREATE POLICY meeting_votes_tenant ON v2.meeting_votes AS PERMISSIVE FOR ALL TO public
+-- ── meeting_votes · md5 a9c820f0b2beaabd3d6d77e6f96ed7aa
+CREATE POLICY meeting_votes_tenant ON v2.meeting_votes AS PERMISSIVE FOR ALL TO authenticated
     USING ((EXISTS ( SELECT 1
    FROM (v2.meeting_items i
      JOIN v2.committee_meetings m ON ((m.id = i.meeting_id)))
@@ -539,8 +539,8 @@ CREATE POLICY meeting_votes_tenant ON v2.meeting_votes AS PERMISSIVE FOR ALL TO 
      JOIN v2.committee_meetings m ON ((m.id = i.meeting_id)))
   WHERE ((i.id = meeting_votes.item_id) AND v2.my_school(m.school_id)))));
 
--- ── merit_entries · md5 b56e000bc03347e15d7583d2de64aab5
-CREATE POLICY merit_entries_tenant ON v2.merit_entries AS PERMISSIVE FOR ALL TO public
+-- ── merit_entries · md5 d148f8f47af72e8bf0c7bb5748a6dd88
+CREATE POLICY merit_entries_tenant ON v2.merit_entries AS PERMISSIVE FOR ALL TO authenticated
     USING ((EXISTS ( SELECT 1
    FROM v2.merit_opportunities o
   WHERE ((o.id = merit_entries.opp_id) AND v2.my_school(o.school_id)))))
@@ -548,8 +548,8 @@ CREATE POLICY merit_entries_tenant ON v2.merit_entries AS PERMISSIVE FOR ALL TO 
    FROM v2.merit_opportunities o
   WHERE ((o.id = merit_entries.opp_id) AND v2.my_school(o.school_id)))));
 
--- ── merit_opportunities · md5 f713958017b72c237a3ed9583d15aca0
-CREATE POLICY merit_opps_tenant ON v2.merit_opportunities AS PERMISSIVE FOR ALL TO public
+-- ── merit_opportunities · md5 e28d99c07504c71554ab9074e805be40
+CREATE POLICY merit_opps_tenant ON v2.merit_opportunities AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 
