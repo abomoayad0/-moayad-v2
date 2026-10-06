@@ -8,12 +8,9 @@
   const M = window.Moayad;
   const V = window.MoayadView;
   const { $, el, errText, showLoadErr } = M;
-  const { arabize, btn, flash } = V;
+  const { arabize, flash } = V;
 
-  const BUCKET = 'v2-attachments';
-  // الأحكامُ الأربعة كما يقبلها v2_entry_verdict — والقاعدةُ ترفض غيرها
-  const VERDICTS = ['نفّذ', 'نفّذ جزئيًّا', 'لم ينفّذ', 'لم يحضر'];
-  const ui = { pending: [], staff: null, busy: false };
+  const ui = { pending: [], staff: null };
 
   async function refresh() {
     if (!M.state.school) return;
@@ -21,12 +18,6 @@
     V.renderRole();
     ui.staff = null;
     await Promise.all([loadPending(), loadMine()]);
-  }
-
-  async function openEvidence(path) {
-    const { data, error } = await M.sb.storage.from(BUCKET).createSignedUrl(path, 300);
-    if (error) { flash('bad', errText(error)); return; }
-    window.open(data.signedUrl, '_blank', 'noopener');
   }
 
   // ---------- ② إقرارُ المشاركات ----------
@@ -37,45 +28,8 @@
     if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
     ui.pending = data || [];
     if (!ui.pending.length) { box.appendChild(el('p', 'rs-meta', 'لا مشاركاتِ تنتظر إقرارك.')); return; }
-    for (const x of ui.pending) box.appendChild(entryCard(x));
+    for (const x of ui.pending) box.appendChild(V.verdictCard(x, { onDone: () => { loadPending(); loadMine(); }, onDelegate: delegate }));
     arabize(box);
-  }
-
-  function entryCard(x) {
-    const f = el('div', 'rs-file');
-    f.append(el('h5', null, (x.student || '') + ' — ' + (x.merit || '')),
-      el('p', null, [x.when, x.delegated_to_me ? 'أُحيلت إليك' + (x.delegate_note ? ': ' + x.delegate_note : '') : null].filter(Boolean).join(' · ')));
-    // ما كتبه الطالبُ وشاهدُه قبل أزرار الحكم
-    const lg = el('div', 'rs-lgd');
-    lg.append(el('i', 'k', 'ما كتبه:'), el('i', null, x.what || '—'), el('i', 'k', 'الشاهد:'), el('i', null, x.evidence || '—'));
-    f.appendChild(lg);
-    if (x.evidence_path) f.appendChild(btn('افتح المرفق', 'rs-btn soft', () => openEvidence(x.evidence_path)));
-    const l = el('label', null, 'ملاحظتُك (إلزاميّة)');
-    const note = el('textarea');
-    note.rows = 2;
-    note.id = 'n_' + x.entry;
-    l.htmlFor = note.id;
-    f.append(l, note);
-    const row = el('div', 'rs-row');
-    for (const v of VERDICTS) row.appendChild(btn(v, 'rs-btn', () => verdict(x, v, note, f)));
-    f.appendChild(row);
-    f.appendChild(btn('أحِل الإقرارَ لغيرك', 'rs-btn ghost', () => delegate(x)));
-    return f;
-  }
-
-  async function verdict(x, v, note, card) {
-    if (ui.busy) return;
-    ui.busy = true;
-    for (const b of card.querySelectorAll('button')) b.disabled = true;
-    flash('wait', 'يُسجَّل… ' + (x.student || '') + ' — ' + v);
-    const { error } = await M.rpc('v2_entry_verdict', { p_entry: x.entry, p_verdict: v, p_note: note.value.trim() || null, p_file: null }, 'إقرار مشاركة');
-    ui.busy = false;
-    for (const b of card.querySelectorAll('button')) b.disabled = false;
-    // رُفض ⇒ تبقى البطاقةُ بملاحظتها، ونصُّ الرفض كما هو
-    if (error) { flash('bad', errText(error)); return; }
-    flash('ok', 'سُجّل الحكم: ' + (x.student || '') + ' — ' + v + ' · وتقدّر اللجنةُ درجتَه');
-    loadPending();
-    loadMine();
   }
 
   async function delegate(x) {

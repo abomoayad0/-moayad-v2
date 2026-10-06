@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مؤيّد · ما عليّ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>مؤيّد · ما عليّ</h1>
+    <div class="who" id="who"></div>
+  </div>
+  <div class="hdr-acts">
+    <button id="logout" class="hbtn" type="button">خروج</button>
+  </div>
+</header>
+<nav class="screens" id="screens" aria-label="الشاشات" hidden></nav>
+<div class="testmode" id="testMode" hidden></div>
+<div class="gatebox"><div class="notice err" id="gateErr" hidden></div></div>
+
+<main id="dayView" class="wrap" hidden>
+  <div class="day">
+    <div class="full" id="schoolBox">
+      <label for="school">المدرسة</label>
+      <select id="school"></select>
+    </div>
+    <div class="full" hidden><input id="date" type="date"></div>
+  </div>
+
+  <p class="role" id="roleLine" hidden><i class="dot"></i><span id="roleText"></span></p>
+  <div class="flash" id="flash" hidden></div>
+  <div class="notice err" id="loadErr" hidden></div>
+
+  <!-- ① إثباتُ مشاركة طالب — ما أُحيل إليك إقرارُه -->
+  <section class="rs-card">
+    <h3>إثباتُ مشاركة طالب</h3>
+    <p class="rs-meta">أُحيلت إليك ممّن أقام الفرصة · ترى هذا الجزءَ وحدَه</p>
+    <div id="dlg"></div>
+  </section>
+
+  <div id="offCards"></div>
+
+  <!-- ④ ما عليّ من اللجان -->
+  <section class="rs-card">
+    <h3>ما عليّ من اللجان</h3>
+    <p class="rs-meta">قراراتُ المحاضر المعتمدة المسندةُ إليك</p>
+    <div id="ctasks"></div>
+  </section>
+</main>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="vendor/supabase-2.117.2.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="views.js"></script>
+<script src="mukallaf.js"></script>
+</body>
+</html>

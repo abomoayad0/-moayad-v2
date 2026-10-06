@@ -201,5 +201,78 @@
     if (first) first.focus();
   }
 
-  window.MoayadView = { ar, arabize, btn, notBuilt, offCard, renderRole, flash, pick, sheet, events, chooser, form };
+  // بطاقةُ إقرار مشاركةٍ من v2_entries_pending — مشتركةٌ بين رائد النشاط والمكلَّف.
+  // ما كتبه الطالبُ وشاهدُه، ثمّ الملاحظةُ الإلزاميّة، ثمّ الأحكامُ الأربعة بضغطةٍ واحدة (v2_entry_verdict).
+  const VERDICTS = ['نفّذ', 'نفّذ جزئيًّا', 'لم ينفّذ', 'لم يحضر']; // كما يقبلها v2_entry_verdict — والقاعدةُ ترفض غيرها
+  let verdictBusy = false;
+  function verdictCard(x, opts) {
+    const f = el('div', 'rs-file');
+    f.append(el('h5', null, (x.student || '') + ' — ' + (x.merit || '')),
+      el('p', null, [x.when, x.delegated_to_me ? 'أُحيلت إليك' + (x.delegate_note ? ': ' + x.delegate_note : '') : null].filter(Boolean).join(' · ')));
+    const lg = el('div', 'rs-lgd');
+    lg.append(el('i', 'k', 'ما كتبه:'), el('i', null, x.what || '—'), el('i', 'k', 'الشاهد:'), el('i', null, x.evidence || '—'));
+    f.appendChild(lg);
+    if (x.evidence_path) {
+      f.appendChild(btn('افتح المرفق', 'rs-btn soft', async () => {
+        const { data, error } = await M.sb.storage.from('v2-attachments').createSignedUrl(x.evidence_path, 300);
+        if (error) { flash('bad', M.errText(error)); return; }
+        window.open(data.signedUrl, '_blank', 'noopener');
+      }));
+    }
+    const l = el('label', null, 'ملاحظتُك (إلزاميّة)');
+    const note = el('textarea');
+    note.rows = 2;
+    note.id = 'n_' + x.entry;
+    l.htmlFor = note.id;
+    f.append(l, note);
+    const row = el('div', 'rs-row');
+    for (const v of VERDICTS) {
+      row.appendChild(btn(v, 'rs-btn', async () => {
+        if (verdictBusy) return;
+        verdictBusy = true;
+        for (const b of f.querySelectorAll('button')) b.disabled = true;
+        flash('wait', 'يُسجَّل… ' + (x.student || '') + ' — ' + v);
+        const { error } = await M.rpc('v2_entry_verdict', { p_entry: x.entry, p_verdict: v, p_note: note.value.trim() || null, p_file: null }, 'إقرار مشاركة');
+        verdictBusy = false;
+        for (const b of f.querySelectorAll('button')) b.disabled = false;
+        // رُفض ⇒ تبقى البطاقةُ بملاحظتها، ونصُّ الرفض كما هو
+        if (error) { flash('bad', M.errText(error)); return; }
+        flash('ok', 'سُجّل الحكم: ' + (x.student || '') + ' — ' + v + ' · وتقدّر اللجنةُ درجتَه');
+        if (opts && opts.onDone) opts.onDone();
+      }));
+    }
+    f.appendChild(row);
+    if (opts && opts.onDelegate) f.appendChild(btn('أحِل الإقرارَ لغيرك', 'rs-btn ghost', () => opts.onDelegate(x)));
+    return f;
+  }
+
+  // قرارٌ من محضرٍ معتمدٍ مسندٌ إليك (v2_my_committee_tasks) — وإقرارُ تنفيذه في لوح (v2_committee_task_done)
+  function committeeTask(t, onDone) {
+    const f = el('div', 'rs-file');
+    f.append(el('h5', null, (t.title || '') + (t.student ? ' — ' + t.student : '')),
+      el('p', null, [t.committee, 'الاجتماع ' + t.meeting_no, t.held_on, t.carried ? 'مرحَّل' : null].filter(Boolean).join(' · ')));
+    if (t.decision) f.appendChild(el('p', null, 'القرار: ' + t.decision));
+    if (t.recommend) f.appendChild(el('p', null, 'التوصية: ' + t.recommend));
+    if (t.due) {
+      const p = el('p', null, 'الموعد ' + t.due + (t.days_left != null ? ' · ' + (t.late ? 'متأخّرٌ ' + Math.abs(t.days_left) + ' يومًا' : 'بقي ' + t.days_left + ' يومًا') : ''));
+      if (t.late) p.className = 'rs-state-open';
+      f.appendChild(p);
+    }
+    f.appendChild(btn('أقرّ تنفيذَه', 'rs-btn', () => form({
+      title: 'إقرارُ تنفيذ قرار اللجنة', what: t.title || '',
+      fields: [{ key: 'note', type: 'textarea', label: 'ما فعلتَ' }, { key: 'ev', label: 'الشاهد (اختياري)' }],
+      ok: 'أقرّ التنفيذ',
+      onOk: async (v) => {
+        const { error } = await M.rpc('v2_committee_task_done', { p_item: t.item, p_note: v.note, p_evidence: v.ev }, 'تنفيذ قرار اللجنة');
+        if (error) return error;
+        flash('ok', 'أُقرّ تنفيذُ القرار — ' + (t.title || ''));
+        if (onDone) onDone();
+        return null;
+      },
+    })));
+    arabize(f);
+    return f;
+  }
+
+  window.MoayadView = { ar, arabize, btn, notBuilt, offCard, renderRole, flash, pick, sheet, events, chooser, form, verdictCard, committeeTask };
 })();

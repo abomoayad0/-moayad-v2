@@ -768,36 +768,7 @@
   function renderMine(box) {
     if (ui.mineErr) box.appendChild(el('div', 'notice err', errText(ui.mineErr)));
     if (!ui.mine.length) { box.appendChild(el('p', 'rs-meta', 'لا قرارَ مسندًا إليك لم يُنفَّذ.')); return; }
-    for (const t of ui.mine) box.appendChild(taskCard(t));
-  }
-
-  function taskCard(t) {
-    const f = el('div', 'rs-file');
-    f.append(el('h5', null, (t.title || '') + (t.student ? ' — ' + t.student : '')),
-      el('p', null, [t.committee, 'الاجتماع ' + t.meeting_no, t.held_on, t.carried ? 'مرحَّل' : null].filter(Boolean).join(' · ')));
-    if (t.decision) f.appendChild(el('p', null, 'القرار: ' + t.decision));
-    if (t.recommend) f.appendChild(el('p', null, 'التوصية: ' + t.recommend));
-    if (t.due) {
-      const p = el('p', null, 'الموعد ' + t.due + (t.days_left != null ? ' · ' + (t.late ? 'متأخّرٌ ' + Math.abs(t.days_left) + ' يومًا' : 'بقي ' + t.days_left + ' يومًا') : ''));
-      if (t.late) p.className = 'rs-state-open';
-      f.appendChild(p);
-    }
-    f.appendChild(btn('أقرّ تنفيذَه', 'rs-btn', () => taskDone(t)));
-    return f;
-  }
-
-  function taskDone(t) {
-    V.form({
-      title: 'إقرارُ تنفيذ قرار اللجنة', what: t.title || '',
-      fields: [{ key: 'note', type: 'textarea', label: 'ما فعلتَ' }, { key: 'ev', label: 'الشاهد (اختياري)' }],
-      ok: 'أقرّ التنفيذ',
-      onOk: async (v) => {
-        const r = await call('v2_committee_task_done', { p_item: t.item, p_note: v.note, p_evidence: v.ev }, 'تنفيذ قرار اللجنة', 'أُقرّ تنفيذُ القرار');
-        if (r.error) return r.error;
-        reloadMin();
-        return null;
-      },
-    });
+    for (const t of ui.mine) box.appendChild(V.committeeTask(t, reloadMin));
   }
 
   M.start({ screen: 'lajna', onChange: () => refresh() });
