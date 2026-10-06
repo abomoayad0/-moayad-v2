@@ -1,6 +1,6 @@
 // مؤيّد · لوحة التحكّم — أبوابُ الإعداد كما فهرستها القاعدة.
 // v2_settings_catalog · v2_setting_rows · v2_setting_update · v2_committee_board · v2_committee_seat_count
-// v2_practices(p_school,…) · v2_practices_hidden · v2_practice_save · v2_practice_state · v2_practice_scopes · v2_scope_upsert · v2_committee_rules
+// v2_practices(p_school,…) · v2_practices_hidden · v2_practice_save · v2_practice_state · v2_practice_scopes · v2_scope_upsert · v2_committee_rules · v2_committee_rules_get
 // المقفلُ يُقرأ بسببه وسنده ولا زرَّ تعديلٍ عليه. ومن يدخل اللوحة تحكم به القاعدة، ورفضُها يُعرض بنصّه.
 (function () {
   'use strict';
@@ -12,7 +12,7 @@
   // مفاتيح اللجان كما في المواصفة — وأسماؤها ونصابُها من v2_committee_board
   const COMMITTEES = ['guidance', 'admin', 'achievement', 'excellence', 'fund', 'safety', 'sped'];
 
-  const ui = { catalog: [], school: null, rules: {} };
+  const ui = { catalog: [], school: null };
 
   function ask(dlg) {
     return new Promise((resolve) => {
@@ -172,10 +172,13 @@
       const b = r.data || {};
       const c = b.committee || {};
       row.appendChild(el('div', 'name', c.label || COMMITTEES[i]));
-      // قواعدُ المدرسة تُعرض كما أرجعها آخرُ حفظٍ في هذي الجلسة — فلا جسرَ يقرؤها وحدَها بعد
-      const rule = ui.rules[c.key];
-      row.appendChild(el('div', 'meta', rule ? ruleText(rule) : 'قواعدُ مدرستك لهذي اللجنة: تُعرض بعد ضبطها هنا.'));
-      if (rule && rule.note) row.appendChild(el('div', 'meta', rule.note));
+      // قواعدُ مدرستك كما يرجعها المجلس: النصابُ والردُّ عن بُعدٍ وحكمُ التعادل
+      row.appendChild(el('div', 'meta', ruleText({ quorum_min: c.quorum, allow_remote: c.allow_remote, tie_rule: c.tie_rule })));
+      if (c.quorum_note) row.appendChild(el('div', 'meta', c.quorum_note));
+      // سعةُ الدليل مقابل سعةِ مدرستك — تُعرض حين تختلفان
+      for (const s of (b.seats || []).filter((x) => x.count_guide != null && Number(x.count) !== Number(x.count_guide))) {
+        row.appendChild(el('div', 'meta', (s.role_ar || '') + ': سعةُ مدرستك ' + s.count + ' · سعةُ الدليل ' + s.count_guide));
+      }
       const acts = el('div', 'acts one');
       const q = el('button', 'a-go', 'اضبط القواعد');
       q.type = 'button';
@@ -201,28 +204,33 @@
       ' · التعادل: ' + (r.tie_rule === 'رئيس' ? 'يُرجَّح جانبُ الرئيس' : 'يُؤجَّل البند');
   }
 
-  // النصابُ والردُّ عن بُعدٍ وحكمُ التعادل في نداءٍ واحد — وما تُرك فارغًا يبقى كما هو في القاعدة
+  // النصابُ والردُّ عن بُعدٍ وحكمُ التعادل في نداءٍ واحد — والنموذجُ يُملأ من القاعدة قبل عرضه
   async function setQuorum(c) {
-    const r = ui.rules[c.key];
+    const { data: r, error: e0 } = await M.rpc('v2_committee_rules_get', { p_school: ui.school, p_committee: c.key }, 'قراءة قواعد اللجنة');
+    if (e0) { toast('تعذّرت قراءة القواعد:\n' + errText(e0)); return; }
     $('qWhat').textContent = c.label || c.key;
-    $('qNow').textContent = r ? ruleText(r) : 'القواعدُ الحاليّة لا تُقرأ هنا قبل أوّل ضبط — وما تتركه فارغًا لا يتغيّر.';
-    $('qMin').value = '';
-    $('qRemote').value = '';
-    $('qTie').value = '';
+    $('qNow').textContent = ruleText(r) + ' · أعضاؤها الآن ' + r.members + (r.seat_count != null ? ' · سعةُ مقعد العضو ' + r.seat_count : '');
+    $('qMin').value = r.quorum_min == null ? '' : r.quorum_min;
+    $('qClear').checked = false;
+    $('qMin').disabled = false;
+    $('qRemote').value = r.allow_remote ? 'yes' : 'no';
+    $('qTie').value = r.tie_rule || 'رئيس';
     $('qNote').value = '';
     if (await ask($('quorumDlg')) !== 'ok') return;
     const v = $('qMin').value.trim();
-    const rem = $('qRemote').value;
+    const clear = $('qClear').checked;
     const { data, error } = await M.rpc('v2_committee_rules', {
-      p_school: ui.school, p_committee: c.key, p_quorum: v === '' ? null : Number(v),
-      p_allow_remote: rem === '' ? null : rem === 'yes', p_tie_rule: $('qTie').value || null,
-      p_note: $('qNote').value.trim() || null,
+      p_school: ui.school, p_committee: c.key,
+      p_quorum: clear || v === '' ? null : Number(v),
+      p_allow_remote: $('qRemote').value === 'yes', p_tie_rule: $('qTie').value,
+      p_note: $('qNote').value.trim() || null, p_clear_quorum: clear,
     }, 'ضبط قواعد اللجنة');
     if (error) { toast('لم تُضبط القواعد:\n' + errText(error)); return; }
-    ui.rules[c.key] = data || null;
     toast('ضُبطت قواعد ' + (c.label || c.key) + (data ? ':\n' + ruleText(data) : '.'), true);
     loadCommittees();
   }
+
+  $('qClear').addEventListener('change', () => { $('qMin').disabled = $('qClear').checked; });
 
   async function setSeatCount(c, s) {
     $('sWhat').textContent = (c.label || c.key) + ' · ' + (s.role_ar || '') + ' — السعة الآن ' + s.count;

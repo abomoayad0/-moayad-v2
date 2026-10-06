@@ -34,12 +34,13 @@
   <h3>قواعد اللجنة</h3>
   <p class="quote" id="qWhat"></p>
   <p class="hint" id="qNow"></p>
-  <label for="qMin">النصاب: أقلّ عددٍ من الرادّين (حاضرًا أو عن بُعد) — فارغٌ لا يغيّره</label>
+  <label for="qMin">النصاب: أقلّ عددٍ من الرادّين (حاضرًا أو عن بُعد)</label>
   <input id="qMin" type="number" min="2" inputmode="numeric">
+  <label class="chk"><input id="qClear" type="checkbox"> ألغِ النصاب</label>
   <label for="qRemote">الردُّ عن بُعد</label>
-  <select id="qRemote"><option value="">بلا تغيير</option><option value="yes">مقبول</option><option value="no">غيرُ مقبول</option></select>
+  <select id="qRemote"><option value="yes">مقبول</option><option value="no">غيرُ مقبول</option></select>
   <label for="qTie">حكمُ التعادل</label>
-  <select id="qTie"><option value="">بلا تغيير</option><option value="رئيس">يُرجَّح جانبُ الرئيس</option><option value="تأجيل">يُؤجَّل البند</option></select>
+  <select id="qTie"><option value="رئيس">يُرجَّح جانبُ الرئيس</option><option value="تأجيل">يُؤجَّل البند</option></select>
   <label for="qNote">ملاحظة</label>
   <textarea id="qNote" rows="3"></textarea>
   <p class="hint">اجتهادُ مدرسةٍ لا نصَّ له في الدليل التنظيميّ.</p>
