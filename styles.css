@@ -430,3 +430,14 @@
   .rs-table { min-width: 520px; border-collapse: collapse; font-size: 12.5px; }
   .rs-table th, .rs-table td { padding: 7px 4px; border-bottom: 1px solid var(--line); vertical-align: top; text-align: start; }
   .rs-table th { color: var(--mute); font-weight: 600; }
+
+/* ─── شاشاتُ الأدوار: ما زاد على الوكيل ─── */
+  .rs-sub { margin: 16px 0 4px; font-size: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .rs-card textarea, .rs-card input[type=date], .rs-card input[type=number], .sheet input[type=date], .sheet input[type=number] { width: 100%; }
+  .rs-table tr.click { cursor: pointer; }
+  .rs-table tr.click.on td { background: var(--soft); }
+  .rs-state-open { color: var(--warn, #b26a00); font-weight: 700; }
+  .rs-state-done { color: var(--primary); font-weight: 700; }
+  .rs-lgd { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; font-size: 12px; color: var(--mute); margin-top: 3px; }
+  .rs-lgd i { font-style: normal; }
+  .rs-lgd i.k { color: var(--ink); }

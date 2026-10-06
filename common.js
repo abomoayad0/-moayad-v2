@@ -30,9 +30,9 @@
     // ولا مفتاحَ للتعويض في can بعد — فتظهر حين يُضاف merit، والقاعدةُ تحرس كلّ فعل
     { key: 'merit', title: 'التعويض والتميّز', desc: 'بنك الفرص · الإقرار · التقدير',
       href: 'merit.html', allow: (c) => !!c.merit },
-    // والقاعدةُ تحرس السرّ وراء counsel
-    { key: 'counsel', title: 'الموجّه الطلابي', desc: 'مؤشّر متابعة الحالات · دراسة الحالة والجلسات والتقرير',
-      href: 'counsel.html', allow: (c) => !!c.counsel },
+    // شاشةُ الموجّه (viewM) — حلّت محلّ counsel، والقاعدةُ تحرس السرّ وراءها
+    { key: 'muwajjih', title: 'شاشة الموجّه', desc: 'دوري · مؤشّر الحالات · دراسة الحالة والجلسات والتقرير · سجلّ الملفّ',
+      href: 'muwajjih.html', allow: (c) => !!c.counsel },
     // والقاعدةُ تحرس كلّ فعلٍ في اللجان
     { key: 'committees', title: 'اللجان', desc: 'المجلس · الاجتماعات · المحاضر',
       href: 'committees.html', allow: (c) => !!c.committees },

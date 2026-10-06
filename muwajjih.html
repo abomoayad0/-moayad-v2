@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مؤيّد · شاشة الموجّه</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>مؤيّد · شاشة الموجّه</h1>
+    <div class="who" id="who"></div>
+  </div>
+  <div class="hdr-acts">
+    <button id="logout" class="hbtn" type="button">خروج</button>
+  </div>
+</header>
+<nav class="screens" id="screens" aria-label="الشاشات" hidden></nav>
+<div class="testmode" id="testMode" hidden></div>
+<div class="gatebox"><div class="notice err" id="gateErr" hidden></div></div>
+
+<main id="dayView" class="wrap" hidden>
+  <div class="day">
+    <div class="full" id="schoolBox">
+      <label for="school">المدرسة</label>
+      <select id="school"></select>
+    </div>
+    <div class="full" hidden><input id="date" type="date"></div>
+  </div>
+
+  <!-- رأسُ الشاشة: الصفةُ من v2_me -->
+  <p class="role" id="roleLine" hidden><i class="dot"></i><span id="roleText"></span></p>
+  <!-- شريطُ النتيجة: نصُّه من القاعدة، ويبقى حتى الفعل التالي -->
+  <div class="flash" id="flash" hidden></div>
+  <div class="notice err" id="loadErr" hidden></div>
+
+  <!-- ① دوري في التعزيز — ص١٣ بند ٧ -->
+  <section class="rs-card" id="roleCard">
+    <h3>دوري في التعزيز</h3>
+    <ul class="rs-acts">
+      <li><i class="rs-tick ok">✓</i><span>توعيةُ المخالف بحقّه في التعويض</span><small class="rs-who">بند ٧</small></li>
+      <li><i class="rs-tick ok">✓</i><span>تطبيقُ فنّيّات الإرشاد وتعديلِ السلوك</span><small class="rs-who">بند ٥</small></li>
+      <li><i class="rs-tick ok">✓</i><span>تفعيلُ قرارات اللجنة ومتابعتُها</span><small class="rs-who">بند ٩</small></li>
+      <li><i class="rs-tick ok">✓</i><span>التنسيقُ للاستفادة من الأنشطة</span><small class="rs-who">بند ١١</small></li>
+    </ul>
+    <div class="rs-note">أوعّي وأقترح ولا أقدّر الدرجةَ — <b>التقديرُ للّجنة</b> · ص١٣ وص١٢</div>
+  </section>
+
+  <!-- ② مؤشّرُ متابعة حالات الطلاب — 🔒 للموجّه وحدَه -->
+  <section class="rs-card" id="boardCard">
+    <h3>مؤشّرُ متابعة حالات الطلاب</h3>
+    <p class="rs-meta">🔒 للموجّه وحدَه — ولا يفتحه غيرُه ولو كانت صلاحيّتُه كاملة</p>
+    <div class="rs-pick" id="fState" role="group" aria-label="حالُ المعالجة"></div>
+    <div id="board"></div>
+  </section>
+
+  <!-- ③ بطاقةُ الحالة -->
+  <section class="rs-card" id="caseCard" hidden>
+    <h3 id="caseTitle">بطاقةُ الحالة</h3>
+    <p class="rs-meta" id="caseMeta"></p>
+    <div id="caseFacts"></div>
+
+    <h4 class="rs-sub">دراسةُ الحالة</h4>
+    <label for="cwView">تفسيرُ الطالب للمشكلة — بلسانه</label>
+    <textarea id="cwView" rows="3"></textarea>
+    <label for="cwObs">ما لاحظتَه أنت</label>
+    <textarea id="cwObs" rows="3"></textarea>
+    <label for="cwFac">العواملُ التي تراها</label>
+    <textarea id="cwFac" rows="3"></textarea>
+    <label for="cwPlan">التدخّلُ المخطَّط</label>
+    <textarea id="cwPlan" rows="3"></textarea>
+    <div class="rs-note" id="cwNote"></div>
+    <p class="rs-meta" id="cwAt"></p>
+    <button type="button" class="rs-btn big" id="cwSave">احفظ الدراسة</button>
+
+    <h4 class="rs-sub">جلساتُ المتابعة</h4>
+    <div id="sessBox"></div>
+
+    <h4 class="rs-sub">تقريرُ دراسة الحالة</h4>
+    <div id="repBox"></div>
+
+    <div class="rs-row" id="caseOff"></div>
+  </section>
+
+  <!-- ④ جلساتي -->
+  <section class="rs-card" id="mineCard" hidden>
+    <details class="rs-dt" id="mineBox">
+      <summary id="mineSum">جلساتي</summary>
+      <div class="rs-dtb" id="mine"></div>
+    </details>
+  </section>
+
+  <!-- ⑤ سجلُّ الملفّ — counselor -->
+  <section class="rs-card" id="tlCard" hidden>
+    <details class="rs-dt" id="tlBox">
+      <summary id="tlSum">سجلُّ الملفّ</summary>
+      <div class="rs-dtb" id="timeline"></div>
+    </details>
+  </section>
+</main>
+
+<!-- جلسةُ متابعة: تحتاج حقولًا فتنزلق من الأسفل -->
+<div class="rs-modal" id="sessModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sTitle">
+    <h3 id="sTitle">جلسةُ متابعة</h3>
+    <p class="rs-meta">رقمُ الجلسة يضعه النظام.</p>
+    <label for="sOn">تاريخُها</label>
+    <input id="sOn" type="date">
+    <label for="sMin">مدّتُها بالدقائق</label>
+    <input id="sMin" type="number" min="1" inputmode="numeric">
+    <label for="sDisc">ما نُوقش</label>
+    <textarea id="sDisc" rows="3"></textarea>
+    <div class="rs-label">مدى الاستجابة — يُختار صراحةً</div>
+    <div class="rs-pick" id="sResp" role="group" aria-label="مدى الاستجابة"></div>
+    <label for="sNext">الخطوةُ التالية</label>
+    <textarea id="sNext" rows="2"></textarea>
+    <div class="rs-row">
+      <button type="button" class="rs-btn" id="sOk">قيّد الجلسة</button>
+      <button type="button" class="rs-btn ghost" id="sCancel">تراجع</button>
+    </div>
+  </div>
+</div>
+
+<!-- تقريرُ دراسة الحالة -->
+<div class="rs-modal" id="repModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rTitle">
+    <h3 id="rTitle">تقريرُ دراسة الحالة — إلى لجنة التوجيه</h3>
+    <div class="rs-note" id="repAuto"></div>
+    <label for="rOpinion">الرأيُ الفنّيّ</label>
+    <textarea id="rOpinion" rows="3"></textarea>
+    <label for="rRec">التوصية</label>
+    <textarea id="rRec" rows="3"></textarea>
+    <p class="rs-meta">يُرفع مرّةً واحدة، ويخرج ملخّصًا بلا نصّ الجلسات ولا الدراسة.</p>
+    <div class="rs-row">
+      <button type="button" class="rs-btn" id="rOk">ارفع التقرير</button>
+      <button type="button" class="rs-btn ghost" id="rCancel">تراجع</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="vendor/supabase-2.117.2.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="views.js"></script>
+<script src="muwajjih.js"></script>
+</body>
+</html>
