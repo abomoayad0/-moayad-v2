@@ -1,6 +1,6 @@
 -- v2.exceptions
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 7dbc0e745499308cf2f62813d1559752
+-- md5 6068b7f8be9c7b09b251bc5d6999d545
 
 CREATE TABLE v2.exceptions (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -16,6 +16,6 @@ CREATE TABLE v2.exceptions (
     year_id uuid NOT NULL,
     CONSTRAINT exceptions_pkey PRIMARY KEY (id),
     CONSTRAINT exceptions_reason_check CHECK ((length(btrim(reason)) > 0)),
-    CONSTRAINT exceptions_rule_kind_check CHECK ((rule_kind = ANY (ARRAY['staffing'::text, 'structure'::text, 'committee'::text, 'inheritance'::text, 'other'::text])))
+    CONSTRAINT exceptions_rule_kind_check CHECK ((rule_kind = ANY (ARRAY['conduct'::text, 'attendance'::text, 'committee'::text, 'calendar'::text, 'structure'::text, 'staffing'::text, 'grading'::text, 'inheritance'::text, 'other'::text])))
 );
 ALTER TABLE v2.exceptions ENABLE ROW LEVEL SECURITY;

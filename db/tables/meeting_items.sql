@@ -1,6 +1,6 @@
 -- v2.meeting_items
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 90a4a00cb161e08272ad7b041bb99d7e
+-- md5 27d92e6582880ff4e49099494938120d
 
 CREATE TABLE v2.meeting_items (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -23,6 +23,7 @@ CREATE TABLE v2.meeting_items (
     done_note text,
     done_evidence text,
     carried_from uuid,
+    duty_id uuid,
     CONSTRAINT meeting_items_pkey PRIMARY KEY (id),
     CONSTRAINT meeting_items_outcome_check CHECK ((outcome = ANY (ARRAY['قيد النظر'::text, 'أُقرّ'::text, 'رُفض'::text, 'أُجّل'::text]))),
     CONSTRAINT meeting_items_subject_kind_check CHECK ((subject_kind = ANY (ARRAY['طالب'::text, 'عام'::text, 'فرصة'::text, 'تقرير'::text])))

@@ -1,5 +1,5 @@
 -- public.v2_meeting_carry_over(p_meeting uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 8672ce2d157a75d39dd15a9a5d45c8ff
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 56725b979798979a38889c0f699f384f
 CREATE OR REPLACE FUNCTION public.v2_meeting_carry_over(p_meeting uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare mt record; seat text; n int := 0; o smallint; it record;
 begin
   select * into mt from v2.committee_meetings where id=p_meeting;
   if mt.id is null then raise exception 'الاجتماعُ غيرُ موجود'; end if;
-  if mt.status in ('معتمد','ملغًى') then
+  if mt.status in ('معتمد','ملغًى','موثّق') then
     raise exception 'لا يُرحَّل إلى اجتماعٍ %', mt.status; end if;
   seat := v2.my_seat(mt.school_id,mt.committee_key);
   if seat not in ('chair','rapporteur') then
@@ -23,8 +23,11 @@ begin
     where m.school_id=mt.school_id and m.committee_key=mt.committee_key
       and m.status='معتمد' and m.id <> p_meeting
       and i.outcome='أُقرّ' and i.done_at is null
+      -- 🔑 ولا يُرحَّل ما رُحّل إلى أيّ اجتماعٍ لم يُغلق بعد
       and not exists (select 1 from v2.meeting_items x
-                       where x.meeting_id=p_meeting and x.carried_from=i.id)
+                      join v2.committee_meetings mm on mm.id=x.meeting_id
+                      where x.carried_from=i.id
+                        and mm.status <> 'ملغًى')
     order by i.due_on nulls last
   loop
     o := o + 1; n := n + 1;
@@ -35,7 +38,7 @@ begin
         it.student_id,it.record_id,it.opp_ref,it.id);
   end loop;
   return jsonb_build_object('ok',true,'carried',n,
-    'note', case when n=0 then 'لا قرارَ معلَّقًا من اجتماعاتٍ سابقة'
+    'note', case when n=0 then 'لا قرارَ معلَّقًا لم يُرحَّل بعد'
                  else 'رُحّلت '||n||' قرارًا لم تُنفَّذ' end);
 end $function$
 ;

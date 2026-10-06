@@ -1,13 +1,15 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 0fce12eea36531edb069df274addfa0f
+-- ── grants · md5 a82efc63c3e38fe8c64677e5ee90f42f
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 
 
 REVOKE ALL ON FUNCTION v2.acting_school() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.acting_school() TO authenticated;
+REVOKE ALL ON FUNCTION v2.ar_num(n numeric) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.ar_num(n numeric) TO authenticated;
 REVOKE ALL ON FUNCTION v2.assert_grant(p_allowed text[], p_what text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.assert_grant(p_allowed text[], p_what text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.assert_my_child(p_student uuid, p_what text) FROM PUBLIC;
@@ -36,6 +38,8 @@ REVOKE ALL ON FUNCTION v2.current_person() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.current_person() TO authenticated;
 REVOKE ALL ON FUNCTION v2.current_tenant() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.current_tenant() TO authenticated;
+REVOKE ALL ON FUNCTION v2.degree_ar(n integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.degree_ar(n integer) TO authenticated;
 REVOKE ALL ON FUNCTION v2.enrol_reason_ar(k text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.enrol_reason_ar(k text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.evidence_exists(p_path text) FROM PUBLIC;
@@ -250,6 +254,8 @@ REVOKE ALL ON FUNCTION v2.g_vote_allowed() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.grade_ar(g smallint) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.grade_ar(g smallint) TO authenticated;
+REVOKE ALL ON FUNCTION v2.is_absent_today(p_student uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.is_absent_today(p_student uuid) TO authenticated;
 REVOKE ALL ON FUNCTION v2.is_counselor(p_school uuid) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.is_test_school(p_school uuid) FROM PUBLIC;
@@ -266,6 +272,8 @@ REVOKE ALL ON FUNCTION v2.my_school(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.my_school(p_school uuid) TO authenticated;
 REVOKE ALL ON FUNCTION v2.my_seat(p_school uuid, p_committee text) FROM PUBLIC;
 
+REVOKE ALL ON FUNCTION v2.ord_ar(n integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.ord_ar(n integer) TO authenticated;
 REVOKE ALL ON FUNCTION v2.quorum_of(p_school uuid, p_committee text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.quorum_of(p_school uuid, p_committee text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.role_ar(p text) FROM PUBLIC;
@@ -426,6 +434,9 @@ GRANT EXECUTE ON FUNCTION public.v2_default_role() TO service_role;
 REVOKE ALL ON FUNCTION public.v2_duty_autofill(p_school uuid, p_weekday smallint, p_zone text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_duty_autofill(p_school uuid, p_weekday smallint, p_zone text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_duty_autofill(p_school uuid, p_weekday smallint, p_zone text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_duty_cadences() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_duty_cadences() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_duty_cadences() TO service_role;
 REVOKE ALL ON FUNCTION public.v2_duty_eligible(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_duty_eligible(p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_duty_eligible(p_school uuid) TO service_role;
@@ -558,9 +569,9 @@ GRANT EXECUTE ON FUNCTION public.v2_meeting_close_item(p_item uuid, p_body text,
 REVOKE ALL ON FUNCTION public.v2_meeting_invite(p_meeting uuid, p_kind text, p_person uuid, p_student uuid, p_guardian uuid, p_note text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_meeting_invite(p_meeting uuid, p_kind text, p_person uuid, p_student uuid, p_guardian uuid, p_note text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_meeting_invite(p_meeting uuid, p_kind text, p_person uuid, p_student uuid, p_guardian uuid, p_note text) TO service_role;
-REVOKE ALL ON FUNCTION public.v2_meeting_item(p_meeting uuid, p_kind text, p_title text, p_student uuid, p_record uuid, p_opp uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.v2_meeting_item(p_meeting uuid, p_kind text, p_title text, p_student uuid, p_record uuid, p_opp uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.v2_meeting_item(p_meeting uuid, p_kind text, p_title text, p_student uuid, p_record uuid, p_opp uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_meeting_item(p_meeting uuid, p_kind text, p_title text, p_student uuid, p_record uuid, p_opp uuid, p_duty uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_meeting_item(p_meeting uuid, p_kind text, p_title text, p_student uuid, p_record uuid, p_opp uuid, p_duty uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_meeting_item(p_meeting uuid, p_kind text, p_title text, p_student uuid, p_record uuid, p_opp uuid, p_duty uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_meeting_minute(p_meeting uuid, p_ended time without time zone) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_meeting_minute(p_meeting uuid, p_ended time without time zone) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_meeting_minute(p_meeting uuid, p_ended time without time zone) TO service_role;

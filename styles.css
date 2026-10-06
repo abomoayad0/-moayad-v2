@@ -350,3 +350,46 @@
   .swatch::before { content: ''; width: 14px; height: 14px; border-radius: 50%; background: var(--sw, transparent); border: 1px solid var(--line); }
   dialog input[type=color] { width: 100%; height: 40px; padding: 2px; }
   #brandDlg, #excDlg, #imgDlg { max-height: calc(100vh - 32px); overflow: auto; }
+
+/* ─── شاشةُ الرصد — مكوّناتُ المحاكي (docs/moayad.css) منقولةً واحدًا واحدًا بسابقة rs- كي لا تتعارض ─── */
+  .rs-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin: 10px 0; }
+  .rs-card h3 { margin: 0 0 3px; font-size: 15px; font-weight: 700; color: var(--ink); }
+  .rs-card label, .rs-label { display: block; font-size: 13px; color: var(--mute); margin: 10px 0 4px; }
+  .rs-card select, .rs-card input[type=search] { width: 100%; min-height: 44px; margin-bottom: 6px; }
+  .rs-meta { color: var(--mute); font-size: 12.5px; margin: 0 0 10px; }
+  .rs-empty { color: var(--mute); font-size: 13px; text-align: center; padding: 18px 0; margin: 0; }
+  .rs-hd { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .rs-occ { flex: none; font-size: 12.5px; color: var(--ink); font-weight: 600; }
+  .rs-note { background: var(--soft); border-radius: 10px; padding: 10px 12px; font-size: 12.5px; color: var(--mute); margin-top: 10px; line-height: 1.9; }
+  .rs-note b { color: var(--ink); }
+  /* الزرُّ كحليٌّ لا أحمر — الأحمرُ للحسم والخطأ وحدَهما */
+  .rs-btn { border: 1px solid var(--navy); background: var(--navy); color: #fff; font-family: inherit; font-size: 13px; font-weight: 600; padding: 9px 15px; border-radius: 10px; cursor: pointer; }
+  .rs-btn:active { transform: scale(.98); }
+  .rs-btn.big { display: block; width: 100%; padding: 12px; font-size: 15px; margin-top: 12px; min-height: 48px; }
+  .rs-btn.soft { background: var(--card); color: var(--ink); margin-top: 8px; }
+  .rs-btn[disabled] { opacity: .45; cursor: not-allowed; }
+  .rs-pick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .rs-pick span { border: 1px solid var(--line); background: var(--card); color: var(--mute); border-radius: 999px; padding: 8px 14px; font-size: 14px; cursor: pointer; min-width: 40px; text-align: center; }
+  .rs-pick span.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .rs-ladder span { cursor: default; padding: 4px 10px; font-size: 12.5px; }
+  .rs-ladder span.k { border: 0; background: transparent; color: var(--ink); padding: 4px 0; min-width: 0; }
+  .rs-ladder span.done { color: var(--primary); border-color: var(--primary); }
+  .rs-ladder span.on { background: var(--navy); color: #fff; }
+  .rs-ladder span.soon { background: var(--chip); color: var(--grey); }
+  ul.rs-acts { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  ul.rs-acts li { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; line-height: 1.85; }
+  .rs-tick { flex: none; width: 17px; height: 17px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-style: normal; margin-top: 3px; background: var(--chip); color: var(--mute); }
+  .rs-tick.ok { background: var(--primary); color: #fff; }
+  .rs-who { flex: none; color: var(--mute); font-size: 11px; margin-inline-start: auto; }
+  .rs-dt { background: var(--soft); border-radius: 10px; padding: 9px 12px; margin-top: 10px; font-size: 12.5px; }
+  .rs-dt summary { cursor: pointer; color: var(--mute); list-style: none; }
+  .rs-dt summary::-webkit-details-marker { display: none; }
+  .rs-dt summary::after { content: " ⌄"; }
+  .rs-dt[open] summary::after { content: " ⌃"; }
+  .rs-dtb { margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--line); color: var(--mute); line-height: 1.9; }
+  /* الشريطُ أعلى البطاقة: «يُرسل» ثمّ ما رجع من القاعدة */
+  .rs-flash { border-radius: 10px; padding: 10px 12px; margin: -2px 0 10px; font-size: 13.5px; line-height: 1.8; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: space-between; }
+  .rs-flash.wait { background: var(--chip); color: var(--mute); }
+  .rs-flash.ok { background: var(--soft); color: var(--ink); border-right: 3px solid var(--primary); }
+  .rs-flash.bad { background: var(--danger-bg); color: var(--danger); border-right: 3px solid var(--danger); }
+  .rs-flash .rs-btn { margin: 0; }

@@ -569,11 +569,13 @@ ALTER TABLE v2.meeting_attendance
 ALTER TABLE v2.meeting_attendance
     ADD CONSTRAINT meeting_attendance_person_id_fkey FOREIGN KEY (person_id) REFERENCES v2.people(id);
 
--- ── meeting_items · md5 6b787567582e0a652395e6757549ac4d
+-- ── meeting_items · md5 36b1af8d3449638279277fffdbbf5d4f
 ALTER TABLE v2.meeting_items
     ADD CONSTRAINT meeting_items_carried_from_fkey FOREIGN KEY (carried_from) REFERENCES v2.meeting_items(id);
 ALTER TABLE v2.meeting_items
     ADD CONSTRAINT meeting_items_done_by_fkey FOREIGN KEY (done_by) REFERENCES v2.people(id);
+ALTER TABLE v2.meeting_items
+    ADD CONSTRAINT meeting_items_duty_id_fkey FOREIGN KEY (duty_id) REFERENCES v2.committee_duties(id);
 ALTER TABLE v2.meeting_items
     ADD CONSTRAINT meeting_items_meeting_id_fkey FOREIGN KEY (meeting_id) REFERENCES v2.committee_meetings(id) ON DELETE CASCADE;
 ALTER TABLE v2.meeting_items

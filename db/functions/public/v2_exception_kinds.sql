@@ -1,5 +1,5 @@
 -- public.v2_exception_kinds()
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 ed93b701713e29517db3b30a57f41e3e
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 59db02719110264640ed7040eaf20282
 CREATE OR REPLACE FUNCTION public.v2_exception_kinds()
  RETURNS jsonb
  LANGUAGE sql
@@ -15,6 +15,7 @@ AS $function$
     ('structure','الهيكل التنظيمي'),
     ('staffing','الملاك والتكاليف'),
     ('grading','التقدير والدرجات'),
+    ('inheritance','توارث المهامّ'),
     ('other','أخرى')) t(k,l);
 $function$
 ;

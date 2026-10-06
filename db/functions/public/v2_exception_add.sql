@@ -1,5 +1,5 @@
 -- public.v2_exception_add(p_school uuid, p_rule_kind text, p_rule_ref text, p_system_says text, p_school_does text, p_reason text, p_source text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 5e038b70596a83d19dac75ff7bc4acd2
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 601ac8f5ecc3aea20eb61715ad63b872
 CREATE OR REPLACE FUNCTION public.v2_exception_add(p_school uuid, p_rule_kind text, p_rule_ref text, p_system_says text, p_school_does text, p_reason text, p_source text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,9 +8,12 @@ CREATE OR REPLACE FUNCTION public.v2_exception_add(p_school uuid, p_rule_kind te
 AS $function$
 declare nid uuid; yid uuid;
 begin
-  -- 🔒 الاستثناءُ مخالفةٌ للنظام — فلا يقرّرها إلا المدير
   perform v2.assert_role(array['principal'],'تقييدَ استثناءٍ على النظام');
   if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if p_rule_kind is null or p_rule_kind not in
+     ('conduct','attendance','committee','calendar','structure',
+      'staffing','grading','inheritance','other') then
+    raise exception 'نوعُ الاستثناء غيرُ معروف — اقرأ القائمة من v2_exception_kinds'; end if;
   if btrim(coalesce(p_system_says,''))='' then
     raise exception 'اكتب ما يقوله النظام'; end if;
   if btrim(coalesce(p_school_does,''))='' then
