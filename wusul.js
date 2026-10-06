@@ -147,8 +147,7 @@
     return f;
   }
 
-  // قواعدُ اليوم كما رجعت — الأوقاتُ بساعتها ودقيقتها
-  const hm = (t) => (t ? String(t).slice(0, 5) : '—');
+  // قواعدُ اليوم كما رجعت — بحقولها العربيّة (_ar) من القاعدة، والأصليّةُ للمقارنة وحدَها
   function renderRules() {
     const p = $('dayRules');
     const d = ui.rules;
@@ -156,9 +155,12 @@
     if (ui.rulesErr) { p.textContent = 'تعذّر جلب قواعد اليوم: ' + ui.rulesErr; return; }
     if (!d) return;
     p.textContent = '';
-    p.append('الاصطفاف ' + hm(d.assembly_at) + ' · المهلة ' + (d.grace_min || 0) + ' دقيقة · ', el('b', null, 'حدُّ التأخّر ' + hm(d.late_cutoff_at)),
+    p.append('الاصطفاف ' + (d.assembly_ar || '—') + ' · المهلة ' + (d.grace_ar || '٠') + ' دقيقة · ', el('b', null, 'حدُّ التأخّر ' + (d.late_cutoff_ar || '—')),
       ' — بعده يُسجَّل غائبًا' + (d.late_cutoff_note ? ' · ' + d.late_cutoff_note : ''));
-    arabize(p);
+    // إعدادُ المدرسة: إن كان الإقفالُ قبل الحدّ فالحدُّ لا يبلغه أحد — يُنبَّه ولا يُصلَح هنا
+    if (d.close_at && d.late_cutoff_at && String(d.close_at) < String(d.late_cutoff_at)) {
+      p.appendChild(el('div', 'rs-state-open', 'الإقفالُ ' + (d.close_ar || '') + ' وحدُّ التأخّر ' + (d.late_cutoff_ar || '') + ' — راجع توقيتاتك'));
+    }
   }
 
   function renderArrivals() {
@@ -213,7 +215,7 @@
     const absent = c.state === 'absent';
     const mayAbsent = absent && can('record_assembly');
     V.form({
-      title: 'لا يُسجَّل وصولًا متأخّرًا', what: nameOf(r) + ' · وصل ' + at + ' · ' + (c.why || c.state_ar || ''),
+      title: 'لا يُسجَّل وصولًا متأخّرًا', what: nameOf(r) + ' · وصل ' + (c.at_ar || at) + ' · ' + (c.why || c.state_ar || ''),
       fields: [],
       ok: mayAbsent ? 'سجّله غائبًا' : 'حسنًا',
       onOk: async () => {

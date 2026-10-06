@@ -1,5 +1,5 @@
 -- public.v2_arrival_check(p_school uuid, p_at time without time zone)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 edfb2575cf031b0bf4798490379ef25e
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 586306126b2d3858c1dbd0cd0f50e0d4
 CREATE OR REPLACE FUNCTION public.v2_arrival_check(p_school uuid, p_at time without time zone)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -20,12 +20,16 @@ begin
     'state', stt,
     'state_ar', case stt when 'present' then 'حاضر'
                          when 'late' then 'متأخّر' else 'غائب' end,
+    'at_ar', v2.time_ar(p_at),
     'minutes', mins, 'minutes_ar', v2.ar_num(mins),
-    'assembly_at', d.assembly_at, 'grace_min', d.late_grace_min,
-    'late_cutoff_at', d.late_cutoff_at, 'late_cutoff_note', d.late_cutoff_note,
+    'assembly_at', d.assembly_at, 'assembly_ar', v2.time_ar(d.assembly_at),
+    'grace_min', d.late_grace_min, 'grace_ar', v2.ar_num(d.late_grace_min),
+    'late_cutoff_at', d.late_cutoff_at,
+    'late_cutoff_ar', v2.time_ar(d.late_cutoff_at),
+    'late_cutoff_note', d.late_cutoff_note,
     'can_record_arrival', (stt = 'late'),
     'why', case stt
-      when 'absent' then 'وصل بعد حدّ التأخّر ('||coalesce(d.late_cutoff_at::text,'—')||
+      when 'absent' then 'وصل بعد حدّ التأخّر ('||coalesce(v2.time_ar(d.late_cutoff_at),'—')||
                          ') — فيُسجَّل غائبًا لا متأخّرًا'
       when 'late'   then 'وصل بعد الاصطفاف بـ'||v2.ar_num(mins)||' دقيقة'
       else 'وصل في وقته' end);

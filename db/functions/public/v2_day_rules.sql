@@ -1,5 +1,5 @@
 -- public.v2_day_rules(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 5db94fdb1d5bcc1e3a5c4755063808e0
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2f6cd19eab043a8e4b4669603cad81da
 CREATE OR REPLACE FUNCTION public.v2_day_rules(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -13,13 +13,22 @@ begin
   if d.school_id is null then
     raise exception 'لا توقيتاتِ يومٍ لمدرستك — أسّسها من لوحة التحكّم'; end if;
   return jsonb_build_object(
-    'assembly_at', d.assembly_at, 'period1_at', d.period1_at,
-    'period_minutes', d.period_minutes, 'grace_min', d.late_grace_min,
-    'prenotice_after_min', d.prenotice_after_min, 'close_at', d.close_at,
-    'late_cutoff_at', d.late_cutoff_at, 'late_cutoff_note', d.late_cutoff_note,
+    'assembly_at', d.assembly_at, 'assembly_ar', v2.time_ar(d.assembly_at),
+    'period1_at', d.period1_at,   'period1_ar',  v2.time_ar(d.period1_at),
+    'period_minutes', d.period_minutes,
+    'period_minutes_ar', v2.ar_num(d.period_minutes),
+    'grace_min', d.late_grace_min, 'grace_ar', v2.ar_num(d.late_grace_min),
+    'prenotice_after_min', d.prenotice_after_min,
+    'prenotice_ar', v2.ar_num(d.prenotice_after_min),
+    'close_at', d.close_at, 'close_ar', v2.time_ar(d.close_at),
+    'late_cutoff_at', d.late_cutoff_at,
+    'late_cutoff_ar', v2.time_ar(d.late_cutoff_at),
+    'late_cutoff_note', d.late_cutoff_note,
     'periods', (select coalesce(jsonb_agg(jsonb_build_object(
           'no',s.period_no,'no_ar',v2.ar_num(s.period_no),
-          'starts',s.starts_at,'ends',s.ends_at) order by s.period_no),'[]'::jsonb)
+          'starts',s.starts_at,'starts_ar',v2.time_ar(s.starts_at),
+          'ends',s.ends_at,'ends_ar',v2.time_ar(s.ends_at))
+          order by s.period_no),'[]'::jsonb)
         from v2.period_slots s where s.school_id=p_school));
 end $function$
 ;

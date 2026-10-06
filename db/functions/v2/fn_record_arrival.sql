@@ -1,5 +1,5 @@
 -- v2.fn_record_arrival(p_student uuid, p_date date, p_arrived time without time zone, p_decision text, p_term smallint, p_by uuid, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 b0884c717b6a78137483d8bb4c329d38
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 8550c3e068b42314372014fcab031c38
 CREATE OR REPLACE FUNCTION v2.fn_record_arrival(p_student uuid, p_date date, p_arrived time without time zone, p_decision text DEFAULT 'enter_class'::text, p_term smallint DEFAULT 1, p_by uuid DEFAULT NULL::uuid, p_note text DEFAULT NULL::text)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -25,7 +25,7 @@ begin
   select * into st from v2.day_settings where school_id=v_school;
   if st.late_cutoff_at is not null and p_arrived > st.late_cutoff_at then
     raise exception 'وصل الساعةَ % وحدُّ التأخّر في مدرستك % — فيُسجَّل غائبًا لا متأخّرًا%',
-      p_arrived, st.late_cutoff_at,
+      v2.time_ar(p_arrived), v2.time_ar(st.late_cutoff_at),
       case when st.late_cutoff_note is null then '' else ' · '||st.late_cutoff_note end;
   end if;
   mins := greatest(0, (extract(epoch from (p_arrived - st.assembly_at))/60)::int - st.late_grace_min);
