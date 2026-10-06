@@ -37,98 +37,42 @@
     </div>
   </div>
 
+  <p class="role" id="roleLine" hidden><i class="dot"></i><span id="roleText"></span></p>
+  <div class="flash" id="flash" hidden></div>
   <div class="notice err" id="loadErr" hidden></div>
   <div class="notice nostudy" id="noStudy" hidden></div>
 
-  <!-- ١ — ملخّص اليوم -->
-  <section class="panel" id="summaryPanel" hidden>
-    <h2 class="ph">ملخّص اليوم <span class="chip" id="dayStatus"></span></h2>
-    <div class="unrec-inline" id="unrecLine"></div>
-    <div class="counts">
-      <div><b id="cPresent">–</b><span>حاضر</span></div>
-      <div><b id="cAbsent">–</b><span>غائب</span></div>
-      <div><b id="cLate">–</b><span>متأخر</span></div>
-      <div><b id="cPermitted">–</b><span>مستأذن</span></div>
-      <div><b id="cMissed">–</b><span>تخلّف عن الاصطفاف</span></div>
-    </div>
-    <div class="openclasses" id="openClasses"></div>
-  </section>
-
-  <!-- ٢ — الإقفال وإعادة الفتح -->
-  <section class="panel" id="closePanel" hidden>
-    <h2 class="ph">الإقفال</h2>
-    <p class="hint" id="closeHint"></p>
-    <button type="button" class="btn-main btn-close" id="closeBtn">إقفال اليوم</button>
-
-    <div id="reopenBox" hidden>
-      <label for="reopenReason">سبب إعادة الفتح — إلزامي</label>
-      <textarea id="reopenReason" rows="3" placeholder="اكتب السبب كما سيُقيَّد في السجل"></textarea>
-      <button type="button" class="btn-main btn-reopen" id="reopenBtn" disabled>إعادة فتح اليوم</button>
-    </div>
-
-    <p class="hint nocan" id="noCanDay" hidden></p>
+  <!-- ① اليومُ وإقفالُه — يرى ويقرّر ولا يرصد -->
+  <section class="rs-card" id="dayCard" hidden>
+    <div class="rs-hd"><h3>اليوم</h3><span class="rs-occ" id="dayStatus"></span></div>
+    <p class="rs-meta" id="unrecLine"></p>
+    <div class="rs-lgd" id="counts"></div>
+    <div id="openClasses"></div>
+    <p class="rs-note" id="closeHint"></p>
+    <div class="rs-row" id="dayActs"></div>
+    <p class="rs-meta nocan" id="noCanDay" hidden></p>
     <div id="closeResult" hidden></div>
   </section>
 
   <!-- ما وقع بعد الإقفال -->
-  <section class="panel" id="logPanel" hidden>
-    <h2 class="ph">ما وقع بعد الإقفال</h2>
+  <section class="rs-card" id="logCard" hidden>
+    <h3>ما وقع بعد الإقفال</h3>
     <div id="log"></div>
   </section>
 
-  <!-- ٣ — الأعذار المنتظرة -->
-  <section class="panel" id="excusePanel" hidden>
-    <h2 class="ph">الأعذار المنتظرة <span class="chip" id="excuseCount"></span></h2>
+  <!-- ② الأعذارُ المنتظرة -->
+  <section class="rs-card" id="excuseCard" hidden>
+    <div class="rs-hd"><h3>الأعذارُ المنتظرة</h3><span class="rs-occ" id="excuseCount"></span></div>
     <div id="excuses"></div>
   </section>
 </main>
-
-<!-- تأكيد الإقفال -->
-<dialog id="confirmClose">
-  <form method="dialog">
-    <h3>تأكيد إقفال اليوم</h3>
-    <div id="confirmCloseBody"></div>
-    <p class="hint">بعد الإقفال يقع الحسم والتصعيد والبلاغات، ولا يُعدَّل السجل إلا بإعادة فتح بسبب مكتوب.</p>
-    <div class="dlg-acts">
-      <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
-      <button value="ok" type="submit" class="btn-danger" id="confirmCloseOk">أقفل اليوم</button>
-    </div>
-  </form>
-</dialog>
-
-<!-- تأكيد إعادة الفتح -->
-<dialog id="confirmReopen">
-  <form method="dialog">
-    <h3>تأكيد إعادة فتح اليوم</h3>
-    <p>سيُنقض ما ترتّب على الإقفال: الرصدات السلوكية الآلية، والحسومات، وحالات الغياب، والبلاغات غير المسلَّمة. ولا يُمحى شيء — يُقيَّد بسببه.</p>
-    <p class="quote" id="confirmReopenReason"></p>
-    <div class="dlg-acts">
-      <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
-      <button value="ok" type="submit" class="btn-danger">أعد الفتح</button>
-    </div>
-  </form>
-</dialog>
-
-<!-- البتّ في عذر -->
-<dialog id="decideDlg">
-  <form method="dialog" id="decideForm">
-    <h3 id="decideTitle"></h3>
-    <p id="decideWho"></p>
-    <label for="decideNote" id="decideNoteLabel"></label>
-    <textarea id="decideNote" rows="3"></textarea>
-    <label class="check"><input type="checkbox" id="decideExt"> بتمديد المهلة بقرار مدير المدرسة (م31 بند 6)</label>
-    <div class="dlg-acts">
-      <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
-      <button value="ok" type="submit" id="decideOk"></button>
-    </div>
-  </form>
-</dialog>
 
 <div class="toast" id="toast" hidden></div>
 
 <script src="vendor/supabase-2.117.2.js"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
+<script src="views.js"></script>
 <script src="deputy.js"></script>
 </body>
 </html>

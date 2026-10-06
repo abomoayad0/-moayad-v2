@@ -1,62 +1,38 @@
-// مؤيّد · قرارات الوكيل — وكيل شؤون الطلاب يرى ويقرّر ولا يرصد.
-// الإقفال وإعادة الفتح والبتّ في الأعذار. وكل عدد وحكم من القاعدة:
-// v2_day_summary · v2_day_classes · v2_close_day · v2_reopen_day · v2_day_log
-// v2_pending_excuses · v2_decide_excuse
+// مؤيّد · قرارات الوكيل — على نموذج المحاكي. يرى ويقرّر ولا يرصد:
+// الإقفال (close_day) · إعادةُ الفتح بسببٍ مكتوب (reopen_day) · البتُّ في الأعذار (decide_excuse).
+// وكلُّ عددٍ وحكمٍ من القاعدة:
+// v2_day_summary · v2_day_classes · v2_close_day · v2_reopen_day · v2_day_log · v2_pending_excuses · v2_decide_excuse
 (function () {
   'use strict';
 
   const M = window.Moayad;
-  const { sb, $, el, toast, errText, showLoadErr } = M;
+  const V = window.MoayadView;
+  const { $, el, errText, showLoadErr } = M;
+  const { arabize, btn } = V;
 
-  const ui = { summary: null, classes: [], log: [], excuses: [], lastResult: null };
+  const ui = { summary: null, classes: [], log: [], excuses: [], excErr: '', last: null };
+  const can = (k) => !!(M.state.me && M.state.me.can && M.state.me.can[k]);
 
-  // أسماء القيم كما تُخزَّن في absence_excuse_claims — للعرض فقط
-  const BY_AR = { guardian: 'ولي الأمر', student: 'الطالب' };
-  const CHANNEL_AR = {
-    in_person: 'حضورياً', whatsapp: 'واتساب', portal: 'بوابة ولي الأمر',
-    guardian_portal: 'بوابة ولي الأمر', email: 'البريد',
-  };
-  // القنوات تأتي من v2_day_log نصّاً مفصولاً بـ « · »
-  function channelsAr(s) {
-    if (!s || s === '—') return '—';
-    return s.split(' · ').map((c) => CHANNEL_AR[c] || c).join(' · ');
-  }
+  // أسماءُ القيم كما تُخزَّن في absence_excuse_claims — للعرض فقط
+  const BY_AR = { guardian: 'وليّ الأمر', student: 'الطالب' };
+  const CHANNEL_AR = { in_person: 'حضوريًّا', whatsapp: 'واتساب', portal: 'بوّابة وليّ الأمر', guardian_portal: 'بوّابة وليّ الأمر', email: 'البريد' };
+  const channelsAr = (s) => (!s || s === '—') ? '—' : s.split(' · ').map((c) => CHANNEL_AR[c] || c).join(' · ');
+  const classLabel = (g, s) => { if (g == null) return ''; const c = ui.classes.find((k) => k.grade === g && k.section === s); return c ? c.label_ar : g + ' — ' + s; };
+  const isStudy = () => !!ui.summary && (ui.summary.day_kind === 'study' || ui.summary.day_kind === 'exam');
 
-  // اسم الفصل كما تسمّيه القاعدة (label_ar من v2_day_classes)
-  function classLabel(grade, section) {
-    if (grade == null) return '';
-    const c = ui.classes.find((k) => k.grade === grade && k.section === section);
-    return c ? c.label_ar : grade + ' — ' + section;
-  }
-
-  // نافذة تأكيد تُرجع وعداً بقيمة الزرّ
-  function ask(dlg) {
-    return new Promise((resolve) => {
-      dlg.addEventListener('close', () => resolve(dlg.returnValue), { once: true });
-      dlg.returnValue = '';
-      dlg.showModal();
-    });
-  }
-
-  function countsBox(pairs, extraCls) {
-    const box = el('div', 'counts' + (extraCls ? ' ' + extraCls : ''));
-    for (const [n, label, red] of pairs) {
-      const d = el('div', red ? 'red' : '');
-      d.append(el('b', null, String(n)), el('span', null, label));
-      box.appendChild(d);
-    }
-    return box;
+  // أعدادٌ كما رجعت: [[عدد، اسم]]
+  function legend(box, pairs) {
+    box.textContent = '';
+    for (const [n, label] of pairs) box.append(el('i', 'k', label + ':'), el('i', null, String(n == null ? '—' : n)));
   }
 
   // ---------- الجلب ----------
   async function refreshDay() {
     if (!M.state.school || !M.state.date) return;
     showLoadErr('');
-    const args = { p_school: M.state.school, p_date: M.state.date };
+    const a = { p_school: M.state.school, p_date: M.state.date };
     const [sum, cls, log] = await Promise.all([
-      M.rpc('v2_day_summary', args),
-      M.rpc('v2_day_classes', args),
-      M.rpc('v2_day_log', args),
+      M.rpc('v2_day_summary', a, 'ملخّص اليوم'), M.rpc('v2_day_classes', a, 'فصول اليوم'), M.rpc('v2_day_log', a, 'ما وقع بعد الإقفال'),
     ]);
     const err = sum.error || cls.error || log.error;
     if (err) { showLoadErr('تعذّر جلب اليوم: ' + errText(err)); return; }
@@ -68,268 +44,175 @@
 
   async function refreshExcuses() {
     if (!M.state.school) return;
-    if (!M.state.me.can.decide_excuse) {
-      // اللوحة تظهر بسبب غياب أزرارها
-      $('excusePanel').hidden = false;
-      $('excuseCount').textContent = '';
-      $('excuses').textContent = '';
-      $('excuses').appendChild(el('p', 'hint nocan', M.lacks('البتّ في الأعذار')));
-      return;
-    }
-    const { data, error } = await M.rpc('v2_pending_excuses', { p_school: M.state.school });
-    if (error) { showLoadErr('تعذّر جلب الأعذار: ' + errText(error)); return; }
+    if (!can('decide_excuse')) { ui.excuses = []; ui.excErr = ''; renderExcuses(); return; }
+    const { data, error } = await M.rpc('v2_pending_excuses', { p_school: M.state.school }, 'الأعذار المنتظرة');
+    ui.excErr = error ? 'تعذّر جلب الأعذار: ' + errText(error) : '';
     ui.excuses = data || [];
     renderExcuses();
   }
 
-  // ---------- ملخّص اليوم والإقفال ----------
+  // ---------- ① اليوم ----------
   function renderDay() {
+    V.renderRole();
     const s = ui.summary;
-    if (s) M.renderDates($('dates'), s.hijri, M.state.date, s.day_kind);
-    else $('dates').textContent = '';
+    if (s) M.renderDates($('dates'), s.hijri, M.state.date, s.day_kind); else $('dates').textContent = '';
+    $('noStudy').hidden = !s || isStudy();
+    if (s && !isStudy()) $('noStudy').textContent = 'هذا اليوم ليس يومَ دراسة (' + (M.DAY_KIND_AR[s.day_kind] || s.day_kind) + ') — لا رصدَ فيه ولا إقفال.';
+    $('dayCard').hidden = !s || !isStudy();
+    if (!s || !isStudy()) { $('logCard').hidden = true; return; }
 
-    const isStudy = !!s && (s.day_kind === 'study' || s.day_kind === 'exam');
-    $('noStudy').hidden = !s || isStudy;
-    if (s && !isStudy) {
-      $('noStudy').textContent = 'هذا اليوم ليس يوم دراسة (' + (M.DAY_KIND_AR[s.day_kind] || s.day_kind) + ') — لا رصد فيه ولا إقفال.';
-    }
-    $('summaryPanel').hidden = !s || !isStudy;
-    $('closePanel').hidden = !s || !isStudy;
-    if (!s || !isStudy) { $('logPanel').hidden = true; return; }
+    $('dayStatus').textContent = s.closed ? 'مقفَل' : (s.reopened ? 'أُعيد فتحُه' : 'مفتوح');
+    $('dayStatus').className = 'rs-occ ' + (s.closed ? 'rs-state-done' : 'rs-state-open');
+    $('unrecLine').textContent = s.unrecorded === 0 ? 'رُصد جميعُ المقيّدين (' + s.enrolled + ')' : s.unrecorded + ' طالبًا لم يُرصد بعد — من ' + s.enrolled;
+    legend($('counts'), [[s.present, 'حاضر'], [s.absent, 'غائب'], [s.late, 'متأخّر'], [s.permitted, 'مستأذن'], [s.missed_assembly, 'تخلّف عن الاصطفاف']]);
 
-    const st = $('dayStatus');
-    st.textContent = s.closed ? 'مقفَل' : (s.reopened ? 'أُعيد فتحه' : 'مفتوح');
-    st.className = 'chip ' + (s.closed ? 'c-closed' : (s.reopened ? 'c-reopened' : 'c-open'));
-
-    // من لم يُرصد — بارز بالأحمر ولا يُطوى
-    const u = $('unrecLine');
-    u.classList.toggle('zero', s.unrecorded === 0);
-    u.textContent = s.unrecorded === 0
-      ? 'رُصد جميع المقيّدين (' + s.enrolled + ')'
-      : s.unrecorded + ' طالباً لم يُرصد بعد — من ' + s.enrolled;
-
-    $('cPresent').textContent = s.present;
-    $('cAbsent').textContent = s.absent;
-    $('cLate').textContent = s.late;
-    $('cPermitted').textContent = s.permitted;
-    $('cMissed').textContent = s.missed_assembly;
-
-    // الفصول التي لم تكتمل — حكم الاكتمال is_done من القاعدة
     const oc = $('openClasses');
     oc.textContent = '';
     const open = ui.classes.filter((c) => !c.is_done);
     if (open.length) {
-      oc.appendChild(el('div', 'oc-title', 'فصول لم يكتمل رصدها:'));
-      for (const c of open) oc.appendChild(el('span', 'oc', c.label_ar + ' — لم يُرصد ' + c.unrecorded));
+      oc.appendChild(el('div', 'rs-label', 'فصولٌ لم يكتمل رصدُها'));
+      const p = el('div', 'rs-pick rs-off');
+      for (const c of open) p.appendChild(el('span', null, c.label_ar + ' — لم يُرصد ' + c.unrecorded));
+      oc.appendChild(p);
     }
 
-    // الإقفال: يظهر زرّه في اليوم المفتوح، وإعادة الفتح في المقفَل — كلٌّ بما يملكه في can
-    const can = M.state.me.can;
-    $('closeBtn').hidden = s.closed || !can.close_day;
-    $('reopenBox').hidden = !s.closed || !can.reopen_day;
-    const why = !s.closed && !can.close_day ? M.lacks('إقفال اليوم')
-      : s.closed && !can.reopen_day ? M.lacks('إعادة فتح اليوم') : '';
+    $('closeHint').textContent = s.closed ? 'اليومُ مقفَل. وإعادةُ فتحه لا تقع إلا بسببٍ مكتوبٍ يُقيَّد في السجلّ.'
+      : s.unrecorded > 0 ? 'تنبيه: ' + s.unrecorded + ' طالبًا لم يُرصد بعد. راجع المساعدَ الإداريّ قبل الإقفال.' : 'رُصد الجميع، واليومُ جاهزٌ للإقفال.';
+    const acts = $('dayActs');
+    acts.textContent = '';
+    if (!s.closed && can('close_day')) acts.appendChild(btn('أقفل اليوم', 'rs-btn', closeForm));
+    if (s.closed && can('reopen_day')) acts.appendChild(btn('أعد فتحَ اليوم بسبب', 'rs-btn soft', reopenForm));
+    const why = !s.closed && !can('close_day') ? M.lacks('إقفال اليوم') : s.closed && !can('reopen_day') ? M.lacks('إعادة فتح اليوم') : '';
     $('noCanDay').textContent = why;
     $('noCanDay').hidden = !why;
-    $('closeHint').textContent = s.closed
-      ? 'اليوم مقفَل. وإعادة فتحه لا تقع إلا بسبب مكتوب يُقيَّد في السجل.'
-      : (s.unrecorded > 0
-        ? 'تنبيه: ' + s.unrecorded + ' طالباً لم يُرصد بعد. راجع المساعد الإداري قبل الإقفال.'
-        : 'رُصد الجميع، واليوم جاهز للإقفال.');
-    $('closeHint').classList.toggle('warn', !s.closed && s.unrecorded > 0);
 
     renderResult();
     renderLog(s.closed);
+    arabize($('dayCard'));
   }
 
   function renderResult() {
     const box = $('closeResult');
     box.textContent = '';
-    const r = ui.lastResult;
+    const r = ui.last;
     box.hidden = !r || r.date !== M.state.date || r.school !== M.state.school;
     if (box.hidden) return;
-    if (r.kind === 'close') {
-      box.appendChild(el('h3', 'res-h', 'أُقفل اليوم — ما أرجعته القاعدة:'));
-      box.appendChild(countsBox([
-        [r.data.enrolled, 'المقيّدون'], [r.data.recorded, 'المرصودون'],
-        [r.data.absent, 'غياب'], [r.data.late, 'تأخر'], [r.data.derived, 'مشتق من الحصص'],
-        [r.data.unrecorded, 'لم يُرصد', r.data.unrecorded > 0], [r.data.events, 'وقائع وبلاغات'],
-      ], 'res'));
-    } else {
-      box.appendChild(el('h3', 'res-h', 'أُعيد فتح اليوم — ما نُقض:'));
-      box.appendChild(countsBox([
-        [r.data.behavior_voided, 'رصدات سلوكية نُقضت'], [r.data.cases_voided, 'حالات غياب نُقضت'],
-        [r.data.deductions_restored, 'حسومات رُدّت'], [r.data.events_cancelled, 'بلاغات أُلغيت'],
-      ], 'res'));
-    }
+    const d = r.data || {};
+    box.appendChild(el('div', 'rs-label', r.kind === 'close' ? 'أُقفل اليوم — ما أرجعته القاعدة' : 'أُعيد فتحُ اليوم — ما نُقض'));
+    const lg = el('div', 'rs-lgd');
+    legend(lg, r.kind === 'close'
+      ? [[d.enrolled, 'المقيّدون'], [d.recorded, 'المرصودون'], [d.absent, 'غياب'], [d.late, 'تأخّر'], [d.derived, 'مشتقٌّ من الحصص'], [d.unrecorded, 'لم يُرصد'], [d.events, 'وقائعُ وبلاغات']]
+      : [[d.behavior_voided, 'رصداتٌ سلوكيّةٌ نُقضت'], [d.cases_voided, 'حالاتُ غيابٍ نُقضت'], [d.deductions_restored, 'حسوماتٌ رُدّت'], [d.events_cancelled, 'بلاغاتٌ أُلغيت']]);
+    box.appendChild(lg);
   }
 
-  // ما وقع بعد الإقفال — اسماً اسماً، ولا يُعرض قبل الإقفال
+  // ما وقع بعد الإقفال — اسمًا اسمًا، ولا يُعرض قبل الإقفال
   function renderLog(closed) {
-    $('logPanel').hidden = !closed;
+    $('logCard').hidden = !closed;
     const box = $('log');
     box.textContent = '';
     if (!closed) return;
-    if (ui.log.length === 0) {
-      box.appendChild(el('div', 'empty', 'لم يقع حسم ولا تصعيد ولا بلاغ في هذا اليوم.'));
-      return;
-    }
+    if (!ui.log.length) box.appendChild(el('p', 'rs-empty', 'لم يقع حسمٌ ولا تصعيدٌ ولا بلاغٌ في هذا اليوم.'));
     for (const e of ui.log) {
-      const c = el('div', 'ev' + (e.needs_action ? ' act' : ''));
-      const top = el('div', 'row1');
-      const who = el('div');
-      who.append(el('div', 'name', e.student_name),
-        el('div', 'meta', classLabel(e.grade, e.section)));
-      top.append(who, el('span', 'badge b-ev', e.title_ar));
-      c.appendChild(top);
-      if (e.body_ar) c.appendChild(el('div', 'detail', e.body_ar));
-      if (e.needs_action) c.appendChild(el('div', 'need', 'يحتاج إجراءً: ' + (e.action_ar || '—')));
-      c.appendChild(el('div', 'meta', 'القنوات: ' + channelsAr(e.channels)));
-      box.appendChild(c);
+      const f = el('div', 'rs-file');
+      const hd = el('div', 'rs-hd');
+      hd.append(el('h5', null, e.student_name), el('span', 'rs-who' + (e.needs_action ? ' rs-state-open' : ''), e.title_ar || ''));
+      f.appendChild(hd);
+      f.appendChild(el('p', null, [e.class_ar || classLabel(e.grade, e.section), e.body_ar].filter(Boolean).join(' · ')));
+      if (e.needs_action) f.appendChild(el('p', null, 'يحتاج إجراءً: ' + (e.action_ar || '—')));
+      f.appendChild(el('p', 'rs-meta', 'القنوات: ' + channelsAr(e.channels)));
+      box.appendChild(f);
     }
+    arabize(box);
   }
 
-  $('closeBtn').addEventListener('click', async () => {
+  function closeForm() {
     const s = ui.summary;
-    if (!s) return;
-    const body = $('confirmCloseBody');
-    body.textContent = '';
-    body.appendChild(countsBox([
-      [s.enrolled, 'المقيّدون'], [s.absent, 'غائب'], [s.late, 'متأخر'],
-      [s.permitted, 'مستأذن'], [s.unrecorded, 'لم يُرصد', s.unrecorded > 0],
-    ]));
-    if (s.unrecorded > 0) {
-      body.appendChild(el('p', 'warn', s.unrecorded + ' طالباً لم يُرصد بعد، وسيُقفل اليوم وهم كذلك.'));
-    }
-    if (await ask($('confirmClose')) !== 'ok') return;
-
-    $('closeBtn').disabled = true;
-    const { data, error } = await M.rpc('v2_close_day', { p_school: M.state.school, p_date: M.state.date });
-    $('closeBtn').disabled = false;
-    if (error) { toast('لم يُقفل اليوم:\n' + errText(error)); return; }
-    ui.lastResult = { kind: 'close', date: M.state.date, school: M.state.school, data: (data && data[0]) || {} };
-    toast('أُقفل اليوم.', true);
-    await refreshDay();
-  });
-
-  $('reopenReason').addEventListener('input', () => {
-    $('reopenBtn').disabled = $('reopenReason').value.trim() === '';
-  });
-
-  $('reopenBtn').addEventListener('click', async () => {
-    const reason = $('reopenReason').value.trim();
-    if (!reason) return;
-    $('confirmReopenReason').textContent = 'السبب: ' + reason;
-    if (await ask($('confirmReopen')) !== 'ok') return;
-
-    $('reopenBtn').disabled = true;
-    const { data, error } = await M.rpc('v2_reopen_day', {
-      p_school: M.state.school, p_date: M.state.date, p_reason: reason,
+    V.form({
+      title: 'إقفالُ اليوم',
+      what: 'المقيّدون ' + s.enrolled + ' · غائب ' + s.absent + ' · متأخّر ' + s.late + ' · مستأذن ' + s.permitted + ' · لم يُرصد ' + s.unrecorded +
+        (s.unrecorded > 0 ? ' — وسيُقفل اليومُ وهم كذلك.' : '') + ' وبعد الإقفال يقع الحسمُ والتصعيدُ والبلاغات، ولا يُعدَّل السجلُّ إلا بإعادة فتحٍ بسببٍ مكتوب.',
+      fields: [],
+      ok: 'أقفل اليوم',
+      onOk: async () => {
+        const { data, error } = await M.rpc('v2_close_day', { p_school: M.state.school, p_date: M.state.date }, 'إقفال اليوم');
+        if (error) return error;
+        ui.last = { kind: 'close', date: M.state.date, school: M.state.school, data: (data && data[0]) || {} };
+        V.flash('ok', 'أُقفل اليوم');
+        await refreshDay();
+        return null;
+      },
     });
-    if (error) {
-      $('reopenBtn').disabled = false;
-      toast('لم يُعد فتح اليوم:\n' + errText(error));
-      return;
-    }
-    $('reopenReason').value = '';
-    ui.lastResult = { kind: 'reopen', date: M.state.date, school: M.state.school, data: (data && data[0]) || {} };
-    toast('أُعيد فتح اليوم.', true);
-    await refreshDay();
-  });
+  }
 
-  // ---------- الأعذار ----------
+  function reopenForm() {
+    V.form({
+      title: 'إعادةُ فتح اليوم',
+      what: 'سيُنقض ما ترتّب على الإقفال: الرصداتُ السلوكيّةُ الآليّة، والحسومات، وحالاتُ الغياب، والبلاغاتُ غيرُ المسلَّمة. ولا يُمحى شيء — يُقيَّد بسببه.',
+      fields: [{ key: 'why', type: 'textarea', label: 'السببُ كما سيُقيَّد في السجلّ — إلزاميّ' }],
+      ok: 'أعد الفتح',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_reopen_day', { p_school: M.state.school, p_date: M.state.date, p_reason: v.why || null }, 'إعادة فتح اليوم');
+        if (error) return error;
+        ui.last = { kind: 'reopen', date: M.state.date, school: M.state.school, data: (data && data[0]) || {} };
+        V.flash('ok', 'أُعيد فتحُ اليوم');
+        await refreshDay();
+        return null;
+      },
+    });
+  }
+
+  // ---------- ② الأعذار ----------
   function renderExcuses() {
-    $('excusePanel').hidden = false;
+    $('excuseCard').hidden = false;
     const box = $('excuses');
     box.textContent = '';
-    $('excuseCount').textContent = ui.excuses.length;
-    $('excuseCount').className = 'chip ' + (ui.excuses.length ? 'c-closed' : 'c-open');
-    if (ui.excuses.length === 0) {
-      box.appendChild(el('div', 'empty', 'لا أعذار منتظرة.'));
-      return;
+    if (!can('decide_excuse')) { $('excuseCount').textContent = ''; box.appendChild(el('p', 'rs-meta nocan', M.lacks('البتّ في الأعذار'))); return; }
+    if (ui.excErr) { $('excuseCount').textContent = ''; box.appendChild(el('div', 'notice err', ui.excErr)); return; }
+    $('excuseCount').textContent = String(ui.excuses.length);
+    if (!ui.excuses.length) box.appendChild(el('p', 'rs-empty', 'لا أعذارَ منتظرة.'));
+    for (const x of ui.excuses) {
+      const f = el('div', 'rs-file');
+      const hd = el('div', 'rs-hd');
+      hd.append(el('h5', null, x.student_name), el('span', 'rs-who', x.days + (x.days === 1 ? ' يوم' : ' أيّام')));
+      f.appendChild(hd);
+      const span = x.from_date === x.to_date ? x.from_h + ' هـ' : 'من ' + x.from_h + ' إلى ' + x.to_h + ' هـ';
+      f.appendChild(el('p', null, [x.class_ar || classLabel(x.grade, x.section), 'الغياب: ' + span].join(' · ')));
+      f.appendChild(el('p', null, 'قُدّم ' + x.submitted_h + ' هـ · من ' + (BY_AR[x.by_whom] || x.by_whom) + ' · ' + (CHANNEL_AR[x.channel] || x.channel)));
+      f.appendChild(el('p', null, 'السبب: ' + (x.reason_text || '—') + ' · ' + (x.attachment_name ? 'المرفق: ' + x.attachment_name : 'بلا مرفق')));
+      f.appendChild(el('p', 'rs-meta', 'أيّامُ العمل المستغرقة ' + x.working_days_used + ' — ' + x.window_verdict));
+      const row = el('div', 'rs-row');
+      row.append(btn('اقبله', 'rs-btn', () => decideForm(x, true)), btn('ردّه بسبب', 'rs-btn ghost', () => decideForm(x, false)));
+      f.appendChild(row);
+      box.appendChild(f);
     }
-    for (const x of ui.excuses) box.appendChild(excuseCard(x));
+    arabize($('excuseCard'));
   }
 
-  function period(x) {
-    const p = el('span');
-    if (x.from_date === x.to_date) {
-      p.append(M.ltr(x.from_h), ' هـ (', M.ltr(x.from_date), ' م)');
-    } else {
-      p.append('من ', M.ltr(x.from_h), ' إلى ', M.ltr(x.to_h), ' هـ (', M.ltr(x.from_date), ' – ', M.ltr(x.to_date), ' م)');
-    }
-    return p;
-  }
-
-  function excuseCard(x) {
-    const c = el('div', 'st exc');
-    const top = el('div', 'row1');
-    const who = el('div');
-    who.append(el('div', 'name', x.student_name),
-      el('div', 'meta', classLabel(x.grade, x.section)));
-    top.append(who, el('span', 'badge b-late', x.days + (x.days === 1 ? ' يوم' : ' أيام')));
-    c.appendChild(top);
-
-    const d1 = el('div', 'detail');
-    d1.append('الغياب: ', period(x));
-    c.appendChild(d1);
-
-    const d2 = el('div', 'detail');
-    d2.append('قُدّم ', M.ltr(x.submitted_h), ' هـ (', M.ltr(x.submitted_on), ' م) · من ',
-      BY_AR[x.by_whom] || x.by_whom, ' · ', CHANNEL_AR[x.channel] || x.channel);
-    c.appendChild(d2);
-
-    c.appendChild(el('div', 'detail', 'السبب: ' + (x.reason_text || '—')));
-    c.appendChild(el('div', x.attachment_name ? 'detail' : 'detail red',
-      x.attachment_name ? 'المرفق: ' + x.attachment_name : 'بلا مرفق'));
-    c.appendChild(el('div', 'verdict', 'أيام العمل المستغرقة ' + x.working_days_used + ' — ' + x.window_verdict));
-
-    const acts = el('div', 'acts two');
-    const ok = el('button', 'a-accept', 'قبول');
-    ok.type = 'button';
-    ok.addEventListener('click', () => decide(x, true));
-    const no = el('button', 'a-reject', 'ردّ بسبب');
-    no.type = 'button';
-    no.addEventListener('click', () => decide(x, false));
-    acts.append(ok, no);
-    c.appendChild(acts);
-    return c;
-  }
-
-  function updateDecideOk(accept) {
-    $('decideOk').disabled = !accept && $('decideNote').value.trim() === '';
-  }
-
-  async function decide(x, accept) {
-    $('decideTitle').textContent = accept ? 'قبول العذر' : 'ردّ العذر';
-    $('decideWho').textContent = x.student_name + ' — ' + x.days + (x.days === 1 ? ' يوم' : ' أيام') + ' · ' + x.reason_text;
-    $('decideNoteLabel').textContent = accept ? 'ملاحظة (اختيارية)' : 'سبب الردّ — إلزامي';
-    $('decideNote').value = '';
-    $('decideNote').oninput = () => updateDecideOk(accept);
-    $('decideExt').checked = false;
-    $('decideOk').textContent = accept ? 'اقبل العذر' : 'اردد العذر';
-    $('decideOk').className = accept ? 'btn-accept' : 'btn-danger';
-    updateDecideOk(accept);
-    if (await ask($('decideDlg')) !== 'ok') return;
-
-    const note = $('decideNote').value.trim();
-    const { data, error } = await M.rpc('v2_decide_excuse', {
-      p_claim: x.claim_id, p_accept: accept, p_note: note || null, p_principal_ext: $('decideExt').checked,
+  function decideForm(x, accept) {
+    V.form({
+      title: accept ? 'قبولُ العذر' : 'ردُّ العذر',
+      what: x.student_name + ' — ' + x.days + (x.days === 1 ? ' يوم' : ' أيّام') + ' · ' + (x.reason_text || ''),
+      fields: [
+        { key: 'note', type: 'textarea', label: accept ? 'ملاحظة (اختياريّة)' : 'سببُ الردّ — إلزاميّ', rows: 2 },
+        { key: 'ext', type: 'pick', label: 'المهلة', items: [['no', 'في مهلتها'], ['yes', 'بتمديد المهلة بقرار مدير المدرسة (م٣١ بند ٦)']], value: 'no' },
+      ],
+      ok: accept ? 'اقبل العذر' : 'اردد العذر',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_decide_excuse', { p_claim: x.claim_id, p_accept: accept, p_note: v.note || null, p_principal_ext: v.ext === 'yes' }, 'البتّ في العذر');
+        if (error) return error;
+        // ما أرجعته القاعدةُ كما هو: مفاتيحُه وقيمُه
+        const r = data || {};
+        const parts = Object.keys(r).map((k) => k.replace(/_/g, ' ') + ' ' + (r[k] == null ? '—' : r[k]));
+        V.flash('ok', (accept ? 'قُبل العذر' : 'رُدّ العذر') + (parts.length ? ' · ' + parts.join(' · ') : ''));
+        await Promise.all([refreshExcuses(), refreshDay()]);
+        return null;
+      },
     });
-    if (error) { toast('لم يُبتّ في العذر:\n' + errText(error)); return; }
-    const r = data || {};
-    toast((accept ? 'قُبل العذر' : 'رُدّ العذر') +
-      ' · أيام الغياب ' + (r['أيام_الغياب'] ?? '—') +
-      ' · درجات رُدّت ' + (r['درجات_رُدّت'] ?? '—') +
-      ' · حالات أُوقف تصعيدها ' + (r['حالات_أُوقف_تصعيدها'] ?? '—'), true);
-    await refreshExcuses();
   }
 
   M.start({
     screen: 'deputy',
-    onChange: (why) => {
-      if (why === 'date') return refreshDay();
-      return Promise.all([refreshDay(), refreshExcuses()]);
-    },
+    onChange: (why) => (why === 'date' ? refreshDay() : Promise.all([refreshDay(), refreshExcuses()])),
   });
 })();
