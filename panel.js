@@ -1,7 +1,7 @@
 // مؤيّد · لوحة التحكّم — أبوابُ الإعداد كما فهرستها القاعدة.
 // v2_settings_catalog · v2_setting_rows · v2_setting_update · v2_committee_board · v2_committee_seat_count
 // v2_staff_board · v2_staff_save · v2_posts_list · v2_assign_add · v2_assign_end · v2_students_board · v2_student_save · v2_enrolment_end
-// v2_guardians_of · v2_guardian_save · v2_accounts_board · v2_account_toggle · v2_portal_toggle · v2_school_card
+// v2_enrol_reasons · v2_guardians_of · v2_guardian_save · v2_accounts_board · v2_account_toggle · v2_portal_toggle · v2_school_card
 // v2_practices(p_school,…) · v2_practices_hidden · v2_practice_save · v2_practice_state · v2_practice_scopes · v2_scope_upsert · v2_committee_rules · v2_committee_rules_get
 // المقفلُ يُقرأ بسببه وسنده ولا زرَّ تعديلٍ عليه. ومن يدخل اللوحة تحكم به القاعدة، ورفضُها يُعرض بنصّه.
 (function () {
@@ -471,8 +471,8 @@
     ['transferred', 'نُقل'], ['resigned', 'استقال'], ['assignment_ended', 'انتهى التكليف'], ['deceased', 'توفّي'],
     ['leave', 'إجازة'], ['year_closed', 'أُغلق العام'], ['other', 'أخرى'],
   ];
-  const ENROL_END = ['نقل', 'تخرّج', 'طيّ قيد', 'انقطاع', 'سفر', 'أخرى'];
-  const base = { posts: null, staffQ: '', stuQ: '', stuGrade: '', stuSection: '' };
+  // أسبابُ إنهاء القيد تُقرأ من القاعدة (v2_enrol_reasons): المفتاحُ إنجليزيّ والعرضُ عربيّ
+  const base = { posts: null, reasons: null, staffQ: '', stuQ: '', stuGrade: '', stuSection: '' };
 
   function noSchool(box) {
     if (ui.school) return false;
@@ -515,12 +515,14 @@
     const { data, error } = await M.rpc('v2_staff_board', { p_school: ui.school, p_q: base.staffQ || null }, 'كشف المنسوبين');
     if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
     const rows = data || [];
-    box.appendChild(el('div', 'meta', rows.length + ' منسوبًا بتكليفٍ قائمٍ في مدرستك'));
+    const un = rows.filter((x) => x.unassigned).length;
+    box.appendChild(el('div', 'meta', rows.length + ' منسوبًا — منهم ' + un + ' بلا تكليفٍ في المجمّع'));
     for (const p of rows) {
       const row = el('div', 'ev');
       const top = el('div', 'row1');
       top.append(el('div', 'name', p.name), el('span', 'badge ' + (p.has_account ? 'b-present' : 'b-absent'), p.has_account ? 'له حساب' : 'بلا حساب'));
       row.appendChild(top);
+      if (p.unassigned) row.appendChild(el('span', 'badge b-late', 'بلا تكليف — أسنِد له تكليفًا ليعمل'));
       const bits = [];
       if (p.national_id) bits.push('الهويّة ' + p.national_id);
       if (p.employee_no) bits.push('الرقم الوظيفيّ ' + p.employee_no);
@@ -674,14 +676,19 @@
 
   async function endEnrolment(st, box) {
     $('eeWhat').textContent = st.name + ' — لا يُحذف طالب: يُنهى قيدُه بسبب، وتُغلق بوّابتُه وبوّابةُ وليّه، والسجلُّ باقٍ.';
+    if (!base.reasons) {
+      const { data: rr, error: er } = await M.rpc('v2_enrol_reasons', undefined, 'أسباب إنهاء القيد');
+      if (er) { toast('تعذّر جلب أسباب الإنهاء:\n' + errText(er)); return; }
+      base.reasons = rr || [];
+    }
     const rs = $('eeReason');
     rs.textContent = '';
-    for (const r of ENROL_END) rs.appendChild(new Option(r, r));
+    for (const r of base.reasons) rs.appendChild(new Option(r.label, r.key));
     $('eeNote').value = '';
     if (await ask($('enrolEndDlg')) !== 'ok') return;
     const { data, error } = await M.rpc('v2_enrolment_end', { p_school: ui.school, p_student: st.student, p_reason: rs.value, p_note: val('eeNote') }, 'إنهاء قيد');
     if (error) { toast('لم يُنهَ القيد:\n' + errText(error)); return; }
-    toast((data && data.note) || 'أُنهي القيد.', true);
+    toast(((data && data.reason) ? 'السبب: ' + data.reason + '\n' : '') + ((data && data.note) || 'أُنهي القيد.'), true);
     studentsTool(box);
   }
 

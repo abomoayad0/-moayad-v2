@@ -1,7 +1,7 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 17a4001c01edc72c08d1d1af7efeb048
+-- ── grants · md5 1390fd4c1d7333b5b42a7fa6a2e0a014
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 
@@ -398,6 +398,9 @@ GRANT EXECUTE ON FUNCTION public.v2_duty_eligible(p_school uuid) TO service_role
 REVOKE ALL ON FUNCTION public.v2_duty_today(p_school uuid, p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_duty_today(p_school uuid, p_date date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_duty_today(p_school uuid, p_date date) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_enrol_reasons() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_enrol_reasons() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_enrol_reasons() TO service_role;
 REVOKE ALL ON FUNCTION public.v2_enrolment_end(p_school uuid, p_student uuid, p_reason text, p_note text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_enrolment_end(p_school uuid, p_student uuid, p_reason text, p_note text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_enrolment_end(p_school uuid, p_student uuid, p_reason text, p_note text) TO service_role;
@@ -686,5 +689,5 @@ GRANT EXECUTE ON FUNCTION public.v2_undo_practice(p_record uuid, p_reason text) 
 REVOKE ALL ON FUNCTION public.v2_weekday(p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_weekday(p_date date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_weekday(p_date date) TO service_role;
--- دوالٌّ بلا ACL صريح (الافتراضيّ: EXECUTE لـ PUBLIC): 0
+-- دوالٌّ بلا ACL صريح (الافتراضيّ: EXECUTE لـ PUBLIC): 1
 

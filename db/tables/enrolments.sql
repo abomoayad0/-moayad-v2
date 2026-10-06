@@ -1,6 +1,6 @@
 -- v2.enrolments
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 1b4a53cb1f2bc1fe936e9bb3aefa5402
+-- md5 4d15707b023a033d71c890bde0b7fc33
 
 CREATE TABLE v2.enrolments (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE v2.enrolments (
     CONSTRAINT enrolments_student_id_year_id_key UNIQUE (student_id, year_id),
     CONSTRAINT enrol_dates CHECK (((ended_on IS NULL) OR (joined_on IS NULL) OR (ended_on >= joined_on))),
     CONSTRAINT enrol_end_pair CHECK ((((status = 'active'::text) AND (ended_on IS NULL) AND (end_reason IS NULL)) OR ((status = 'ended'::text) AND (ended_on IS NOT NULL) AND (end_reason IS NOT NULL)))),
-    CONSTRAINT enrolments_end_reason_check CHECK ((end_reason = ANY (ARRAY['transferred'::text, 'graduated'::text, 'withdrawn'::text, 'deceased'::text, 'year_closed'::text, 'other'::text]))),
+    CONSTRAINT enrolments_end_reason_check CHECK ((end_reason = ANY (ARRAY['transferred'::text, 'graduated'::text, 'withdrawn'::text, 'deceased'::text, 'year_closed'::text, 'suspended'::text, 'absent_long'::text, 'travel'::text, 'other'::text]))),
     CONSTRAINT enrolments_grade_check CHECK (((grade >= 1) AND (grade <= 12))),
     CONSTRAINT enrolments_section_check CHECK ((btrim(section) <> ''::text)),
     CONSTRAINT enrolments_stage_check CHECK ((stage = ANY (ARRAY['kindergarten'::text, 'primary'::text, 'intermediate'::text, 'secondary'::text]))),
