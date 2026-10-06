@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مؤيّد · شاشة الوكيل</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>مؤيّد · شاشة الوكيل</h1>
+    <div class="who" id="who"></div>
+  </div>
+  <div class="hdr-acts">
+    <button id="logout" class="hbtn" type="button">خروج</button>
+  </div>
+</header>
+<nav class="screens" id="screens" aria-label="الشاشات" hidden></nav>
+<div class="testmode" id="testMode" hidden></div>
+<div class="gatebox"><div class="notice err" id="gateErr" hidden></div></div>
+
+<main id="dayView" class="wrap" hidden>
+  <div class="day">
+    <div class="full" id="schoolBox">
+      <label for="school">المدرسة</label>
+      <select id="school"></select>
+    </div>
+    <!-- الرصد بتاريخ اليوم في القاعدة — فلا يُختار يوم هنا -->
+    <div class="full" hidden><input id="date" type="date"></div>
+    <div class="full"><div class="dates" id="dates"></div></div>
+  </div>
+
+  <!-- رأسُ الشاشة: الصفةُ من v2_me -->
+  <p class="role" id="roleLine" hidden><i class="dot"></i><span id="roleText"></span></p>
+
+  <!-- شريطُ النتيجة: أعلى المحتوى بعد كلّ فعل، ونصُّه من القاعدة، ويبقى حتى الفعل التالي -->
+  <div class="flash" id="flash" hidden></div>
+
+  <div class="notice err" id="loadErr" hidden></div>
+
+  <!-- ① ارصد مخالفة — ضغطةٌ واحدة، ولا نافذةَ تعترض -->
+  <section class="rs-card" id="recCard">
+    <h3>ارصد مخالفة</h3>
+    <p class="rs-meta">كلُّ سلوكٍ ملفٌّ مستقلٌّ بسلّمه</p>
+    <div class="rs-label">الفصل</div>
+    <div class="rs-pick" id="classes" role="group" aria-label="الفصل"></div>
+    <label for="qStu">الطالب</label>
+    <input id="qStu" type="search" placeholder="ابحث بالاسم أو الرقم" aria-label="بحث في الطلّاب" disabled>
+    <div class="rs-list" id="students" role="listbox" aria-label="الطلّاب"></div>
+    <label for="qProb">السلوك</label>
+    <input id="qProb" type="search" placeholder="ابحث في نصّ السلوك" aria-label="بحث في السلوكيّات" disabled>
+    <select id="prob" disabled></select>
+    <div id="periodBox" hidden>
+      <div class="rs-label">الحصّة</div>
+      <div class="rs-pick" id="periods" role="group" aria-label="الحصّة"></div>
+    </div>
+    <div class="rs-note">مداخلُ متعدّدةٌ ومخرجٌ واحد — <b>وأوّلُ من يدوّن يُقفل البابَ على الباقين</b>، ويُحفظ من دوّن وبأيّ صفة</div>
+    <button type="button" class="rs-btn big" id="rec" disabled>ارصد</button>
+  </section>
+
+  <!-- ② شواهدُ بانتظارك -->
+  <section class="rs-card" id="evCard">
+    <h3>شواهدُ بانتظارك</h3>
+    <p class="rs-meta">تستلمها ثمّ ترفعها للّجنة — ص١٦ بند ٦</p>
+    <div id="evidence"></div>
+  </section>
+
+  <!-- ③ سجلُّ المشكلات السلوكيّة — النموذج ٥ -->
+  <section class="rs-card" id="f5Card" hidden>
+    <h3>سجلُّ المشكلات السلوكيّة</h3>
+    <p class="rs-meta">مصبٌّ واحدٌ لكلّ ما يطلب الدليلُ توثيقَه · ويُطبع منه النموذج ٥</p>
+    <div id="form5"></div>
+  </section>
+
+  <!-- ④ ملفّاتُ الطالب السلوكيّة -->
+  <section id="files"></section>
+
+  <!-- ⑤ هل تعدّل؟ -->
+  <section class="rs-card rs-off" id="respCard" hidden>
+    <h3>هل تعدّل؟</h3>
+    <p class="rs-meta">قياسُ الاستجابة بعد اعتماد خطّة تعديل السلوك</p>
+    <div class="rs-note">لم يُبنَ بعد — لا جسرَ له في القاعدة.</div>
+  </section>
+
+  <!-- ⑥ سجلُّ الملفّ -->
+  <section class="rs-card" id="tlCard" hidden>
+    <details class="rs-dt" id="tlBox">
+      <summary id="tlSum">سجلُّ الملفّ</summary>
+      <div class="rs-dtb" id="timeline"></div>
+    </details>
+  </section>
+</main>
+
+<!-- تفاصيلُ الرصدة — بعد الرصد لا قبله: نافذةٌ تنزلق من الأسفل لأنّها تحتاج حقولًا -->
+<div class="rs-modal" id="amendModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="amTitle">
+    <h3 id="amTitle">تفاصيلُ الرصدة</h3>
+    <p class="rs-meta" id="amWhat"></p>
+    <label for="amPlace">المكان</label>
+    <input id="amPlace" type="text" placeholder="الفصل · الساحة · المقصف …">
+    <label for="amNote">ملاحظة</label>
+    <textarea id="amNote" rows="2"></textarea>
+    <label class="chk"><input type="checkbox" id="amInjury"> فيها إصابة</label>
+    <label class="chk"><input type="checkbox" id="amDamage"> فيها إتلاف</label>
+    <label class="chk"><input type="checkbox" id="amSeizure"> فيها مضبوطات</label>
+    <label class="chk" id="amLegalBox" hidden><input type="checkbox" id="amLegal"> المضبوطاتُ ممّا ورد فيه نصٌّ نظاميّ</label>
+    <div class="rs-row">
+      <button type="button" class="rs-btn" id="amOk">احفظ التفاصيل</button>
+      <button type="button" class="rs-btn ghost" id="amCancel">تراجع</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="vendor/supabase-2.117.2.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="tasks.js"></script>
+<script src="wakeel.js"></script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 -- public.v2_conduct_list(p_student uuid, p_mode text, p_target text, p_stage text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c7bc00154859bc8ab066acbebc8a9339
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2f0c829547dfd1973d89906422354d04
 CREATE OR REPLACE FUNCTION public.v2_conduct_list(p_student uuid, p_mode text DEFAULT 'onsite'::text, p_target text DEFAULT NULL::text, p_stage text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -15,11 +15,12 @@ begin
   sc := case when st='primary' then 'primary' else 'intermediate_secondary' end;
 
   select coalesce(jsonb_agg(jsonb_build_object(
-      'id',p.id,'text',p.text_ar,
+      'id',p.id,
+      'text', rtrim(btrim(p.text_ar),'.'),
       'degree',p.degree_no,
       'degree_ar', v2.degree_ar(p.degree_no),
-      'item_no',p.item_no,
-      'target',p.target,
+      'item_no',p.item_no,'target',p.target,
+      'page_ar', v2.page_ar(p.source_page),
       'source', p.source_doc||' '||p.source_page,
       'once_per_day', p.once_per_day,
       'repeat_key',   p.repeat_key,

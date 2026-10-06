@@ -1,7 +1,7 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 a82efc63c3e38fe8c64677e5ee90f42f
+-- ── grants · md5 93a22e7fe9232f1b269b3fff2ba55fc9
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 
@@ -274,6 +274,8 @@ REVOKE ALL ON FUNCTION v2.my_seat(p_school uuid, p_committee text) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.ord_ar(n integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.ord_ar(n integer) TO authenticated;
+REVOKE ALL ON FUNCTION v2.page_ar(p text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.page_ar(p text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.quorum_of(p_school uuid, p_committee text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.quorum_of(p_school uuid, p_committee text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.role_ar(p text) FROM PUBLIC;
@@ -638,6 +640,9 @@ GRANT EXECUTE ON FUNCTION public.v2_period_list(p_section uuid, p_period smallin
 REVOKE ALL ON FUNCTION public.v2_period_summary(p_section uuid, p_period smallint, p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_period_summary(p_section uuid, p_period smallint, p_date date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_period_summary(p_section uuid, p_period smallint, p_date date) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_periods(p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_periods(p_school uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_periods(p_school uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_portal_toggle(p_kind text, p_id uuid, p_open boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_portal_toggle(p_kind text, p_id uuid, p_open boolean) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_portal_toggle(p_kind text, p_id uuid, p_open boolean) TO service_role;
@@ -662,6 +667,9 @@ GRANT EXECUTE ON FUNCTION public.v2_practices_hidden(p_school uuid) TO service_r
 REVOKE ALL ON FUNCTION public.v2_queue_messages(p_school uuid, p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_queue_messages(p_school uuid, p_date date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_queue_messages(p_school uuid, p_date date) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_record_amend(p_record uuid, p_place text, p_note text, p_injury boolean, p_damage boolean, p_seizure boolean, p_seizure_legal boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_record_amend(p_record uuid, p_place text, p_note text, p_injury boolean, p_damage boolean, p_seizure boolean, p_seizure_legal boolean) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_record_amend(p_record uuid, p_place text, p_note text, p_injury boolean, p_damage boolean, p_seizure boolean, p_seizure_legal boolean) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_record_arrival(p_student uuid, p_date date, p_arrived time without time zone, p_decision text, p_term smallint, p_note text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_record_arrival(p_student uuid, p_date date, p_arrived time without time zone, p_decision text, p_term smallint, p_note text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_record_arrival(p_student uuid, p_date date, p_arrived time without time zone, p_decision text, p_term smallint, p_note text) TO service_role;

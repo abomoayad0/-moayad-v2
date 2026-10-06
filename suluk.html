@@ -37,29 +37,76 @@
 
   <div class="notice err" id="loadErr" hidden></div>
 
-  <!-- ١ · ارصد مخالفة — ضغطةٌ واحدة، ولا نافذةَ تعترض -->
-  <section class="rs-card" id="recCard">
-    <div class="rs-flash" id="flash" hidden></div>
-    <h3>ارصد مخالفة</h3>
-    <p class="rs-meta">كلُّ سلوكٍ ملفٌّ مستقلٌّ بسلّمه</p>
-    <label for="cls">الفصل</label>
-    <select id="cls"></select>
-    <label for="stu">الطالب</label>
-    <select id="stu" disabled></select>
-    <label for="qProb">السلوك</label>
-    <input id="qProb" type="search" placeholder="ابحث في نصّ السلوك" aria-label="بحث في السلوكيّات" disabled>
-    <select id="prob" disabled></select>
-    <div id="periodBox" hidden>
-      <div class="rs-label">الحصّة</div>
-      <div class="rs-pick" id="periods" role="group" aria-label="الحصّة"></div>
-    </div>
-    <div class="rs-note">مداخلُ متعدّدةٌ ومخرجٌ واحد — <b>وأوّلُ من يدوّن يُقفل البابَ على الباقين</b>، ويُحفظ من دوّن وبأيّ صفة</div>
-    <button type="button" class="rs-btn big" id="rec" disabled>ارصد</button>
+  <!-- خطوات الرصد -->
+  <ol class="steps" id="steps">
+    <li id="st1">الفصل</li><li id="st2">الطالب</li><li id="st3">المخالفة</li><li id="st4">المهامّ</li>
+  </ol>
+
+  <!-- ١ — الفصل -->
+  <section id="pickClass">
+    <div class="classes" id="classes"></div>
   </section>
 
-  <!-- ٢ · ملفّاتُ الطالب — لكلّ سلوكٍ بطاقتُه -->
-  <section id="files"></section>
+  <!-- ٢ — الطالب -->
+  <section id="pickStudent" hidden>
+    <div class="cls-head">
+      <button type="button" class="back" id="backClass">→ الفصول</button>
+      <h2 id="clsTitle"></h2>
+    </div>
+    <input id="qStu" type="search" placeholder="ابحث بالاسم أو الرقم" aria-label="بحث">
+    <div id="students"></div>
+  </section>
+
+  <!-- ٣ — المخالفة -->
+  <section id="pickProblem" hidden>
+    <div class="cls-head">
+      <button type="button" class="back" id="backStudent">→ الطلاب</button>
+      <h2 id="stuTitle"></h2>
+    </div>
+    <button type="button" class="btn-ghost wide" id="stuTasks">مهامّ هذا الطالب</button>
+    <div class="filters" id="degrees" role="group" aria-label="الدرجة"></div>
+    <input id="qProb" type="search" placeholder="ابحث في نصّ المخالفة" aria-label="بحث في المخالفات">
+    <div id="problems"></div>
+  </section>
+
+  <!-- ٤ — المهامّ المولَّدة -->
+  <section id="result" hidden>
+    <div class="panel">
+      <h2 class="ph" id="resTitle">رُصدت المخالفة</h2>
+      <p id="resWho" class="name"></p>
+      <p id="resProb" class="detail"></p>
+      <div id="tasks"></div>
+    </div>
+    <div class="dlg-acts">
+      <button type="button" class="btn-ghost" id="againStudent">طالب آخر من الفصل</button>
+      <button type="button" class="btn-ghost" id="againClass">فصل آخر</button>
+    </div>
+  </section>
 </main>
+
+<!-- تفاصيل الرصد -->
+<dialog id="recDlg">
+  <form method="dialog">
+    <h3>رصد المخالفة</h3>
+    <p id="recWho" class="name"></p>
+    <p id="recProb" class="quote"></p>
+    <label for="recPlace">المكان</label>
+    <input id="recPlace" type="text" placeholder="الفصل · الساحة · المقصف …">
+    <label for="recPeriod">الحصة (اختياري)</label>
+    <input id="recPeriod" type="number" min="1" max="8" inputmode="numeric">
+    <label for="recNote">ملاحظة (اختيارية)</label>
+    <textarea id="recNote" rows="2"></textarea>
+    <label class="check"><input type="checkbox" id="recInjury"> فيها إصابة</label>
+    <label class="check"><input type="checkbox" id="recDamage"> فيها إتلاف</label>
+    <label class="check"><input type="checkbox" id="recSeizure"> فيها مضبوطات</label>
+    <label class="check" id="recLegalBox" hidden><input type="checkbox" id="recLegal"> المضبوطات مما ورد فيه نصّ نظامي</label>
+    <div class="dlg-acts">
+      <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
+      <button value="ok" type="submit" class="btn-danger" id="recOk">ارصد</button>
+    </div>
+  </form>
+</dialog>
+
 
 <div class="toast" id="toast" hidden></div>
 
