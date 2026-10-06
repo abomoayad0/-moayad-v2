@@ -1,5 +1,5 @@
 -- public.v2_census_file(p_census uuid, p_positives text, p_negatives text, p_causes text, p_suggestion text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 93412416801a80eae5377f3385866d31
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 43bfa1af4292c0f3dde7a1956bebcb9f
 CREATE OR REPLACE FUNCTION public.v2_census_file(p_census uuid, p_positives text, p_negatives text, p_causes text, p_suggestion text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -11,8 +11,7 @@ begin
   select * into c from v2.behavior_census where id=p_census;
   if c.id is null then raise exception 'تكليفُ الحصر غيرُ موجود'; end if;
   me := v2.current_person();
-  if c.assigned_to is distinct from me then
-    raise exception 'هذا التكليفُ لغيرك'; end if;
+  if c.assigned_to is distinct from me then raise exception 'هذا التكليفُ لغيرك'; end if;
   if c.state = 'مكتمل' then raise exception 'سُلّم هذا الحصرُ سلفًا'; end if;
   if btrim(coalesce(p_positives,''))='' then
     raise exception 'اكتب السلوكيّاتِ الإيجابيّة — فالحصرُ يجمع الإيجابيَّ والسلبيَّ معًا'; end if;
@@ -24,7 +23,8 @@ begin
   update v2.behavior_census set
     positives=btrim(p_positives), negatives=btrim(p_negatives),
     causes=btrim(p_causes), suggestion=nullif(btrim(coalesce(p_suggestion,'')),''),
-    filed_at=now(), state='مكتمل'
+    filed_at=now(), state='مكتمل',
+    returned_why=null              -- 🔑 سببُ الإعادة يُمحى بالتسليم الجديد
    where id=p_census;
 
   insert into v2.events(school_id,kind,on_date,student_id,title_ar,body_ar,

@@ -1,12 +1,12 @@
 -- public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 a3bfa9a20ed2a8f6b3e899afac6f12d9
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 1f0a33cb275f96358dab6082d2acc272
 CREATE OR REPLACE FUNCTION public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'v2', 'public'
 AS $function$
-declare sc uuid; gid uuid; rid uuid; n smallint; nid uuid; t record;
+declare sc uuid; gid uuid; rid uuid; n smallint; nid uuid; t record; closed boolean := false;
 begin
   perform v2.assert_role(array['deputy_students','deputy','principal','counselor',
       'admin_assistant','admin_assistant_students'],'إثباتَ الاتّصال بوليّ الأمر');
@@ -20,10 +20,8 @@ begin
 
   select e.school_id into sc from v2.enrolments e
    where e.student_id=p_student and e.status='active' limit 1;
-  select id into gid from v2.guardians
-   where student_id=p_student and is_primary limit 1;
-  if gid is null then
-    select id into gid from v2.guardians where student_id=p_student limit 1; end if;
+  select id into gid from v2.guardians where student_id=p_student and is_primary limit 1;
+  if gid is null then select id into gid from v2.guardians where student_id=p_student limit 1; end if;
   if gid is null then raise exception 'لا وليَّ أمرٍ مسجَّلٌ لهذا الطالب'; end if;
 
   if p_task is not null then
@@ -45,25 +43,25 @@ begin
       coalesce((select test_mode from v2.schools where id=sc),false))
   returning id into nid;
 
+  -- 🔑 نوعٌ خاصٌّ — فتُبنى منه بطاقةُ «اتّصلت بك المدرسة»
   insert into v2.events(school_id,kind,on_date,student_id,title_ar,body_ar,
       ref_table,ref_id,visible_to,is_test)
-  values (sc,'other',current_date,p_student,
-      'اتّصلت المدرسةُ بوليّ الأمر — '||p_channel,
-      p_outcome||' · '||btrim(p_summary),
+  values (sc,'guardian_contact',current_date,p_student,
+      'اتّصلت بك المدرسةُ — '||p_channel, p_outcome||' · '||btrim(p_summary),
       'guardian_contacts',nid,'all',
       coalesce((select test_mode from v2.schools where id=sc),false));
 
-  -- 🔑 المهمّةُ تُقفل بالإثبات إن ردّ وعلم
   if p_task is not null and p_outcome = 'ردّ وعلم' then
     update v2.behavior_tasks set status='done', done_at=now(),
         done_by=v2.current_person(),
         evidence_note='أُثبت الاتّصالُ بوليّ الأمر — '||p_channel||' · '||btrim(p_summary)
      where id=p_task and status<>'done';
+    closed := found;
   end if;
 
-  return jsonb_build_object('ok',true,'contact',nid,'attempt',n,
-    'closed', (p_task is not null and p_outcome='ردّ وعلم'),
-    'note', case when p_outcome='ردّ وعلم' then 'أُثبت الاتّصالُ وأُقفلت المهمّة'
-                 else 'أُثبتت المحاولةُ — والمهمّةُ باقيةٌ حتى يردّ ويعلم' end);
+  return jsonb_build_object('ok',true,'contact',nid,'attempt',n,'closed',closed,
+    'note', case when closed then 'أُثبت الاتّصالُ وأُقفلت المهمّة'
+                 when p_outcome='ردّ وعلم' then 'أُثبت الاتّصال'
+                 else 'أُثبتت المحاولةُ — ولم يردّ ويعلم بعد' end);
 end $function$
 ;

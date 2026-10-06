@@ -1,12 +1,12 @@
 -- v2.g_verdict_needs_filing()
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c763fe6e9fe8a89609082d0a7307d3d6
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 f27ac09381a267878f106a6e6f2ef1c7
 CREATE OR REPLACE FUNCTION v2.g_verdict_needs_filing()
  RETURNS trigger
  LANGUAGE plpgsql
 AS $function$
 begin
-  if new.verdict is not null and new.filed_at is null then
-    raise exception 'لا تُقرّ مشاركةٌ قبل أن يرفع الطالبُ نموذجَه وشاهدَه'; end if;
+  if new.verdict in ('نفّذ','نفّذ جزئيًّا') and new.filed_at is null then
+    raise exception 'لا يُقرُّ تنفيذٌ قبل أن يرفع الطالبُ نموذجَه وشاهدَه'; end if;
   if new.filed_at is not null then
     if btrim(coalesce(new.what_ar,''))='' then
       raise exception 'لا يُرفع نموذجٌ بلا بيانِ ما فُعل'; end if;

@@ -1,5 +1,5 @@
 -- public.v2_entry_verdict(p_entry uuid, p_verdict text, p_note text, p_file text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 3e19fd76a7513a549a3affe72ae509e3
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 eab53ad526ede0ac6e1d2831044dee7e
 CREATE OR REPLACE FUNCTION public.v2_entry_verdict(p_entry uuid, p_verdict text, p_note text, p_file text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -17,11 +17,12 @@ begin
   if p_verdict not in ('نفّذ','نفّذ جزئيًّا','لم ينفّذ','لم يحضر') then
     raise exception 'الحكم: نفّذ · نفّذ جزئيًّا · لم ينفّذ · لم يحضر'; end if;
   if btrim(coalesce(p_note,''))='' then raise exception 'اكتب ما لاحظتَه — إلزاميّ'; end if;
-  -- 🔑 لا يُبدَّل بعد التقدير
   if x.graded_at is not null then
     raise exception 'قُدّرت درجةُ هذي المشاركة — فلا يُبدَّل حكمُها'; end if;
   if o.state = 'مُقدَّرة' then
     raise exception 'اعتُمد مخطّطُ الفرصة — فلا يُبدَّل حكمٌ فيها'; end if;
+  if x.filed_at is null and p_verdict in ('نفّذ','نفّذ جزئيًّا') then
+    raise exception 'لم يرفع الطالبُ نموذجَه بعد — ولا يُقرُّ تنفيذٌ بلا نموذجٍ وشاهد'; end if;
 
   update v2.merit_entries
      set verdict_prev = case when x.verdict is distinct from p_verdict then x.verdict end,

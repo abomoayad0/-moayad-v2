@@ -441,3 +441,12 @@
   .rs-lgd { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; font-size: 12px; color: var(--mute); margin-top: 3px; }
   .rs-lgd i { font-style: normal; }
   .rs-lgd i.k { color: var(--ink); }
+
+/* ─── جدولُ الحصص: شبكةُ الأيّام × الحصص ─── */
+  .rs-grid { min-width: 560px; table-layout: fixed; }
+  .rs-grid td.click { cursor: pointer; text-align: center; font-size: 11.5px; height: 46px; border: 1px solid var(--line); }
+  .rs-grid td.click b { display: block; font-size: 12px; }
+  .rs-grid td.k-teaching { background: var(--soft); }
+  .rs-grid td.k-standby { background: var(--chip); }
+  .rs-grid td.k-activity { background: var(--warn-bg); }
+  .rs-grid th { text-align: center; }

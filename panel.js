@@ -5,6 +5,7 @@
 // v2_practices(p_school,…) · v2_practices_hidden · v2_practice_save · v2_practice_state · v2_practice_scopes · v2_scope_upsert · v2_committee_rules · v2_committee_rules_get
 // v2_brand_card · v2_brand_save · v2_stamp_save · v2_signature_save · v2_calendar_board · v2_year_save · v2_term_save
 // v2_structure_board · v2_structure_set · v2_exceptions_board · v2_exception_add · v2_exception_kinds · v2_reference(p_key)
+// وجدولُ الحصص: jadwal.js (v2_timetable_board · v2_slot_* · v2_quota_* · v2_plan_* · v2_teacher_subject · v2_timetable_suggest · v2_draft_*)
 // v2_brand_upload_path · v2_committees_list · v2_committee_create · v2_committee_close · v2_committee_duties · v2_committee_duty_save
 // المقفلُ يُقرأ بسببه وسنده ولا زرَّ تعديلٍ عليه. ومن يدخل اللوحة تحكم به القاعدة، ورفضُها يُعرض بنصّه.
 (function () {
@@ -1261,6 +1262,12 @@
     accounts: accountsTool, school_card: schoolCardTool,
     branding: brandTool, calendar: calendarTool, structure: structureTool, exceptions: exceptionsTool,
     committees_school: committeesTool, committee_duties: dutiesTool,
+    // جدولُ الحصص وأبوابُه الأربعة — أدواتُها في jadwal.js
+    timetable: (b) => window.MoayadJadwal.timetableTool(b),
+    teaching_quota: (b) => window.MoayadJadwal.quotaTool(b),
+    subject_plan: (b) => window.MoayadJadwal.planTool(b),
+    teacher_subjects: (b) => window.MoayadJadwal.subjectsTool(b),
+    timetable_drafts: (b) => window.MoayadJadwal.draftsTool(b),
   };
 
   $('sReason').addEventListener('input', () => { $('sOk').disabled = $('sReason').value.trim() === ''; });
@@ -1279,6 +1286,7 @@
     const cur = (me.roles || []).find((r) => r.is_current === true && r.school_id);
     const schools = (me.schools || []).filter((x) => !cur || x.id === cur.school_id);
     ui.school = schools.length ? schools[0].id : null;
+    M.state.school = ui.school;
     $('panelView').hidden = false;
     await loadCatalog();
   }

@@ -1,12 +1,12 @@
 -- public.v2_census_review(p_census uuid, p_accept boolean, p_why text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 44f8d9018e609fd57bbe0bb0794b3087
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 f4ce89c2a3f17286b3ec7a74bca47fbe
 CREATE OR REPLACE FUNCTION public.v2_census_review(p_census uuid, p_accept boolean, p_why text)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'v2', 'public'
 AS $function$
-declare c record;
+declare c record; closed boolean := false;
 begin
   perform v2.assert_role(array['deputy_students','deputy','principal'],'النظرَ في الحصر');
   select * into c from v2.behavior_census where id=p_census;
@@ -20,8 +20,10 @@ begin
           done_by=v2.current_person(),
           evidence_note='حُصرت السلوكيّاتُ وسُلّمت وقُبلت'
        where id=c.task_id and status<>'done';
+      closed := found;
     end if;
-    return jsonb_build_object('ok',true,'note','قُبل الحصرُ وأُقفلت المهمّة');
+    return jsonb_build_object('ok',true,'closed',closed,
+      'note', case when closed then 'قُبل الحصرُ وأُقفلت المهمّة' else 'قُبل الحصر' end);
   end if;
 
   if btrim(coalesce(p_why,''))='' then

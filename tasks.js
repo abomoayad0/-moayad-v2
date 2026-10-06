@@ -260,7 +260,7 @@
     top.append(el('div', 'detail', t.text_ar), b);
     c.appendChild(top);
     const meta = kind === 'behavior'
-      ? (t.problem_ar ? t.problem_ar + ' — الدرجة ' + t.degree_no + ' · ' : '') + (t.occurred_on || '')
+      ? (t.kind_ar ? t.kind_ar + ' · ' : '') + (t.problem_ar ? t.problem_ar + ' — ' + (t.degree_ar || 'الدرجة ' + t.degree_no) + ' · ' : '') + (t.occurred_on || '')
       : 'غياب ' + t.days_n + ' أيام ' + (t.excused ? 'بعذر' : 'بلا عذر') + ' · ' + (t.triggered_on || '');
     c.appendChild(el('div', 'meta', meta));
     // المُسندة إلى شخص بعينه تُعرض باسمه وسبب تحويلها
@@ -303,6 +303,13 @@
   }
 
   // تعرض مهامّ الطالب كلّها: السلوك ثم الغياب
+  // v2_student_tasks صار يرجع jsonb بأسماءٍ جديدة (task · text · problem · owner · kind_ar …):
+  // تُطابَق هنا على أسماء البطاقة، وما لم يُرجعه (needs_* · lbl_* · form_no · owner_ar) يبقى فارغًا — والقاعدةُ تحكم بالإثبات
+  const norm = (t) => Object.assign({}, t, {
+    task_id: t.task_id || t.task, record_id: t.record_id || t.record, text_ar: t.text_ar || t.text,
+    problem_ar: t.problem_ar || t.problem, owner_role: t.owner_role || t.owner,
+  });
+
   async function render(box, studentId) {
     box.textContent = '';
     box.appendChild(el('div', 'empty', 'جارٍ جلب المهامّ…'));
@@ -316,7 +323,7 @@
       box.appendChild(el('h3', 'grp', title + (res.error ? '' : ' (' + (res.data || []).length + ')')));
       if (res.error) { box.appendChild(el('div', 'notice err', 'تعذّر جلبها: ' + errText(res.error))); continue; }
       if (!res.data || res.data.length === 0) { box.appendChild(el('div', 'empty', 'لا مهامّ.')); continue; }
-      for (const t of res.data) box.appendChild(card(kind, t, again, studentId));
+      for (const t of res.data) box.appendChild(card(kind, kind === 'behavior' ? norm(t) : t, again, studentId));
     }
   }
 

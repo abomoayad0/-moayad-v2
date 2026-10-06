@@ -811,6 +811,16 @@ ALTER TABLE v2.students
 ALTER TABLE v2.students
     ADD CONSTRAINT students_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES v2.tenants(id);
 
+-- ── subject_plan · md5 5aad647ddc38aa4a6e8cd14e89770970
+ALTER TABLE v2.subject_plan
+    ADD CONSTRAINT subject_plan_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+
+-- ── teacher_subjects · md5 0c4db25fd62525499b4a61e5be22326b
+ALTER TABLE v2.teacher_subjects
+    ADD CONSTRAINT teacher_subjects_person_id_fkey FOREIGN KEY (person_id) REFERENCES v2.people(id);
+ALTER TABLE v2.teacher_subjects
+    ADD CONSTRAINT teacher_subjects_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+
 -- ── teaching_assignments · md5 5c3fd7cc115b54e8d9c055657f8760a3
 ALTER TABLE v2.teaching_assignments
     ADD CONSTRAINT teaching_assignments_person_id_fkey FOREIGN KEY (person_id) REFERENCES v2.people(id) ON DELETE CASCADE;
@@ -818,6 +828,14 @@ ALTER TABLE v2.teaching_assignments
     ADD CONSTRAINT teaching_assignments_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 ALTER TABLE v2.teaching_assignments
     ADD CONSTRAINT teaching_assignments_year_id_fkey FOREIGN KEY (year_id) REFERENCES v2.academic_years(id);
+
+-- ── teaching_quota · md5 aadd220a960893c1b3564c1543f4d281
+ALTER TABLE v2.teaching_quota
+    ADD CONSTRAINT teaching_quota_post_key_fkey FOREIGN KEY (post_key) REFERENCES v2.posts(key);
+ALTER TABLE v2.teaching_quota
+    ADD CONSTRAINT teaching_quota_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.teaching_quota
+    ADD CONSTRAINT teaching_quota_set_by_fkey FOREIGN KEY (set_by) REFERENCES v2.people(id);
 
 -- ── terms · md5 4712f1be1f0a0b096d39db36086bc5cb
 ALTER TABLE v2.terms
@@ -832,6 +850,16 @@ ALTER TABLE v2.timetable
     ADD CONSTRAINT timetable_section_id_fkey FOREIGN KEY (section_id) REFERENCES v2.class_sections(id) ON DELETE CASCADE;
 ALTER TABLE v2.timetable
     ADD CONSTRAINT timetable_year_id_fkey FOREIGN KEY (year_id) REFERENCES v2.academic_years(id);
+
+-- ── timetable_draft_slots · md5 77203875aaf875d39621b3ae426e8af0
+ALTER TABLE v2.timetable_draft_slots
+    ADD CONSTRAINT timetable_draft_slots_draft_id_fkey FOREIGN KEY (draft_id) REFERENCES v2.timetable_drafts(id) ON DELETE CASCADE;
+
+-- ── timetable_drafts · md5 41b520677bbde3f154b20f5051360c8a
+ALTER TABLE v2.timetable_drafts
+    ADD CONSTRAINT timetable_drafts_made_by_fkey FOREIGN KEY (made_by) REFERENCES v2.people(id);
+ALTER TABLE v2.timetable_drafts
+    ADD CONSTRAINT timetable_drafts_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 
 -- ── violence_cases · md5 46d8d1cbb5c9024e3385ec1ebaa468ce
 ALTER TABLE v2.violence_cases

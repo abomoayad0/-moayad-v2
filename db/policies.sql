@@ -713,6 +713,16 @@ CREATE POLICY spr_read ON v2.study_plan_rules AS PERMISSIVE FOR SELECT TO authen
 CREATE POLICY sp_read ON v2.study_plans AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
 
+-- ── subject_plan · md5 c7843e6bcbce29ceb51f7602ebef4dba
+CREATE POLICY sp_tenant ON v2.subject_plan AS PERMISSIVE FOR ALL TO authenticated
+    USING (v2.my_school(school_id))
+    WITH CHECK (v2.my_school(school_id));
+
+-- ── teacher_subjects · md5 5334716c874aaa914a6b87deb01de458
+CREATE POLICY ts_tenant ON v2.teacher_subjects AS PERMISSIVE FOR ALL TO authenticated
+    USING (v2.my_school(school_id))
+    WITH CHECK (v2.my_school(school_id));
+
 -- ── teaching_assignments · md5 b47048f2ba6133de1d049248a8d98e9e
 CREATE POLICY ta_t ON v2.teaching_assignments AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
@@ -721,6 +731,11 @@ CREATE POLICY ta_t ON v2.teaching_assignments AS PERMISSIVE FOR ALL TO authentic
 -- ── teaching_loads · md5 5a958b7747dae8cd20234f1d418fe68a
 CREATE POLICY tl_read ON v2.teaching_loads AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
+
+-- ── teaching_quota · md5 33c58f17b4fb475af9a267fa70ada612
+CREATE POLICY tq_tenant ON v2.teaching_quota AS PERMISSIVE FOR ALL TO authenticated
+    USING (v2.my_school(school_id))
+    WITH CHECK (v2.my_school(school_id));
 
 -- ── teaching_ranks · md5 18cede0bb12bbff88aa95ffda0755ee4
 CREATE POLICY tr_read ON v2.teaching_ranks AS PERMISSIVE FOR SELECT TO authenticated
@@ -741,6 +756,20 @@ CREATE POLICY terms_tenant ON v2.terms AS PERMISSIVE FOR ALL TO authenticated
 
 -- ── timetable · md5 94598faf166e7c3b663d24551a834bd5
 CREATE POLICY timetable_t ON v2.timetable AS PERMISSIVE FOR ALL TO authenticated
+    USING (v2.my_school(school_id))
+    WITH CHECK (v2.my_school(school_id));
+
+-- ── timetable_draft_slots · md5 a44f7e66c128380a17cd32bb0ce9ae0a
+CREATE POLICY tds_tenant ON v2.timetable_draft_slots AS PERMISSIVE FOR ALL TO authenticated
+    USING ((EXISTS ( SELECT 1
+   FROM v2.timetable_drafts d
+  WHERE ((d.id = timetable_draft_slots.draft_id) AND v2.my_school(d.school_id)))))
+    WITH CHECK ((EXISTS ( SELECT 1
+   FROM v2.timetable_drafts d
+  WHERE ((d.id = timetable_draft_slots.draft_id) AND v2.my_school(d.school_id)))));
+
+-- ── timetable_drafts · md5 13e68a192797e505c619f497fda77966
+CREATE POLICY td_tenant ON v2.timetable_drafts AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 

@@ -187,14 +187,22 @@
     row.append(ok, no);
     sh.appendChild(row);
     const api = { values: () => { const r = {}; for (const k in get) r[k] = get[k](); return r; } };
-    ok.addEventListener('click', async () => {
+    // كلُّ زرٍّ في اللوح يرجع خطأَ القاعدة أو null — فإن رجع خطأٌ بقي اللوحُ ونصُّه في أعلاه
+    const run = async (b, fn) => {
       if (formBox.busy) return;
-      formBox.busy = true; ok.disabled = true;
+      formBox.busy = true; b.disabled = true;
       let e = null;
-      try { e = await o.onOk(api.values()); } finally { formBox.busy = false; ok.disabled = false; }
+      try { e = await fn(api.values()); } finally { formBox.busy = false; b.disabled = false; }
       if (e) { err.textContent = typeof e === 'string' ? e : M.errText(e); err.hidden = false; arabize(err); return; }
       formBox.hidden = true;
-    });
+    };
+    ok.addEventListener('click', () => run(ok, o.onOk));
+    // أزرارٌ أخرى (كالحذف) — { text, cls, onClick(values) }
+    for (const x of o.extra || []) {
+      const b = btn(x.text, x.cls || 'rs-btn ghost');
+      b.addEventListener('click', () => run(b, x.onClick));
+      row.appendChild(b);
+    }
     arabize(sh);
     formBox.hidden = false;
     const first = sh.querySelector('textarea, input');

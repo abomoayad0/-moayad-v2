@@ -1,4 +1,5 @@
 // مؤيّد · بوّابة وليّ الأمر — viewG في المحاكي: بطاقةُ الابن · رصداتُه · ما فعلته المدرسة · سلوكُه المتميّز · نماذج تنتظرك.
+// ⑤ «اتّصلت بك المدرسة» من أحداث guardian_contact في السجلّ
 // v2_guardian_me · v2_guardian_child · v2_opps_open_for · v2_student_timeline(p_student, 'guardian') · v2_guardian_forms · v2_guardian_form_read
 // v2_guardian_form_reply · v2_form_sign(p_entry, 'ولي الأمر', …)
 // 🔒 لا يرى دراسةَ الحالة ولا الجلسات: يُطلب السجلُّ بصفة 'guardian' لا غير، والقاعدةُ تحجب ما سواه.
@@ -77,6 +78,25 @@
       return;
     }
     const evs = (r.data && r.data.events) || [];
+    // ⑤ اتّصلت بك المدرسة: نوعُها الخاصّ guardian_contact
+    const cbox = $('contacts');
+    cbox.textContent = '';
+    const calls = evs.filter((e) => e.kind === 'guardian_contact');
+    if (!calls.length) cbox.appendChild(el('p', 'rs-meta', 'لم يُسجَّل اتّصالٌ بك بعد.'));
+    else {
+      const ul = el('ul', 'rs-acts');
+      for (const e of calls) {
+        const li = el('li');
+        const body = el('span');
+        body.style.flex = '1';
+        body.appendChild(el('span', null, e.title || ''));
+        if (e.body) body.appendChild(el('div', 'rs-meta', e.body));
+        li.append(el('i', 'rs-tick ok', '✓'), body, el('small', 'rs-who', e.on || ''));
+        ul.appendChild(li);
+      }
+      cbox.appendChild(ul);
+    }
+    arabize(cbox);
     const beh = evs.filter((e) => e.kind === 'behavior_record');
     if (!beh.length) recs.appendChild(el('p', 'rs-meta', 'لا رصداتِ على ابنك.'));
     else {
@@ -223,7 +243,6 @@
     const box = $('offCards');
     box.textContent = '';
     box.append(
-      V.offCard('اتّصلت بك المدرسة', 'إثباتُ الاتّصال بوليّ الأمر'),
       V.offCard('خطّةُ تعديل السلوك — ورأيُك فيها', 'نموذج ٣ · ص٦٠'),
       V.offCard('خطابُ الدعوة الآليّ', 'يصلك هنا متى بُني — وما وصلك منه يدويًّا تردّ عليه في «نماذج تنتظرك»'));
   }

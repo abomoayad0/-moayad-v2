@@ -293,7 +293,8 @@
       M.rpc('v2_census_of', { p_student: stu.student_id }, 'حصر السلوكيّات'),
     ]);
     if (ui.stu !== stu) return;
-    ui.files = { card: card.data || {}, tasks: tasks.data || [], timeline: tl.data || {}, form5: f5, contacts: ct, census: cn, error: card.error || tasks.error || tl.error };
+    // v2_student_tasks بأسمائه الجديدة: task · text · problem · kind · kind_ar
+    ui.files = { card: card.data || {}, tasks: (tasks.data || []).map((t) => Object.assign({}, t, { task_id: t.task_id || t.task, text_ar: t.text_ar || t.text, problem_ar: t.problem_ar || t.problem })), timeline: tl.data || {}, form5: f5, contacts: ct, census: cn, error: card.error || tasks.error || tl.error };
     renderStudentCards();
   }
 
@@ -380,7 +381,7 @@
       for (const t of ts) {
         const done = t.status !== 'open';
         const li = el('li');
-        li.append(el('i', 'rs-tick' + (done ? ' ok' : ''), done ? '✓' : '○'), el('span', null, t.text_ar), el('span', 'rs-who', t.owner_ar || t.owner_role || ''));
+        li.append(el('i', 'rs-tick' + (done ? ' ok' : ''), done ? '✓' : '○'), el('span', null, t.text_ar), el('span', 'rs-who', t.kind_ar || t.owner_ar || t.owner_role || ''));
         ul.appendChild(li);
       }
       c.appendChild(ul);
@@ -451,11 +452,19 @@
     arabize(box);
   }
 
+  // مهامُّ الطالب المفتوحةُ من نوعٍ بعينه — ليُقرن بها الإثباتُ فتُقفل بالقاعدة
+  const openTasks = (kind) => ((ui.files && ui.files.tasks) || []).filter((t) => t.kind === kind && t.status === 'open')
+    .map((t) => [t.task_id, (t.problem_ar ? t.problem_ar + ' — ' : '') + (t.text_ar || t.kind_ar), t.step_ar ? 'الإجراء ' + t.step_ar : '']);
+  const taskField = (kind) => {
+    const items = openTasks(kind);
+    return items.length ? [{ key: 'task', type: 'choose', label: 'عن مهمّة (' + (kind === 'notify_guardian' ? 'إشعارُ وليّ الأمر' : 'حصرُ السلوكيّات') + ')', items, value: items[0][0], hint: 'تُقفل المهمّةُ بالقاعدة متى تمّ ما يقفلها' }] : [];
+  };
+
   function contactForm() {
     const stu = ui.stu;
     V.form({
       title: 'إثباتُ الاتّصال بوليّ الأمر', what: stu.display_name || stu.full_name,
-      fields: [
+      fields: [...taskField('notify_guardian'),
         { key: 'channel', type: 'pick', label: 'الوسيلة', items: CHANNELS.map((x) => [x, x]) },
         { key: 'outcome', type: 'pick', label: 'النتيجة', items: OUTCOMES.map((x) => [x, x]) },
         { key: 'summary', type: 'textarea', label: 'ما دار' },
@@ -464,12 +473,12 @@
       ],
       ok: 'أثبته',
       onOk: async (v) => {
-        // لا نوعَ للمهمّة في v2_student_tasks — فيُثبت على الطالب لا على مهمّةٍ بعينها
         const { data, error } = await M.rpc('v2_contact_log', {
-          p_student: stu.student_id, p_task: null, p_channel: v.channel, p_outcome: v.outcome,
+          p_student: stu.student_id, p_task: v.task || null, p_channel: v.channel, p_outcome: v.outcome,
           p_summary: v.summary, p_guardian_say: v.say, p_at: v.at,
         }, 'إثبات الاتصال');
         if (error) return error;
+        // النصُّ من القاعدة، وهو يتبع closed
         V.flash('ok', ((data && data.note) || 'أُثبت الاتّصال') + ' · المحاولةُ ' + ((data && data.attempt) || ''));
         loadStudentCards();
         return null;
@@ -518,13 +527,13 @@
     }
     V.form({
       title: 'التكليفُ بحصر السلوكيّات', what: stu.display_name || stu.full_name,
-      fields: [
+      fields: [...taskField('follow_up'),
         { key: 'who', type: 'choose', label: 'المكلَّف', items: ui.staff.map((p) => [p.person_id, p.name_ar, p.post_ar || p.roles_ar || '']) },
         { key: 'days', type: 'number', label: 'المدّةُ بالأيّام', value: 5, hint: 'من يومٍ إلى ثلاثين' },
       ],
       ok: 'كلّفه',
       onOk: async (v) => {
-        const { data, error } = await M.rpc('v2_census_assign', { p_student: stu.student_id, p_task: null, p_person: v.who, p_days: v.days }, 'التكليف بالحصر');
+        const { data, error } = await M.rpc('v2_census_assign', { p_student: stu.student_id, p_task: v.task || null, p_person: v.who, p_days: v.days }, 'التكليف بالحصر');
         if (error) return error;
         V.flash('ok', (data && data.note) || 'كُلّف بالحصر');
         loadStudentCards();
