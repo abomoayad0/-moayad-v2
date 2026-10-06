@@ -6,7 +6,11 @@
   'use strict';
 
   const M = window.Moayad;
-  const { $, el, toast, errText, showLoadErr } = M;
+  const V = window.MoayadView;
+  const { $, el, errText, showLoadErr } = M;
+  // على نموذج المحاكي: النتيجةُ في الشريط أعلى الورقة، والسببُ في لوحٍ منزلق
+  const done = (text) => V.flash('ok', text);
+  const fail = (text) => V.flash('bad', text);
   M.state.screen = 'form';
 
   const q = new URLSearchParams(location.search);
@@ -24,14 +28,6 @@
 
   // الوجهة بأسمائها من القاعدة (goes_to_ar)
   function goesText() { return ((ui.doc && ui.doc.goes_to_ar) || []).join(' · '); }
-
-  function ask(dlg) {
-    return new Promise((resolve) => {
-      dlg.addEventListener('close', () => resolve(dlg.returnValue), { once: true });
-      dlg.returnValue = '';
-      dlg.showModal();
-    });
-  }
 
   function isFinal() { return !!(ui.doc && ui.doc.entry && ui.doc.entry.status === 'final'); }
   // من يملك التعديل تحكم به القاعدة (can_edit)
@@ -312,52 +308,57 @@
       p_form: P.form, p_data: data, p_rows: rows, p_student: P.student, p_ref: P.ref,
       p_task: P.task, p_entry: e ? e.id : null, p_final: final,
     }, final ? 'اعتماد نموذج' : 'حفظ مسوّدة نموذج');
-    if (error) { toast((final ? 'لم يُعتمد النموذج:\n' : 'لم تُحفظ المسوّدة:\n') + errText(error)); return; }
+    if (error) { fail((final ? 'لم يُعتمد النموذج: ' : 'لم تُحفظ المسوّدة: ') + errText(error)); window.scrollTo(0, 0); return; }
     notifyParent();
     if (final) {
       const to = goesText();
-      toast((ui.doc.final_done_ar || 'اعتُمد النموذج') + (to ? ' · وصل إلى: ' + to : '') +
-        (res && res.delivered != null ? ' (' + res.delivered + ' نسخة)' : '') + '\nويُوقَّع الآن.', true);
+      done((ui.doc.final_done_ar || 'اعتُمد النموذج') + (to ? ' · وصل إلى: ' + to : '') +
+        (res && res.delivered != null ? ' (' + res.delivered + ' نسخة)' : '') + ' · ويُوقَّع الآن');
     } else {
-      toast('حُفظت المسوّدة.', true);
+      done('حُفظت المسوّدة');
     }
+    window.scrollTo(0, 0);
     await open();
   }
 
-  async function sign(who, signed) {
-    let reason = null;
-    if (!signed) {
-      $('refWho').textContent = who;
-      $('refReason').value = '';
-      $('refOk').disabled = true;
-      if (await ask($('refuseDlg')) !== 'ok') return;
-      reason = $('refReason').value.trim();
-    }
+  async function doSign(who, signed, reason) {
     const { data: res, error } = await M.rpc('v2_form_sign', {
       p_entry: ui.doc.entry.id, p_signer: who, p_signed: signed, p_refuse_reason: reason,
     }, 'توقيع نموذج');
-    if (error) { toast('لم يُسجَّل التوقيع:\n' + errText(error)); return; }
+    if (error) return error;
     notifyParent();
     const left = (res && res.remaining) || [];
-    toast((signed ? 'سُجّل إقرار ' + who + '.' : 'سُجّل امتناع ' + who + '.') +
-      (left.length ? '\nبقي: ' + left.join(' · ') : '\nاكتملت التوقيعات.'), true);
+    done((signed ? 'سُجّل إقرارُ ' + who : 'سُجّل امتناعُ ' + who) + (left.length ? ' · بقي: ' + left.join(' · ') : ' · اكتملت التوقيعات'));
     await open();
+    return null;
   }
 
-  async function voidEntry() {
-    $('voidReason').value = '';
-    $('voidOk').disabled = true;
-    if (await ask($('voidDlg')) !== 'ok') return;
-    const { error } = await M.rpc('v2_form_void',
-      { p_entry: ui.doc.entry.id, p_reason: $('voidReason').value.trim() }, 'إلغاء نموذج');
-    if (error) { toast('لم يُلغَ النموذج:\n' + errText(error)); return; }
-    notifyParent();
-    toast('أُلغي النموذج. ويُعبّأ من جديد.', true);
-    await open();
+  async function sign(who, signed) {
+    if (signed) { const e = await doSign(who, true, null); if (e) fail('لم يُسجَّل التوقيع: ' + errText(e)); return; }
+    // الامتناعُ بسببٍ مكتوب — والقاعدةُ تحكم به
+    V.form({
+      title: 'الامتناعُ عن التوقيع', what: who,
+      fields: [{ key: 'why', type: 'textarea', label: 'سببُ الامتناع — إلزاميّ' }],
+      ok: 'سجّل الامتناع',
+      onOk: (v) => doSign(who, false, v.why || null),
+    });
   }
 
-  $('voidReason').addEventListener('input', () => { $('voidOk').disabled = $('voidReason').value.trim() === ''; });
-  $('refReason').addEventListener('input', () => { $('refOk').disabled = $('refReason').value.trim() === ''; });
+  function voidEntry() {
+    V.form({
+      title: 'إلغاءُ النموذج المعتمد', what: 'المعتمدُ لا يُعدَّل: يُلغى بسببٍ مكتوب، ثمّ يُعبّأ من جديد.',
+      fields: [{ key: 'why', type: 'textarea', label: 'سببُ الإلغاء — إلزاميّ' }],
+      ok: 'ألغِ النموذج',
+      onOk: async (v) => {
+        const { error } = await M.rpc('v2_form_void', { p_entry: ui.doc.entry.id, p_reason: v.why || null }, 'إلغاء نموذج');
+        if (error) return error;
+        notifyParent();
+        done('أُلغي النموذج · ويُعبّأ من جديد');
+        await open();
+        return null;
+      },
+    });
+  }
 
   // ---------- الفتح ----------
   async function open() {
@@ -380,7 +381,6 @@
   }
 
   $('printBtn').addEventListener('click', () => window.print());
-  $('toast').addEventListener('click', () => { $('toast').hidden = true; });
 
   (async () => {
     if (!P.form) { showLoadErr('رابط النموذج ناقص: يلزم رقم النموذج.'); return; }

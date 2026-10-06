@@ -14,17 +14,17 @@
   .bar { position: sticky; top: 0; z-index: 5; display: flex; gap: 8px; justify-content: space-between; align-items: center;
          background: var(--navy); color: #fff; padding: 10px 16px; }
   .bar button { background: #fff; color: var(--navy); border: 0; border-radius: 8px; padding: 8px 16px; font-weight: 700; min-height: 40px; }
-  .sheet { background: #fff; color: #111; max-width: 794px; margin: 16px auto; padding: 28px 32px; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
-  .sheet h1 { text-align: center; font-size: 22px; margin: 6px 0 4px; }
-  .sheet .sch { text-align: center; font-weight: 700; }
-  .sheet .src { text-align: center; font-size: 12px; color: #555; margin-bottom: 14px; }
-  .sheet table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 14px; }
-  .sheet th, .sheet td { border: 1px solid #333; padding: 6px 8px; vertical-align: top; text-align: start; }
-  .sheet th { background: #f1f4f5; width: 30%; font-weight: 700; }
-  .sheet table.grid th { width: auto; text-align: center; }
-  .sheet table.grid td { height: 30px; }
-  .sheet h2 { font-size: 15px; margin: 16px 0 4px; }
-  .sheet .blank { color: #999; }
+  #sheet { background: #fff; color: #111; max-width: 794px; margin: 16px auto; padding: 28px 32px; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+  #sheet h1 { text-align: center; font-size: 22px; margin: 6px 0 4px; }
+  #sheet .sch { text-align: center; font-weight: 700; }
+  #sheet .src { text-align: center; font-size: 12px; color: #555; margin-bottom: 14px; }
+  #sheet table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 14px; }
+  #sheet th, #sheet td { border: 1px solid #333; padding: 6px 8px; vertical-align: top; text-align: start; }
+  #sheet th { background: #f1f4f5; width: 30%; font-weight: 700; }
+  #sheet table.grid th { width: auto; text-align: center; }
+  #sheet table.grid td { height: 30px; }
+  #sheet h2 { font-size: 15px; margin: 16px 0 4px; }
+  #sheet .blank { color: #999; }
   .signs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 28px; }
   .signs div { text-align: center; font-size: 14px; }
   .signs .line { border-bottom: 1px solid #333; height: 44px; margin-bottom: 6px; }
@@ -33,37 +33,39 @@
   .fstatus.new { background: #f1f4f5; color: #555; }
   .fstatus.draft { background: #fff4d6; color: #7a5a00; }
   .fstatus.final { background: #dff3ea; color: #0d6b45; }
-  .sheet .kv td.auto { background: #fafbfb; }
-  .sheet input, .sheet select, .sheet textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px;
+  #sheet .kv td.auto { background: #fafbfb; }
+  #sheet input, #sheet select, #sheet textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px;
     border: 1px solid #b9c2c6; border-radius: 6px; padding: 6px 8px; min-height: 38px; background: #fff; color: #111; }
-  .sheet input[type=checkbox] { width: 22px; min-height: 22px; }
-  .sheet input:disabled, .sheet select:disabled, .sheet textarea:disabled { background: transparent; border-color: transparent; color: #111; opacity: 1; }
-  .sheet .hint { font-size: 12px; margin: 4px 0 0; }
+  #sheet input[type=checkbox] { width: 22px; min-height: 22px; }
+  #sheet input:disabled, #sheet select:disabled, #sheet textarea:disabled { background: transparent; border-color: transparent; color: #111; opacity: 1; }
+  #sheet .hint { font-size: 12px; margin: 4px 0 0; }
   .gridwrap { overflow-x: auto; }
-  .sheet table.grid td { min-width: 70px; padding: 4px; }
+  #sheet table.grid td { min-width: 70px; padding: 4px; }
   .rowdel { background: #fff; color: var(--danger); border: 1px solid var(--danger); border-radius: 6px; min-width: 34px; min-height: 34px; font-weight: 700; }
-  .sheet .dlg-acts { margin-top: 16px; }
+  #sheet .dlg-acts { margin-top: 16px; }
   .signs .meta { font-size: 12px; margin-top: 4px; color: #333; }
   .signs .meta.red { color: var(--danger); }
   .signs .blank { font-size: 12px; margin-top: 4px; }
   .goes { text-align: center; font-size: 13px; color: var(--navy); font-weight: 700; margin: -4px 0 10px; }
-  .sheet .derived { font-weight: 700; }
-  .sheet .awaiting { color: #7a5a00; background: #fff4d6; border-radius: 6px; padding: 2px 8px; font-weight: 700; font-size: 13px; }
+  #sheet .derived { font-weight: 700; }
+  #sheet .awaiting { color: #7a5a00; background: #fff4d6; border-radius: 6px; padding: 2px 8px; font-weight: 700; font-size: 13px; }
   .barrole { display: block; font-size: 12px; opacity: .85; }
   body.embed .barrole { display: none; }
   .voidbtn { margin-top: 20px; color: var(--danger); border-color: var(--danger) !important; }
   /* داخل نافذة المهامّ: العنوان في رأس النافذة، فيبقى زرّ الطبع وحده */
   body.embed #barTitle { visibility: hidden; }
   body.embed .bar { padding: 6px 12px; }
+  .formflash { max-width: 794px; margin: 12px auto 0; padding: 0 8px; }
+  .formflash .flash { position: static; }
   @media print {
     body { background: #fff; }
-    .bar, .toast, #loadErr, .noprint, .sheet .hint { display: none !important; }
-    .sheet input, .sheet select, .sheet textarea { border-color: transparent; padding: 0; min-height: 0; }
+    .bar, .toast, #loadErr, .noprint, #sheet .hint { display: none !important; }
+    #sheet input, #sheet select, #sheet textarea { border-color: transparent; padding: 0; min-height: 0; }
     .gridwrap { overflow: visible; }
-    .sheet { box-shadow: none; margin: 0; max-width: none; padding: 0; }
+    #sheet { box-shadow: none; margin: 0; max-width: none; padding: 0; }
     @page { size: A4; margin: 14mm; }
   }
-  @media (max-width: 600px) { .sheet { padding: 16px; margin: 8px; } .signs { grid-template-columns: 1fr; } }
+  @media (max-width: 600px) { #sheet { padding: 16px; margin: 8px; } .signs { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -72,32 +74,15 @@
   <button type="button" id="printBtn">اطبع</button>
 </div>
 <div class="gatebox"><div class="notice err" id="loadErr" hidden></div></div>
+<!-- شريطُ النتيجة على نموذج المحاكي: نصُّه من القاعدة، ويبقى حتى الفعل التالي -->
+<div class="formflash noprint"><div class="flash" id="flash" hidden></div></div>
 <article class="sheet" id="sheet" hidden></article>
-<dialog id="refuseDlg"><form method="dialog">
-  <h3>الامتناع عن التوقيع</h3>
-  <p class="quote" id="refWho"></p>
-  <label for="refReason">سبب الامتناع — إلزامي</label>
-  <textarea id="refReason" rows="3"></textarea>
-  <div class="dlg-acts">
-    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
-    <button value="ok" type="submit" class="btn-danger" id="refOk" disabled>سجّل الامتناع</button>
-  </div>
-</form></dialog>
-<dialog id="voidDlg"><form method="dialog">
-  <h3>إلغاء النموذج المعتمد</h3>
-  <p class="hint">المعتمد لا يُعدَّل: يُلغى بسبب مكتوب، ثم يُعبّأ من جديد.</p>
-  <label for="voidReason">سبب الإلغاء — إلزامي</label>
-  <textarea id="voidReason" rows="3"></textarea>
-  <div class="dlg-acts">
-    <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
-    <button value="ok" type="submit" class="btn-danger" id="voidOk" disabled>ألغِ النموذج</button>
-  </div>
-</form></dialog>
 <div class="toast" id="toast" hidden></div>
 
 <script src="vendor/supabase-2.117.2.js"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
+<script src="views.js"></script>
 <script src="form.js"></script>
 </body>
 </html>
