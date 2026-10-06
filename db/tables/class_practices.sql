@@ -1,6 +1,6 @@
 -- v2.class_practices
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 3473f7a55a503c278081c4c99350fac0
+-- md5 aa626f3d65cf3227faa3b5f72ba4847b
 
 CREATE TABLE v2.class_practices (
     code text NOT NULL,
@@ -19,7 +19,6 @@ CREATE TABLE v2.class_practices (
     active boolean DEFAULT true NOT NULL,
     origin text DEFAULT 'المدرسة'::text NOT NULL,
     school_id uuid,
-    based_on text,
     note_ar text,
     CONSTRAINT class_practices_pkey PRIMARY KEY (code),
     CONSTRAINT class_practices_kind_check CHECK ((kind = ANY (ARRAY['practice'::text, 'state'::text]))),
@@ -31,4 +30,3 @@ COMMENT ON TABLE v2.class_practices IS 'ممارسات الصف — طبقة د�
 COMMENT ON COLUMN v2.class_practices.once_per_day IS 'لا تُرصد أكثر من مرة في اليوم مهما تعددت الحصص.';
 COMMENT ON COLUMN v2.class_practices.origin IS 'المدرسة: اجتهاد مدرسي لا نصّ وزاري. ويُعدَّل من لوحة التحكم.';
 COMMENT ON COLUMN v2.class_practices.school_id IS 'فارغٌ = مشتركةٌ للمجمّع · ومملوءٌ = خاصّةٌ بهذي المدرسة. قرار مفرح ٦/١٠/٢٠٢٦';
-COMMENT ON COLUMN v2.class_practices.based_on IS 'المشتركةُ التي فُصلت عنها — فالمفصولةُ تحجب أصلَها في مدرستها';

@@ -585,6 +585,11 @@ CREATE POLICY period_slots_t ON v2.period_slots AS PERMISSIVE FOR ALL TO authent
 CREATE POLICY posts_read ON v2.posts AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
 
+-- ── practice_overrides · md5 ada4a056e7c445175c39e7bace02e8b6
+CREATE POLICY po_tenant ON v2.practice_overrides AS PERMISSIVE FOR ALL TO authenticated
+    USING (v2.my_school(school_id))
+    WITH CHECK (v2.my_school(school_id));
+
 -- ── practice_points · md5 e158dbb8b6c6d731210d5c24bedfe2b1
 CREATE POLICY pp_t ON v2.practice_points AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))

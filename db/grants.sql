@@ -1,7 +1,7 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 f542e2b60a22ff58ad91b03192d64aa0
+-- ── grants · md5 6b5519729b3712339f0e57ca6fc43df7
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 
@@ -551,24 +551,24 @@ GRANT EXECUTE ON FUNCTION public.v2_period_list(p_section uuid, p_period smallin
 REVOKE ALL ON FUNCTION public.v2_period_summary(p_section uuid, p_period smallint, p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_period_summary(p_section uuid, p_period smallint, p_date date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_period_summary(p_section uuid, p_period smallint, p_date date) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_practice_save(p_school uuid, p_code text, p_title text, p_points numeric, p_polarity text, p_scope text, p_kind text, p_zone text, p_once_per_day boolean, p_threshold_count smallint, p_threshold_days smallint, p_escalate_to integer, p_escalate_note text, p_note text, p_ord smallint) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_practice_save(p_school uuid, p_code text, p_title text, p_points numeric, p_polarity text, p_scope text, p_kind text, p_zone text, p_once_per_day boolean, p_threshold_count smallint, p_threshold_days smallint, p_escalate_to integer, p_escalate_note text, p_note text, p_ord smallint) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_practice_save(p_school uuid, p_code text, p_title text, p_points numeric, p_polarity text, p_scope text, p_kind text, p_zone text, p_once_per_day boolean, p_threshold_count smallint, p_threshold_days smallint, p_escalate_to integer, p_escalate_note text, p_note text, p_ord smallint) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_practice_scopes(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_practice_scopes(p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_practice_scopes(p_school uuid) TO service_role;
-REVOKE ALL ON FUNCTION public.v2_practice_toggle(p_school uuid, p_code text, p_active boolean) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.v2_practice_toggle(p_school uuid, p_code text, p_active boolean) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.v2_practice_toggle(p_school uuid, p_code text, p_active boolean) TO service_role;
-REVOKE ALL ON FUNCTION public.v2_practice_unfork(p_school uuid, p_code text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.v2_practice_unfork(p_school uuid, p_code text) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.v2_practice_unfork(p_school uuid, p_code text) TO service_role;
-REVOKE ALL ON FUNCTION public.v2_practice_upsert(p_school uuid, p_code text, p_title text, p_points numeric, p_polarity text, p_scope text, p_kind text, p_zone text, p_once_per_day boolean, p_threshold_count smallint, p_threshold_days smallint, p_escalate_to integer, p_escalate_note text, p_note text, p_ord smallint) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.v2_practice_upsert(p_school uuid, p_code text, p_title text, p_points numeric, p_polarity text, p_scope text, p_kind text, p_zone text, p_once_per_day boolean, p_threshold_count smallint, p_threshold_days smallint, p_escalate_to integer, p_escalate_note text, p_note text, p_ord smallint) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.v2_practice_upsert(p_school uuid, p_code text, p_title text, p_points numeric, p_polarity text, p_scope text, p_kind text, p_zone text, p_once_per_day boolean, p_threshold_count smallint, p_threshold_days smallint, p_escalate_to integer, p_escalate_note text, p_note text, p_ord smallint) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_practice_state(p_school uuid, p_code text, p_state text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_practice_state(p_school uuid, p_code text, p_state text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_practice_state(p_school uuid, p_code text, p_state text) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_practices(p_school uuid, p_scope text, p_polarity text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_practices(p_school uuid, p_scope text, p_polarity text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_practices(p_school uuid, p_scope text, p_polarity text) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_practices(p_scope text, p_polarity text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_practices(p_scope text, p_polarity text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_practices(p_scope text, p_polarity text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_practices_hidden(p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_practices_hidden(p_school uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_practices_hidden(p_school uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_queue_messages(p_school uuid, p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_queue_messages(p_school uuid, p_date date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_queue_messages(p_school uuid, p_date date) TO service_role;
