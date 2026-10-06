@@ -1,6 +1,7 @@
 -- فحص ٢٣ · جدولُ الحصص: التحكّم والنصاب والخطّة والتوزيعُ الآليّ — بالنداءات التي ترسلها jadwal.js.
 -- كلُّه داخل begin … rollback، فلا يبقى في الجدول ولا في المقترحات شيء.
 -- ⚠️ أسماءُ الإعدادات لا تفرّق بين الحروف: كانت t.S1 و t.S2 تتصادم مع نتائج t.s1 و t.s2 في الإصدار ٢ — فسُمّيت t.sec1 · t.sec2 · t.ta · t.tb · t.per.
+-- الإصدار ٤: أُصلح المشغّلُ trg_tt_clash (يحترم الإقرار) فأُعيد، ومعه تجهيزُ S2.
 -- الإصدار ٣: أُصلحت الجسورُ (الأيّامُ ٠–٤ · weekday_ar لا يُكتب · days {no,label} · sections · حارسُ مدرسة draft_card · applied_by · إلغاءٌ بسبب) — فأُعيد مرّةً.
 -- الهويّة: مفرح. وتكليفُه وكيلُ شؤون الطلاب يملك الحصّةَ وحدَها؛ والنصابُ والخطّةُ والاقتراحُ والإقرارُ للمدير والوكيل ووكيل الشؤون التعليميّة.
 -- فيُضاف له داخل التراجع تكليفٌ مؤقّتٌ «وكيل المدرسة» في الطفيل (صفٌّ في assignments) — لا حسابَ يُمسّ، ولا حذف، ويزول بالتراجع.
@@ -17,10 +18,10 @@ select set_config('t.wd',(select weekday::text from v2.timetable where id=curren
        set_config('t.per',(select period_no::text from v2.timetable where id=current_setting('t.x')::uuid),true),
        set_config('t.ta',(select person_id::text from v2.timetable where id=current_setting('t.x')::uuid),true),
        set_config('t.sec1',(select section_id::text from v2.timetable where id=current_setting('t.x')::uuid),true);
-select set_config('t.sec2',(select t.section_id::text from v2.timetable t where t.school_id=current_setting('t.school')::uuid
-          and t.section_id is not null and t.section_id<>current_setting('t.sec1')::uuid
-          and not exists (select 1 from v2.timetable y where y.section_id=t.section_id and y.weekday=current_setting('t.wd')::smallint and y.period_no=current_setting('t.per')::smallint)
-          limit 1),true);
+-- الإصدار ٤: لا فصلَ فارغًا في أيّ وقت (الفصولُ الثلاثةُ مجدولةٌ كلَّ الحصص) — فـ S2 فصلٌ آخرُ مشغول،
+-- ويُنتظر في ٢ تضاربان: المعلّمُ مشغول والفصلُ مشغول. (المحاولةُ الأولى للإصدار ٤ طلبت فصلًا فارغًا فلم تجده وتوقّفت قبل أيّ خطوة)
+select set_config('t.sec2',(select c.id::text from v2.class_sections c where c.school_id=current_setting('t.school')::uuid and c.active
+          and c.id<>current_setting('t.sec1')::uuid order by c.grade, c.section limit 1),true);
 select set_config('t.tb',(select t.person_id::text from v2.timetable t where t.school_id=current_setting('t.school')::uuid
           and t.person_id is not null and t.person_id<>current_setting('t.ta')::uuid
           and not exists (select 1 from v2.timetable y where y.person_id=t.person_id and y.weekday=current_setting('t.wd')::smallint and y.period_no=current_setting('t.per')::smallint)
@@ -48,9 +49,9 @@ do $$ declare s record; r text; begin
     (11, 'انتظارٌ بلا فصل', 'standby', $q$select r->>'slot' from (select public.v2_slot_save(current_setting('t.school')::uuid,null,current_setting('t.wd')::smallint,current_setting('t.per')::smallint,null,current_setting('t.tb')::uuid,'standby',null,null,null,true) r) z$q$),
     (12, 'حذفٌ بلا سبب', null, $q$select public.v2_slot_delete(current_setting('t.forced')::uuid,null)::text$q$),
     (13, 'حذفٌ بسبب', null, $q$select public.v2_slot_delete(current_setting('t.forced')::uuid,'أُضيفت في الفحص')::text$q$),
-    (14, 'النصابُ والخطّة (يقرؤهما)', null, $q$select 'quota '||jsonb_array_length(r->'quota')||' · plan '||jsonb_array_length(r->'plan')||' · teachers '||jsonb_array_length(r->'teachers')||' · balance '||(r->'balance')::text||' ‖ '||(r->'plan'->0)::text||' ‖ '||(select (x)::text from jsonb_array_elements(r->'teachers') x where jsonb_array_length(x->'subjects')>0 limit 1) from (select public.v2_quota_board(current_setting('t.school')::uuid) r) z$q$),
+    (14, 'النصابُ والخطّة (يقرؤهما)', null, $q$select 'quota '||jsonb_array_length(r->'quota')||' · plan '||jsonb_array_length(r->'plan')||' · teachers '||jsonb_array_length(r->'teachers')||' · balance '||(r->'balance')::text from (select public.v2_quota_board(current_setting('t.school')::uuid) r) z$q$),
     (15, 'يضبط النصاب (وكيلُ شؤون الطلاب)', null, $q$select public.v2_quota_save(current_setting('t.school')::uuid,'subject_teacher',null,10::smallint,null,'فحص')::text$q$),
-    (16, 'يقترح جدولًا (وكيلُ شؤون الطلاب)', null, $q$select public.v2_timetable_suggest(current_setting('t.school')::uuid,false,'فحص')::text$q$)
+    (16, 'يقترح جدولًا (وكيلُ شؤون الطلاب)', null, $q$select left(public.v2_timetable_suggest(current_setting('t.school')::uuid,false,'فحص')::text,160)$q$)
   ) v(n,l,k,q) order by n loop
     begin execute s.q into r;
       if s.k is not null then perform set_config('t.'||s.k, r, true); end if;
@@ -104,21 +105,21 @@ set local request.jwt.claims = '{"sub":"11be0946-ff39-4eb7-8a74-023b580479be","r
 do $$ declare s record; r text; begin
   for s in select * from (values
     (22, 'يقترح (لا يثبّت القائم)', 'draft', $q$select r->>'draft' from (select public.v2_timetable_suggest(current_setting('t.school')::uuid,false,'فحص ٢٣') r) z$q$),
-    (23, 'نتيجةُ الاقتراح', null, $q$select 'placed '||(d->'stats'->>'placed')||' · unplaced '||(d->'stats'->>'unplaced')||' · standby '||(d->'stats'->>'standby')||' · gaps '||jsonb_array_length(coalesce(d->'stats'->'gaps','[]'))||' ‖ '||coalesce((d->'stats'->'gaps'->0)::text,'—') from (select public.v2_draft_card(current_setting('t.draft')::uuid)->'draft' d) z$q$),
-    (24, 'لا يتجاوز نصابًا: أعلى حملِ تدريسٍ لمن نصابُه ١٠', null, $q$select coalesce(max((x->>'teaching')::int),0)::text||' (والنصاب ١٠ لمعلّمي المادّة)' from jsonb_array_elements(public.v2_draft_card(current_setting('t.draft')::uuid)->'load') x$q$),
-    (25, 'كلُّ خانةٍ بسببها', null, $q$select count(*) filter (where coalesce(x->>'why','')='')||' بلا سبب من '||count(*)||' · '||(select string_agg(distinct x2->>'why',' | ') from jsonb_array_elements(public.v2_draft_card(current_setting('t.draft')::uuid)->'slots') x2) from jsonb_array_elements(public.v2_draft_card(current_setting('t.draft')::uuid)->'slots') x$q$),
+    (23, 'نتيجةُ الاقتراح', null, $q$select 'placed '||(d->'stats'->>'placed')||' · unplaced '||(d->'stats'->>'unplaced')||' · standby '||(d->'stats'->>'standby')||' · gaps '||jsonb_array_length(coalesce(d->'stats'->'gaps','[]')) from (select public.v2_draft_card(current_setting('t.draft')::uuid)->'draft' d) z$q$),
+    (24, 'لا يتجاوز نصابًا: أعلى حملِ تدريسٍ لمن نصابُه ١٠', null, $q$select coalesce(max((x->>'teaching')::int),0)::text from jsonb_array_elements(public.v2_draft_card(current_setting('t.draft')::uuid)->'load') x$q$),
+    (25, 'كلُّ خانةٍ بسببها', null, $q$select count(*) filter (where coalesce(x->>'why','')='')||' بلا سبب من '||count(*) from jsonb_array_elements(public.v2_draft_card(current_setting('t.draft')::uuid)->'slots') x$q$),
     (26, 'الجدولُ القائمُ لم يُمسّ قبل الإقرار', null, $q$select jsonb_array_length(public.v2_timetable_board(current_setting('t.school')::uuid,null,null,null)->'slots')::text$q$),
     (27, 'يُقرّ بغير «أقرّ»', null, $q$select public.v2_draft_apply(current_setting('t.draft')::uuid,'نعم')::text$q$),
     (28, 'يُقرّ بـ«أقرّ»', null, $q$select public.v2_draft_apply(current_setting('t.draft')::uuid,'أقرّ')::text$q$),
     (29, 'يُقرّ ثانيةً', null, $q$select public.v2_draft_apply(current_setting('t.draft')::uuid,'أقرّ')::text$q$),
     (30, 'الجدولُ بعد الإقرار', null, $q$select jsonb_array_length(public.v2_timetable_board(current_setting('t.school')::uuid,null,null,null)->'slots')::text$q$),
-    (31, 'قائمةُ المقترحات', null, $q$select jsonb_array_length(r)||' · '||(r->0->>'state')||' · made_by='||coalesce(r->0->>'made_by','—')||' · applied_at='||coalesce(r->0->>'applied_at','—')||' · '||(select string_agg(k,',' order by k) from jsonb_object_keys(r->0) k) from (select public.v2_drafts_list(current_setting('t.school')::uuid) r) z$q$),
+    (31, 'قائمةُ المقترحات', null, $q$select jsonb_array_length(r)||' · '||(r->0->>'state')||' · made_by='||coalesce(r->0->>'made_by','—') from (select public.v2_drafts_list(current_setting('t.school')::uuid) r) z$q$),
     (32, 'إلغاءُ مقترحٍ مُقَرّ', null, $q$select public.v2_draft_cancel(current_setting('t.draft')::uuid,'فحص')::text$q$),
     (33, 'مقترحٌ ثانٍ ثمّ إلغاؤه بلا سبب', 'draft2', $q$select r->>'draft' from (select public.v2_timetable_suggest(current_setting('t.school')::uuid,false,'فحص ٢٣ ب') r) z$q$),
     (34, 'إلغاءٌ بلا سبب', null, $q$select public.v2_draft_cancel(current_setting('t.draft2')::uuid,'')::text$q$),
     (35, 'المقترحُ المُقَرّ: applied_by', null, $q$select coalesce(public.v2_draft_card(current_setting('t.draft')::uuid)->'draft'->>'applied_by','—')$q$),
-    (36, 'خانةٌ من يوم ١ في اللوح: weekday و weekday_ar', null, $q$select (select x::text from jsonb_array_elements(public.v2_timetable_board(current_setting('t.school')::uuid,null,null,1::smallint)->'slots') x limit 1)$q$),
-    (37, 'v2_sections', null, $q$select jsonb_array_length(r)||' فصلًا ‖ '||(r->0)::text from (select public.v2_sections(current_setting('t.school')::uuid) r) z$q$)
+    (36, 'خانةٌ من يوم ١ في اللوح: weekday و weekday_ar', null, $q$select (select (x->>'weekday')||' · '||(x->>'weekday_ar') from jsonb_array_elements(public.v2_timetable_board(current_setting('t.school')::uuid,null,null,1::smallint)->'slots') x limit 1)$q$),
+    (37, 'v2_sections', null, $q$select jsonb_array_length(r)||' فصلًا' from (select public.v2_sections(current_setting('t.school')::uuid) r) z$q$)
   ) v(n,l,k,q) order by n loop
     begin execute s.q into r;
       if s.k is not null then perform set_config('t.'||s.k, r, true); end if;
@@ -128,6 +129,6 @@ do $$ declare s record; r text; begin
   end loop; end $$;
 reset role;
 
-select n::text as "#", left(current_setting('t.s'||n),1200) as النتيجة from generate_series(1,37) n
-union all select 'أ', 'الحصّة x: يوم '||current_setting('t.wd')||' حصّة '||current_setting('t.per')||' · A '||current_setting('t.ta')||' · S1 '||current_setting('t.sec1')||' · S2 '||coalesce(current_setting('t.sec2'),'—')||' · B '||coalesce(current_setting('t.tb'),'—')||' · من مالك '||coalesce(current_setting('t.other'),'—')||' · سطورُ الخطّة '||current_setting('t.plan_n');
+select n::text as "#", left(current_setting('t.s'||n),600) as النتيجة from generate_series(1,37) n
+union all select 'أ', 'الحصّة x: يوم '||current_setting('t.wd')||' حصّة '||current_setting('t.per')||' · S2 '||coalesce(current_setting('t.sec2'),'—')||' · B '||coalesce(current_setting('t.tb'),'—');
 rollback;

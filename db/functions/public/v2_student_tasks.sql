@@ -1,5 +1,5 @@
 -- public.v2_student_tasks(p_student uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 807b8ea104ddf91b6c268b49a7629d2d
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 69827df8e485ef0e0a4480042eb7262a
 CREATE OR REPLACE FUNCTION public.v2_student_tasks(p_student uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -25,7 +25,10 @@ begin
         when 'repair' then 'إصلاح التالف'
         when 'seize' then 'المضبوطات'
         else 'إجراءٌ تربويّ' end,
-      'text',t.text_ar,'owner_role',t.owner_role,'origin',t.origin,
+      'text',t.text_ar,
+      'owner_role',t.owner_role,
+      'owner_role_ar', v2.owner_ar(t.owner_role),
+      'origin',t.origin,
       'status',t.status,'skip_reason',t.skip_reason,
       'done_at',t.done_at,
       'done_by',(select v2.fn_display_name(p.full_name) from v2.people p where p.id=t.done_by),
@@ -35,7 +38,6 @@ begin
       'evidence_kind',t.evidence_kind,
       'evidence_ar',(select k.label_ar from v2.evidence_kinds k where k.key=t.evidence_kind),
       'hint_ar',(select k.hint_ar from v2.evidence_kinds k where k.key=t.evidence_kind),
-      -- 🔑 النموذجُ برقمه وعنوانه
       'form_no', v2.task_form_no(t.kind),
       'form_title',(select f.title_ar from v2.official_forms f
                      where f.form_no = v2.task_form_no(t.kind)),

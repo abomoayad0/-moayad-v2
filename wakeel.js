@@ -381,7 +381,7 @@
       for (const t of ts) {
         const done = t.status !== 'open';
         const li = el('li');
-        li.append(el('i', 'rs-tick' + (done ? ' ok' : ''), done ? '✓' : '○'), el('span', null, t.text_ar), el('span', 'rs-who', t.kind_ar || t.owner_ar || t.owner_role || ''));
+        li.append(el('i', 'rs-tick' + (done ? ' ok' : ''), done ? '✓' : '○'), el('span', null, t.text_ar), el('span', 'rs-who', t.kind_ar || t.owner_ar || t.owner_role_ar || t.owner_role || ''));
         ul.appendChild(li);
       }
       c.appendChild(ul);

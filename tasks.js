@@ -268,7 +268,7 @@
     if (t.owner_person) {
       c.appendChild(el('div', 'meta assigned', 'مُسندة إلى ' + (t.owner_ar || '—') + (t.delegate_note ? ' — بسبب: ' + t.delegate_note : '')));
     } else {
-      c.appendChild(el('div', 'meta', 'المسؤول: ' + (t.owner_role || '—')));
+      c.appendChild(el('div', 'meta', 'المسؤول: ' + (t.owner_role_ar || t.owner_role || '—')));
     }
     if (t.evidence_ar) c.appendChild(el('div', 'meta', 'الإثبات: ' + t.evidence_ar));
     // الآلي يقع في القاعدة (الحسم والتعويض) فلا يُسأل عنه إثبات
