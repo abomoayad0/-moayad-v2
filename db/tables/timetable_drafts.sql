@@ -1,6 +1,6 @@
 -- v2.timetable_drafts
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 e00e025dbc48e2ba6e7d339443e16bc2
+-- md5 a63fa25cea8964d0bf2585a57442d64c
 
 CREATE TABLE v2.timetable_drafts (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -11,6 +11,7 @@ CREATE TABLE v2.timetable_drafts (
     applied_at timestamp with time zone,
     note_ar text,
     stats jsonb,
+    applied_by uuid,
     CONSTRAINT timetable_drafts_pkey PRIMARY KEY (id),
     CONSTRAINT timetable_drafts_state_check CHECK ((state = ANY (ARRAY['مقترح'::text, 'مُقَرّ'::text, 'ملغًى'::text])))
 );

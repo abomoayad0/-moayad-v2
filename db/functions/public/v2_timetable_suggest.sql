@@ -1,5 +1,5 @@
 -- public.v2_timetable_suggest(p_school uuid, p_keep_fixed boolean, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2414485a7e9b5313d8ef5a237b75f5e9
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 a0093b8f710298970afa8478e3301c79
 CREATE OR REPLACE FUNCTION public.v2_timetable_suggest(p_school uuid, p_keep_fixed boolean, p_note text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -21,7 +21,6 @@ begin
   values (p_school,v2.current_person(),nullif(btrim(coalesce(p_note,'')),''))
   returning id into did;
 
-  -- ما ثبّته الإنسانُ يُنقل كما هو
   if coalesce(p_keep_fixed,true) then
     insert into v2.timetable_draft_slots(draft_id,weekday,period_no,section_id,
         person_id,subject_ar,slot_kind,why_ar)
@@ -31,12 +30,9 @@ begin
     select count(*) into placed from v2.timetable_draft_slots where draft_id=did;
   end if;
 
-  -- التوزيعُ بحسب الخطّة
   for pl in
-    select s.grade, s.subject_ar, s.slots
-      from v2.subject_plan s
-     where s.school_id=p_school and s.active
-     order by s.slots desc, s.grade, s.ord
+    select s.grade, s.subject_ar, s.slots from v2.subject_plan s
+     where s.school_id=p_school and s.active order by s.slots desc, s.grade, s.ord
   loop
     for sec in
       select c.id, c.grade from v2.class_sections c
@@ -48,8 +44,8 @@ begin
       need := pl.slots - have;
       while need > 0 loop
         cand := null;
-        -- أوّلُ خانةٍ خاليةٍ للفصل، ومعلّمٌ متقنٌ فارغٌ فيها وأقلُّهم حملًا
-        for d in 1..5 loop
+        -- 🔑 الأيّامُ من صفرٍ إلى أربعة
+        for d in 0..4 loop
           for p in 1..maxp loop
             exit when cand is not null;
             if exists (select 1 from v2.timetable_draft_slots x
@@ -96,14 +92,13 @@ begin
     end loop;
   end loop;
 
-  -- ملءُ فراغ المعلّمين انتظارًا
   insert into v2.timetable_draft_slots(draft_id,weekday,period_no,person_id,slot_kind,why_ar)
   select did, g.d, g.p, g.person_id, 'standby', 'فراغٌ في جدول المعلّم'
   from (
     select pe.id person_id, dd.d, pp.p
       from v2.people pe
       join v2.assignments a on a.person_id=pe.id and a.school_id=p_school and a.ended_on is null
-      cross join generate_series(1,5) dd(d)
+      cross join generate_series(0,4) dd(d)
       cross join generate_series(1,maxp) pp(p)
      where a.post_key in ('subject_teacher','sped_teacher','gifted_teacher')
        and not exists (select 1 from v2.timetable_draft_slots x
@@ -115,10 +110,8 @@ begin
 
   update v2.timetable_drafts set stats = jsonb_build_object(
       'placed',placed,'unplaced',unplaced,'standby',standby,
-      'placed_ar',v2.ar_num(placed),'standby_ar',v2.ar_num(standby),
-      'gaps',gaps)
+      'placed_ar',v2.ar_num(placed),'standby_ar',v2.ar_num(standby),'gaps',gaps)
    where id=did;
-
   return jsonb_build_object('ok',true,'draft',did,
     'placed',placed,'unplaced',unplaced,'standby',standby,'gaps',gaps,
     'note','هذا مقترحٌ يُعرض ولا يُثبَّت — راجعه ثمّ أقرّه أو ألغِه');

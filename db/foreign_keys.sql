@@ -363,6 +363,18 @@ ALTER TABLE v2.day_reversals
 ALTER TABLE v2.day_settings
     ADD CONSTRAINT day_settings_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
 
+-- ── delegations · md5 3348bd03a6517a1a9c20aa4e1ce9656e
+ALTER TABLE v2.delegations
+    ADD CONSTRAINT delegations_from_person_fkey FOREIGN KEY (from_person) REFERENCES v2.people(id);
+ALTER TABLE v2.delegations
+    ADD CONSTRAINT delegations_issued_by_fkey FOREIGN KEY (issued_by) REFERENCES v2.people(id);
+ALTER TABLE v2.delegations
+    ADD CONSTRAINT delegations_post_key_fkey FOREIGN KEY (post_key) REFERENCES v2.posts(key);
+ALTER TABLE v2.delegations
+    ADD CONSTRAINT delegations_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.delegations
+    ADD CONSTRAINT delegations_to_person_fkey FOREIGN KEY (to_person) REFERENCES v2.people(id);
+
 -- ── dismissal_records · md5 3798ad2afaada41247c84b436b3c71fc
 ALTER TABLE v2.dismissal_records
     ADD CONSTRAINT dismissal_records_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES v2.people(id);
@@ -855,7 +867,9 @@ ALTER TABLE v2.timetable
 ALTER TABLE v2.timetable_draft_slots
     ADD CONSTRAINT timetable_draft_slots_draft_id_fkey FOREIGN KEY (draft_id) REFERENCES v2.timetable_drafts(id) ON DELETE CASCADE;
 
--- ── timetable_drafts · md5 41b520677bbde3f154b20f5051360c8a
+-- ── timetable_drafts · md5 52aaaa730f2495a200aa0805f838ce4c
+ALTER TABLE v2.timetable_drafts
+    ADD CONSTRAINT timetable_drafts_applied_by_fkey FOREIGN KEY (applied_by) REFERENCES v2.people(id);
 ALTER TABLE v2.timetable_drafts
     ADD CONSTRAINT timetable_drafts_made_by_fkey FOREIGN KEY (made_by) REFERENCES v2.people(id);
 ALTER TABLE v2.timetable_drafts

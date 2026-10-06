@@ -1,11 +1,13 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 3dabf04232933b48f35d0d2055c69a69
+-- ── grants · md5 628a88aba05d2256710643820dee7b74
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 
 
+REVOKE ALL ON FUNCTION v2.acting_posts(p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.acting_posts(p_school uuid) TO authenticated;
 REVOKE ALL ON FUNCTION v2.acting_school() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.acting_school() TO authenticated;
 REVOKE ALL ON FUNCTION v2.ar_num(n numeric) FROM PUBLIC;
@@ -455,6 +457,15 @@ GRANT EXECUTE ON FUNCTION public.v2_decide_excuse(p_claim uuid, p_accept boolean
 REVOKE ALL ON FUNCTION public.v2_default_role() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_default_role() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_default_role() TO service_role;
+REVOKE ALL ON FUNCTION public.v2_delegate_add(p_school uuid, p_post text, p_to uuid, p_starts date, p_ends date, p_reason text, p_letter text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_delegate_add(p_school uuid, p_post text, p_to uuid, p_starts date, p_ends date, p_reason text, p_letter text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_delegate_add(p_school uuid, p_post text, p_to uuid, p_starts date, p_ends date, p_reason text, p_letter text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_delegate_revoke(p_delegation uuid, p_why text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_delegate_revoke(p_delegation uuid, p_why text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_delegate_revoke(p_delegation uuid, p_why text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_delegations_board(p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_delegations_board(p_school uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_delegations_board(p_school uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_draft_apply(p_draft uuid, p_confirm text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_draft_apply(p_draft uuid, p_confirm text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_draft_apply(p_draft uuid, p_confirm text) TO service_role;
@@ -620,6 +631,9 @@ GRANT EXECUTE ON FUNCTION public.v2_meetings_list(p_school uuid, p_committee tex
 REVOKE ALL ON FUNCTION public.v2_merits() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_merits() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_merits() TO service_role;
+REVOKE ALL ON FUNCTION public.v2_my_acting(p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_my_acting(p_school uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_my_acting(p_school uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_my_census(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_my_census(p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_my_census(p_school uuid) TO service_role;
@@ -752,6 +766,9 @@ GRANT EXECUTE ON FUNCTION public.v2_scope_upsert(p_school uuid, p_key text, p_la
 REVOKE ALL ON FUNCTION public.v2_section_timetable(p_section uuid, p_term smallint) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_section_timetable(p_section uuid, p_term smallint) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_section_timetable(p_section uuid, p_term smallint) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_sections(p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_sections(p_school uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_sections(p_school uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_session_add(p_case uuid, p_on date, p_minutes smallint, p_discussed text, p_response text, p_next text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_session_add(p_case uuid, p_on date, p_minutes smallint, p_discussed text, p_response text, p_next text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_session_add(p_case uuid, p_on date, p_minutes smallint, p_discussed text, p_response text, p_next text) TO service_role;

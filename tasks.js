@@ -252,6 +252,9 @@
     await onChanged();
   }
 
+  // حقولُ لوح الإثبات كما يجب أن يُرجعها الجسر — needs_* · lbl_* · form_no
+  const EV_KEYS = ['needs_date', 'needs_text', 'needs_people', 'needs_ref', 'needs_file', 'needs_signature', 'form_no'];
+
   function card(kind, t, onChanged, studentId) {
     const c = el('div', 'ev task t-' + t.status);
     const top = el('div', 'row1');
@@ -260,7 +263,7 @@
     top.append(el('div', 'detail', t.text_ar), b);
     c.appendChild(top);
     const meta = kind === 'behavior'
-      ? (t.kind_ar ? t.kind_ar + ' · ' : '') + (t.problem_ar ? t.problem_ar + ' — ' + (t.degree_ar || 'الدرجة ' + t.degree_no) + ' · ' : '') + (t.occurred_on || '')
+      ? (t.kind_ar ? t.kind_ar + ' · ' : '') + (t.problem_ar ? t.problem_ar + (t.degree_ar || t.degree_no ? ' — ' + (t.degree_ar || 'الدرجة ' + t.degree_no) : '') + ' · ' : '') + (t.occurred_on || '')
       : 'غياب ' + t.days_n + ' أيام ' + (t.excused ? 'بعذر' : 'بلا عذر') + ' · ' + (t.triggered_on || '');
     c.appendChild(el('div', 'meta', meta));
     // المُسندة إلى شخص بعينه تُعرض باسمه وسبب تحويلها
@@ -282,7 +285,13 @@
         const acts = el('div', 'acts two');
         const ok = el('button', 'a-accept', 'أغلقها بإثبات');
         ok.type = 'button';
-        ok.addEventListener('click', () => closeTask(kind, t, onChanged, studentId));
+        // لوحُ الإثبات يُبنى من needs_* · lbl_* · form_no — فإن لم يُرجعها الجسرُ بقي معطَّلًا ولا تُفترض لها بدائل
+        const gap = EV_KEYS.filter((k) => !(k in t));
+        if (gap.length) {
+          ok.disabled = true;
+          ok.title = 'ينتظر حقولَ الإثبات من القاعدة';
+          c.appendChild(el('div', 'meta nocan', 'الإغلاقُ بإثباتٍ معطَّلٌ — لم يُبنَ بعد: ينتظر حقولَ الإثبات من القاعدة (' + gap.join(' · ') + ').'));
+        } else ok.addEventListener('click', () => closeTask(kind, t, onChanged, studentId));
         const no = el('button', 'a-reject', 'إسقاط بسبب');
         no.type = 'button';
         no.addEventListener('click', () => skipTask(kind, t, onChanged));
@@ -325,6 +334,8 @@
       if (!res.data || res.data.length === 0) { box.appendChild(el('div', 'empty', 'لا مهامّ.')); continue; }
       for (const t of res.data) box.appendChild(card(kind, kind === 'behavior' ? norm(t) : t, again, studentId));
     }
+    // في الشاشات التي تحمل views.js تُعرض الأرقامُ عربيّةً كسائرها
+    if (window.MoayadView) window.MoayadView.arabize(box);
   }
 
   window.MoayadTasks = { render };

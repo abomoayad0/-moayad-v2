@@ -40,10 +40,8 @@
     const slots = board.slots || [];
     const periods = board.periods || [];
     const days = board.days || [];
-    // الفصولُ من الجدول القائم — فلا جسرَ يرجع فصولَ المدرسة بمعرّفاتها
-    const secMap = new Map();
-    for (const x of slots) if (x.section_id && !secMap.has(x.section_id)) secMap.set(x.section_id, x.section);
-    const sections = [...secMap].sort((a, b2) => String(a[1]).localeCompare(String(b2[1]), 'ar'));
+    // الفصولُ من فصول المدرسة (class_sections) كما يرجعها اللوحُ — لا من الحصص القائمة
+    const sections = (board.sections || []).map((c) => [c.id, c.label]);
     if (!st.person && (board.load || []).length) st.person = board.load[0].person_id;
     if (!st.section && sections.length) st.section = sections[0][0];
 
@@ -62,13 +60,14 @@
     hr.appendChild(el('th', null, ''));
     for (const p of periods) hr.appendChild(el('th', null, p.no_ar || String(p.no)));
     t.appendChild(hr);
-    days.forEach((dname, i) => {
-      const wd = i + 1;
+    // الأيّامُ من القاعدة {no, label}: الأحدُ ٠ والخميسُ ٤ — والحفظُ يرسل no نفسَه
+    days.forEach((d) => {
+      const wd = d.no;
+      const dname = d.label;
       const tr = el('tr');
       tr.appendChild(el('th', null, dname));
       for (const p of periods) {
-        // اليومُ يُطابَق باسمه (weekday_ar) لا برقمه: الجدولُ يرقّم من ٠ والجسورُ من ١ — والحفظُ يرسل رقمَ الجسر (١–٥)
-        const here = mine.filter((x) => x.weekday_ar === dname && x.period === p.no);
+        const here = mine.filter((x) => x.weekday === wd && x.period === p.no);
         const td = el('td', 'click' + (here.length ? ' on k-' + here[0].kind : ''));
         td.tabIndex = 0;
         if (here.length) {

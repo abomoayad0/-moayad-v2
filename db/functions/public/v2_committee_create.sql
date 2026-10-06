@@ -1,5 +1,5 @@
 -- public.v2_committee_create(p_school uuid, p_key text, p_label text, p_purpose text, p_seats jsonb)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 847bc32004a2ad0af94508b4fb50ec25
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 dd36d30777187ec5d895e715a92a2785
 CREATE OR REPLACE FUNCTION public.v2_committee_create(p_school uuid, p_key text, p_label text, p_purpose text, p_seats jsonb)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,6 @@ CREATE OR REPLACE FUNCTION public.v2_committee_create(p_school uuid, p_key text,
 AS $function$
 declare k text; s jsonb; n int := 0;
 begin
-  -- 🔒 إنشاءُ لجنةٍ قرارُ مديرٍ لا قرارُ وكيل
   perform v2.assert_role(array['principal'],'إنشاءَ لجنةٍ مدرسيّة');
   if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
   if btrim(coalesce(p_label,''))='' then raise exception 'اكتب اسمَ اللجنة'; end if;
@@ -22,22 +21,18 @@ begin
 
   insert into v2.committees(key,label_ar,is_permanent,requires_note,purpose,
       source_page,school_id,created_by)
-  values (k,btrim(p_label),true,false,
-      nullif(btrim(coalesce(p_purpose,'')),''),
-      'اجتهادُ مدرسةٍ — لا نصَّ لها في الدليل التنظيميّ',
-      p_school,v2.current_person());
+  values (k,btrim(p_label),true,false,nullif(btrim(coalesce(p_purpose,'')),''),
+      'اجتهادُ مدرسةٍ — لا نصَّ لها في الدليل التنظيميّ',p_school,v2.current_person());
 
   for s in select * from jsonb_array_elements(p_seats) loop
     if (s->>'seat_role') not in ('chair','member','rapporteur') then
       raise exception 'الصفة: رئيسٌ أو عضوٌ أو مقرّر'; end if;
     insert into v2.committee_seats(committee_key,ord,post_key,seat_role,seat_count,
         is_elected,elected_by,qualification)
-    values (k,coalesce((s->>'ord')::smallint,n+1),
-        nullif(s->>'post_key',''), s->>'seat_role',
-        coalesce((s->>'seat_count')::smallint,1),
+    values (k,coalesce((s->>'ord')::smallint,n+1),nullif(s->>'post_key',''),
+        s->>'seat_role',coalesce((s->>'seat_count')::smallint,1),
         coalesce((s->>'is_elected')::boolean, (s->>'post_key') is null),
-        nullif(s->>'elected_by',''),
-        'اجتهادُ مدرسةٍ — لا نصَّ لهذا المقعد في الدليل');
+        nullif(s->>'elected_by',''),'اجتهادُ مدرسةٍ — لا نصَّ لهذا المقعد في الدليل');
     n := n + 1;
   end loop;
 

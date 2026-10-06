@@ -204,6 +204,29 @@
     t.textContent = 'وضع التجربة — ' + tm.map((x) => x.name).join(' · ') + ': ما يُرصد يُوسم تجريبياً ويُمحى بأمر.';
   }
 
+  // ---------- الإنابة: سطرٌ في الرأس من v2_my_acting ----------
+  // ما يُعرض هو ما أرجعته القاعدة: كلُّ صفةٍ نافذةٍ بإنابة (by_delegation) — وحدّها until أو «حتى تُلغى»
+  let actingSeq = 0;
+  async function renderActing(school) {
+    const seq = ++actingSeq;
+    const old = $('actingLine');
+    if (old) old.remove();
+    if (!school) return;
+    const { data, error } = await rpc('v2_my_acting', { p_school: school }, 'صفاتُك النافذة');
+    if (seq !== actingSeq) return;
+    if (error) return; // لا يُختلق سطرٌ إذا لم يصل الجواب
+    const dl = (data || []).filter((x) => x.by_delegation === true);
+    if (!dl.length) return;
+    const dm = (d) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || ''); return m ? Number(m[3]) + '/' + Number(m[2]) : d; };
+    const ar = (v) => String(v).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
+    const box = el('div', 'acting');
+    box.id = 'actingLine';
+    for (const x of dl) {
+      box.appendChild(el('span', null, ar('تعمل بصفة ' + (x.post_ar || x.post) + ' — إنابةً ' + (x.until ? 'حتى ' + dm(x.until) : 'حتى تُلغى'))));
+    }
+    $('who').appendChild(box);
+  }
+
   // ---------- شريط الشاشات: من can وحدها ----------
   function renderNav(me, currentKey) {
     const nav = $('screens');
@@ -248,6 +271,7 @@
     $('school').addEventListener('change', () => {
       state.school = $('school').value;
       store('moayad.school', state.school);
+      renderActing(state.school);
       onChange('school');
     });
     $('date').addEventListener('change', () => {
@@ -298,6 +322,7 @@
       state.school = sel.value;
       if (!state.date) { $('date').value = localToday(); state.date = $('date').value; }
       $('dayView').hidden = false;
+      renderActing(state.school);
       await onChange(why);
     }
 
@@ -312,6 +337,6 @@
 
   window.Moayad = {
     sb, rpc, logError, $, state, SCREENS, DAY_KIND_AR, toast, errText, ltr, el, showLoadErr, renderDates, lacks,
-    loadMe, defaultRole, screensFor, renderHeader, renderNav, actAs, gate, signOut, start,
+    loadMe, defaultRole, screensFor, renderHeader, renderActing, renderNav, actAs, gate, signOut, start,
   };
 })();

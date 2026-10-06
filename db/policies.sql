@@ -295,6 +295,11 @@ CREATE POLICY ds_t ON v2.day_settings AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 
+-- ── delegations · md5 2f774da9cb68f2b193ab929fc3fc1b4e
+CREATE POLICY dlg_tenant ON v2.delegations AS PERMISSIVE FOR ALL TO authenticated
+    USING (v2.my_school(school_id))
+    WITH CHECK (v2.my_school(school_id));
+
 -- ── dismissal_records · md5 0f4d4465b052e9a3ad47445e9e3fd881
 CREATE POLICY dismissal_records_t ON v2.dismissal_records AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
