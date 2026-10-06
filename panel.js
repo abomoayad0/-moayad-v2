@@ -1,6 +1,6 @@
 // مؤيّد · لوحة التحكّم — أبوابُ الإعداد كما فهرستها القاعدة.
-// v2_settings_catalog · v2_setting_rows · v2_setting_update · v2_committee_board · v2_committee_quorum · v2_committee_seat_count
-// v2_practices(p_school,…) · v2_practice_scopes · v2_practice_upsert · v2_practice_toggle · v2_practice_unfork · v2_scope_upsert
+// v2_settings_catalog · v2_setting_rows · v2_setting_update · v2_committee_board · v2_committee_seat_count
+// v2_practices(p_school,…) · v2_practices_hidden · v2_practice_save · v2_practice_state · v2_practice_scopes · v2_scope_upsert · v2_committee_rules
 // المقفلُ يُقرأ بسببه وسنده ولا زرَّ تعديلٍ عليه. ومن يدخل اللوحة تحكم به القاعدة، ورفضُها يُعرض بنصّه.
 (function () {
   'use strict';
@@ -12,7 +12,7 @@
   // مفاتيح اللجان كما في المواصفة — وأسماؤها ونصابُها من v2_committee_board
   const COMMITTEES = ['guidance', 'admin', 'achievement', 'excellence', 'fund', 'safety', 'sped'];
 
-  const ui = { catalog: [], school: null };
+  const ui = { catalog: [], school: null, rules: {} };
 
   function ask(dlg) {
     return new Promise((resolve) => {
@@ -163,7 +163,7 @@
     const box = $('committeeTool');
     if (!box || !ui.school) return;
     box.textContent = '';
-    box.appendChild(el('h3', 'grp', 'النصاب وسعة المقاعد'));
+    box.appendChild(el('h3', 'grp', 'قواعد اللجان وسعة المقاعد'));
     const res = await Promise.all(COMMITTEES.map((k) =>
       M.rpc('v2_committee_board', { p_school: ui.school, p_committee: k }, 'مجلس اللجنة')));
     res.forEach((r, i) => {
@@ -172,10 +172,12 @@
       const b = r.data || {};
       const c = b.committee || {};
       row.appendChild(el('div', 'name', c.label || COMMITTEES[i]));
-      row.appendChild(el('div', 'meta', c.quorum == null ? 'لم يُحدَّد نصابٌ بعد' : 'النصاب: ' + c.quorum));
-      if (c.quorum_note) row.appendChild(el('div', 'meta', c.quorum_note));
+      // قواعدُ المدرسة تُعرض كما أرجعها آخرُ حفظٍ في هذي الجلسة — فلا جسرَ يقرؤها وحدَها بعد
+      const rule = ui.rules[c.key];
+      row.appendChild(el('div', 'meta', rule ? ruleText(rule) : 'قواعدُ مدرستك لهذي اللجنة: تُعرض بعد ضبطها هنا.'));
+      if (rule && rule.note) row.appendChild(el('div', 'meta', rule.note));
       const acts = el('div', 'acts one');
-      const q = el('button', 'a-go', 'اضبط النصاب');
+      const q = el('button', 'a-go', 'اضبط القواعد');
       q.type = 'button';
       q.addEventListener('click', () => setQuorum(c));
       acts.appendChild(q);
@@ -193,17 +195,32 @@
     });
   }
 
+  function ruleText(r) {
+    return 'النصاب: ' + (r.quorum_min == null ? 'لم يُحدَّد' : r.quorum_min) +
+      ' · الردُّ عن بُعد: ' + (r.allow_remote ? 'مقبول' : 'غيرُ مقبول') +
+      ' · التعادل: ' + (r.tie_rule === 'رئيس' ? 'يُرجَّح جانبُ الرئيس' : 'يُؤجَّل البند');
+  }
+
+  // النصابُ والردُّ عن بُعدٍ وحكمُ التعادل في نداءٍ واحد — وما تُرك فارغًا يبقى كما هو في القاعدة
   async function setQuorum(c) {
+    const r = ui.rules[c.key];
     $('qWhat').textContent = c.label || c.key;
-    $('qNow').textContent = c.quorum == null ? 'لم يُحدَّد نصابٌ بعد' : 'النصاب الآن: ' + c.quorum;
-    $('qMin').value = c.quorum == null ? '' : c.quorum;
+    $('qNow').textContent = r ? ruleText(r) : 'القواعدُ الحاليّة لا تُقرأ هنا قبل أوّل ضبط — وما تتركه فارغًا لا يتغيّر.';
+    $('qMin').value = '';
+    $('qRemote').value = '';
+    $('qTie').value = '';
     $('qNote').value = '';
     if (await ask($('quorumDlg')) !== 'ok') return;
     const v = $('qMin').value.trim();
-    const { error } = await M.rpc('v2_committee_quorum',
-      { p_school: ui.school, p_committee: c.key, p_min: v === '' ? null : Number(v), p_note: $('qNote').value.trim() || null }, 'ضبط النصاب');
-    if (error) { toast('لم يُضبط النصاب:\n' + errText(error)); return; }
-    toast('ضُبط نصاب ' + (c.label || c.key) + '.', true);
+    const rem = $('qRemote').value;
+    const { data, error } = await M.rpc('v2_committee_rules', {
+      p_school: ui.school, p_committee: c.key, p_quorum: v === '' ? null : Number(v),
+      p_allow_remote: rem === '' ? null : rem === 'yes', p_tie_rule: $('qTie').value || null,
+      p_note: $('qNote').value.trim() || null,
+    }, 'ضبط قواعد اللجنة');
+    if (error) { toast('لم تُضبط القواعد:\n' + errText(error)); return; }
+    ui.rules[c.key] = data || null;
+    toast('ضُبطت قواعد ' + (c.label || c.key) + (data ? ':\n' + ruleText(data) : '.'), true);
     loadCommittees();
   }
 
@@ -222,11 +239,17 @@
   }
 
   // ---------- ممارسات الصفّ ----------
-  // ١٢٧ مشتركةً للمجمّع أصلٌ لا يُمسّ. والمدرسةُ تفصل نسختَها فتحجب الأصلَ عندها، فلا تزدوج.
-  // والقاعدةُ تعرف بنفسها أيُّ الثلاثة يقع عند الحفظ: أُضيفت · عُدّلت · فُصلت لمدرستك — فلا نسأل المستخدم.
+  // الأصلُ المشتركُ يبقى بكوده، والمدرسةُ تضع عليه سطرَ تعديلٍ أو إخفاء — فالكودُ واحدٌ أبدًا ولا ينقطع سجلُّ الطالب.
+  // والقاعدةُ تعرف بنفسها وضعَ الحفظ: أُضيفت · عُدّلت · عُدّلت لمدرستك — فلا نسأل المستخدم.
   const POLARITY_AR = { positive: 'إيجابيّة', negative: 'سلبيّة' };
   const KIND_AR = { practice: 'ممارسة', state: 'حالة' };
   const pr = { scope: '', polarity: '', scopes: [] };
+
+  function tagOf(p) {
+    if (p.edited) return ['b-late', 'معدَّلةٌ لمدرستك'];
+    if (p.mine) return ['b-present', 'أنشأتها مدرستُك'];
+    return ['b-permitted', 'موحَّدةٌ للمجمّع'];
+  }
 
   async function loadScopes() {
     const { data, error } = await M.rpc('v2_practice_scopes', { p_school: ui.school }, 'مجالات الممارسة');
@@ -264,16 +287,19 @@
     if (!ui.school) { box.appendChild(el('div', 'notice err', 'لم تُحدَّد مدرستُك — بدّل صفتك إلى صفةٍ في مدرسة.')); return; }
     box.appendChild(el('div', 'meta', 'جارٍ جلب الممارسات…'));
     const sc = await loadScopes();
-    const { data, error } = await M.rpc('v2_practices',
-      { p_school: ui.school, p_scope: pr.scope || null, p_polarity: pr.polarity || null }, 'ممارسات الصفّ');
+    const [act, hid] = await Promise.all([
+      M.rpc('v2_practices', { p_school: ui.school, p_scope: pr.scope || null, p_polarity: pr.polarity || null }, 'ممارسات الصفّ'),
+      M.rpc('v2_practices_hidden', { p_school: ui.school }, 'الممارسات المخفيّة'),
+    ]);
     box.textContent = '';
     if (sc.error) { box.appendChild(el('div', 'notice err', errText(sc.error))); return; }
-    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
-    const rows = data || [];
+    if (act.error) { box.appendChild(el('div', 'notice err', errText(act.error))); return; }
+    const rows = act.data || [];
     box.appendChild(practicesFilters(box));
-    const owned = rows.filter((p) => p.owned).length;
-    box.appendChild(el('div', 'meta', rows.length + ' ممارسةً نافذة · منها ' + owned + ' مفصولةٌ لمدرستك'));
-    if (!rows.length) { box.appendChild(el('div', 'empty', 'لا ممارسات.')); return; }
+    const edited = rows.filter((p) => p.edited).length;
+    const mine = rows.filter((p) => p.mine).length;
+    box.appendChild(el('div', 'meta', rows.length + ' ممارسةً نافذة · معدَّلةٌ لمدرستك ' + edited + ' · أنشأتها مدرستُك ' + mine));
+    if (!rows.length) box.appendChild(el('div', 'empty', 'لا ممارسات.'));
     let lastScope = null;
     for (const p of rows) {
       if (p.scope !== lastScope) {
@@ -282,13 +308,31 @@
       }
       box.appendChild(practiceRow(p, box));
     }
+    // المخفيُّ في مدرستك — ومنه يُظهَر
+    box.appendChild(el('h3', 'grp', 'المخفيّ في مدرستك'));
+    if (hid.error) { box.appendChild(el('div', 'notice err', errText(hid.error))); return; }
+    const hidden = hid.data || [];
+    if (!hidden.length) { box.appendChild(el('div', 'meta', 'لا ممارسةَ مخفيّة.')); return; }
+    for (const h of hidden) {
+      const row = el('div', 'ev');
+      const top = el('div', 'row1');
+      top.append(el('div', 'name', h.title), el('span', 'badge b-absent', 'مخفيّة'));
+      row.appendChild(top);
+      row.appendChild(el('div', 'meta', [h.scope_ar || h.scope, POLARITY_AR[h.polarity] || h.polarity,
+        h.mine ? 'أنشأتها مدرستُك' : 'موحَّدةٌ للمجمّع'].join(' · ')));
+      const b = el('button', 'btn-ghost wide', 'أظهِرها');
+      b.type = 'button';
+      b.addEventListener('click', () => setState(h, 'أظهِر', box));
+      row.appendChild(b);
+      box.appendChild(row);
+    }
   }
 
   function practiceRow(p, box) {
     const row = el('div', 'ev');
     const top = el('div', 'row1');
-    top.append(el('div', 'name', p.title),
-      el('span', 'badge ' + (p.owned ? 'b-late' : 'b-permitted'), p.owned ? 'مفصولةٌ لمدرستك' : 'موحَّدةٌ للمجمّع'));
+    const [cls, tag] = tagOf(p);
+    top.append(el('div', 'name', p.title), el('span', 'badge ' + cls, tag));
     row.appendChild(top);
     const bits = [POLARITY_AR[p.polarity] || p.polarity, KIND_AR[p.kind] || p.kind, 'النقاط: ' + p.points];
     if (p.zone) bits.push('الموضع: ' + p.zone);
@@ -298,29 +342,23 @@
     row.appendChild(el('div', 'meta', bits.join(' · ')));
     if (p.escalate_note) row.appendChild(el('div', 'meta', p.escalate_note));
     if (p.note) row.appendChild(el('div', 'meta', p.note));
-    if (p.owned && p.based_on) row.appendChild(el('div', 'meta', 'أصلُها المشترك: ' + p.based_on));
-    const acts = el('div', 'acts two');
+    const acts = el('div', 'acts ' + (p.edited ? 'three' : 'two'));
     const ed = el('button', null, 'عدّل');
     ed.type = 'button';
     ed.addEventListener('click', () => editPractice(p, box));
     acts.appendChild(ed);
-    if (!p.owned) {
-      const f = el('button', null, 'افصلها لمدرستي');
-      f.type = 'button';
-      f.addEventListener('click', () => savePractice(p.code, p, box));
-      acts.appendChild(f);
-    } else if (p.based_on) {
-      const u = el('button', null, 'أعدها للمشترك');
+    if (p.edited) {
+      // «أعدها للأصل» للمشتركة المعدَّلة وحدَها
+      const u = el('button', null, 'أعدها للأصل');
       u.type = 'button';
-      u.addEventListener('click', () => unforkPractice(p, box));
+      u.addEventListener('click', () => setState(p, 'أعدها للأصل', box));
       acts.appendChild(u);
-    } else {
-      // أنشأتها المدرسة ولا أصلَ لها — لا تُحذف، تُخفى
-      const h = el('button', 'a-reject', 'أخفِها');
-      h.type = 'button';
-      h.addEventListener('click', () => hidePractice(p, box));
-      acts.appendChild(h);
     }
+    // «أخفِها» للجميع — المشتركةِ وما أنشأته المدرسة
+    const h = el('button', 'a-reject', 'أخفِها');
+    h.type = 'button';
+    h.addEventListener('click', () => setState(p, 'أخفِ', box));
+    acts.appendChild(h);
     row.appendChild(acts);
     return row;
   }
@@ -328,7 +366,9 @@
   // نموذجُ الممارسة: فارغٌ للإضافة، وممتلئٌ للتعديل. والحفظُ جسرٌ واحد تختار القاعدةُ فيه الوضع.
   async function editPractice(p, box) {
     const f = (id) => $(id);
-    f('pcWhat').textContent = p ? p.title + ' — ' + (p.owned ? 'مفصولةٌ لمدرستك' : 'موحَّدةٌ للمجمّع، وحفظُها يفصلها لمدرستك') : 'ممارسةٌ جديدةٌ لمدرستك';
+    let what = 'ممارسةٌ جديدةٌ لمدرستك';
+    if (p) what = p.title + ' — ' + (p.mine ? 'أنشأتها مدرستُك' : p.edited ? 'معدَّلةٌ لمدرستك' : 'موحَّدةٌ للمجمّع، وحفظُها يعدّلها لمدرستك وحدَها');
+    f('pcWhat').textContent = what;
     const ss = f('pcScope');
     ss.textContent = '';
     for (const s of pr.scopes) ss.appendChild(new Option(s.label, s.key));
@@ -349,37 +389,26 @@
     if (await ask($('practiceDlg')) !== 'ok') return;
     const num = (id) => { const t = f(id).value.trim(); return t === '' ? null : Number(t); };
     const txt = (id) => { const t = f(id).value.trim(); return t === '' ? null : t; };
-    await savePractice(p ? p.code : null, {
-      title: f('pcTitle').value.trim(), points: num('pcPoints'), polarity: f('pcPolarity').value,
-      scope: ss.value, kind: f('pcKind').value, zone: txt('pcZone'), once_per_day: f('pcOnce').checked,
-      threshold_count: num('pcThrCount'), threshold_days: num('pcThrDays'), escalate_to: num('pcEsc'),
-      escalate_note: txt('pcEscNote'), note: txt('pcNote'), ord: num('pcOrd'),
-    }, box);
-  }
-
-  async function savePractice(code, v, box) {
-    const { data, error } = await M.rpc('v2_practice_upsert', {
-      p_school: ui.school, p_code: code, p_title: v.title, p_points: v.points, p_polarity: v.polarity,
-      p_scope: v.scope, p_kind: v.kind, p_zone: v.zone, p_once_per_day: v.once_per_day,
-      p_threshold_count: v.threshold_count, p_threshold_days: v.threshold_days,
-      p_escalate_to: v.escalate_to, p_escalate_note: v.escalate_note, p_note: v.note, p_ord: v.ord,
+    const { data, error } = await M.rpc('v2_practice_save', {
+      p_school: ui.school, p_code: p ? p.code : null, p_title: f('pcTitle').value.trim(), p_points: num('pcPoints'),
+      p_polarity: f('pcPolarity').value, p_scope: ss.value, p_kind: f('pcKind').value, p_zone: txt('pcZone'),
+      p_once_per_day: f('pcOnce').checked, p_threshold_count: num('pcThrCount'), p_threshold_days: num('pcThrDays'),
+      p_escalate_to: num('pcEsc'), p_escalate_note: txt('pcEscNote'), p_note: txt('pcNote'), p_ord: num('pcOrd'),
     }, 'حفظ ممارسة');
     if (error) { toast('لم تُحفظ الممارسة:\n' + errText(error)); return; }
     toast((data && data.mode) || 'حُفظت', true);
     practicesTool(box);
   }
 
-  async function unforkPractice(p, box) {
-    const { error } = await M.rpc('v2_practice_unfork', { p_school: ui.school, p_code: p.code }, 'إعادة ممارسة للمشترك');
-    if (error) { toast('لم تُعَد:\n' + errText(error)); return; }
-    toast('أُعيدت للمشترك، وصار أصلُها نافذًا في مدرستك.', true);
-    practicesTool(box);
-  }
-
-  async function hidePractice(p, box) {
-    const { error } = await M.rpc('v2_practice_toggle', { p_school: ui.school, p_code: p.code, p_active: false }, 'إخفاء ممارسة');
-    if (error) { toast('لم تُخفَ:\n' + errText(error)); return; }
-    toast('أُخفيت. وما رُصد بها على الطلاب باقٍ مرتبطًا بها.', true);
+  const STATE_DONE = {
+    'أخفِ': 'أُخفيت. وما رُصد بها على الطلاب باقٍ مرتبطًا بها.',
+    'أظهِر': 'ظهرت.',
+    'أعدها للأصل': 'رجعت للمشترك كما هو.',
+  };
+  async function setState(p, state, box) {
+    const { error } = await M.rpc('v2_practice_state', { p_school: ui.school, p_code: p.code, p_state: state }, state + ' ممارسة');
+    if (error) { toast('لم يقع:\n' + errText(error)); return; }
+    toast(STATE_DONE[state], true);
     practicesTool(box);
   }
 
