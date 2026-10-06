@@ -1,7 +1,7 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 1390fd4c1d7333b5b42a7fa6a2e0a014
+-- ── grants · md5 4e8c0cecb61a737c356ff16e44665bd8
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 
@@ -34,6 +34,8 @@ REVOKE ALL ON FUNCTION v2.current_person() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.current_person() TO authenticated;
 REVOKE ALL ON FUNCTION v2.current_tenant() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.current_tenant() TO authenticated;
+REVOKE ALL ON FUNCTION v2.enrol_reason_ar(k text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.enrol_reason_ar(k text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.evidence_exists(p_path text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.evidence_exists(p_path text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.evidence_ok(p_entry uuid, p_path text) FROM PUBLIC;
@@ -689,5 +691,5 @@ GRANT EXECUTE ON FUNCTION public.v2_undo_practice(p_record uuid, p_reason text) 
 REVOKE ALL ON FUNCTION public.v2_weekday(p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_weekday(p_date date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_weekday(p_date date) TO service_role;
--- دوالٌّ بلا ACL صريح (الافتراضيّ: EXECUTE لـ PUBLIC): 1
+-- دوالٌّ بلا ACL صريح (الافتراضيّ: EXECUTE لـ PUBLIC): 0
 
