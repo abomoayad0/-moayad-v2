@@ -1,6 +1,6 @@
--- public.v2_committee_rules(p_school uuid, p_committee text, p_quorum smallint, p_allow_remote boolean, p_tie_rule text, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e945cfb1600229a3ae3436ed2c88477f
-CREATE OR REPLACE FUNCTION public.v2_committee_rules(p_school uuid, p_committee text, p_quorum smallint, p_allow_remote boolean, p_tie_rule text, p_note text)
+-- public.v2_committee_rules(p_school uuid, p_committee text, p_quorum smallint, p_allow_remote boolean, p_tie_rule text, p_note text, p_clear_quorum boolean)
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 fcb816bb21eb3550b1efbbe85acadb75
+CREATE OR REPLACE FUNCTION public.v2_committee_rules(p_school uuid, p_committee text, p_quorum smallint, p_allow_remote boolean, p_tie_rule text, p_note text, p_clear_quorum boolean DEFAULT false)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -23,12 +23,15 @@ begin
 
   insert into v2.committee_school_rules(school_id,committee_key,seat_role,
       quorum_min,allow_remote,tie_rule,reason_ar,set_by)
-  values (p_school,p_committee,'',p_quorum,p_allow_remote,p_tie_rule,
+  values (p_school,p_committee,'',
+      case when p_clear_quorum then null else p_quorum end,
+      p_allow_remote,p_tie_rule,
       'اجتهادُ مدرسةٍ — لا نصَّ له في الدليل التنظيميّ'||
         case when btrim(coalesce(p_note,''))='' then '' else ' · '||btrim(p_note) end,
       v2.current_person())
   on conflict (school_id,committee_key,seat_role) do update set
-      quorum_min   = coalesce(excluded.quorum_min, v2.committee_school_rules.quorum_min),
+      quorum_min   = case when p_clear_quorum then null
+                          else coalesce(excluded.quorum_min, v2.committee_school_rules.quorum_min) end,
       allow_remote = coalesce(excluded.allow_remote, v2.committee_school_rules.allow_remote),
       tie_rule     = coalesce(excluded.tie_rule, v2.committee_school_rules.tie_rule),
       reason_ar    = excluded.reason_ar, set_by = excluded.set_by, set_at = now();

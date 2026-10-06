@@ -1,5 +1,5 @@
 -- public.v2_practices(p_school uuid, p_scope text, p_polarity text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 489bf7a5e8d7a9b7fedac48e3eb022a5
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 1acb8047f91cb67d98d1dbfe50c81900
 CREATE OR REPLACE FUNCTION public.v2_practices(p_school uuid, p_scope text, p_polarity text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -29,7 +29,13 @@ begin
       'note',           coalesce(o.note_ar, p.note_ar),
       'ord',            coalesce(o.ord, p.ord),
       'mine',           (p.school_id is not null),
-      'edited',         (o.code is not null),
+      -- 🔑 معدَّلةٌ = فيها تعديلٌ فعليّ، لا مجرّدُ سطرٍ للإخفاء
+      'edited',         (o.code is not null and (o.title_ar is not null or o.points is not null
+                          or o.polarity is not null or o.scope is not null or o.kind is not null
+                          or o.zone is not null or o.once_per_day is not null
+                          or o.threshold_count is not null or o.threshold_days is not null
+                          or o.escalate_to is not null or o.escalate_note is not null
+                          or o.note_ar is not null or o.ord is not null)),
       'origin',         p.origin) x
     from v2.class_practices p
     left join v2.practice_overrides o

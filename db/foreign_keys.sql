@@ -629,9 +629,11 @@ ALTER TABLE v2.period_attendance
 ALTER TABLE v2.period_slots
     ADD CONSTRAINT period_slots_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 
--- ── practice_overrides · md5 04905384e8216783b0e10b3ebe1cb764
+-- ── practice_overrides · md5 477dc0c0d593447cb8115bb3b76de878
 ALTER TABLE v2.practice_overrides
     ADD CONSTRAINT practice_overrides_code_fkey FOREIGN KEY (code) REFERENCES v2.class_practices(code);
+ALTER TABLE v2.practice_overrides
+    ADD CONSTRAINT practice_overrides_escalate_to_fkey FOREIGN KEY (escalate_to) REFERENCES v2.conduct_problems(id);
 ALTER TABLE v2.practice_overrides
     ADD CONSTRAINT practice_overrides_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 ALTER TABLE v2.practice_overrides
