@@ -8,8 +8,8 @@
 |---|---|
 | `tables/*.sql` — الأعمدة والمفاتيح والقيود والفهارس وتفعيل RLS والتعليقات | 140 جدولًا · 58 فهرسًا |
 | `views/v_students.sql` | 1 |
-| `functions/v2/*.sql` | 154 دالّة |
-| `functions/public/*.sql` — الجسور `v2_*` | 184 |
+| `functions/v2/*.sql` | 155 دالّة |
+| `functions/public/*.sql` — الجسور `v2_*` | 185 |
 | `functions/comments.sql` | 17 تعليقًا |
 | `foreign_keys.sql` | 113 جدول لها مفاتيح خارجيّة |
 | `triggers.sql` | 42 زنادًا على 35 جدولًا |

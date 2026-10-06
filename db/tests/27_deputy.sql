@@ -33,6 +33,31 @@ do $$ declare s record; r text; begin
     perform set_config('t.s'||s.n, s.l||' ⇐ '||r, true);
   end loop; end $$;
 
+-- الإصدار ٣: أصلحت القاعدةُ علّةَ السطر ٣ (الآليُّ يتخطّى من رُصد عليه يدويًّا ويضيف تأخّرَه إلى ملاحظة رصدته) — فالسطر ٣ هو فحصُ الإصلاح، وهنا ما بعده.
+do $$ declare s record; r text; begin
+  for s in select * from (values
+    (19, 'الطفيل · إقفالٌ ثانٍ بعد السطر ٣', $q$select (select row_to_json(x)::text from public.v2_close_day(current_setting('t.school')::uuid,current_setting('t.d')::date) x)$q$),
+    (20, 'الطفيل · اليومُ بعده', $q$select 'closed='||closed||' · reopened='||reopened from public.v2_day_summary(current_setting('t.school')::uuid,current_setting('t.d')::date)$q$)
+  ) v(n,l,q) order by n loop
+    begin execute s.q into r; r := 'نفذ: '||coalesce(r,'—');
+    exception when others then r := 'رُفض: '||sqlerrm; end;
+    perform set_config('t.s'||s.n, s.l||' ⇐ '||r, true);
+  end loop; end $$;
+reset role;
+select set_config('t.notes', (select count(*)||' ‖ '||coalesce(string_agg(distinct right(br.note,90),' | '),'—') from v2.behavior_records br
+   where br.school_id=current_setting('t.school')::uuid and br.occurred_on=current_setting('t.d')::date and br.note like '%عند الإقفال%'), true);
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"11be0946-ff39-4eb7-8a74-023b580479be","role":"authenticated"}';
+do $$ declare s record; r text; begin
+  for s in select * from (values
+    (22, 'الطفيل · ما وقع بعد الإقفال', $q$select count(*)||' ‖ '||coalesce(string_agg(distinct kind,','),'—') from public.v2_day_log(current_setting('t.school')::uuid,current_setting('t.d')::date)$q$),
+    (23, 'الطفيل · إعادةُ الفتح بسبب', $q$select (select row_to_json(x)::text from public.v2_reopen_day(current_setting('t.school')::uuid,current_setting('t.d')::date,'فحص ٢٧ الإصدار ٣') x)$q$)
+  ) v(n,l,q) order by n loop
+    begin execute s.q into r; r := 'نفذ: '||coalesce(r,'—');
+    exception when others then r := 'رُفض: '||sqlerrm; end;
+    perform set_config('t.s'||s.n, s.l||' ⇐ '||r, true);
+  end loop; end $$;
+
 -- ② مالك: الإقفالُ وإعادةُ الفتح
 select public.v2_act_as('deputy_students', current_setting('t.malik')::uuid);
 do $$ declare s record; r text; begin
@@ -51,6 +76,8 @@ do $$ declare s record; r text; begin
     perform set_config('t.s'||s.n, s.l||' ⇐ '||r, true);
   end loop; end $$;
 reset role;
-select n::text as "#", left(current_setting('t.s'||n),700) as النتيجة from generate_series(1,18) n
+-- خارجَ الدور (الجدولُ محروسٌ بـ RLS): الرصداتُ اليدويّةُ التي أُضيف إليها تأخّرُ الإقفال — قبل إعادة الفتح تُقرأ من t.notes
+select set_config('t.s21','الطفيل · رصداتٌ يدويّةٌ أُضيف إليها تأخّرُ الإقفال (قبل إعادة الفتح) ⇐ '||coalesce(nullif(current_setting('t.notes',true),''),'—'),true);
+select n::text as "#", left(current_setting('t.s'||n),700) as النتيجة from generate_series(1,23) n
 union all select 'أ', 'a1 '||coalesce(nullif(current_setting('t.a1'),''),'—')||' · a2 '||coalesce(nullif(current_setting('t.a2'),''),'—');
 rollback;

@@ -19,12 +19,15 @@
     // الاصطفافُ والوصولُ والانصرافُ شاشةٌ واحدة بثلاثة أبواب — وrasd.html يُحوَّل إليها
     { key: 'wusul', title: 'الوصول والاصطفاف والانصراف', desc: 'الاصطفاف فصلًا فصلًا · الوصول المتأخّر بقراره · تأخّر الانصراف',
       href: 'wusul.html', allow: (c) => !!(c.record_assembly || c.record_arrival || c.record_dismissal) },
-    // جدولُ الحصص بأبوابه الخمسة — المفتاحُ manage_settings، وهو صفاتُ جسور الجدول نفسُها
+    // جدولُ الحصص بأبوابه الخمسة — مفتاحُه jadwal: المديرُ والوكيلُ والوكيلُ التعليميّ
     { key: 'jadwal', title: 'جدول الحصص', desc: 'الشبكة · النصاب · خطّة المواد · التخصّصات · التوزيع الآليّ',
-      href: 'jadwal.html', allow: (c) => !!c.manage_settings },
-    // الإنابةُ في الصفات — الإضافةُ والإلغاءُ للمدير والوكيلين، وحارسُها في القاعدة
+      href: 'jadwal.html', allow: (c) => !!c.jadwal },
+    // الإنابةُ في الصفات — مفتاحُها delegation: المديرُ ووكيلُ الطلّاب والوكيل
     { key: 'inaba', title: 'الإنابة في الصفات', desc: 'من يعمل بصفة غيره، وإلى متى، وبأيّ سبب',
-      href: 'inaba.html', allow: (c) => !!c.manage_settings },
+      href: 'inaba.html', allow: (c) => !!c.delegation },
+    // النماذجُ الرسميّة بأرقامها وعناوينها من v2_forms_catalog — تُفتح لطالب بمفتاح fill_form
+    { key: 'namadhij', title: 'النماذج', desc: 'النماذجُ الرسميّة بأرقامها وما فُتح منها وما وُقّع',
+      href: 'namadhij.html', allow: (c) => !!c.fill_form },
     { key: 'deputy', title: 'قرارات الوكيل', desc: 'الإقفال · إعادة الفتح · البتّ في الأعذار',
       href: 'deputy.html', allow: (c) => !!(c.close_day || c.reopen_day || c.decide_excuse) },
     // شاشةُ الوكيل (viewW) — حلّت محلّ «رصد المخالفات» القديمة. مفتاحُها wakeel: الوكيلُ والمدير

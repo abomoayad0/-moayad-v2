@@ -174,8 +174,6 @@
       ],
       ok: 'سجّل الوصول',
       onOk: async (v) => {
-        // الوقتُ لازم — وبلا وقتٍ ترفضه القاعدةُ برسالة قيدٍ إنجليزيّة، فلا يُرسل
-        if (!v.at) return { message: 'وقتُ الوصول مطلوب' };
         const { error } = await M.rpc('v2_record_arrival', { p_student: r.student_id, p_date: M.state.date, p_arrived: v.at || null, p_decision: v.dec || null, p_note: v.note || null }, 'تسجيل الوصول');
         if (error) return error;
         V.flash('ok', 'سُجّل وصولُ ' + nameOf(r) + ' — ' + (DECISION_AR[v.dec] || v.dec));
@@ -225,7 +223,6 @@
       ],
       ok: 'سجّل',
       onOk: async (v) => {
-        if (!v.at) return { message: 'وقتُ الخروج مطلوب' };
         const { data, error } = await M.rpc('v2_record_dismissal', { p_student: r.student_id, p_date: M.state.date, p_left: v.at || null, p_reason: v.why || null }, 'رصد تأخر الانصراف');
         if (error) return error;
         const x = (data && data[0]) || {};
