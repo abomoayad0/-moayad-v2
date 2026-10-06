@@ -33,9 +33,9 @@
     // شاشةُ الموجّه (viewM) — حلّت محلّ counsel، والقاعدةُ تحرس السرّ وراءها
     { key: 'muwajjih', title: 'شاشة الموجّه', desc: 'دوري · مؤشّر الحالات · دراسة الحالة والجلسات والتقرير · سجلّ الملفّ',
       href: 'muwajjih.html', allow: (c) => !!c.counsel },
-    // والقاعدةُ تحرس كلّ فعلٍ في اللجان
-    { key: 'committees', title: 'اللجان', desc: 'المجلس · الاجتماعات · المحاضر',
-      href: 'committees.html', allow: (c) => !!c.committees },
+    // شاشةُ اللجنة (viewC) — حلّت محلّ «اللجان» وبنكِ الفرص والتقدير من «التعويض»، والقاعدةُ تحرس كلّ فعل
+    { key: 'lajna', title: 'شاشة اللجنة', desc: 'اختصاصُها · الشواهد والتقدير · الفرص · المحاضر · ما عليّ',
+      href: 'lajna.html', allow: (c) => !!(c.committees || c.merit) },
     // والقاعدةُ تحرس الدخول إلى اللوحة
     { key: 'panel', title: 'لوحة التحكّم', desc: 'أبواب الإعداد — المقفلُ بسببه وسنده',
       href: 'panel.html', allow: (c) => !!c.manage_settings },

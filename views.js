@@ -72,6 +72,7 @@
       s.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
       box.appendChild(s);
     }
+    arabize(box);
   }
 
   // اللوحُ المنزلق من الأسفل — لما يحتاج حقولًا وحدَه
@@ -94,5 +95,111 @@
     arabize(box);
   }
 
-  window.MoayadView = { ar, arabize, btn, notBuilt, offCard, renderRole, flash, pick, sheet, events };
+
+  // قائمةٌ طويلةٌ ببحث (المنسوبون · الطلّاب): [[value, text, sub]] ⇒ onPick(value) — وتُرجع { get, set }
+  function chooser(box, items, cur, onPick) {
+    box.textContent = '';
+    const q = el('input');
+    q.type = 'search';
+    q.placeholder = 'ابحث بالاسم';
+    const list = el('div', 'rs-list');
+    list.setAttribute('role', 'listbox');
+    let val = cur == null ? null : cur;
+    const draw = () => {
+      list.textContent = '';
+      const t = q.value.trim();
+      let n = 0;
+      for (const [v, text, sub] of items) {
+        if (t && !(text + ' ' + (sub || '')).includes(t)) continue;
+        if (++n > 40) break;
+        const b = el('button', 'rs-item' + (v === val ? ' on' : ''));
+        b.type = 'button';
+        b.append(el('span', null, text), el('small', null, sub || ''));
+        b.addEventListener('click', () => { val = v; draw(); if (onPick) onPick(v); });
+        list.appendChild(b);
+      }
+      if (!n) list.appendChild(el('div', 'rs-meta', 'لا نتائج.'));
+      arabize(list);
+    };
+    q.addEventListener('input', draw);
+    box.append(q, list);
+    draw();
+    return { get: () => val, set: (v) => { val = v; draw(); } };
+  }
+
+  // اللوحُ المنزلق بحقوله — لما يحتاج حقولًا وحدَه. onOk(values) يرجع خطأ القاعدة أو null:
+  // فإن رجع خطأٌ بقي اللوحُ بما كُتب فيه، وعُرض نصُّه كما هو في أعلاه.
+  // الحقول: { key, type: text|textarea|date|time|number|pick|choose|file, label, items, value, hint }
+  let formBox = null;
+  function form(o) {
+    if (!formBox) {
+      formBox = el('div', 'rs-modal');
+      formBox.hidden = true;
+      const sh = el('div', 'sheet');
+      sh.setAttribute('role', 'dialog');
+      sh.setAttribute('aria-modal', 'true');
+      formBox.appendChild(sh);
+      document.body.appendChild(formBox);
+      formBox.addEventListener('click', (e) => { if (e.target === formBox && !formBox.busy) formBox.hidden = true; });
+    }
+    const sh = formBox.firstChild;
+    sh.textContent = '';
+    sh.appendChild(el('h3', null, o.title));
+    if (o.what) sh.appendChild(el('p', 'rs-meta', o.what));
+    const err = el('div', 'flash bad');
+    err.hidden = true;
+    sh.appendChild(err);
+    const get = {};
+    for (const f of o.fields || []) {
+      const id = 'fm_' + f.key;
+      if (f.type === 'pick' || f.type === 'choose') {
+        sh.appendChild(el('div', 'rs-label', f.label));
+        const box = el('div', f.type === 'pick' ? 'rs-pick' : null);
+        sh.appendChild(box);
+        if (f.type === 'pick') {
+          let v = f.value == null ? null : f.value;
+          const draw = () => pick(box, f.items, v, (x) => { v = x; draw(); if (f.onChange) f.onChange(x, api); });
+          draw();
+          get[f.key] = () => v;
+        } else {
+          const c = chooser(box, f.items, f.value, null);
+          get[f.key] = c.get;
+        }
+        if (f.hint) sh.appendChild(el('p', 'rs-meta', f.hint));
+        continue;
+      }
+      const l = el('label', null, f.label);
+      l.htmlFor = id;
+      const inp = f.type === 'textarea' ? el('textarea') : el('input');
+      inp.id = id;
+      if (f.type === 'textarea') inp.rows = f.rows || 3;
+      else inp.type = f.type || 'text';
+      if (f.value != null && f.type !== 'file') inp.value = f.value;
+      sh.append(l, inp);
+      if (f.hint) sh.appendChild(el('p', 'rs-meta', f.hint));
+      get[f.key] = f.type === 'file' ? () => inp.files[0] || null
+        : f.type === 'number' ? () => (inp.value === '' ? null : Number(inp.value))
+        : () => { const v = inp.value.trim(); return v === '' ? null : v; };
+    }
+    const row = el('div', 'rs-row');
+    const ok = btn(o.ok || 'تأكيد', 'rs-btn');
+    const no = btn('تراجع', 'rs-btn ghost', () => { formBox.hidden = true; });
+    row.append(ok, no);
+    sh.appendChild(row);
+    const api = { values: () => { const r = {}; for (const k in get) r[k] = get[k](); return r; } };
+    ok.addEventListener('click', async () => {
+      if (formBox.busy) return;
+      formBox.busy = true; ok.disabled = true;
+      let e = null;
+      try { e = await o.onOk(api.values()); } finally { formBox.busy = false; ok.disabled = false; }
+      if (e) { err.textContent = typeof e === 'string' ? e : M.errText(e); err.hidden = false; arabize(err); return; }
+      formBox.hidden = true;
+    });
+    arabize(sh);
+    formBox.hidden = false;
+    const first = sh.querySelector('textarea, input');
+    if (first) first.focus();
+  }
+
+  window.MoayadView = { ar, arabize, btn, notBuilt, offCard, renderRole, flash, pick, sheet, events, chooser, form };
 })();

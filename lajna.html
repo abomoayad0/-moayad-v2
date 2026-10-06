@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مؤيّد · شاشة اللجنة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>مؤيّد · شاشة اللجنة</h1>
+    <div class="who" id="who"></div>
+  </div>
+  <div class="hdr-acts">
+    <button id="logout" class="hbtn" type="button">خروج</button>
+  </div>
+</header>
+<nav class="screens" id="screens" aria-label="الشاشات" hidden></nav>
+<div class="testmode" id="testMode" hidden></div>
+<div class="gatebox"><div class="notice err" id="gateErr" hidden></div></div>
+
+<main id="dayView" class="wrap" hidden>
+  <div class="day">
+    <div class="full" id="schoolBox">
+      <label for="school">المدرسة</label>
+      <select id="school"></select>
+    </div>
+    <div class="full" hidden><input id="date" type="date"></div>
+  </div>
+
+  <!-- رأسُ الشاشة: الصفةُ من v2_me، ومقعدُك في اللجنة من مجلسها -->
+  <p class="role" id="roleLine" hidden><i class="dot"></i><span id="roleText"></span></p>
+  <p class="rs-meta" id="seatLine" hidden></p>
+  <!-- شريطُ النتيجة: نصُّه من القاعدة، ويبقى حتى الفعل التالي -->
+  <div class="flash" id="flash" hidden></div>
+  <div class="notice err" id="loadErr" hidden></div>
+
+  <!-- ① اختصاصُها — v2_committee_duties -->
+  <section class="rs-card" id="dutyCard" hidden>
+    <h3>اختصاصُها</h3>
+    <div class="rs-pick" id="committees" role="group" aria-label="اللجنة"></div>
+    <p class="rs-meta" id="purpose"></p>
+    <div id="duties"></div>
+    <div class="rs-row" id="dutyActs"></div>
+  </section>
+
+  <!-- ② شواهدُ بانتظار التقدير -->
+  <section class="rs-card" id="gradeCard" hidden>
+    <h3>شواهدُ بانتظار التقدير</h3>
+    <p class="rs-meta">أُقرّت مشاركاتُها ولم تُقدَّر درجتُها — ص١٢ بند ٨</p>
+    <div id="toGrade"></div>
+  </section>
+
+  <!-- ③ الفرص — بنكُها -->
+  <section class="rs-card" id="oppCard" hidden>
+    <h3>الفرص</h3>
+    <p class="rs-meta">تُقفل باكتمال العدد أو انتهاء الوقت</p>
+    <div id="opps"></div>
+  </section>
+
+  <div id="offCards"></div>
+
+  <!-- ⑥ محاضرُ اللجنة — الاجتماعُ والنصابُ والتصويتُ كما بُنيت -->
+  <section class="rs-card" id="minCard" hidden>
+    <h3>محاضرُ اللجنة</h3>
+    <p class="rs-meta">الدعوةُ والقفلُ والاعتمادُ في القاعدة — الدليل التنظيميّ ص١٩</p>
+    <div class="rs-pick" id="mtabs" role="group" aria-label="أقسام المحاضر"></div>
+    <div id="mbody"></div>
+  </section>
+</main>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="vendor/supabase-2.117.2.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="views.js"></script>
+<script src="lajna.js"></script>
+</body>
+</html>
