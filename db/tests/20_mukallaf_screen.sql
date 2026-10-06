@@ -32,7 +32,7 @@ set local request.jwt.claims = '{"sub":"52bc11f6-8e82-44cd-9f4d-e9bf43aee128","r
 select public.v2_act_as('counselor', current_setting('t.school')::uuid);
 do $$ declare s record; r text; begin
   for s in select * from (values
-    (1, 'v2_me: الرأس', $q$select coalesce(r->>'role_ar','—')||' · acting_school='||coalesce(r->>'acting_school','—') from (select public.v2_me() r) z$q$),
+    (1, 'v2_me: الرأس', $q$select coalesce(r->>'role_ar','—')||' · acting_school='||coalesce(r->>'acting_school','—')||' · mukallaf='||coalesce(r->'can'->>'mukallaf','—')||' · raed='||coalesce(r->'can'->>'raed','—') from (select public.v2_me() r) z$q$),
     (2, 'ما أُحيل إليه (delegated_to_me)', $q$select count(*) filter (where x->>'delegated_to_me'='true')||' من '||count(*)||' · '||coalesce(max(case when x->>'entry'=current_setting('t.entry') then (x->>'student')||' — '||(x->>'merit')||' · '||coalesce(x->>'delegate_note','—') end),'ليست فيه') from jsonb_array_elements(public.v2_entries_pending(current_setting('t.school')::uuid)) x$q$),
     (3, 'يثبت المشاركة: نفّذ', $q$select public.v2_entry_verdict(current_setting('t.entry')::uuid,'نفّذ','حضر وقدّم',null)::text$q$),
     (4, 'ما عليّ من اللجان', $q$select jsonb_array_length(r)::text from (select public.v2_my_committee_tasks(current_setting('t.school')::uuid) r) z$q$),

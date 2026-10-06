@@ -1,5 +1,5 @@
 -- public.v2_entry_verdict(p_entry uuid, p_verdict text, p_note text, p_file text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 11ad87dfa7841c378c0c7db711b7d1e8
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 3e19fd76a7513a549a3affe72ae509e3
 CREATE OR REPLACE FUNCTION public.v2_entry_verdict(p_entry uuid, p_verdict text, p_note text, p_file text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -12,17 +12,26 @@ begin
   if x.id is null then raise exception 'المشاركةُ غيرُ موجودة'; end if;
   select * into o from v2.merit_opportunities where id=x.opp_id;
   if coalesce(x.delegated_to, o.held_by) is distinct from v2.current_person()
-     and v2.my_grant() is null or v2.my_grant() not in ('owner','admin') then
+     and (v2.my_grant() is null or v2.my_grant() not in ('owner','admin')) then
     raise exception 'الإقرارُ لمن أقام الفرصةَ أو لمن أُحيل إليه'; end if;
   if p_verdict not in ('نفّذ','نفّذ جزئيًّا','لم ينفّذ','لم يحضر') then
     raise exception 'الحكم: نفّذ · نفّذ جزئيًّا · لم ينفّذ · لم يحضر'; end if;
   if btrim(coalesce(p_note,''))='' then raise exception 'اكتب ما لاحظتَه — إلزاميّ'; end if;
+  -- 🔑 لا يُبدَّل بعد التقدير
+  if x.graded_at is not null then
+    raise exception 'قُدّرت درجةُ هذي المشاركة — فلا يُبدَّل حكمُها'; end if;
+  if o.state = 'مُقدَّرة' then
+    raise exception 'اعتُمد مخطّطُ الفرصة — فلا يُبدَّل حكمٌ فيها'; end if;
 
   update v2.merit_entries
-     set verdict=p_verdict, verdict_note=btrim(p_note),
+     set verdict_prev = case when x.verdict is distinct from p_verdict then x.verdict end,
+         verdict_changed_at = case when x.verdict is not null
+                                   and x.verdict is distinct from p_verdict then now() end,
+         verdict=p_verdict, verdict_note=btrim(p_note),
          verdict_file=nullif(btrim(coalesce(p_file,'')),''),
          verdict_by=v2.current_person(), verdict_at=now()
    where id=p_entry;
-  return jsonb_build_object('ok',true,'verdict',p_verdict);
+  return jsonb_build_object('ok',true,'verdict',p_verdict,
+    'changed_from', case when x.verdict is distinct from p_verdict then x.verdict end);
 end $function$
 ;

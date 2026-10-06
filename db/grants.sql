@@ -1,7 +1,7 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 5a6f53541d413e6980a820506e5660d8
+-- ── grants · md5 f75beb6d386208056effef3065a56889
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 
@@ -366,6 +366,18 @@ GRANT EXECUTE ON FUNCTION public.v2_case_report_card(p_student uuid, p_problem i
 REVOKE ALL ON FUNCTION public.v2_case_write(p_case uuid, p_student_view text, p_observed text, p_factors text, p_plan text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_case_write(p_case uuid, p_student_view text, p_observed text, p_factors text, p_plan text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_case_write(p_case uuid, p_student_view text, p_observed text, p_factors text, p_plan text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_census_assign(p_student uuid, p_task uuid, p_person uuid, p_days smallint) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_census_assign(p_student uuid, p_task uuid, p_person uuid, p_days smallint) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_census_assign(p_student uuid, p_task uuid, p_person uuid, p_days smallint) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_census_file(p_census uuid, p_positives text, p_negatives text, p_causes text, p_suggestion text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_census_file(p_census uuid, p_positives text, p_negatives text, p_causes text, p_suggestion text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_census_file(p_census uuid, p_positives text, p_negatives text, p_causes text, p_suggestion text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_census_of(p_student uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_census_of(p_student uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_census_of(p_student uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_census_review(p_census uuid, p_accept boolean, p_why text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_census_review(p_census uuid, p_accept boolean, p_why text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_census_review(p_census uuid, p_accept boolean, p_why text) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_close_day(p_school uuid, p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_close_day(p_school uuid, p_date date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_close_day(p_school uuid, p_date date) TO service_role;
@@ -411,6 +423,12 @@ GRANT EXECUTE ON FUNCTION public.v2_committees_list(p_school uuid) TO service_ro
 REVOKE ALL ON FUNCTION public.v2_conduct_list(p_student uuid, p_mode text, p_target text, p_stage text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_conduct_list(p_student uuid, p_mode text, p_target text, p_stage text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_conduct_list(p_student uuid, p_mode text, p_target text, p_stage text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_contacts_of(p_student uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_contacts_of(p_student uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_contacts_of(p_student uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_counsel_board(p_school uuid, p_state text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_counsel_board(p_school uuid, p_state text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_counsel_board(p_school uuid, p_state text) TO service_role;
@@ -588,6 +606,9 @@ GRANT EXECUTE ON FUNCTION public.v2_meetings_list(p_school uuid, p_committee tex
 REVOKE ALL ON FUNCTION public.v2_merits() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_merits() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_merits() TO service_role;
+REVOKE ALL ON FUNCTION public.v2_my_census(p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_my_census(p_school uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_my_census(p_school uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_my_committee_tasks(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_my_committee_tasks(p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_my_committee_tasks(p_school uuid) TO service_role;

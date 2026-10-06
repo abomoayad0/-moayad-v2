@@ -22,25 +22,23 @@
       href: 'wusul.html', allow: (c) => !!(c.record_arrival || c.record_dismissal) },
     { key: 'deputy', title: 'قرارات الوكيل', desc: 'الإقفال · إعادة الفتح · البتّ في الأعذار',
       href: 'deputy.html', allow: (c) => !!(c.close_day || c.reopen_day || c.decide_excuse) },
-    // شاشةُ الوكيل (viewW) — حلّت محلّ «رصد المخالفات» القديمة
+    // شاشةُ الوكيل (viewW) — حلّت محلّ «رصد المخالفات» القديمة. مفتاحُها wakeel: الوكيلُ والمدير
     { key: 'wakeel', title: 'شاشة الوكيل', desc: 'الرصد · الشواهد · النموذج ٥ · ملفّات الطالب · سجلّ الملفّ',
-      href: 'wakeel.html', allow: (c) => !!c.record_behavior },
+      href: 'wakeel.html', allow: (c) => !!c.wakeel },
     { key: 'errors', title: 'لوحة الأخطاء', desc: 'ما سجّلته الشاشات والجسور — الأعطاب والحرّاس',
       href: 'errors.html', allow: (c) => !!c.view_errors },
-    // شاشةُ رائد النشاط (viewA) — حلّت مع شاشة اللجنة محلّ «التعويض والتميّز». ولا مفتاحَ لرائد النشاط وحدَه في can،
-    // فتُفتح بـ merit (رائدُ النشاط والوكيلُ والمديرُ وأعضاءُ لجنة التوجيه) — والقاعدةُ تحرس الإقرار
+    // شاشةُ رائد النشاط (viewA) — حلّت مع شاشة اللجنة محلّ «التعويض والتميّز». مفتاحُها raed: رائدُ النشاط وحدَه
     { key: 'raed', title: 'شاشة رائد النشاط', desc: 'دوري · إقرار المشاركات · فرصٌ أقيمها',
-      href: 'raed.html', allow: (c) => !!c.merit },
+      href: 'raed.html', allow: (c) => !!c.raed },
     // شاشةُ الموجّه (viewM) — حلّت محلّ counsel، والقاعدةُ تحرس السرّ وراءها
     { key: 'muwajjih', title: 'شاشة الموجّه', desc: 'دوري · مؤشّر الحالات · دراسة الحالة والجلسات والتقرير · سجلّ الملفّ',
-      href: 'muwajjih.html', allow: (c) => !!c.counsel },
-    // شاشةُ اللجنة (viewC) — حلّت محلّ «اللجان» وبنكِ الفرص والتقدير من «التعويض»، والقاعدةُ تحرس كلّ فعل
+      href: 'muwajjih.html', allow: (c) => !!c.muwajjih },
+    // شاشةُ اللجنة (viewC) — حلّت محلّ «اللجان» وبنكِ الفرص والتقدير من «التعويض». مفتاحُها lajna: من له مقعدٌ في لجنة
     { key: 'lajna', title: 'شاشة اللجنة', desc: 'اختصاصُها · الشواهد والتقدير · الفرص · المحاضر · ما عليّ',
-      href: 'lajna.html', allow: (c) => !!(c.committees || c.merit) },
-    // شاشةُ المكلَّف (viewK) — «ما عليّ» لكلّ منسوب: لا مفتاحَ لها في can، فتظهر لكلّ من رجع له v2_me،
-    // وآخرًا كي لا يُفتح عليها إلا من لا شاشةَ له غيرها
+      href: 'lajna.html', allow: (c) => !!c.lajna },
+    // شاشةُ المكلَّف (viewK) — «ما عليّ» لكلّ منسوب (mukallaf)، وآخرًا كي لا يُفتح عليها إلا من لا شاشةَ له غيرها
     { key: 'mukallaf', title: 'ما عليّ', desc: 'إثباتُ مشاركة طالب · ما عليّ من اللجان',
-      href: 'mukallaf.html', allow: () => true },
+      href: 'mukallaf.html', allow: (c) => !!c.mukallaf },
     // والقاعدةُ تحرس الدخول إلى اللوحة
     { key: 'panel', title: 'لوحة التحكّم', desc: 'أبواب الإعداد — المقفلُ بسببه وسنده',
       href: 'panel.html', allow: (c) => !!c.manage_settings },

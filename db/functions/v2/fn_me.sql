@@ -1,5 +1,5 @@
 -- v2.fn_me()
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 6364c05388032142cf7ebb74ba4ebf4a
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 523ece8708aea3cef24baddf152fa7e6
 CREATE OR REPLACE FUNCTION v2.fn_me()
  RETURNS jsonb
  LANGUAGE sql
@@ -50,11 +50,16 @@ select jsonb_build_object(
    'view_errors', (select grant_level from g) in ('owner','admin'),
    'my_timetable', exists (select 1 from v2.timetable t where t.person_id = p.id),
    'manage_settings', v2.can_do(array['principal','deputy_students','deputy','deputy_academic']),
-   'committees', exists (select 1 from v2.committee_members m
+   -- 🔑 الشاشاتُ السبع — لكلّ دورٍ مفتاحُه
+   'wakeel',   v2.can_do(array['deputy_students','deputy','principal']),
+   'muwajjih', v2.can_do(array['counselor']),
+   'lajna', exists (select 1 from v2.committee_members m
       where m.person_id = p.id and m.ended_on is null
         and (m.school_id = (select cs from chosen) or (select cs from chosen) is null)),
-   'counsel', v2.can_do(array['counselor']),
-   -- 🔑 التعويض: اللجنةُ تفتح وتقدّر · ورائدُ النشاط يقرّ · والوكيلُ يرفع نيابةً
+   'raed',     v2.can_do(array['activity_leader']),
+   'walee',    false,
+   'talib',    false,
+   'mukallaf', true,
    'merit', v2.can_do(array['activity_leader','deputy_students','deputy','principal'])
       or exists (select 1 from v2.committee_members m
            where m.person_id = p.id and m.committee_key='guidance' and m.ended_on is null)))

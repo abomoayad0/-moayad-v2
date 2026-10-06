@@ -1,6 +1,6 @@
 -- v2.merit_entries
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 e12fc75806d94d1a80bf7f39be4401fd
+-- md5 f10e89e4e41aacab81fcd6b3fbea86fc
 
 CREATE TABLE v2.merit_entries (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -28,6 +28,8 @@ CREATE TABLE v2.merit_entries (
     filed_as text,
     joined_by uuid,
     joined_as text,
+    verdict_prev text,
+    verdict_changed_at timestamp with time zone,
     CONSTRAINT merit_entries_pkey PRIMARY KEY (id),
     CONSTRAINT merit_entries_opp_id_student_id_key UNIQUE (opp_id, student_id),
     CONSTRAINT merit_entries_verdict_check CHECK ((verdict = ANY (ARRAY['نفّذ'::text, 'نفّذ جزئيًّا'::text, 'لم ينفّذ'::text, 'لم يحضر'::text])))

@@ -71,6 +71,11 @@ CREATE POLICY attl_t ON v2.attendance_ledger AS PERMISSIVE FOR ALL TO authentica
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 
+-- ── behavior_census · md5 727930e305638d3b05d0a3fa279a8136
+CREATE POLICY bc_tenant ON v2.behavior_census AS PERMISSIVE FOR ALL TO authenticated
+    USING (v2.my_school(school_id))
+    WITH CHECK (v2.my_school(school_id));
+
 -- ── behavior_ledger · md5 f048b58e2976b9a2398f04362c66ebf4
 CREATE POLICY bl_tenant ON v2.behavior_ledger AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
@@ -427,6 +432,11 @@ CREATE POLICY grading_rules_read ON v2.grading_rules AS PERMISSIVE FOR SELECT TO
 -- ── grading_subjects · md5 56f8b9c36c3cc6bd9ab42b62d5c52e38
 CREATE POLICY grading_subjects_read ON v2.grading_subjects AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
+
+-- ── guardian_contacts · md5 6d02e4ddd39f8d2936155c5829109112
+CREATE POLICY gc_tenant ON v2.guardian_contacts AS PERMISSIVE FOR ALL TO authenticated
+    USING (v2.my_school(school_id))
+    WITH CHECK (v2.my_school(school_id));
 
 -- ── guardians · md5 281835f1a2aa6a4f8e1c3ada8623a9b8
 CREATE POLICY guardians_tenant ON v2.guardians AS PERMISSIVE FOR ALL TO authenticated

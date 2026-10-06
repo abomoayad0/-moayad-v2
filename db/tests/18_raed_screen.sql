@@ -31,8 +31,8 @@ set local request.jwt.claims = '{"sub":"52bc11f6-8e82-44cd-9f4d-e9bf43aee128","r
 select public.v2_act_as('counselor', current_setting('t.school')::uuid);
 do $$ declare s record; r text; begin
   for s in select * from (values
-    (1, 'v2_me: can.merit (يفتح الشاشة)', $q$select coalesce(r->>'role_ar','—')||' · merit='||coalesce(r->'can'->>'merit','—') from (select public.v2_me() r) z$q$),
-    (2, 'ما ينتظر إقرارَه', $q$select jsonb_array_length(r)||' · '||coalesce((select (x->>'mine')||'/'||(x->>'delegated_to_me')||' · '||(select string_agg(k,',' order by k) from jsonb_object_keys(x) k) from jsonb_array_elements(r) x where x->>'entry'=current_setting('t.entry')),'المشاركةُ ليست فيه') from (select public.v2_entries_pending(current_setting('t.school')::uuid) r) z$q$),
+    (1, 'v2_me: can.merit (يفتح الشاشة)', $q$select coalesce(r->>'role_ar','—')||' · raed='||coalesce(r->'can'->>'raed','—')||' · merit='||coalesce(r->'can'->>'merit','—') from (select public.v2_me() r) z$q$),
+    (2, 'ما ينتظر إقرارَه', $q$select jsonb_array_length(r)||' · '||coalesce((select (x->>'mine')||'/'||coalesce(x->>'delegated_to_me','null')||' · '||(select string_agg(k,',' order by k) from jsonb_object_keys(x) k) from jsonb_array_elements(r) x where x->>'entry'=current_setting('t.entry')),'المشاركةُ ليست فيه') from (select public.v2_entries_pending(current_setting('t.school')::uuid) r) z$q$),
     (3, 'يقرّ: نفّذ بملاحظة', $q$select public.v2_entry_verdict(current_setting('t.entry')::uuid,'نفّذ','قدّم فقرته',null)::text$q$),
     (4, 'يحيل الإقرارَ إلى مفرح', $q$select public.v2_entry_delegate(current_setting('t.entry')::uuid,current_setting('t.mof')::uuid,'لم أحضر')::text$q$)
   ) v(n,l,q) order by n loop
@@ -66,7 +66,7 @@ set local request.jwt.claims = '{"sub":"52bc11f6-8e82-44cd-9f4d-e9bf43aee128","r
 select public.v2_act_as('counselor', current_setting('t.school')::uuid);
 do $$ declare s record; r text; begin
   for s in select * from (values
-    (10, 'ما ينتظره بعد الإحالة', $q$select coalesce((select (x->>'mine')||'/'||(x->>'delegated_to_me')||' · '||coalesce(x->>'delegate_note','—') from jsonb_array_elements(public.v2_entries_pending(current_setting('t.school')::uuid)) x where x->>'entry'=current_setting('t.entry')),'ليست فيه')$q$),
+    (10, 'ما ينتظره بعد الإحالة', $q$select coalesce((select (x->>'mine')||'/'||coalesce(x->>'delegated_to_me','null')||' · '||coalesce(x->>'delegate_note','—') from jsonb_array_elements(public.v2_entries_pending(current_setting('t.school')::uuid)) x where x->>'entry'=current_setting('t.entry')),'ليست فيه')$q$),
     (11, 'يقرّ وهو المحالُ إليه', $q$select public.v2_entry_verdict(current_setting('t.entry')::uuid,'نفّذ','قدّم فقرته',null)::text$q$)
   ) v(n,l,q) order by n loop
     begin execute s.q into r; r := 'نفذ: '||coalesce(r,'—');
@@ -86,7 +86,12 @@ do $$ declare s record; r text; begin
     (14, 'ما ينتظر بعد الإقرار', $q$select coalesce((select 'باقية' from jsonb_array_elements(public.v2_entries_pending(current_setting('t.school')::uuid)) x where x->>'entry'=current_setting('t.entry')),'خرجت')$q$),
     (15, 'اللجنةُ تقدّر', $q$select public.v2_entry_grade(current_setting('t.entry')::uuid,current_setting('t.pts')::numeric,'توصية')::text$q$),
     (16, 'البنك: العدّادات', $q$select 'filed='||(x->>'filed')||' · verdicted='||(x->>'verdicted')||' · graded='||(x->>'graded') from jsonb_array_elements(public.v2_opps_list(current_setting('t.school')::uuid,null,180)) x where x->>'opp'=current_setting('t.opp')$q$),
-    (17, 'ملفُّ الفرصة: العضو', $q$select (public.v2_opp_card(current_setting('t.opp')::uuid)->'members'->0)::text$q$)
+    (17, 'ملفُّ الفرصة: العضو', $q$select (public.v2_opp_card(current_setting('t.opp')::uuid)->'members'->0)::text$q$),
+    (18, 'يقرّ ثالثةً قبل التقدير: نفّذ', $q$select public.v2_entry_verdict(current_setting('t.entry')::uuid,'نفّذ','قدّم الفقرة كاملة',null)::text$q$),
+    (19, 'اللجنةُ تقدّر', $q$select public.v2_entry_grade(current_setting('t.entry')::uuid,current_setting('t.pts')::numeric,'توصية')::text$q$),
+    (20, 'إقرارٌ بعد التقدير', $q$select public.v2_entry_verdict(current_setting('t.entry')::uuid,'لم ينفّذ','بعد التقدير',null)::text$q$),
+    (21, 'اعتمادُ المخطّط', $q$select public.v2_opp_plan(current_setting('t.opp')::uuid,'اعتُمد')::text$q$),
+    (22, 'العضوُ بعدها: الحكمُ وسابقُه', $q$select (r->>'verdict')||' · graded='||(r->>'graded')||' · points='||coalesce(r->>'points','—')||' · '||(select string_agg(k,',' order by k) from jsonb_object_keys(r) k) from (select public.v2_opp_card(current_setting('t.opp')::uuid)->'members'->0 r) z$q$)
   ) v(n,l,q) order by n loop
     begin execute s.q into r; r := 'نفذ: '||coalesce(r,'—');
     exception when others then r := 'رُفض: '||sqlerrm; end;
@@ -94,6 +99,6 @@ do $$ declare s record; r text; begin
   end loop; end $$;
 reset role;
 
-select n::text as "#", left(current_setting('t.s'||n),1400) as النتيجة from generate_series(1,17) n
+select n::text as "#", left(current_setting('t.s'||n),1400) as النتيجة from generate_series(1,22) n
 union all select 'أ', 'الممارسة '||current_setting('t.merit')||' بدرجة '||current_setting('t.pts')||' · الفرصة '||coalesce(current_setting('t.opp'),'—')||' · المشاركة '||coalesce(current_setting('t.entry'),'—');
 rollback;

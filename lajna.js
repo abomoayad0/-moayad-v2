@@ -56,13 +56,13 @@
     V.renderRole();
     ui.can = (M.state.me && M.state.me.can) || {};
     ui.staff = null; ui.students = null;
-    $('dutyCard').hidden = !ui.can.committees;
-    $('minCard').hidden = !ui.can.committees;
+    $('dutyCard').hidden = !ui.can.lajna;
+    $('minCard').hidden = !ui.can.lajna;
     $('gradeCard').hidden = !ui.can.merit;
     $('oppCard').hidden = !ui.can.merit;
     renderOff();
     const jobs = [];
-    if (ui.can.committees) jobs.push(loadCommittees());
+    if (ui.can.lajna) jobs.push(loadCommittees());
     if (ui.can.merit) jobs.push(loadOpps());
     await Promise.all(jobs);
   }
@@ -70,7 +70,7 @@
   function renderOff() {
     const box = $('offCards');
     box.textContent = '';
-    if (!ui.can.committees && !ui.can.merit) return;
+    if (!ui.can.lajna && !ui.can.merit) return;
     box.append(V.offCard('إحالاتٌ إليك', 'الإحالةُ للّجنة بحارسها وتقريرُ الموجّه معها'),
       V.offCard('فرصةٌ تُحتسب آليًّا', 'انضباطُ الطالب وعدمُ غيابه بلا عذرٍ خلال الفصل'));
   }

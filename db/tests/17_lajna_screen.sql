@@ -18,7 +18,7 @@ set local request.jwt.claims = '{"sub":"11be0946-ff39-4eb7-8a74-023b580479be","r
 select public.v2_act_as('deputy_students', current_setting('t.school')::uuid);
 do $$ declare s record; r text; begin
   for s in select * from (values
-    (1, 'v2_me: can', null::text, $q$select coalesce(r->>'role_ar','—')||' · committees='||coalesce(r->'can'->>'committees','—')||' · merit='||coalesce(r->'can'->>'merit','—') from (select public.v2_me() r) z$q$),
+    (1, 'v2_me: can', null::text, $q$select coalesce(r->>'role_ar','—')||' · lajna='||coalesce(r->'can'->>'lajna','—')||' · merit='||coalesce(r->'can'->>'merit','—') from (select public.v2_me() r) z$q$),
     (2, 'قائمةُ اللجان', null, $q$select jsonb_array_length(r)||' · '||(select string_agg(x->>'key'||'='||(x->>'label'),' · ') from jsonb_array_elements(r) x) from (select public.v2_committees_list(current_setting('t.school')::uuid) r) z$q$),
     (3, 'مجلسُ التوجيه: مقعدي والنصاب', null, $q$select coalesce(r->>'my_seat','—')||' · quorum_ar='||coalesce(r->'committee'->>'quorum_ar','—')||' · المقاعد '||jsonb_array_length(r->'seats')||' · '||(select string_agg(k,',' order by k) from jsonb_object_keys(r->'committee') k) from (select public.v2_committee_board(current_setting('t.school')::uuid,'guidance') r) z$q$),
     (4, 'مهامُّ التوجيه', null, $q$select jsonb_array_length(r)||' · '||(select string_agg(k,',' order by k) from jsonb_object_keys(r->0) k)||' ‖ '||(r->0)::text from (select public.v2_committee_duties(current_setting('t.school')::uuid,'guidance') r) z$q$),
@@ -48,7 +48,7 @@ set local request.jwt.claims = '{"sub":"52bc11f6-8e82-44cd-9f4d-e9bf43aee128","r
 select public.v2_act_as('counselor', current_setting('t.school')::uuid);
 do $$ declare s record; r text; begin
   for s in select * from (values
-    (16, 'v2_me: can', $q$select coalesce(r->>'role_ar','—')||' · committees='||coalesce(r->'can'->>'committees','—')||' · merit='||coalesce(r->'can'->>'merit','—') from (select public.v2_me() r) z$q$),
+    (16, 'v2_me: can', $q$select coalesce(r->>'role_ar','—')||' · lajna='||coalesce(r->'can'->>'lajna','—')||' · merit='||coalesce(r->'can'->>'merit','—') from (select public.v2_me() r) z$q$),
     (17, 'يقرّ المشاركةَ وهو مقيمُ الفرصة', $q$select public.v2_entry_verdict(current_setting('t.entry')::uuid,'نفّذ','قدّم فقرته',null)::text$q$),
     (18, 'يفتح فرصة (وليس رئيسًا)', $q$select public.v2_opp_open(current_setting('t.school')::uuid,current_setting('t.merit')::int,'منظَّمة',null,'الأحد',null,null)::text$q$)
   ) v(n,l,q) order by n loop

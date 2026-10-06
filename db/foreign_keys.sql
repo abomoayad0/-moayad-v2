@@ -107,6 +107,18 @@ ALTER TABLE v2.attendance_ledger
 ALTER TABLE v2.attendance_ledger
     ADD CONSTRAINT attendance_ledger_year_id_fkey FOREIGN KEY (year_id) REFERENCES v2.academic_years(id);
 
+-- ── behavior_census · md5 2eb7914cd903484e99f8a58ec54b399a
+ALTER TABLE v2.behavior_census
+    ADD CONSTRAINT behavior_census_assigned_by_fkey FOREIGN KEY (assigned_by) REFERENCES v2.people(id);
+ALTER TABLE v2.behavior_census
+    ADD CONSTRAINT behavior_census_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES v2.people(id);
+ALTER TABLE v2.behavior_census
+    ADD CONSTRAINT behavior_census_record_id_fkey FOREIGN KEY (record_id) REFERENCES v2.behavior_records(id);
+ALTER TABLE v2.behavior_census
+    ADD CONSTRAINT behavior_census_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.behavior_census
+    ADD CONSTRAINT behavior_census_task_id_fkey FOREIGN KEY (task_id) REFERENCES v2.behavior_tasks(id);
+
 -- ── behavior_ledger · md5 b000e4c7fad439816e4417f1fa2b86d8
 ALTER TABLE v2.behavior_ledger
     ADD CONSTRAINT behavior_ledger_by_person_fkey FOREIGN KEY (by_person) REFERENCES v2.people(id);
@@ -498,6 +510,18 @@ ALTER TABLE v2.gaps
 -- ── grading_subjects · md5 243e1c216935f7af0b2dc35cae663edf
 ALTER TABLE v2.grading_subjects
     ADD CONSTRAINT grading_subjects_model_no_fkey FOREIGN KEY (model_no) REFERENCES v2.grading_models(model_no) ON DELETE CASCADE;
+
+-- ── guardian_contacts · md5 254dce3e932939509ca053435f8b0217
+ALTER TABLE v2.guardian_contacts
+    ADD CONSTRAINT guardian_contacts_by_person_fkey FOREIGN KEY (by_person) REFERENCES v2.people(id);
+ALTER TABLE v2.guardian_contacts
+    ADD CONSTRAINT guardian_contacts_guardian_id_fkey FOREIGN KEY (guardian_id) REFERENCES v2.guardians(id);
+ALTER TABLE v2.guardian_contacts
+    ADD CONSTRAINT guardian_contacts_record_id_fkey FOREIGN KEY (record_id) REFERENCES v2.behavior_records(id);
+ALTER TABLE v2.guardian_contacts
+    ADD CONSTRAINT guardian_contacts_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.guardian_contacts
+    ADD CONSTRAINT guardian_contacts_task_id_fkey FOREIGN KEY (task_id) REFERENCES v2.behavior_tasks(id);
 
 -- ── guardians · md5 ef20b126081f157f191932129a942ad8
 ALTER TABLE v2.guardians

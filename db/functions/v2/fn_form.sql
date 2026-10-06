@@ -1,5 +1,5 @@
 -- v2.fn_form(p_form smallint, p_student uuid, p_ref uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 5a5c41c0e49aa23a70fd67990a164d88
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 8a54868a4208b57925eede059bf81fbc
 CREATE OR REPLACE FUNCTION v2.fn_form(p_form smallint, p_student uuid, p_ref uuid DEFAULT NULL::uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -58,7 +58,7 @@ begin
   -- نموذج 5: سجلّ المشكلات كلها
   if p_form = 5 then
     out := out || jsonb_build_object('rows', coalesce((select jsonb_agg(jsonb_build_object(
-      'problem', cp.text_ar, 'degree', 'الدرجة '||cp.degree_no,
+      'problem', cp.text_ar, 'degree', v2.degree_ar(cp.degree_no),
       'on_h', v2.fn_to_hijri(br.occurred_on), 'on_g', br.occurred_on,
       'deducted', (select coalesce(sum(-bl.points),0) from v2.behavior_ledger bl where bl.record_id=br.id and bl.kind='deduction'),
       'actions', (select string_agg(t.text_ar,' · ' order by t.ord) from v2.behavior_tasks t where t.record_id=br.id),
@@ -71,7 +71,7 @@ begin
   -- نموذج 6: فرص التعويض
   if p_form = 6 then
     out := out || jsonb_build_object('rows', coalesce((select jsonb_agg(jsonb_build_object(
-      'problem', cp.text_ar, 'degree', 'الدرجة '||cp.degree_no,
+      'problem', cp.text_ar, 'degree', v2.degree_ar(cp.degree_no),
       'deducted', (select coalesce(sum(-bl.points),0) from v2.behavior_ledger bl where bl.record_id=br.id and bl.kind='deduction'),
       'earned', (select coalesce(sum(bl.points),0) from v2.behavior_ledger bl where bl.record_id=br.id and bl.kind='restore')
       ) order by br.occurred_on)

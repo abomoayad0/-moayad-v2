@@ -1,5 +1,5 @@
 -- public.v2_entry_grade(p_entry uuid, p_points numeric, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 5f025898d4ca0cff2ea198fff3c77a57
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 b989ccfc4ba29c77f0dc34dcd5f526d8
 CREATE OR REPLACE FUNCTION public.v2_entry_grade(p_entry uuid, p_points numeric, p_note text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -17,7 +17,7 @@ begin
   select * into m from v2.conduct_merits where id=o.merit_id;
 
   seat := v2.my_seat(o.school_id,'guidance');
-  if seat is null and v2.my_grant() is null or v2.my_grant() not in ('owner','admin') then
+  if seat is null and (v2.my_grant() is null or v2.my_grant() not in ('owner','admin')) then
     raise exception 'تقديرُ الدرجة للجنة التوجيه الطلابيّ — ص١٢ بند ٨'; end if;
   if x.verdict is null then raise exception 'لا تُقدَّر درجةٌ قبل إقرار المشاركة'; end if;
   if x.graded_at is not null then raise exception 'قُدّرت سلفًا'; end if;

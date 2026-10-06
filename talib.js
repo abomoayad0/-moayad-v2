@@ -2,6 +2,7 @@
 // v2_opps_open_for(p_student) ⇒ score · purpose · open · mine · v2_opp_join · v2_student_timeline(p_student, 'student')
 // 🔴 حساباتُ الطلاب مغلقة، ولا جسرَ في القاعدة يعرّف الطالبَ بحسابه — فلا تُفتح الصفحةُ لطالبٍ حتى يُبنى.
 //    وتُفتح معاينةً للمنسوب الذي يملك student_card بـ ?student=… — للقراءة وحدها، وأفعالُها معطّلة.
+//    (v2_entry_file · ونموذجُ المشاركة يُرفع إلى upload_to من mine)
 // ولا بنكَ عباراتٍ هنا — كلامُ الطالب شهادةٌ لا تُملى عليه. ولا اسمَ زميلٍ ولا درجتَه.
 (function () {
   'use strict';
@@ -56,10 +57,17 @@
       else if (!x.filed) st = 'أُغلقت — املأ نموذجَك وأرفق شاهدَك، ثمّ يقرّ من أقامها';
       else if (!x.verdict) st = 'رُفع نموذجُك — بانتظار الإقرار';
       else if (!x.graded) st = x.verdict + (x.note ? ' — ' + x.note : '') + ' · بانتظار تقدير اللجنة';
-      else st = 'تمّ — قدّرت لك اللجنةُ ' + x.points + ' درجة';
+      else st = 'تمّ — قدّرت لك اللجنةُ ' + (x.points_ar || x.points) + ' درجة';
       f.appendChild(el('div', 'rs-note', st));
-      // نموذجُ المشاركة يُرفع إلى upload_to من القاعدة — وmine لا يُرجعه، فلا يُبنى المسارُ هنا
-      if (x.state !== 'مفتوحة' && !x.filed) f.appendChild(V.notBuilt('املأ نموذجَك'));
+      // نموذجُ المشاركة يُرفع إلى upload_to كما ترجعه القاعدة — ولا يُبنى المسارُ هنا
+      if (x.state !== 'مفتوحة' && !x.filed) {
+        if (!x.upload_to) f.appendChild(el('div', 'notice err', 'لم ترجع القاعدةُ مسارَ الرفع (upload_to).'));
+        else {
+          const b = btn('املأ نموذجَك', 'rs-btn', () => fileMine(x));
+          if (ui.preview) { b.disabled = true; b.title = 'معاينة — النموذجُ للطالب من حسابه'; }
+          f.appendChild(b);
+        }
+      }
       box.appendChild(f);
     }
     arabize(box);
@@ -95,6 +103,34 @@
     load();
   }
 
+  // نموذجُ المشاركة: كلامُ الطالب بلسانه — لا بنكَ عبارات — والملفُّ إلى upload_to ثمّ v2_entry_file
+  function fileMine(x) {
+    if (ui.preview) return;
+    V.form({
+      title: 'نموذجُ مشاركتي', what: x.merit || '',
+      fields: [
+        { key: 'what', type: 'textarea', label: 'ماذا فعلتَ بالتحديد' },
+        { key: 'file', type: 'file', label: 'الشاهدُ المرفق — ملفٌّ فعليّ' },
+        { key: 'desc', label: 'وصفُ المرفق' },
+      ],
+      ok: 'ارفع النموذج',
+      onOk: async (v) => {
+        if (!v.file) return 'اختر ملفَّ الشاهد.';
+        const path = x.upload_to + Date.now() + '-' + v.file.name.replace(/[^\w.-]+/g, '_');
+        const up = await M.sb.storage.from('v2-attachments').upload(path, v.file, { upsert: false });
+        if (up.error) {
+          M.logError({ message: up.error.message, fn: 'storage.upload', action: 'رفع الشاهد', params: { path } });
+          return up.error;
+        }
+        const { data, error } = await M.rpc('v2_entry_file', { p_entry: x.entry, p_what: v.what, p_evidence_path: path, p_evidence_desc: v.desc }, 'نموذج المشاركة');
+        if (error) return error;
+        flash('ok', 'رُفع نموذجُك' + (data && data.by ? ' — ' + data.by : '') + ' · ثمّ يقرّ من أقام الفرصة');
+        load();
+        return null;
+      },
+    });
+  }
+
   // ⑦ شواهدي — ما رفعتُه وحالُه
   function renderEvid(e) {
     const box = $('evid');
@@ -110,7 +146,7 @@
       body.appendChild(el('span', null, x.merit || ''));
       if (x.what) body.appendChild(el('div', 'rs-meta', x.what + (x.evidence ? ' · ' + x.evidence : '')));
       li.append(el('i', 'rs-tick' + (x.graded ? ' ok' : ''), x.graded ? '✓' : '○'), body,
-        el('small', 'rs-who', x.graded ? 'قُدّرت ' + x.points + ' درجة' : x.verdict ? 'عند اللجنة' : 'بانتظار الإقرار'));
+        el('small', 'rs-who', x.graded ? 'قُدّرت ' + (x.points_ar || x.points) + ' درجة' : x.verdict ? 'عند اللجنة' : 'بانتظار الإقرار'));
       ul.appendChild(li);
     }
     box.appendChild(ul);

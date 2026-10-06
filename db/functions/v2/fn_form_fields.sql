@@ -1,5 +1,5 @@
 -- v2.fn_form_fields(p_form smallint, p_doc jsonb)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 0923ee1d7e7aebf436023e5cbb56f0eb
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 dc3b5600a62ab23e4cf1e7f795dd0c13
 CREATE OR REPLACE FUNCTION v2.fn_form_fields(p_form smallint, p_doc jsonb)
  RETURNS jsonb
  LANGUAGE sql
@@ -17,7 +17,7 @@ select coalesce(jsonb_agg(jsonb_build_object('label', lbl, 'value',
     when 'ولي أمر الطالب/الطالبة' then p_doc#>>'{guardians,0,name}'
     when 'الموجه الطلابي' then p_doc->>'counselor_ar'
     when 'درجة المشكلة' then case when p_doc#>>'{record,degree_no}' is null then null
-                                  else 'الدرجة '||(p_doc#>>'{record,degree_no}') end
+                                  else v2.degree_ar((p_doc#>>'{record,degree_no}')::int) end
     when 'نص المشكلة' then p_doc#>>'{record,problem_ar}'
     when 'المشكلة ودرجتها' then nullif(coalesce(p_doc#>>'{record,problem_ar}','')||
          coalesce(' — الدرجة '||(p_doc#>>'{record,degree_no}'),''),'')

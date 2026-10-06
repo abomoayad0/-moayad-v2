@@ -1,5 +1,5 @@
 -- v2.fn_form_auto(p_form smallint, p_doc jsonb)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 814b3b438e288f8d6d3d8457a150352c
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 726f01c98589dca600c94c2ec166bc27
 CREATE OR REPLACE FUNCTION v2.fn_form_auto(p_form smallint, p_doc jsonb)
  RETURNS jsonb
  LANGUAGE sql
@@ -22,7 +22,7 @@ cross join lateral (select case s.key
   when 'teacher_ar'    then p_doc->>'teacher_ar'
   when 'problem_ar'    then p_doc#>>'{record,problem_ar}'
   when 'degree_ar'     then case when p_doc#>>'{record,degree_no}' is null then null
-                                 else 'الدرجة '||(p_doc#>>'{record,degree_no}') end
+                                 else v2.degree_ar((p_doc#>>'{record,degree_no}')::int) end
   when 'weekday'       then p_doc#>>'{record,weekday_ar}'
   when 'occurred_h'    then nullif(p_doc#>>'{record,occurred_h}','')||' هـ'
   when 'actions_text'  then p_doc->>'actions_text'

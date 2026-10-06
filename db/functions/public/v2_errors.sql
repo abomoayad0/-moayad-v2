@@ -1,5 +1,5 @@
 -- public.v2_errors(p_days integer, p_kind text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 4143135a4d5a9e431e3e38b73b0a83a2
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 5546626112272c6f85a023ec1c907462
 CREATE OR REPLACE FUNCTION public.v2_errors(p_days integer DEFAULT 7, p_kind text DEFAULT NULL::text)
  RETURNS TABLE(id uuid, at timestamp with time zone, at_h text, at_ar text, person_ar text, role_ar text, school_ar text, screen text, action text, fn_name text, kind text, message text, sqlstate text, params jsonb, seen boolean, fixed boolean, times integer)
  LANGUAGE plpgsql
@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION public.v2_errors(p_days integer DEFAULT 7, p_kind tex
  SET search_path TO 'v2', 'public'
 AS $function$
 begin
-  if v2.my_grant() is null or v2.my_grant() not in ('owner','admin') then
+  if (v2.my_grant() is null or v2.my_grant() not in ('owner','admin')) then
     raise exception 'لوحة الأخطاء للمالك وإدارة المدرسة'; end if;
   return query
   select (array_agg(e.id order by e.at desc))[1], max(e.at),
