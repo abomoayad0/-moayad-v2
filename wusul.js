@@ -2,7 +2,7 @@
 // الاصطفاف (record_assembly) · الوصولُ المتأخّر (record_arrival) · تأخّرُ الانصراف (record_dismissal) — كلُّ بابٍ بمفتاحه في can.
 // الأعدادُ والحالاتُ والدقائقُ والعتباتُ والإجراءُ كلُّها من القاعدة:
 // v2_day_summary · v2_day_classes · v2_day_list · v2_day_dismissals · v2_record_assembly · v2_record_arrival · v2_record_dismissal
-// v2_day_rules (رأسُ باب الوصول) · v2_arrival_check (قبل حفظ الوصول — والحالُ منه لا من الشاشة)
+// v2_day_rules · v2_day_plan (رأسُ باب الوصول وخللُ التوقيتات) · v2_arrival_check (قبل حفظ الوصول — والحالُ منه لا من الشاشة)
 (function () {
   'use strict';
 
@@ -34,12 +34,13 @@
     if (!M.state.school || !M.state.date) return;
     showLoadErr('');
     const a = { p_school: M.state.school, p_date: M.state.date };
-    const [sum, cls, list, dis, rules] = await Promise.all([
+    const [sum, cls, list, dis, rules, plan] = await Promise.all([
       M.rpc('v2_day_summary', a, 'ملخّص اليوم'),
       M.rpc('v2_day_classes', a, 'فصول اليوم'),
       M.rpc('v2_day_list', a, 'طلّاب اليوم'),
       can('record_dismissal') ? M.rpc('v2_day_dismissals', a, 'انصرافات اليوم') : Promise.resolve({ data: [] }),
       can('record_arrival') ? M.rpc('v2_day_rules', { p_school: M.state.school }, 'قواعد اليوم') : Promise.resolve({ data: null }),
+      can('record_arrival') ? M.rpc('v2_day_plan', { p_school: M.state.school }, 'لوحة اليوم') : Promise.resolve({ data: null }),
     ]);
     const err = sum.error || cls.error || list.error;
     if (err) { showLoadErr('تعذّر جلب اليوم: ' + errText(err)); return; }
@@ -50,6 +51,7 @@
     ui.dis = dis.data || [];
     ui.rules = rules.data || null;
     ui.rulesErr = rules.error ? errText(rules.error) : '';
+    ui.issues = (plan.data && plan.data.issues) || [];
     if (ui.cls && !ui.classes.some((c) => classKey(c) === ui.cls)) ui.cls = null;
     render();
   }
@@ -157,10 +159,8 @@
     p.textContent = '';
     p.append('الاصطفاف ' + (d.assembly_ar || '—') + ' · المهلة ' + (d.grace_ar || '٠') + ' دقيقة · ', el('b', null, 'حدُّ التأخّر ' + (d.late_cutoff_ar || '—')),
       ' — بعده يُسجَّل غائبًا' + (d.late_cutoff_note ? ' · ' + d.late_cutoff_note : ''));
-    // إعدادُ المدرسة: إن كان الإقفالُ قبل الحدّ فالحدُّ لا يبلغه أحد — يُنبَّه ولا يُصلَح هنا
-    if (d.close_at && d.late_cutoff_at && String(d.close_at) < String(d.late_cutoff_at)) {
-      p.appendChild(el('div', 'rs-state-open', 'الإقفالُ ' + (d.close_ar || '') + ' وحدُّ التأخّر ' + (d.late_cutoff_ar || '') + ' — راجع توقيتاتك'));
-    }
+    // خللُ توقيتات اليوم كما تكشفه القاعدة (v2_day_plan · issues) — يُعرض ولا يُصلَح هنا
+    for (const i of ui.issues || []) p.appendChild(el('div', 'rs-state-open', i.text));
   }
 
   function renderArrivals() {

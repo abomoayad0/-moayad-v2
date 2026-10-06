@@ -5,6 +5,7 @@
 // v2_practices(p_school,…) · v2_practices_hidden · v2_practice_save · v2_practice_state · v2_practice_scopes · v2_scope_upsert · v2_committee_rules · v2_committee_rules_get
 // v2_brand_card · v2_brand_save · v2_stamp_save · v2_signature_save · v2_calendar_board · v2_year_save · v2_term_save
 // v2_structure_board · v2_structure_set · v2_exceptions_board · v2_exception_add · v2_exception_kinds · v2_reference(p_key)
+// واليومُ الدراسيّ: yawm.js (v2_breaks · v2_break_save · v2_break_remove · v2_day_plan · v2_day_build)
 // والإنابة: inaba.js (v2_delegations_board · v2_delegate_add · v2_delegate_revoke) · وسطرُ الإنابة في الرأس: v2_my_acting
 // وجدولُ الحصص: jadwal.js (v2_timetable_board · v2_slot_* · v2_quota_* · v2_plan_* · v2_teacher_subject · v2_timetable_suggest · v2_draft_*)
 // v2_brand_upload_path · v2_committees_list · v2_committee_create · v2_committee_close · v2_committee_duties · v2_committee_duty_save
@@ -86,6 +87,8 @@
         if (!rowsBox.hidden) openRows(r, rowsBox);
       });
       s.append(b, rowsBox);
+      // أداةٌ مع التعديل العامّ لا بدلَه (لوحةُ اليوم مع توقيتات اليوم)
+      if (EXTRA_TOOLS[r.key]) s.appendChild(toggle(EXTRA_TOOLS[r.key][0], EXTRA_TOOLS[r.key][1]));
     }
     return s;
   }
@@ -1257,6 +1260,10 @@
   const REF_TOOLS = Object.fromEntries(['absence_ladder', 'absence_excuses', 'violence_types', 'grading'].map((k) => [k, refTool(k)]));
 
   // الأبوابُ التي لها أداةٌ هنا بجسورها — وتُقدَّم على التعديل العامّ
+  // أدواتٌ تُضاف إلى التعديل العامّ لبابها: [نصُّ الزرّ، الأداة]
+  const EXTRA_TOOLS = {
+    day_settings: ['لوحةُ اليوم', (b) => window.MoayadYawm.dayPlanTool(b)],
+  };
   const OWN_TOOLS = {
     class_practices: practicesTool, practice_scopes: scopesTool,
     staff: staffTool, assignments_panel: staffTool, students: studentsTool, guardians: studentsTool,
@@ -1269,6 +1276,8 @@
     subject_plan: (b) => window.MoayadJadwal.planTool(b),
     teacher_subjects: (b) => window.MoayadJadwal.subjectsTool(b),
     timetable_drafts: (b) => window.MoayadJadwal.draftsTool(b),
+    // فتراتُ اليوم — yawm.js
+    break_slots: (b) => window.MoayadYawm.breaksTool(b),
     // الإنابةُ في الصفات — inaba.js
     delegations: (b) => window.MoayadInaba.delegationsTool(b),
   };

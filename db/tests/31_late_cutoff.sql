@@ -1,4 +1,5 @@
 -- فحص ٣١ · حدُّ التأخّر — الطريقُ كما تسلكه wusul.js: قواعدُ اليوم · التحقّقُ قبل الحفظ · الحفظ · وبدلُه تسجيلُ الغياب بالاصطفاف.
+-- الإصدار ٣: على توقيتات المدرستين الجديدة (حصصٌ سبعٌ متّصلة ٠٧:٠٠–١٢:٣٥ · فسحةٌ بعد الثالثة · صلاةٌ بعد السابعة) ومعه v2_day_plan.
 -- الإصدار ٢: بعد v2.time_ar والحقول _ar — يُقرأ الشكلُ العربيُّ للأوقات.
 -- كلُّه داخل begin … rollback، على الطفيل. الهويّة: مفرح وكيلًا لشؤون الطلاب. لا حسابَ يُمسّ ولا حذف.
 begin;
@@ -12,22 +13,23 @@ do $$ declare s record; r text; begin
   perform set_config('t.a',(select student_id::text from public.v2_day_list(current_setting('t.school')::uuid,current_setting('t.d')::date) where state='unrecorded' order by student_no limit 1),true);
   perform set_config('t.b',(select student_id::text from public.v2_day_list(current_setting('t.school')::uuid,current_setting('t.d')::date) where state='unrecorded' order by student_no offset 1 limit 1),true);
   for s in select * from (values
-    (1, 'قواعدُ اليوم', $q$select (r - 'periods')::text||' ‖ '||(r->'periods'->0)::text from (select public.v2_day_rules(current_setting('t.school')::uuid) r) z$q$),
-    (2, 'تحقّق ٠٦:٤٠', $q$select public.v2_arrival_check(current_setting('t.school')::uuid,time '06:40')::text$q$),
+    (1, 'قواعدُ اليوم', $q$select (r - 'periods')::text||' ‖ '||(select string_agg((x->>'no_ar')||' '||(x->>'starts_ar')||'—'||(x->>'ends_ar'),' · ') from jsonb_array_elements(r->'periods') x) from (select public.v2_day_rules(current_setting('t.school')::uuid) r) z$q$),
+    (2, 'تحقّق ٠٦:٥٥', $q$select public.v2_arrival_check(current_setting('t.school')::uuid,time '06:55')::text$q$),
     (3, 'تحقّق ٠٧:٣٠', $q$select public.v2_arrival_check(current_setting('t.school')::uuid,time '07:30')::text$q$),
-    (4, 'تحقّق ٠٩:٣٠', $q$select public.v2_arrival_check(current_setting('t.school')::uuid,time '09:30')::text$q$),
+    (4, 'تحقّق ٠٩:٣٠', $q$select public.v2_arrival_check(current_setting('t.school')::uuid,time '09:30')->>'why'$q$),
     (5, 'تحقّق ١٤:١٢', $q$select public.v2_arrival_check(current_setting('t.school')::uuid,time '14:12')->>'why'$q$),
     (6, 'حفظُ وصول a ‏٠٧:٣٠', $q$select public.v2_record_arrival(current_setting('t.a')::uuid,current_setting('t.d')::date,time '07:30','enter_class',null,'فحص')::text$q$),
     (7, 'a بعده', $q$select state||' · late='||coalesce(minutes_late::text,'∅') from public.v2_day_list(current_setting('t.school')::uuid,current_setting('t.d')::date) where student_id=current_setting('t.a')::uuid$q$),
     (8, 'حفظُ وصول b ‏١٤:١٢', $q$select public.v2_record_arrival(current_setting('t.b')::uuid,current_setting('t.d')::date,time '14:12','enter_class',null,'فحص')::text$q$),
     (9, 'وبدلُه: b غائبٌ بالاصطفاف', $q$select public.v2_record_assembly(current_setting('t.b')::uuid,current_setting('t.d')::date,'not_arrived')::text$q$),
     (10, 'b بعده', $q$select state||' · '||coalesce(assembly_ar,'∅') from public.v2_day_list(current_setting('t.school')::uuid,current_setting('t.d')::date) where student_id=current_setting('t.b')::uuid$q$),
-    (11, 'تحقّقٌ لمدرسةٍ ليست له', $q$select public.v2_arrival_check('00000000-0000-0000-0000-000000000000'::uuid,time '07:30')::text$q$)
+    (11, 'تحقّقٌ لمدرسةٍ ليست له', $q$select public.v2_arrival_check('00000000-0000-0000-0000-000000000000'::uuid,time '07:30')::text$q$),
+    (12, 'خللُ اليوم (v2_day_plan · issues)', $q$select (r->'issues')::text||' · ok='||(r->>'ok') from (select public.v2_day_plan(current_setting('t.school')::uuid) r) z$q$)
   ) v(n,l,q) order by n loop
     begin execute s.q into r; r := 'نفذ: '||coalesce(r,'—');
     exception when others then r := 'رُفض: '||sqlerrm; end;
     perform set_config('t.s'||s.n, s.l||' ⇐ '||r, true);
   end loop; end $$;
 reset role;
-select n::text as "#", left(current_setting('t.s'||n),800) as النتيجة from generate_series(1,11) n;
+select n::text as "#", left(current_setting('t.s'||n),900) as النتيجة from generate_series(1,12) n;
 rollback;

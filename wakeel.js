@@ -238,6 +238,24 @@
     $('amLegalBox').hidden = true;
     $('amendModal').hidden = false;
     $('amPlace').focus();
+    placeHint();
+  }
+  // اقتراحُ المكان من v2_now_slot: الحصّةُ أو الفترةُ القائمةُ الآن — يُعرض ولا يُكتب إلا بضغطه
+  async function placeHint() {
+    const box = $('amPlaceHint');
+    box.hidden = true;
+    box.textContent = '';
+    const { data, error } = await M.rpc('v2_now_slot', { p_school: M.state.school, p_at: null }, 'ما نحن فيه الآن');
+    if (error || !data) return;
+    box.appendChild(el('span', 'k', 'الآن ' + (data.at_ar || '') + ': ' + (data.label || '') + (data.starts_ar ? ' (' + data.starts_ar + ' — ' + data.ends_ar + ')' : '')));
+    if (data.place_hint) {
+      const s = el('span', null, 'اقتراحُ المكان: ' + data.place_hint);
+      s.setAttribute('role', 'button');
+      s.tabIndex = 0;
+      s.addEventListener('click', () => { $('amPlace').value = data.place_hint; });
+      box.appendChild(s);
+    }
+    box.hidden = false;
   }
   const closeAmend = () => { $('amendModal').hidden = true; };
   $('amCancel').addEventListener('click', closeAmend);
