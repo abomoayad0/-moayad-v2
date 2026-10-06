@@ -1,7 +1,7 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 93a22e7fe9232f1b269b3fff2ba55fc9
+-- ── grants · md5 5a6f53541d413e6980a820506e5660d8
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 
@@ -286,6 +286,8 @@ REVOKE ALL ON FUNCTION v2.seat_cap(p_school uuid, p_committee text, p_seat_role 
 GRANT EXECUTE ON FUNCTION v2.seat_cap(p_school uuid, p_committee text, p_seat_role text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.stage_ar(p text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.stage_ar(p text) TO authenticated;
+REVOKE ALL ON FUNCTION v2.term_of_strict(p_school uuid, p_date date) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.term_of_strict(p_school uuid, p_date date) TO authenticated;
 REVOKE ALL ON FUNCTION v2.trg_abs_task_evidence() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.trg_attendance_calendar_guard() FROM PUBLIC;

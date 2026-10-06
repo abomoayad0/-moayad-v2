@@ -1,5 +1,5 @@
 -- public.v2_record_behavior(p_student uuid, p_problem integer, p_place text, p_note text, p_period smallint, p_victim uuid, p_injury boolean, p_damage boolean, p_seizure boolean, p_seizure_legal boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2f61a14b8036a807c8f8b3e9ead1df7e
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 ce90ce2c07e3ca27eed6db32bddfcb8c
 CREATE OR REPLACE FUNCTION public.v2_record_behavior(p_student uuid, p_problem integer, p_place text DEFAULT NULL::text, p_note text DEFAULT NULL::text, p_period smallint DEFAULT NULL::smallint, p_victim uuid DEFAULT NULL::uuid, p_injury boolean DEFAULT false, p_damage boolean DEFAULT false, p_seizure boolean DEFAULT false, p_seizure_legal boolean DEFAULT false)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -19,12 +19,10 @@ begin
   select e.school_id, e.year_id into sc, yid from v2.enrolments e
    where e.student_id=p_student and e.status='active' limit 1;
 
-  -- 🔑 لا يُفترض الفصلُ صامتًا
-  tm := v2.fn_term_of(sc, current_date);
+  tm := v2.term_of_strict(sc, current_date);
   if tm is null then
-    if not exists (select 1 from v2.terms t where t.year_id=yid) then
-      raise exception 'لا فصولَ دراسيّةٌ في تقويم مدرستك — أسّسها من لوحة التحكّم أوّلًا'; end if;
-    raise exception 'اليومُ خارجَ حدود الفصول الدراسيّة المسجّلة في التقويم';
+    raise exception 'اليومُ غيرُ معروفٍ في تقويم مدرستك — فلا يُعرف فصلُه الدراسيّ. '
+      'أسّس التقويمَ من لوحة التحكّم، أو راجع مسارَ التقويم للمدرسة';
   end if;
 
   rid := v2.fn_record_behavior(p_student,p_problem,tm,p_period,p_place,p_note,
@@ -37,7 +35,6 @@ begin
   select coalesce(-sum(points),0) into ded from v2.behavior_ledger
    where record_id=rid and kind='deduction';
 
-  -- 🔑 السجلُّ الزمنيُّ يُكتب
   insert into v2.events(school_id,kind,on_date,student_id,title_ar,body_ar,
       ref_table,ref_id,visible_to,is_test)
   values (r.school_id,'behavior_record',current_date,p_student,
@@ -59,14 +56,13 @@ begin
   end if;
 
   return jsonb_build_object(
-    'ok',true,'record',rid,
-    'problem', ptxt,
+    'ok',true,'record',rid,'problem',ptxt,
     'degree_ar', v2.degree_ar(r.dno),
     'page_ar', v2.page_ar(r.spg),
+    'term', tm,
     'occurrence', r.occurrence_no,
     'occurrence_ar', v2.ord_ar(r.occurrence_no),
-    'step', r.step_no,
-    'deducted', ded,
+    'step', r.step_no, 'deducted', ded,
     'headline',
       'رُصدت المخالفة — '||ptxt||' · الرصدةُ '||v2.ord_ar(r.occurrence_no)||
       case when ded > 0 then ' · وحُسمت '||v2.ar_num(ded)||' من السلوك الإيجابيّ'

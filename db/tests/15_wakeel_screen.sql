@@ -20,7 +20,7 @@ do $$ declare s record; r text; begin
   for s in select * from (values
     (1, 'حصصُ المدرسة', null::text, $q$select jsonb_array_length(r)||' · '||coalesce((select string_agg((x->>'no_ar')||'='||(x->>'label'),' · ') from jsonb_array_elements(r) x),'—') from (select public.v2_periods('7a847bb1-9b14-41ad-b9ba-7c8dee61a992'::uuid) r) z$q$),
     (2, 'السلوك 41: page_ar والنصّ', null::text, $q$select (x->>'text')||' · '||coalesce(x->>'page_ar','—')||' · '||coalesce(x->>'source','—') from jsonb_array_elements(public.v2_conduct_list(current_setting('t.a')::uuid)) x where (x->>'id')::int=41$q$),
-    (3, 'يرصد ولا فصولَ في التقويم', null::text, $q$select (r->>'headline')||' ‖ page_ar='||coalesce(r->>'page_ar','—')||' · record='||(r->>'record') from (select public.v2_record_behavior(current_setting('t.a')::uuid,41,null,null,1::smallint) r) z$q$),
+    (3, 'يرصد ولا فصولَ للمدرسة في v2.terms (والتقويمُ الوزاريّ مؤسَّس)', null::text, $q$select (r->>'headline')||' ‖ page_ar='||coalesce(r->>'page_ar','—')||' · term='||coalesce(r->>'term','—')||' · record='||(r->>'record') from (select public.v2_record_behavior(current_setting('t.a')::uuid,41,null,null,1::smallint) r) z$q$),
     (4, 'يؤسّس الفصلَ الأوّل (داخل التراجع)', null::text, $q$select public.v2_term_save('7a847bb1-9b14-41ad-b9ba-7c8dee61a992'::uuid,current_setting('t.year')::uuid,null,1::smallint,'2026-08-23','2027-01-15',true)->>'ok'$q$),
     (5, 'يرصد 38', 'r1', $q$select r->>'record' from (select public.v2_record_behavior(current_setting('t.a')::uuid,38,null,null,null) r) z$q$),
     (6, 'يرصد 41 · الحصّة ٢', 'r2', $q$select r->>'record' from (select public.v2_record_behavior(current_setting('t.a')::uuid,41,null,null,2::smallint) r) z$q$),
@@ -76,5 +76,6 @@ do $$ declare s record; r text; begin
 reset role;
 
 select n::text as "#", left(current_setting('t.s'||n),1200) as النتيجة from generate_series(1,16) n
-union all select 'أ', 'فصولُ طُفيل قبل الفحص: '||current_setting('t.terms_before');
+union all select 'أ', 'فصولُ طُفيل قبل الفحص: '||current_setting('t.terms_before')
+union all select 'ب', 'term_of_strict (بعد فصل السطر 4، داخل التراجع): اليوم='||coalesce(v2.term_of_strict('7a847bb1-9b14-41ad-b9ba-7c8dee61a992'::uuid,current_date)::text,'فارغ')||' · 2027-07-15='||coalesce(v2.term_of_strict('7a847bb1-9b14-41ad-b9ba-7c8dee61a992'::uuid,'2027-07-15')::text,'فارغ')||' · fn_term_of(2027-07-15)='||v2.fn_term_of('7a847bb1-9b14-41ad-b9ba-7c8dee61a992'::uuid,'2027-07-15');
 rollback;

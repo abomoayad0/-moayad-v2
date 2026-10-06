@@ -1,7 +1,7 @@
 -- functions/comments.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── fn_comments · md5 e15600ccf6313b8fa87a3365af147c0f
+-- ── fn_comments · md5 0c46e610b656294582cb744a91cac8fc
 COMMENT ON FUNCTION v2.behavior_score(p_student uuid, p_year uuid, p_term smallint) IS 'درجةُ السلوك: الإيجابيُّ ٨٠ سقفًا · والمتميّزُ ٢٠ سقفًا · والمجموعُ ١٠٠ — CONDUCT-1447-OFF ص15';
 COMMENT ON FUNCTION v2.caller_kind(p_student uuid) IS 'صفةُ المتّصل من القاعدة لا من الشاشة. 🔑 والصفةُ المختارةُ تحكم: من اختار صفةً غيرَ الموجّه الطلابيّ لا يرى ما وُسم counselor_only ولو كان هو الموجّه — قرار مفرح ٥/١٠/٢٠٢٦: فصلٌ تامّ بين الصفات.';
 COMMENT ON FUNCTION v2.evidence_ok(p_entry uuid, p_path text) IS 'المرفقُ يُقبل إن كان في مسار مشاركته: merit/<المدرسة>/<الطالب>/<المشاركة>/ — فلا يصلح شاهدُ طالبٍ لآخر';
@@ -14,6 +14,7 @@ COMMENT ON FUNCTION v2.fn_record_behavior(p_student uuid, p_problem integer, p_t
 COMMENT ON FUNCTION v2.is_counselor(p_school uuid) IS 'الموجّهُ بصفته المختارة — فمن بدّل صفتَه إلى غيرها لا يفتح دراسةَ الحالة ولا الجلسات';
 COMMENT ON FUNCTION v2.merit_path_allows(p_path text, p_write boolean) IS 'حارسُ مسار شواهد التعويض — يُنادى من سياسات المخزن بصلاحيّة الدالّة لا بصلاحيّة المستخدم';
 COMMENT ON FUNCTION v2.my_school(p_school uuid) IS 'المدرسةُ النافذةُ من الصفة المختارة أوّلًا، ثمّ من حساب المستخدم. أُصلح ٥/١٠/٢٠٢٦ — كان من school_id فارغٌ يمرّ على كلّ مدرسة.';
+COMMENT ON FUNCTION v2.term_of_strict(p_school uuid, p_date date) IS 'الفصلُ الدراسيُّ لليوم: فصولُ المدرسة أوّلًا ثمّ التقويمُ الوزاريّ — وترجع فارغًا إن لم يُعرف، فلا يُفترض الفصلُ الأوّل صامتًا';
 COMMENT ON FUNCTION public.v2_merits() IS 'ممارساتُ السلوك المتميّز — CONDUCT-1447-OFF ص18–19. وما points فيه فارغٌ يُقدَّر بتوصية اللجنة بما لا يتجاوز ستًّا';
 COMMENT ON FUNCTION public.v2_student_timeline(p_student uuid, p_as text) IS 'الرؤيةُ تُحسب من صفة المتّصل في القاعدة؛ و`p_as` قيدٌ يضيّق ولا يوسّع. أُصلح ٥/١٠/٢٠٢٦ — كان يثق بما ترسله الشاشة فيسرّب سرَّ الموجّه.';
 
