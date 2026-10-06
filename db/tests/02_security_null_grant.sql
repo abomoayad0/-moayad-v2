@@ -9,6 +9,14 @@ select set_config('t.school','7a847bb1-9b14-41ad-b9ba-7c8dee61a992',true),
        set_config('t.queued',(select count(*)::text from v2.outbox where status='queued'),true),
        set_config('t.errs',(select count(*)::text from v2.error_log),true);
 
+-- فرصةٌ مفتوحةٌ حقًّا يفتحها المالك (مفرح · رئيس لجنة التوجيه)، ليبلغ الغريبُ حارسَي plan و close لا «غيرُ موجودة»
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"11be0946-ff39-4eb7-8a74-023b580479be","role":"authenticated"}';
+select public.v2_act_as('deputy_students', current_setting('t.school')::uuid);
+select set_config('t.opp_owner', public.v2_opp_open(current_setting('t.school')::uuid, current_setting('t.merit')::int,
+        null,'فرصة المالك','الحصّة الأولى',null::smallint,null)->>'opp', true);
+reset role;
+
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}';
 
@@ -30,12 +38,12 @@ do $$ declare r jsonb; begin
 exception when others then perform set_config('t.r_open','رُفض: '||sqlerrm,true); end $$;
 
 do $$ declare r jsonb; begin
-  r := public.v2_opp_plan(nullif(current_setting('t.opp',true),'')::uuid, 'فحص');
+  r := public.v2_opp_plan(current_setting('t.opp_owner')::uuid, 'فحص');
   perform set_config('t.r_plan','نفذ: '||coalesce(r->>'ok',r::text),true);
 exception when others then perform set_config('t.r_plan','رُفض: '||sqlerrm,true); end $$;
 
 do $$ declare r jsonb; begin
-  r := public.v2_opp_close(nullif(current_setting('t.opp',true),'')::uuid, 'فحص');
+  r := public.v2_opp_close(current_setting('t.opp_owner')::uuid, 'فحص');
   perform set_config('t.r_close','نفذ: '||coalesce(r->>'ok',r::text),true);
 exception when others then perform set_config('t.r_close','رُفض: '||sqlerrm,true); end $$;
 
@@ -44,7 +52,7 @@ reset role;
 select 'v2_errors(3650)' as الجسر, current_setting('t.r_errors') as النتيجة, 'في السجلّ '||current_setting('t.errs') as المرجع
 union all select 'v2_outbox_pull(1000)', current_setting('t.r_outbox'), 'في الطابور '||current_setting('t.queued')
 union all select 'v2_opp_open',  current_setting('t.r_open'),  ''
-union all select 'v2_opp_plan',  current_setting('t.r_plan'),  ''
-union all select 'v2_opp_close', current_setting('t.r_close'), '';
+union all select 'v2_opp_plan (فرصة المالك)',  current_setting('t.r_plan'),  'حالها بعدُ: '||(select state from v2.merit_opportunities where id=current_setting('t.opp_owner')::uuid)
+union all select 'v2_opp_close (فرصة المالك)', current_setting('t.r_close'), 'فُتحت بيد المالك: '||(current_setting('t.opp_owner') is not null)::text;
 
 rollback;

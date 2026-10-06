@@ -1,5 +1,6 @@
 -- فحص ٧ · الإعدادات: الصفةُ، والمقفَل، وذو الجسر الخاصّ (منعُ رفع الصلاحية)، والأعمدةُ المسموحة،
--- والرقميّ، والتصعيد (escalate_to)، وحدُّ المدرسة في الكتابة والقراءة. كلُّه داخل begin … rollback.
+-- والرقميّ، وبابا الممارسات ذوا الجسر الخاصّ، وحدُّ المدرسة في الكتابة والقراءة.
+-- (التصعيدُ escalate_to صار في v2_practice_upsert، ويُفحص في 09_practices.sql) كلُّه داخل begin … rollback.
 -- المعدِّل: مفرح بصفة وكيل شؤون الطلاب في طُفيل. والممنوع: سعيد بصفة الموجّه.
 begin;
 
@@ -34,16 +35,16 @@ do $$ declare s record; r text; begin
   for s in select * from (values
     (2, 'يعدّل جدولًا مقفلًا (المخالفات)', null::text, $q$select public.v2_setting_update('conduct_problems',current_setting('t.prob'),'{"text_ar":"x"}')::text$q$),
     (3, 'يرفع صلاحيّةً عبر الإعدادات', null::text, $q$select public.v2_setting_update('app_users',current_setting('t.uid'),'{"role":"owner"}')::text$q$),
-    (4, 'يعدّل عمودًا غيرَ مسموح (المفتاح)', null::text, $q$select public.v2_setting_update('class_practices',current_setting('t.code'),'{"code":"x"}')::text$q$),
-    (5, 'يضع نصًّا في حقلٍ رقميّ', null::text, $q$select public.v2_setting_update('class_practices',current_setting('t.code'),'{"points":"abc"}')::text$q$),
-    (6, 'يضع رقمًا في حقلٍ رقميّ', null::text, $q$select public.v2_setting_update('class_practices',current_setting('t.code'),'{"points":"1.5"}')->>'ok'$q$),
-    (7, 'يصعّد إلى مخالفةٍ غيرِ موجودة', null::text, $q$select public.v2_setting_update('class_practices',current_setting('t.code'),'{"escalate_to":"999999"}')::text$q$),
-    (8, 'يصعّد إلى مخالفةٍ موجودة', null::text, $q$select public.v2_setting_update('class_practices',current_setting('t.code'),jsonb_build_object('escalate_to',current_setting('t.prob')))->>'ok'$q$),
+    (4, 'يعدّل عمودًا غيرَ مسموح (school_id)', null::text, $q$select public.v2_setting_update('day_settings','7a847bb1-9b14-41ad-b9ba-7c8dee61a992','{"school_id":"f789f9ea-e474-49bc-86e0-3449258815f8"}')::text$q$),
+    (5, 'يضع نصًّا في حقلٍ رقميّ', null::text, $q$select public.v2_setting_update('day_settings','7a847bb1-9b14-41ad-b9ba-7c8dee61a992','{"period_minutes":"abc"}')::text$q$),
+    (6, 'يضع رقمًا في حقلٍ رقميّ', null::text, $q$select public.v2_setting_update('day_settings','7a847bb1-9b14-41ad-b9ba-7c8dee61a992','{"period_minutes":"40"}')->>'ok'$q$),
+    (7, 'يعدّل «ممارسات الصف» من التعديل العامّ', null::text, $q$select public.v2_setting_update('class_practices',current_setting('t.code'),'{"points":"1.5"}')::text$q$),
+    (8, 'يعدّل «مجالات الممارسة» من التعديل العامّ', null::text, $q$select public.v2_setting_update('practice_scopes','x','{"label_ar":"x"}')::text$q$),
     (9, 'يعدّل إعدادَ مدرسةٍ أخرى', null::text, $q$select public.v2_setting_update('day_settings','f789f9ea-e474-49bc-86e0-3449258815f8','{"period_minutes":"45"}')::text$q$),
     (10, 'يعدّل إعدادَ مدرسته', null::text, $q$select public.v2_setting_update('day_settings','7a847bb1-9b14-41ad-b9ba-7c8dee61a992','{"period_minutes":"45"}')->>'ok'$q$),
     (11, 'يقرأ صفوفَ مدرسته', null::text, $q$select jsonb_array_length(public.v2_setting_rows('class_sections','7a847bb1-9b14-41ad-b9ba-7c8dee61a992')->'rows')::text$q$),
     (12, 'يقرأ صفوفَ مدرسةٍ أخرى', null::text, $q$select jsonb_array_length(public.v2_setting_rows('class_sections','f789f9ea-e474-49bc-86e0-3449258815f8')->'rows')::text$q$),
-    (13, 'يقرأ بلا مدرسة (null)', null::text, $q$select jsonb_array_length(public.v2_setting_rows('class_sections',null)->'rows')::text$q$)
+    (13, 'يقرأ بلا مدرسة (null)', null::text, $q$select (select jsonb_array_length(r->'rows')||' صفًّا · المدرسة: '||coalesce(r->>'school_ar','—') from (select public.v2_setting_rows('class_sections',null) r) z)$q$)
   ) v(n,l,k,q) order by n loop
     begin execute s.q into r;
       if s.k is not null then perform set_config('t.'||s.k, r, true); end if;
@@ -55,7 +56,6 @@ reset role;
 
 select n::text as "#", current_setting('t.s'||n) as النتيجة from generate_series(1,13) n
 union all select 'أ', 'class_sections في القاعدة: '||current_setting('t.cs_all')||' · منها لطُفيل '||current_setting('t.cs_mine')
-union all select 'ب', 'بعد التعديل: '||(select 'points='||points||' · escalate_to='||coalesce(escalate_to::text,'—') from v2.class_practices where code=current_setting('t.code'))
 union all select 'ج', 'day_settings طُفيل: period_minutes='||(select period_minutes::text from v2.day_settings where school_id='7a847bb1-9b14-41ad-b9ba-7c8dee61a992');
 
 rollback;
