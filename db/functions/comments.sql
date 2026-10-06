@@ -1,7 +1,8 @@
 -- functions/comments.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── fn_comments · md5 0c46e610b656294582cb744a91cac8fc
+-- ── fn_comments · md5 2336d70aaa5029668c81b4463498386a
+COMMENT ON FUNCTION v2.assert_student_or_kin(p_student uuid, p_what text) IS 'يمرّ الطالبُ ووليُّ أمره، وإلا فحارسُ المنسوبين. ولا يُنادى إلا في جسور البوّابة — فالكتابةُ على الطالب للمنسوبين وحدَهم';
 COMMENT ON FUNCTION v2.behavior_score(p_student uuid, p_year uuid, p_term smallint) IS 'درجةُ السلوك: الإيجابيُّ ٨٠ سقفًا · والمتميّزُ ٢٠ سقفًا · والمجموعُ ١٠٠ — CONDUCT-1447-OFF ص15';
 COMMENT ON FUNCTION v2.caller_kind(p_student uuid) IS 'صفةُ المتّصل من القاعدة لا من الشاشة. 🔑 والصفةُ المختارةُ تحكم: من اختار صفةً غيرَ الموجّه الطلابيّ لا يرى ما وُسم counselor_only ولو كان هو الموجّه — قرار مفرح ٥/١٠/٢٠٢٦: فصلٌ تامّ بين الصفات.';
 COMMENT ON FUNCTION v2.evidence_ok(p_entry uuid, p_path text) IS 'المرفقُ يُقبل إن كان في مسار مشاركته: merit/<المدرسة>/<الطالب>/<المشاركة>/ — فلا يصلح شاهدُ طالبٍ لآخر';

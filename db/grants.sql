@@ -1,7 +1,7 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 f75beb6d386208056effef3065a56889
+-- ── grants · md5 4452de2ec874e4e24d2d8c56b6aaeb33
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 
@@ -20,6 +20,8 @@ REVOKE ALL ON FUNCTION v2.assert_my_student(p_student uuid, p_what text) FROM PU
 GRANT EXECUTE ON FUNCTION v2.assert_my_student(p_student uuid, p_what text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.assert_role(p_allowed text[], p_what text) FROM PUBLIC;
 
+REVOKE ALL ON FUNCTION v2.assert_student_or_kin(p_student uuid, p_what text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.assert_student_or_kin(p_student uuid, p_what text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.attachment_allows(p_path text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.attachment_allows(p_path text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.attachment_guardian_ok(p_path text) FROM PUBLIC;

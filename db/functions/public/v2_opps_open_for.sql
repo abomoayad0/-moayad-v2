@@ -1,5 +1,5 @@
 -- public.v2_opps_open_for(p_student uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 60081f3ffc307f35382768ba50be01f0
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 da4ad3b8ebf10eee3d1c4b45b47f9e61
 CREATE OR REPLACE FUNCTION public.v2_opps_open_for(p_student uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,11 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_opps_open_for(p_student uuid)
 AS $function$
 declare sc uuid; yr uuid; tm smallint; r jsonb; s jsonb; who text;
 begin
-  who := v2.caller_kind(p_student);
-  if who = 'none' then raise exception 'لا تملك الاطّلاع على فرص هذا الطالب'; end if;
-  if who not in ('student','guardian') then
-    perform v2.assert_my_student(p_student,'فرص التعويض'); end if;
-
+  who := v2.assert_student_or_kin(p_student,'فرص التعويض');
   select e.school_id, e.year_id into sc, yr from v2.enrolments e
    where e.student_id=p_student and e.status='active' limit 1;
   tm := coalesce(v2.term_of_strict(sc, current_date), 1);

@@ -1,5 +1,5 @@
 -- public.v2_opp_join(p_opp uuid, p_student uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 706fa8181801ca44e227574456d0b612
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 6014a8a0b502081dbdc2f68a62637fd5
 CREATE OR REPLACE FUNCTION public.v2_opp_join(p_opp uuid, p_student uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -15,13 +15,11 @@ begin
     perform v2.assert_my_student(p_student,'تسجيل في فرصة تعويض');
     who := 'نيابةً — '||coalesce(v2.role_ar(v2.my_role()),'منسوب');
   else
-    who := case who when 'student' then 'الطالب' else 'وليّ الأمر' end;
-  end if;
+    who := case who when 'student' then 'الطالب' else 'وليّ الأمر' end; end if;
 
   select * into o from v2.merit_opportunities where id=p_opp;
   if o.id is null then raise exception 'الفرصةُ غيرُ موجودة'; end if;
   if o.state <> 'مفتوحة' then raise exception 'الفرصةُ % — %', o.state, coalesce(o.close_why,''); end if;
-
   insert into v2.merit_entries(opp_id,student_id,joined_by,joined_as)
   values (p_opp,p_student,v2.current_person(),who)
    on conflict (opp_id,student_id) do nothing;

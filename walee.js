@@ -1,5 +1,5 @@
 // مؤيّد · بوّابة وليّ الأمر — viewG في المحاكي: بطاقةُ الابن · رصداتُه · ما فعلته المدرسة · سلوكُه المتميّز · نماذج تنتظرك.
-// v2_guardian_me · v2_opps_open_for · v2_student_timeline(p_student, 'guardian') · v2_guardian_forms · v2_guardian_form_read
+// v2_guardian_me · v2_guardian_child · v2_opps_open_for · v2_student_timeline(p_student, 'guardian') · v2_guardian_forms · v2_guardian_form_read
 // v2_guardian_form_reply · v2_form_sign(p_entry, 'ولي الأمر', …)
 // 🔒 لا يرى دراسةَ الحالة ولا الجلسات: يُطلب السجلُّ بصفة 'guardian' لا غير، والقاعدةُ تحجب ما سواه.
 // ولا بنكَ عباراتٍ في ردّه — كلامُه رأيُه. وما لم يُبنَ في المحرّك معطَّلٌ بسببه.
@@ -25,13 +25,27 @@
   async function loadKid() {
     const k = ui.kid;
     if (!k) return;
-    $('kidName').textContent = k.name || '';
-    $('kidMeta').textContent = [k.class_ar, k.school, k.student_no ? 'رقمه ' + k.student_no : null].filter(Boolean).join(' · ');
-    arabize($('kidCard'));
-    const [opp, tl] = await Promise.all([
+    // بطاقةُ الابن من جسور البوّابة وحدها: v2_guardian_child — لا بطاقةُ المنسوبين (v2_student_card)
+    const [child, opp, tl] = await Promise.all([
+      M.rpc('v2_guardian_child', { p_student: k.student_id }, 'بطاقة الابن'),
       M.rpc('v2_opps_open_for', { p_student: k.student_id }, 'درجة السلوك'),
       M.rpc('v2_student_timeline', { p_student: k.student_id, p_as: 'guardian' }, 'سجلّ الابن'),
     ]);
+    const st = (child.data && child.data.student) || k;
+    $('kidName').textContent = st.name || k.name || '';
+    $('kidMeta').textContent = [st.class_ar, st.school, st.student_no ? 'رقمه ' + st.student_no : null].filter(Boolean).join(' · ');
+    const att = $('attend');
+    att.textContent = '';
+    if (child.error) att.appendChild(el('div', 'notice err', errText(child.error)));
+    else {
+      const a = (child.data && child.data.attendance) || {};
+      // مفاتيحُ الحضور عربيّةٌ كما يرجعها v2.fn_attendance_state
+      if (a['أيام_بعذر'] != null || a['أيام_بلا_عذر'] != null) {
+        att.appendChild(el('p', 'rs-meta', 'الغياب: بعذر ' + (a['أيام_بعذر'] || 0) + ' · بلا عذر ' + (a['أيام_بلا_عذر'] || 0) + (a['الحرمان'] ? ' · بلغ حدَّ الحرمان' : '')));
+      }
+      if (a['تنبيه']) att.appendChild(el('div', 'rs-note', a['تنبيه']));
+    }
+    arabize($('kidCard'));
     renderScore(opp);
     renderTimeline(tl);
     renderMerit(opp);

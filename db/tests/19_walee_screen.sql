@@ -19,13 +19,19 @@ do $$ declare s record; r text; kid text; begin
     (7, 'v2_guardian_child', $q$select (select string_agg(k,',' order by k) from jsonb_object_keys(r) k)||' ‖ notices '||jsonb_array_length(r->'notices')||' · absences '||jsonb_array_length(r->'absences')||' ‖ '||(r->'student')::text from (select public.v2_guardian_child(current_setting('t.kid')::uuid) r) z$q$),
     (8, 'نماذج تنتظرك', $q$select count(*)||coalesce(' · '||(select string_agg(k,',' order by k) from jsonb_object_keys((select to_jsonb(f) from public.v2_guardian_forms() f limit 1)) k),'') from public.v2_guardian_forms()$q$),
     (9, 'أوّلُ نموذج', $q$select left((select to_jsonb(f)::text from public.v2_guardian_forms() f limit 1),900)$q$),
-    (10, 'طالبٌ ليس ابنَه: السجلّ', $q$select public.v2_student_timeline(current_setting('t.other')::uuid,'guardian')::text$q$)
+    (10, 'طالبٌ ليس ابنَه: السجلّ', $q$select public.v2_student_timeline(current_setting('t.other')::uuid,'guardian')::text$q$),
+    (11, 'طالبٌ ليس ابنَه: الدرجة', $q$select public.v2_opps_open_for(current_setting('t.other')::uuid)::text$q$),
+    (12, 'طالبٌ ليس ابنَه: البطاقة', $q$select left(public.v2_student_card(current_setting('t.other')::uuid)::text,200)$q$),
+    (13, 'مهامُّ ابنه: v2_student_tasks', $q$select count(*)::text from public.v2_student_tasks(current_setting('t.kid')::uuid)$q$),
+    (14, 'تقريرُ دراسة الحالة: v2_case_report_card', $q$select left(public.v2_case_report_card(current_setting('t.kid')::uuid,38)::text,200)$q$),
+    (15, 'سجلُّ الاتّصال: v2_contacts_of', $q$select public.v2_contacts_of(current_setting('t.kid')::uuid)::text$q$),
+    (16, 'حصرُ السلوكيّات: v2_census_of', $q$select public.v2_census_of(current_setting('t.kid')::uuid)::text$q$)
   ) v(n,l,q) order by n loop
     begin execute s.q into r; r := 'نفذ: '||coalesce(r,'—');
     exception when others then r := 'رُفض: '||sqlerrm; end;
     perform set_config('t.s'||s.n, 'وليّ الأمر · '||s.l||' ⇐ '||r, true);
   end loop; end $$;
 reset role;
-select n::text as "#", left(current_setting('t.s'||n),1400) as النتيجة from generate_series(1,10) n
+select n::text as "#", left(current_setting('t.s'||n),1400) as النتيجة from generate_series(1,16) n
 union all select 'أ', 'الابن: '||current_setting('t.kid');
 rollback;

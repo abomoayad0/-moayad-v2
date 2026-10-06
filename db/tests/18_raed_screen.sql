@@ -8,8 +8,9 @@ set local statement_timeout = '20s';
 select set_config('t.school','7a847bb1-9b14-41ad-b9ba-7c8dee61a992',true),
        set_config('t.saeed',(select person_id::text from v2.app_users where id='52bc11f6-8e82-44cd-9f4d-e9bf43aee128'),true),
        set_config('t.mof',(select person_id::text from v2.app_users where id='11be0946-ff39-4eb7-8a74-023b580479be'),true),
-       set_config('t.merit',(select id::text from v2.conduct_merits where points is not null and id<>1 order by id limit 1),true),
-       set_config('t.pts',(select points::text from v2.conduct_merits where points is not null and id<>1 order by id limit 1),true);
+       set_config('t.merit',(select id::text from v2.conduct_merits where points is not null and id<>1 order by id limit 1),true);
+-- الدرجةُ من الممارسة المختارة نفسِها (في الإصدار ٢ أُخذت من استعلامٍ منفصلٍ فجاءت ٦ لممارسةٍ درجتُها ٤)
+select set_config('t.pts',(select points::text from v2.conduct_merits where id=current_setting('t.merit')::int),true);
 select set_config('t.a',(select e.student_id::text from v2.enrolments e where e.school_id='7a847bb1-9b14-41ad-b9ba-7c8dee61a992'::uuid and e.status='active'
           order by e.student_id limit 1),true);
 

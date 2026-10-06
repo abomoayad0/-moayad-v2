@@ -8,6 +8,7 @@
 
   const M = window.Moayad;
   const { $, el, errText, showLoadErr } = M;
+  const V = window.MoayadView;
 
   const ui = {
     classes: [], rows: [], periods: [], problems: [], cls: null, stu: null, prob: null, period: null,
@@ -71,7 +72,10 @@
     ui.cls = null;
     renderClasses();
     resetStudent();
-    loadEvidence();
+    // ما ليس للمعلّم: الشواهد والنموذج ٥ والتكليفُ بالحصر — بمفتاح wakeel_full (الوكيلُ والمدير)
+    ui.full = !!(M.state.me && M.state.me.can && M.state.me.can.wakeel_full);
+    $('evCard').hidden = !ui.full;
+    if (ui.full) loadEvidence();
   }
 
   // ---------- ① الفصل: شريطة ----------
@@ -280,21 +284,25 @@
   async function loadStudentCards() {
     const stu = ui.stu;
     if (!stu) return;
-    const [card, tasks, tl, f5] = await Promise.all([
+    const [card, tasks, tl, f5, ct, cn] = await Promise.all([
       M.rpc('v2_student_card', { p_student: stu.student_id }, 'بطاقة الطالب'),
       M.rpc('v2_student_tasks', { p_student: stu.student_id }, 'مهامّ الطالب'),
       M.rpc('v2_student_timeline', { p_student: stu.student_id, p_as: null }, 'سجلّ الملفّ'),
-      M.rpc('v2_form_open', { p_form: 5, p_student: stu.student_id }, 'النموذج ٥'),
+      ui.full ? M.rpc('v2_form_open', { p_form: 5, p_student: stu.student_id }, 'النموذج ٥') : Promise.resolve({}),
+      M.rpc('v2_contacts_of', { p_student: stu.student_id }, 'سجلّ الاتّصال'),
+      M.rpc('v2_census_of', { p_student: stu.student_id }, 'حصر السلوكيّات'),
     ]);
     if (ui.stu !== stu) return;
-    ui.files = { card: card.data || {}, tasks: tasks.data || [], timeline: tl.data || {}, form5: f5, error: card.error || tasks.error || tl.error };
+    ui.files = { card: card.data || {}, tasks: tasks.data || [], timeline: tl.data || {}, form5: f5, contacts: ct, census: cn, error: card.error || tasks.error || tl.error };
     renderStudentCards();
   }
 
   function renderStudentCards() {
     const show = !!ui.stu;
-    $('f5Card').hidden = !show; $('respCard').hidden = !show; $('tlCard').hidden = !show;
-    renderForm5(); renderFiles(); renderTimeline();
+    $('f5Card').hidden = !show || !ui.full; $('respCard').hidden = !show; $('tlCard').hidden = !show;
+    $('contactCard').hidden = !show; $('censusCard').hidden = !show;
+    if (ui.full) renderForm5();
+    renderFiles(); renderTimeline(); renderContacts(); renderCensus();
   }
 
   // ③ النموذج ٥: صفوفُه كما يرجعها v2_form_open — ويُطبع من النموذج نفسه
@@ -383,9 +391,11 @@
         c.append(b, tbox);
       }
     }
-    // أفعالُ الوكيل الخمسة — لم تُبنَ في المحرّك، فتُعرض معطَّلةً بسببها
+    // أفعالُ الوكيل: الاتّصالُ والحصرُ مبنيّان (بطاقتاهما تحت الملفّات)، والثلاثةُ الأخرى لم تُبنَ فتُعرض معطَّلةً بسببها
     const acts = el('div', 'rs-row');
-    for (const a of ['إثباتُ الاتّصال', 'التكليفُ بالحصر', 'خطابُ الدعوة', 'الإحالةُ للّجنة', 'مشاركةُ الملفّ']) acts.appendChild(notBuilt(a));
+    acts.append(btn('إثباتُ الاتّصال', 'rs-btn soft', () => $('contactCard').scrollIntoView({ behavior: 'smooth', block: 'start' })));
+    if (ui.full) acts.appendChild(btn('التكليفُ بالحصر', 'rs-btn soft', () => $('censusCard').scrollIntoView({ behavior: 'smooth', block: 'start' })));
+    for (const a of ['خطابُ الدعوة', 'الإحالةُ للّجنة', 'مشاركةُ الملفّ']) acts.appendChild(notBuilt(a));
     c.appendChild(acts);
     const det = el('details', 'rs-dt');
     det.appendChild(el('summary', null, 'رصداتُه (' + f.all.length + ')'));
@@ -410,6 +420,141 @@
     }
     if (!evs.length) box.appendChild(el('div', null, 'لا أحداثَ بعد.'));
     arabize(box);
+  }
+
+  // ---------- الاتّصالُ بوليّ الأمر ----------
+  // الوسائلُ والنتائجُ كما يقبلها v2_contact_log — والقاعدةُ ترفض غيرها
+  const CHANNELS = ['هاتف', 'رسالة', 'حضور', 'بوّابة'];
+  const OUTCOMES = ['ردّ وعلم', 'ردّ ورفض', 'لم يردّ', 'الرقم مغلق', 'الرقم خطأ'];
+  function renderContacts() {
+    const box = $('contacts');
+    box.textContent = '';
+    if (!ui.stu || !ui.files) return;
+    const r = ui.files.contacts || {};
+    if (r.error) box.appendChild(el('div', 'notice err', errText(r.error)));
+    const list = r.data || [];
+    if (!list.length && !r.error) box.appendChild(el('p', 'rs-empty', 'لم يُثبت اتّصالٌ بعد.'));
+    if (list.length) {
+      const ul = el('ul', 'rs-acts');
+      for (const x of list) {
+        const li = el('li');
+        const body = el('span');
+        body.style.flex = '1';
+        body.appendChild(el('b', null, 'المحاولةُ ' + (x.attempt_ar || x.attempt) + ' · ' + x.channel + ' — ' + x.outcome));
+        body.appendChild(el('div', 'rs-meta', [x.summary, x.guardian_say ? 'قال وليُّ الأمر: ' + x.guardian_say : null, x.guardian, x.by ? 'أثبتها ' + x.by : null].filter(Boolean).join(' · ')));
+        li.append(el('i', 'rs-tick' + (x.outcome === 'ردّ وعلم' ? ' ok' : ''), x.outcome === 'ردّ وعلم' ? '✓' : '○'), body, el('small', 'rs-who', [x.on, x.at ? String(x.at).slice(0, 5) : null].filter(Boolean).join(' ')));
+        ul.appendChild(li);
+      }
+      box.appendChild(ul);
+    }
+    box.appendChild(btn('أثبت اتّصالًا', 'rs-btn', contactForm));
+    arabize(box);
+  }
+
+  function contactForm() {
+    const stu = ui.stu;
+    V.form({
+      title: 'إثباتُ الاتّصال بوليّ الأمر', what: stu.display_name || stu.full_name,
+      fields: [
+        { key: 'channel', type: 'pick', label: 'الوسيلة', items: CHANNELS.map((x) => [x, x]) },
+        { key: 'outcome', type: 'pick', label: 'النتيجة', items: OUTCOMES.map((x) => [x, x]) },
+        { key: 'summary', type: 'textarea', label: 'ما دار' },
+        { key: 'say', type: 'textarea', label: 'ما قاله وليُّ الأمر (اختياري)', rows: 2 },
+        { key: 'at', type: 'time', label: 'الساعة (اختياري)' },
+      ],
+      ok: 'أثبته',
+      onOk: async (v) => {
+        // لا نوعَ للمهمّة في v2_student_tasks — فيُثبت على الطالب لا على مهمّةٍ بعينها
+        const { data, error } = await M.rpc('v2_contact_log', {
+          p_student: stu.student_id, p_task: null, p_channel: v.channel, p_outcome: v.outcome,
+          p_summary: v.summary, p_guardian_say: v.say, p_at: v.at,
+        }, 'إثبات الاتصال');
+        if (error) return error;
+        V.flash('ok', ((data && data.note) || 'أُثبت الاتّصال') + ' · المحاولةُ ' + ((data && data.attempt) || ''));
+        loadStudentCards();
+        return null;
+      },
+    });
+  }
+
+  // ---------- حصرُ السلوكيّات ----------
+  function renderCensus() {
+    const box = $('census');
+    box.textContent = '';
+    if (!ui.stu || !ui.files) return;
+    const r = ui.files.census || {};
+    if (r.error) box.appendChild(el('div', 'notice err', errText(r.error)));
+    const list = r.data || [];
+    if (!list.length && !r.error) box.appendChild(el('p', 'rs-empty', 'لم يُكلَّف أحدٌ بحصر سلوكيّاته.'));
+    for (const c of list) {
+      const f = el('div', 'rs-file');
+      f.append(el('h5', null, (c.to || '') + ' — ' + (c.state || '')),
+        el('p', null, ['كلّفه ' + (c.by || '—'), 'في ' + (c.assigned_at || '—'), 'يُسلَّم ' + (c.due || '—')].join(' · ')));
+      if (c.returned_why) f.appendChild(el('p', null, 'أُعيد: ' + c.returned_why));
+      if (c.filed_at) {
+        const lg = el('div', 'rs-lgd');
+        lg.append(el('i', 'k', 'الإيجابيّ:'), el('i', null, c.positives || '—'), el('i', 'k', 'السلبيّ:'), el('i', null, c.negatives || '—'),
+          el('i', 'k', 'المسبّبات:'), el('i', null, c.causes || '—'));
+        if (c.suggestion) lg.append(el('i', 'k', 'المقترح:'), el('i', null, c.suggestion));
+        f.appendChild(lg);
+      }
+      if (ui.full && c.state === 'مكتمل') {
+        const row = el('div', 'rs-row');
+        row.append(btn('اقبله', 'rs-btn', () => reviewCensus(c, true, null)), btn('أعِده بسبب', 'rs-btn ghost', () => returnCensus(c)));
+        f.appendChild(row);
+      }
+      box.appendChild(f);
+    }
+    if (ui.full) box.appendChild(btn('كلّف بالحصر', 'rs-btn', assignCensus));
+    arabize(box);
+  }
+
+  async function assignCensus() {
+    const stu = ui.stu;
+    if (!ui.staff) {
+      const { data, error } = await M.rpc('v2_staff_list', { p_school: M.state.school }, 'قائمة المنسوبين');
+      if (error) { V.flash('bad', errText(error)); return; }
+      ui.staff = data || [];
+    }
+    V.form({
+      title: 'التكليفُ بحصر السلوكيّات', what: stu.display_name || stu.full_name,
+      fields: [
+        { key: 'who', type: 'choose', label: 'المكلَّف', items: ui.staff.map((p) => [p.person_id, p.name_ar, p.post_ar || p.roles_ar || '']) },
+        { key: 'days', type: 'number', label: 'المدّةُ بالأيّام', value: 5, hint: 'من يومٍ إلى ثلاثين' },
+      ],
+      ok: 'كلّفه',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_census_assign', { p_student: stu.student_id, p_task: null, p_person: v.who, p_days: v.days }, 'التكليف بالحصر');
+        if (error) return error;
+        V.flash('ok', (data && data.note) || 'كُلّف بالحصر');
+        loadStudentCards();
+        return null;
+      },
+    });
+  }
+
+  async function reviewCensus(c, accept, why) {
+    V.flash('wait', accept ? 'يُقبل الحصر…' : 'يُعاد الحصر…');
+    const { data, error } = await M.rpc('v2_census_review', { p_census: c.census, p_accept: accept, p_why: why }, 'النظر في الحصر');
+    if (error) { V.flash('bad', errText(error)); return error; }
+    V.flash('ok', (data && data.note) || 'تمّ');
+    loadStudentCards();
+    return null;
+  }
+
+  function returnCensus(c) {
+    V.form({
+      title: 'إعادةُ الحصر لصاحبه', what: c.to || '',
+      fields: [{ key: 'why', type: 'textarea', label: 'السبب' }],
+      ok: 'أعِده',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_census_review', { p_census: c.census, p_accept: false, p_why: v.why }, 'النظر في الحصر');
+        if (error) return error;
+        V.flash('ok', (data && data.note) || 'أُعيد');
+        loadStudentCards();
+        return null;
+      },
+    });
   }
 
   M.start({ screen: 'wakeel', onChange: () => refresh() });
