@@ -19,6 +19,9 @@
     // الاصطفافُ والوصولُ والانصرافُ شاشةٌ واحدة بثلاثة أبواب — وrasd.html يُحوَّل إليها
     { key: 'wusul', title: 'الوصول والاصطفاف والانصراف', desc: 'الاصطفاف فصلًا فصلًا · الوصول المتأخّر بقراره · تأخّر الانصراف',
       href: 'wusul.html', allow: (c) => !!(c.record_assembly || c.record_arrival || c.record_dismissal) },
+    // جدولُ الحصص بأبوابه الخمسة — المفتاحُ manage_settings، وهو صفاتُ جسور الجدول نفسُها
+    { key: 'jadwal', title: 'جدول الحصص', desc: 'الشبكة · النصاب · خطّة المواد · التخصّصات · التوزيع الآليّ',
+      href: 'jadwal.html', allow: (c) => !!c.manage_settings },
     { key: 'deputy', title: 'قرارات الوكيل', desc: 'الإقفال · إعادة الفتح · البتّ في الأعذار',
       href: 'deputy.html', allow: (c) => !!(c.close_day || c.reopen_day || c.decide_excuse) },
     // شاشةُ الوكيل (viewW) — حلّت محلّ «رصد المخالفات» القديمة. مفتاحُها wakeel: الوكيلُ والمدير

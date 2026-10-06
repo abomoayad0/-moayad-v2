@@ -17,7 +17,9 @@
   const st = { mode: 'person', person: null, section: null, staff: null };
 
   async function staff() {
-    if (st.staff) return st.staff;
+    // القائمةُ لمدرستها — فإن تبدّلت المدرسةُ جُلبت من جديد
+    if (st.staff && st.staffSchool === school()) return st.staff;
+    st.staffSchool = school();
     const { data, error } = await M.rpc('v2_staff_list', { p_school: school() }, 'قائمة المنسوبين');
     if (error) { flash('bad', errText(error)); return null; }
     st.staff = data || [];
