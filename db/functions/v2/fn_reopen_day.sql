@@ -1,5 +1,5 @@
 -- v2.fn_reopen_day(p_school uuid, p_date date, p_reason text, p_by uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 8331ae1e8cff99d4a96a3049d805cd75
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2f09901f9de99019f3379be1cc259b6b
 CREATE OR REPLACE FUNCTION v2.fn_reopen_day(p_school uuid, p_date date, p_reason text, p_by uuid DEFAULT NULL::uuid)
  RETURNS TABLE("رصدات_سلوكية_نُقضت" integer, "حالات_غياب_نُقضت" integer, "حسومات_رُدّت" integer, "أحداث_أُلغيت" integer)
  LANGUAGE plpgsql
@@ -16,9 +16,9 @@ begin
   select id into v_year from v2.academic_years where school_id=p_school and is_current limit 1;
 
   -- 🔑 تُرفع علامةُ الإقفال أوّلًا — ثمّ يقع النقض
-  update v2.attendance set day_status='provisional'
-   where school_id=p_school and on_date=p_date;
   update v2.day_closures set reopened_at=now(), reopened_by=p_by, reopen_reason=p_reason
+   where school_id=p_school and on_date=p_date;
+  update v2.attendance set day_status='provisional'
    where school_id=p_school and on_date=p_date;
 
   update v2.behavior_records r set status='voided', voided_by=p_by,
