@@ -27,7 +27,7 @@
     // ليس منسوباً: إن كان وليّ أمر فبوّابته
     if (!me) {
       const { data: g, error } = await M.rpc('v2_guardian_me', undefined, 'حساب وليّ الأمر');
-      if (!error && g) { location.replace('guardian.html'); return; }
+      if (!error && g) { location.replace('walee.html'); return; }
     }
     M.renderHeader(me, onRole);
     M.renderNav(me, null);
