@@ -1,7 +1,7 @@
 -- functions/comments.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── fn_comments · md5 d889a1af7cd349d1f660ae7b5e5eb0b2
+-- ── fn_comments · md5 e15600ccf6313b8fa87a3365af147c0f
 COMMENT ON FUNCTION v2.behavior_score(p_student uuid, p_year uuid, p_term smallint) IS 'درجةُ السلوك: الإيجابيُّ ٨٠ سقفًا · والمتميّزُ ٢٠ سقفًا · والمجموعُ ١٠٠ — CONDUCT-1447-OFF ص15';
 COMMENT ON FUNCTION v2.caller_kind(p_student uuid) IS 'صفةُ المتّصل من القاعدة لا من الشاشة. 🔑 والصفةُ المختارةُ تحكم: من اختار صفةً غيرَ الموجّه الطلابيّ لا يرى ما وُسم counselor_only ولو كان هو الموجّه — قرار مفرح ٥/١٠/٢٠٢٦: فصلٌ تامّ بين الصفات.';
 COMMENT ON FUNCTION v2.evidence_ok(p_entry uuid, p_path text) IS 'المرفقُ يُقبل إن كان في مسار مشاركته: merit/<المدرسة>/<الطالب>/<المشاركة>/ — فلا يصلح شاهدُ طالبٍ لآخر';
@@ -10,7 +10,7 @@ COMMENT ON FUNCTION v2.fn_day_classes(p_school uuid, p_date date) IS 'فصول �
 COMMENT ON FUNCTION v2.fn_day_log(p_school uuid, p_date date) IS 'سجل الوقائع اليومية: كل غياب وتأخر واستئذان ومخالفة سلوكية وإجراء غياب وقع في يوم واحد على مستوى المدرسة، مرتَّباً بوقته.';
 COMMENT ON FUNCTION v2.fn_entitlement(p_school uuid) IS 'حاسب الاستحقاق: يعطي لكل وظيفة في المدرسة ما تستحقه بالدليل، وما هو مشغول، وحالته، ومعه أرقام القواعد وصفحاتها. لا يمنع شيئاً — يخبر فقط. conflict=true يعني تطابق أكثر من قاعدة بأعداد مختلفة (كتعارض 350 في الطفولة المبكرة).';
 COMMENT ON FUNCTION v2.fn_find_student(p_q text, p_school uuid) IS 'بحث مرن عن الطالب: بالاسم الأصلي أو المعروض أو الإنجليزي، أو باسم ولي الأمر، أو برقم الطالب أو الهوية أو الجواز أو هوية ولي الأمر أو جواله. يوحّد الهمزات والتاء والألف المقصورة في البحث فقط، ويتجاهل 966 و0 في الجوال، ويقبل الكلمات متفرقة.';
-COMMENT ON FUNCTION v2.fn_record_behavior(p_student uuid, p_problem integer, p_term smallint, p_period smallint, p_place text, p_note text, p_victim uuid, p_injury boolean, p_damage boolean, p_seizure boolean, p_seizure_legal boolean, p_by uuid) IS 'الحسمُ حيث نصّ الإجراءُ وحدَه · ولا حسمَ بعد آخر إجراء · والواقعةُ الواحدة = الطالب + السلوك + اليوم، فلا تُدوَّن مرّتين — أُصلح ٥/١٠/٢٠٢٦';
+COMMENT ON FUNCTION v2.fn_record_behavior(p_student uuid, p_problem integer, p_term smallint, p_period smallint, p_place text, p_note text, p_victim uuid, p_injury boolean, p_damage boolean, p_seizure boolean, p_seizure_legal boolean, p_by uuid) IS 'الحسمُ حيث نصّ الإجراءُ وحدَه · ولا حسمَ بعد آخر إجراء · والقفلُ يتبع طبيعةَ السلوك: ما يدوم اليومَ يُقفل باليوم · وما يتكرّر يُميَّز بالحصّة أو الوقت. ٦/١٠/٢٠٢٦';
 COMMENT ON FUNCTION v2.is_counselor(p_school uuid) IS 'الموجّهُ بصفته المختارة — فمن بدّل صفتَه إلى غيرها لا يفتح دراسةَ الحالة ولا الجلسات';
 COMMENT ON FUNCTION v2.merit_path_allows(p_path text, p_write boolean) IS 'حارسُ مسار شواهد التعويض — يُنادى من سياسات المخزن بصلاحيّة الدالّة لا بصلاحيّة المستخدم';
 COMMENT ON FUNCTION v2.my_school(p_school uuid) IS 'المدرسةُ النافذةُ من الصفة المختارة أوّلًا، ثمّ من حساب المستخدم. أُصلح ٥/١٠/٢٠٢٦ — كان من school_id فارغٌ يمرّ على كلّ مدرسة.';

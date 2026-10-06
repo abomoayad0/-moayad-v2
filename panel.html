@@ -34,9 +34,10 @@
   <h3>قواعد اللجنة</h3>
   <p class="quote" id="qWhat"></p>
   <p class="hint" id="qNow"></p>
-  <label for="qMin">النصاب: أقلّ عددٍ من الرادّين (حاضرًا أو عن بُعد)</label>
-  <input id="qMin" type="number" min="2" inputmode="numeric">
-  <label class="chk"><input id="qClear" type="checkbox"> ألغِ النصاب</label>
+  <label for="qMode">النصاب</label>
+  <select id="qMode"><option value="majority">فوق النصف من الأعضاء</option><option value="fixed">عددٌ ثابت</option><option value="none">بلا نصاب</option></select>
+  <label for="qMin">العددُ الثابت (أقلُّ عددٍ من الرادّين، حاضرًا أو عن بُعد)</label>
+  <input id="qMin" type="number" min="1" inputmode="numeric">
   <label for="qRemote">الردُّ عن بُعد</label>
   <select id="qRemote"><option value="yes">مقبول</option><option value="no">غيرُ مقبول</option></select>
   <label for="qTie">حكمُ التعادل</label>
@@ -197,6 +198,79 @@
   <div class="dlg-acts">
     <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
     <button value="ok" type="submit" class="btn-accept">احفظ</button>
+  </div>
+</form></dialog>
+
+<dialog id="brandDlg"><form method="dialog">
+  <h3>الهويّةُ البصريّة</h3>
+  <p class="quote" id="bdWhat"></p>
+  <label for="bdLogo">الشعار — صورة (اتركه فارغًا لتبقى الحاليّة)</label><input id="bdLogo" type="file" accept="image/png,image/jpeg,image/webp">
+  <label for="bdPos">موضعُ الشعار</label>
+  <select id="bdPos"><option value="right">يمين</option><option value="center">وسط</option><option value="left">يسار</option></select>
+  <label class="chk"><input id="bdMinistry" type="checkbox"> يظهر شعارُ الوزارة</label>
+  <label for="bdPrimary">اللونُ الأساسيّ</label><input id="bdPrimary" type="color">
+  <label for="bdAccent">اللونُ الثانويّ</label><input id="bdAccent" type="color">
+  <label for="bdHeader">الترويسة</label><textarea id="bdHeader" rows="2"></textarea>
+  <label for="bdFooter">التذييل</label><textarea id="bdFooter" rows="2"></textarea>
+  <p class="hint">والحقلُ الفارغُ يُبقي ما كان — فالقاعدةُ لا تمحو حقلًا كُتب.</p>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost" formnovalidate>تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">احفظ</button>
+  </div>
+</form></dialog>
+
+<dialog id="imgDlg"><form method="dialog">
+  <h3 id="imTitle"></h3>
+  <p class="quote" id="imWhat"></p>
+  <div id="imPersonBox"><label for="imPerson">صاحبُ التوقيع</label><select id="imPerson"></select></div>
+  <label for="imFile">الصورة</label><input id="imFile" type="file" accept="image/png,image/jpeg,image/webp" required>
+  <label for="imFrom">يسري من (فارغٌ = اليوم)</label><input id="imFrom" type="date">
+  <p class="hint">ولا يُحذف السابق: يُنهى سريانُه في اليوم الذي قبله، ويبقى معروفًا.</p>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost" formnovalidate>تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">ارفع واحفظ</button>
+  </div>
+</form></dialog>
+
+<dialog id="yearDlg"><form method="dialog">
+  <h3>سنةٌ دراسيّة</h3>
+  <p class="quote" id="yrWhat"></p>
+  <label for="yrName">اسمُ السنة — مثل ١٤٤٨هـ</label><input id="yrName" type="text" required>
+  <label for="yrStarts">تبدأ في</label><input id="yrStarts" type="date" required>
+  <label for="yrEnds">تنتهي في</label><input id="yrEnds" type="date" required>
+  <label class="chk"><input id="yrCurrent" type="checkbox"> هي السنةُ الجارية</label>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost" formnovalidate>تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">احفظ</button>
+  </div>
+</form></dialog>
+
+<dialog id="termDlg"><form method="dialog">
+  <h3>فصلٌ دراسيّ</h3>
+  <p class="quote" id="tmWhat"></p>
+  <label for="tmNo">رقمُ الفصل</label>
+  <select id="tmNo"><option value="1">الأوّل</option><option value="2">الثاني</option><option value="3">الثالث</option></select>
+  <label for="tmStarts">يبدأ في</label><input id="tmStarts" type="date" required>
+  <label for="tmEnds">ينتهي في</label><input id="tmEnds" type="date" required>
+  <label class="chk"><input id="tmCurrent" type="checkbox"> هو الفصلُ الجاري</label>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost" formnovalidate>تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">احفظ</button>
+  </div>
+</form></dialog>
+
+<dialog id="excDlg"><form method="dialog">
+  <h3>استثناءٌ على النظام</h3>
+  <p class="quote">مخالفةٌ للنظام بقرارٍ مكتوب: يقيّدها مديرُ المدرسة وحدَه، ولا تُمحى ولا تُعدَّل.</p>
+  <label for="exKind">ما يمسّه الاستثناء</label><select id="exKind"></select>
+  <label for="exRef">المرجع (اختياريّ)</label><input id="exRef" type="text">
+  <label for="exSays">ما يقوله النظام</label><textarea id="exSays" rows="2" required></textarea>
+  <label for="exDoes">وما تفعله مدرستُك</label><textarea id="exDoes" rows="2" required></textarea>
+  <label for="exReason">السبب — إلزاميّ</label><textarea id="exReason" rows="3" required></textarea>
+  <label for="exSource">السند (اختياريّ)</label><input id="exSource" type="text">
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost" formnovalidate>تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">قيّد الاستثناء</button>
   </div>
 </form></dialog>
 

@@ -1,5 +1,5 @@
 -- v2.fn_record_behavior(p_student uuid, p_problem integer, p_term smallint, p_period smallint, p_place text, p_note text, p_victim uuid, p_injury boolean, p_damage boolean, p_seizure boolean, p_seizure_legal boolean, p_by uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 be1bc6b6c39549c7cd59122d8e882d73
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 cb346f23bc9918f302cff21e02588e10
 CREATE OR REPLACE FUNCTION v2.fn_record_behavior(p_student uuid, p_problem integer, p_term smallint DEFAULT 1, p_period smallint DEFAULT NULL::smallint, p_place text DEFAULT NULL::text, p_note text DEFAULT NULL::text, p_victim uuid DEFAULT NULL::uuid, p_injury boolean DEFAULT false, p_damage boolean DEFAULT false, p_seizure boolean DEFAULT false, p_seizure_legal boolean DEFAULT false, p_by uuid DEFAULT NULL::uuid)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -22,16 +22,41 @@ begin
   if v_prob.stage_scope not in (v_scope,'all') then raise exception 'هذه المخالفة لا تنطبق على مرحلة الطالب'; end if;
   if v_prob.mode <> v_mode then raise exception 'نمط التعليم لا يطابق'; end if;
 
-  -- 🔒 قفلُ الواقعة الواحدة: أوّلُ من يدوّن يُقفل البابَ على الباقين في ذلك اليوم
-  select r.*, r.created_at::date as on_day into v_same
-    from v2.behavior_records r
-   where r.student_id=p_student and r.problem_id=p_problem
-     and r.status<>'voided' and r.created_at::date = current_date
-   limit 1;
-  if v_same.id is not null then
-    select coalesce(v2.fn_display_name(pe.full_name),'غيرُك') into v_who
-      from v2.people pe where pe.id = v_same.recorded_by;
-    raise exception 'دُوّنت هذي المخالفةُ على الطالب اليومَ سلفًا — دوّنها % · ولا تُدوَّن الواقعةُ مرّتين', v_who;
+  -- 🔑 القفلُ يتبع طبيعةَ السلوك
+  if v_prob.once_per_day then
+    select r.*, pe.full_name nm into v_same
+      from v2.behavior_records r left join v2.people pe on pe.id=r.recorded_by
+     where r.student_id=p_student and r.problem_id=p_problem
+       and r.status<>'voided' and r.created_at::date = current_date
+     limit 1;
+    if v_same.id is not null then
+      raise exception 'دُوّنت هذي المخالفةُ على الطالب اليومَ سلفًا — دوّنها % · وهذي ممّا لا يُدوَّن إلا مرّةً في اليوم',
+        coalesce(v2.fn_display_name(v_same.nm),'غيرُك');
+    end if;
+  elsif v_prob.repeat_key = 'period' then
+    if p_period is null then
+      raise exception 'اختر الحصّة — فهذي ممّا يتكرّر، وتُميَّز الواقعةُ بحصّتها'; end if;
+    select r.*, pe.full_name nm into v_same
+      from v2.behavior_records r left join v2.people pe on pe.id=r.recorded_by
+     where r.student_id=p_student and r.problem_id=p_problem
+       and r.status<>'voided' and r.created_at::date = current_date
+       and r.period_no = p_period
+     limit 1;
+    if v_same.id is not null then
+      raise exception 'دُوّنت هذي المخالفةُ على الطالب في هذي الحصّة سلفًا — دوّنها %',
+        coalesce(v2.fn_display_name(v_same.nm),'غيرُك');
+    end if;
+  else
+    -- تُميَّز بالوقت: لا تُدوَّن مرّتين في ساعةٍ واحدة
+    select r.*, pe.full_name nm into v_same
+      from v2.behavior_records r left join v2.people pe on pe.id=r.recorded_by
+     where r.student_id=p_student and r.problem_id=p_problem
+       and r.status<>'voided' and r.created_at > now() - interval '1 hour'
+     limit 1;
+    if v_same.id is not null then
+      raise exception 'دُوّنت هذي المخالفةُ على الطالب قبل أقلَّ من ساعة — دوّنها %',
+        coalesce(v2.fn_display_name(v_same.nm),'غيرُك');
+    end if;
   end if;
 
   select count(*) into v_count from v2.behavior_records r

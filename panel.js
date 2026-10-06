@@ -3,6 +3,8 @@
 // v2_staff_board · v2_staff_save · v2_posts_list · v2_assign_add · v2_assign_end · v2_students_board · v2_student_save · v2_enrolment_end
 // v2_enrol_reasons · v2_guardians_of · v2_guardian_save · v2_accounts_board · v2_account_toggle · v2_portal_toggle · v2_school_card
 // v2_practices(p_school,…) · v2_practices_hidden · v2_practice_save · v2_practice_state · v2_practice_scopes · v2_scope_upsert · v2_committee_rules · v2_committee_rules_get
+// v2_brand_card · v2_brand_save · v2_stamp_save · v2_signature_save · v2_calendar_board · v2_year_save · v2_term_save
+// v2_structure_board · v2_structure_set · v2_exceptions_board · v2_exception_add · v2_reference(p_key)
 // المقفلُ يُقرأ بسببه وسنده ولا زرَّ تعديلٍ عليه. ومن يدخل اللوحة تحكم به القاعدة، ورفضُها يُعرض بنصّه.
 (function () {
   'use strict';
@@ -62,22 +64,14 @@
     if (!r.editable && r.locked_why) s.appendChild(el('div', 'detail red', r.locked_why));
     if (r.source_ar) s.appendChild(el('div', 'meta', 'السند: ' + r.source_ar));
     if (r.note_ar) s.appendChild(el('div', 'meta', r.note_ar));
-    if (r.editable && (r.own_bridge || OWN_TOOLS[r.key])) {
+    if (!r.editable && REF_TOOLS[r.key]) {
+      // مرجعٌ مقفل: يُقرأ من جسره ولا زرَّ تعديلٍ عليه البتّة
+      s.appendChild(toggle('اعرض', REF_TOOLS[r.key]));
+    } else if (r.editable && (r.own_bridge || OWN_TOOLS[r.key])) {
       // الباب الحسّاس له جسره الخاصّ بحرّاسه — لا يُعدَّل من التعديل العامّ
       s.appendChild(el('div', 'meta nocan', 'يُدار من جسره الخاصّ' + (r.bridge_ar ? ': ' + r.bridge_ar : '') + ' — لا من التعديل العامّ.'));
       const tool = OWN_TOOLS[r.key];
-      if (tool) {
-        const b = el('button', 'btn-ghost wide', 'افتح');
-        b.type = 'button';
-        const box = el('div', 'prows');
-        box.hidden = true;
-        b.addEventListener('click', () => {
-          box.hidden = !box.hidden;
-          b.textContent = box.hidden ? 'افتح' : 'أغلق';
-          if (!box.hidden) tool(box);
-        });
-        s.append(b, box);
-      }
+      if (tool) s.appendChild(toggle('افتح', tool));
     } else if (r.editable) {
       const b = el('button', 'btn-ghost wide', 'تعديل');
       b.type = 'button';
@@ -91,6 +85,22 @@
       s.append(b, rowsBox);
     }
     return s;
+  }
+
+  // زرٌّ يفتح أداةَ الباب ويطويها
+  function toggle(label, tool) {
+    const wrap = document.createDocumentFragment();
+    const b = el('button', 'btn-ghost wide', label);
+    b.type = 'button';
+    const box = el('div', 'prows');
+    box.hidden = true;
+    b.addEventListener('click', () => {
+      box.hidden = !box.hidden;
+      b.textContent = box.hidden ? label : 'أغلق';
+      if (!box.hidden) tool(box);
+    });
+    wrap.append(b, box);
+    return wrap;
   }
 
   // ---------- صفوف الباب: الأعمدة المسموحة وحدها كما أرجعتها القاعدة ----------
@@ -168,6 +178,9 @@
     box.appendChild(el('h3', 'grp', 'قواعد اللجان وسعة المقاعد'));
     const res = await Promise.all(COMMITTEES.map((k) =>
       M.rpc('v2_committee_board', { p_school: ui.school, p_committee: k }, 'مجلس اللجنة')));
+    // نصُّ النصاب (quorum_ar) من القاعدة كما هو — والمجلسُ لا يرجعه، فيُقرأ من قواعد اللجنة
+    const rules = await Promise.all(COMMITTEES.map((k) =>
+      M.rpc('v2_committee_rules_get', { p_school: ui.school, p_committee: k }, 'قراءة قواعد اللجنة')));
     res.forEach((r, i) => {
       const row = el('div', 'ev');
       if (r.error) { row.appendChild(el('div', 'notice err', COMMITTEES[i] + ': ' + errText(r.error))); box.appendChild(row); return; }
@@ -175,7 +188,8 @@
       const c = b.committee || {};
       row.appendChild(el('div', 'name', c.label || COMMITTEES[i]));
       // قواعدُ مدرستك كما يرجعها المجلس: النصابُ والردُّ عن بُعدٍ وحكمُ التعادل
-      row.appendChild(el('div', 'meta', ruleText({ quorum_min: c.quorum, allow_remote: c.allow_remote, tie_rule: c.tie_rule })));
+      const rl = rules[i];
+      row.appendChild(rl.error ? el('div', 'notice err', 'قواعدُ اللجنة: ' + errText(rl.error)) : el('div', 'meta', ruleText(rl.data || {})));
       if (c.quorum_note) row.appendChild(el('div', 'meta', c.quorum_note));
       // سعةُ الدليل مقابل سعةِ مدرستك — تُعرض حين تختلفان
       for (const s of (b.seats || []).filter((x) => x.count_guide != null && Number(x.count) !== Number(x.count_guide))) {
@@ -201,7 +215,7 @@
   }
 
   function ruleText(r) {
-    return 'النصاب: ' + (r.quorum_min == null ? 'لم يُحدَّد' : r.quorum_min) +
+    return 'النصاب: ' + (r.quorum_ar || '—') + (r.quorum_mode === 'fixed' && r.quorum_min != null ? ' (' + r.quorum_min + ')' : '') +
       ' · الردُّ عن بُعد: ' + (r.allow_remote ? 'مقبول' : 'غيرُ مقبول') +
       ' · التعادل: ' + (r.tie_rule === 'رئيس' ? 'يُرجَّح جانبُ الرئيس' : 'يُؤجَّل البند');
   }
@@ -211,28 +225,29 @@
     const { data: r, error: e0 } = await M.rpc('v2_committee_rules_get', { p_school: ui.school, p_committee: c.key }, 'قراءة قواعد اللجنة');
     if (e0) { toast('تعذّرت قراءة القواعد:\n' + errText(e0)); return; }
     $('qWhat').textContent = c.label || c.key;
-    $('qNow').textContent = ruleText(r) + ' · أعضاؤها الآن ' + r.members + (r.seat_count != null ? ' · سعةُ مقعد العضو ' + r.seat_count : '');
-    $('qMin').value = r.quorum_min == null ? '' : r.quorum_min;
-    $('qClear').checked = false;
-    $('qMin').disabled = false;
+    $('qNow').textContent = ruleText(r) + ' · أعضاؤها الآن ' + (r.seated ?? r.members ?? '—') + (r.seat_count != null ? ' · سعةُ مقعد العضو ' + r.seat_count : '');
+    $('qMode').value = r.quorum_mode || 'majority';
+    $('qMin').value = r.quorum_mode === 'fixed' && r.quorum_min != null ? r.quorum_min : '';
+    $('qMin').disabled = $('qMode').value !== 'fixed';
     $('qRemote').value = r.allow_remote ? 'yes' : 'no';
     $('qTie').value = r.tie_rule || 'رئيس';
     $('qNote').value = '';
     if (await ask($('quorumDlg')) !== 'ok') return;
+    const mode = $('qMode').value;
     const v = $('qMin').value.trim();
-    const clear = $('qClear').checked;
+    // العددُ يُرسل مع «الثابت» وحدَه، وفوق النصف يحسبه القاعدةُ من الأعضاء
     const { data, error } = await M.rpc('v2_committee_rules', {
       p_school: ui.school, p_committee: c.key,
-      p_quorum: clear || v === '' ? null : Number(v),
+      p_quorum: mode === 'fixed' && v !== '' ? Number(v) : null,
       p_allow_remote: $('qRemote').value === 'yes', p_tie_rule: $('qTie').value,
-      p_note: $('qNote').value.trim() || null, p_clear_quorum: clear,
+      p_note: $('qNote').value.trim() || null, p_quorum_mode: mode,
     }, 'ضبط قواعد اللجنة');
     if (error) { toast('لم تُضبط القواعد:\n' + errText(error)); return; }
     toast('ضُبطت قواعد ' + (c.label || c.key) + (data ? ':\n' + ruleText(data) : '.'), true);
     loadCommittees();
   }
 
-  $('qClear').addEventListener('change', () => { $('qMin').disabled = $('qClear').checked; });
+  $('qMode').addEventListener('change', () => { $('qMin').disabled = $('qMode').value !== 'fixed'; });
 
   async function setSeatCount(c, s) {
     $('sWhat').textContent = (c.label || c.key) + ' · ' + (s.role_ar || '') + ' — السعة الآن ' + s.count;
@@ -789,11 +804,342 @@
     box.appendChild(row);
   }
 
+  // ---------- أبوابُ الإكمال: الهويّةُ البصريّة · التقويم · الهيكل · الاستثناءات · المراجعُ الأربعة ----------
+  // الحرّاسُ كلُّها في القاعدة، والشاشةُ تعرض رفضَها بنصّه. ولا زرَّ حذفٍ على ختمٍ ولا توقيعٍ ولا استثناء.
+  const BUCKET = 'v2-attachments';
+  const POS_AR = { right: 'يمين', left: 'يسار', center: 'وسط' };
+  const day = (d) => (d ? String(d).slice(0, 10) : '—');
+
+  // تُرفع الصورةُ إلى المخزن أوّلًا، ثمّ يُمرَّر مسارُها — ورفضُ المخزن يُعرض بنصّه ولا يُحفظ شيء
+  async function uploadImage(file, kind) {
+    const safe = file.name.replace(/[^A-Za-z0-9._-]/g, '_');
+    const path = 'brand/' + ui.school + '/' + kind + '-' + Date.now() + '-' + safe;
+    const up = await M.sb.storage.from(BUCKET).upload(path, file, { upsert: false });
+    if (up.error) {
+      M.logError({ message: up.error.message, fn: 'storage.upload', action: 'رفع صورة ' + kind, params: { path } });
+      toast('لم تُرفع الصورة — ولم يُحفظ شيء:\n' + up.error.message);
+      return null;
+    }
+    return path;
+  }
+
+  // ----- الهويّةُ البصريّة -----
+  async function brandTool(box) {
+    box.textContent = '';
+    if (noSchool(box)) return;
+    const { data, error } = await M.rpc('v2_brand_card', { p_school: ui.school }, 'الهويّة البصريّة');
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const c = data || {};
+    const b = c.brand || {};
+    if (c.note) box.appendChild(el('div', 'meta', c.note));
+    const row = el('div', 'ev');
+    row.appendChild(el('div', 'name', 'الشعارُ والألوان'));
+    row.appendChild(el('div', 'meta', 'الشعار: ' + (b.logo_path || 'لم يُرفع') + ' · موضعُه: ' + (POS_AR[b.logo_position] || b.logo_position || '—') +
+      ' · شعارُ الوزارة: ' + (b.show_ministry_logo === false ? 'لا يظهر' : 'يظهر')));
+    const sw = el('div', 'meta swatches');
+    for (const [lbl, v] of [['الأساسيّ', b.primary_color], ['الثانويّ', b.accent_color]]) {
+      const chip = el('span', 'swatch', lbl + ' ' + (v || '—'));
+      if (v) chip.style.setProperty('--sw', v);
+      sw.appendChild(chip);
+    }
+    row.appendChild(sw);
+    row.appendChild(el('div', 'meta', 'الترويسة: ' + (b.header_ar || '—')));
+    row.appendChild(el('div', 'meta', 'التذييل: ' + (b.footer_ar || '—')));
+    row.appendChild(btn('عدّل الهويّة', 'btn-ghost wide', () => editBrand(b, box)));
+    box.appendChild(row);
+
+    const st = el('div', 'ev');
+    st.appendChild(el('div', 'name', 'ختمُ المدرسة'));
+    st.appendChild(c.stamp ? el('div', 'meta', c.stamp.image + ' · يسري من ' + day(c.stamp.from) + (c.stamp.to ? ' إلى ' + day(c.stamp.to) : ''))
+      : el('div', 'meta', 'لا ختمَ نافذ'));
+    // السابقُ لا يُحذف — يُعرض بتاريخ انتهائه حين يرجعه الجسر
+    pastLines(st, c.stamps_past);
+    st.appendChild(btn('ختمٌ جديد', 'btn-ghost wide', () => newImage('stamp', box)));
+    box.appendChild(st);
+
+    const sg = el('div', 'ev');
+    sg.appendChild(el('div', 'name', 'التواقيع النافذة'));
+    const sigs = c.signatures || [];
+    if (!sigs.length) sg.appendChild(el('div', 'meta', 'لا توقيعَ نافذ'));
+    for (const s of sigs) sg.appendChild(el('div', 'meta', (s.name || '—') + ' · ' + s.image + ' · يسري من ' + day(s.from) + (s.to ? ' إلى ' + day(s.to) : '')));
+    pastLines(sg, c.signatures_past);
+    sg.appendChild(el('div', 'meta', 'التوقيعُ شخصيّ: يرفعه صاحبُه أو المديرُ وحدَهما.'));
+    sg.appendChild(btn('توقيعٌ جديد', 'btn-ghost wide', () => newImage('signature', box)));
+    box.appendChild(sg);
+  }
+  function pastLines(box, past) {
+    if (!Array.isArray(past)) { box.appendChild(el('div', 'meta nocan', 'السابقُ لا يرجعه v2_brand_card بعد — فلا يُعرض هنا.')); return; }
+    for (const p of past) box.appendChild(el('div', 'meta', 'سابق: ' + (p.name ? p.name + ' · ' : '') + p.image + ' · ' + day(p.from) + ' — انتهى ' + day(p.to)));
+  }
+
+  async function editBrand(b, box) {
+    $('bdWhat').textContent = 'تظهر في كلّ نموذجٍ يُطبع.';
+    $('bdLogo').value = '';
+    $('bdPos').value = b.logo_position || 'right';
+    $('bdMinistry').checked = b.show_ministry_logo !== false;
+    // حقلُ اللون لا يكون فارغًا — فيُرسل اللونُ إن غُيّر وحده، وإلا بقي ما كان
+    const colors = { bdPrimary: b.primary_color || '#000000', bdAccent: b.accent_color || '#000000' };
+    for (const id in colors) $(id).value = colors[id];
+    $('bdHeader').value = b.header_ar || '';
+    $('bdFooter').value = b.footer_ar || '';
+    if (await ask($('brandDlg')) !== 'ok') return;
+    const changed = (id) => ($(id).value.toLowerCase() === colors[id].toLowerCase() ? null : $(id).value.toUpperCase());
+    let logo = null;
+    const f = $('bdLogo').files[0];
+    if (f) { logo = await uploadImage(f, 'logo'); if (!logo) return; }
+    const { error } = await M.rpc('v2_brand_save', {
+      p_school: ui.school, p_logo_path: logo, p_logo_position: $('bdPos').value, p_show_ministry: $('bdMinistry').checked,
+      p_primary: changed('bdPrimary'), p_accent: changed('bdAccent'),
+      p_header: val('bdHeader'), p_footer: val('bdFooter'),
+    }, 'حفظ الهويّة البصريّة');
+    if (error) { toast('لم تُحفظ الهويّة:\n' + errText(error)); return; }
+    toast('حُفظت الهويّةُ البصريّة.', true);
+    brandTool(box);
+  }
+
+  async function newImage(kind, box) {
+    const isSig = kind === 'signature';
+    $('imTitle').textContent = isSig ? 'توقيعٌ جديد' : 'ختمٌ جديد';
+    $('imWhat').textContent = isSig ? 'التوقيعُ شخصيّ: صاحبُه أو المديرُ وحدَهما.' : 'ختمُ المدرسة — للمدير وحدَه.';
+    $('imPersonBox').hidden = !isSig;
+    $('imFile').value = '';
+    $('imFrom').value = '';
+    if (isSig) {
+      const sel = $('imPerson');
+      sel.textContent = '';
+      const { data } = await M.rpc('v2_staff_board', { p_school: ui.school, p_q: null }, 'منسوبو المدرسة');
+      const mine = (data || []).filter((p) => (p.posts || []).some((a) => a.school_id === ui.school));
+      const me = (M.state.me || {}).person_id;
+      for (const p of mine) sel.appendChild(new Option(p.name + (p.person === me ? ' (أنت)' : ''), p.person, p.person === me, p.person === me));
+    }
+    if (await ask($('imgDlg')) !== 'ok') return;
+    const f = $('imFile').files[0];
+    if (!f) { toast('اختر الصورة.'); return; }
+    const path = await uploadImage(f, kind);
+    if (!path) return;
+    const { data, error } = isSig
+      ? await M.rpc('v2_signature_save', { p_school: ui.school, p_person: $('imPerson').value, p_image_ref: path, p_valid_from: val('imFrom') }, 'حفظ توقيع')
+      : await M.rpc('v2_stamp_save', { p_school: ui.school, p_image_ref: path, p_valid_from: val('imFrom') }, 'حفظ ختم');
+    if (error) { toast('لم يُحفظ:\n' + errText(error)); return; }
+    toast((isSig ? 'حُفظ التوقيع.' : 'حُفظ الختم.') + (data && data.note ? '\n' + data.note : ''), true);
+    brandTool(box);
+  }
+
+  // ----- التقويمُ الدراسيّ والفصول -----
+  // السنةُ الجاريةُ والفصلُ الجاري واحدٌ لا أكثر: تضبطه القاعدة، والشاشةُ ترسل الاختيارَ وحدَه
+  async function calendarTool(box) {
+    box.textContent = '';
+    if (noSchool(box)) return;
+    const { data, error } = await M.rpc('v2_calendar_board', { p_school: ui.school }, 'التقويم الدراسي');
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const c = data || {};
+    const sc = c.scope || {};
+    box.appendChild(el('div', 'meta', 'مسارُ التقويم: ' + (sc.label || '—') + (sc.regions ? ' — ' + sc.regions : '') + (sc.source ? ' · السند: ' + sc.source : '')));
+    box.appendChild(btn('سنةٌ دراسيّةٌ جديدة', 'btn-accept wide', () => editYear(null, box)));
+    const years = c.years || [];
+    if (!years.length) box.appendChild(el('div', 'notice', 'لا سنةَ دراسيّة — ولا يُقيَّد طالبٌ حتى تؤسَّس.'));
+    for (const y of years) {
+      const closed = y.status === 'closed';
+      const row = el('div', 'ev');
+      const top = el('div', 'row1');
+      top.append(el('div', 'name', y.name),
+        el('span', 'badge ' + (closed ? 'b-absent' : y.current ? 'b-present' : 'b-permitted'), closed ? 'مقفلة' + (y.closed_on ? ' ' + day(y.closed_on) : '') : y.current ? 'الجارية' : 'مفتوحة'));
+      row.appendChild(top);
+      row.appendChild(el('div', 'meta', day(y.starts) + ' — ' + day(y.ends) + ' · طلّابُها ' + (y.students ?? 0)));
+      for (const t of (y.terms || [])) {
+        const line = el('div', 'prow');
+        line.appendChild(el('div', 'meta', 'الفصل ' + t.no + ': ' + day(t.starts) + ' — ' + day(t.ends) + (t.current ? ' · الجاري' : '')));
+        if (!closed) line.appendChild(btn('عدّل الفصل', 'btn-ghost wide', () => editTerm(y, t, box)));
+        row.appendChild(line);
+      }
+      if (closed) row.appendChild(el('div', 'meta nocan', 'سنةٌ مقفلةٌ لا تُعدَّل.'));
+      else {
+        const acts = el('div', 'acts two');
+        acts.append(btn('عدّل السنة', null, () => editYear(y, box)), btn('فصلٌ جديد', null, () => editTerm(y, null, box)));
+        row.appendChild(acts);
+      }
+      box.appendChild(row);
+    }
+  }
+
+  async function editYear(y, box) {
+    $('yrWhat').textContent = y ? y.name : 'سنةٌ جديدة';
+    $('yrName').value = y ? y.name : '';
+    $('yrStarts').value = y ? day(y.starts) : '';
+    $('yrEnds').value = y ? day(y.ends) : '';
+    $('yrCurrent').checked = !!(y && y.current);
+    if (await ask($('yearDlg')) !== 'ok') return;
+    const { error } = await M.rpc('v2_year_save', {
+      p_school: ui.school, p_year: y ? y.year : null, p_name: val('yrName'), p_starts: val('yrStarts'), p_ends: val('yrEnds'), p_current: $('yrCurrent').checked,
+    }, 'حفظ سنة دراسية');
+    if (error) { toast('لم تُحفظ السنة:\n' + errText(error)); return; }
+    toast('حُفظت السنة.', true);
+    calendarTool(box);
+  }
+
+  async function editTerm(y, t, box) {
+    $('tmWhat').textContent = y.name + ' (' + day(y.starts) + ' — ' + day(y.ends) + ')' + (t ? ' · الفصل ' + t.no : ' · فصلٌ جديد');
+    $('tmNo').value = String(t ? t.no : ((y.terms || []).length + 1 > 3 ? 3 : (y.terms || []).length + 1));
+    $('tmStarts').value = t ? day(t.starts) : '';
+    $('tmEnds').value = t ? day(t.ends) : '';
+    $('tmCurrent').checked = !!(t && t.current);
+    if (await ask($('termDlg')) !== 'ok') return;
+    const { error } = await M.rpc('v2_term_save', {
+      p_school: ui.school, p_year: y.year, p_term: t ? t.term : null, p_number: Number($('tmNo').value),
+      p_starts: val('tmStarts'), p_ends: val('tmEnds'), p_current: $('tmCurrent').checked,
+    }, 'حفظ فصل دراسي');
+    if (error) { toast('لم يُحفظ الفصل:\n' + errText(error)); return; }
+    toast('حُفظ الفصل.', true);
+    calendarTool(box);
+  }
+
+  // ----- الهيكلُ التنظيميّ: يُختار من الدليل ولا يُخترع -----
+  async function structureTool(box) {
+    box.textContent = '';
+    if (noSchool(box)) return;
+    const { data, error } = await M.rpc('v2_structure_board', { p_school: ui.school }, 'الهيكل التنظيمي');
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const c = data || {};
+    if (c.note) box.appendChild(el('div', 'meta', c.note));
+    const cur = c.current;
+    box.appendChild(cur ? el('div', 'notice', 'النافذ: ' + cur.label + ' · وكلاؤه ' + (cur.deputies ?? '—') + (cur.source ? ' · السند: ' + cur.source : ''))
+      : el('div', 'notice err', 'لم يُختر لمدرستك هيكلٌ بعد.'));
+    box.appendChild(el('h3', 'grp', 'الهياكلُ في الدليل التنظيميّ — اختيارُ المدير وحدَه'));
+    for (const st of (c.all || [])) {
+      const row = el('div', 'ev');
+      const top = el('div', 'row1');
+      const isCur = cur && cur.code === st.code;
+      top.append(el('div', 'name', st.label), el('span', 'badge ' + (isCur ? 'b-present' : 'b-permitted'), isCur ? 'النافذ' : st.posts + ' وظيفة'));
+      row.appendChild(top);
+      row.appendChild(el('div', 'meta', 'وكلاؤه ' + (st.deputies ?? '—') + (st.source ? ' · السند: ' + st.source : '')));
+      if (!isCur) row.appendChild(btn('اعتمد هذا الهيكل', 'btn-ghost wide', () => setStructure(st, box)));
+      box.appendChild(row);
+    }
+    const posts = c.posts || [];
+    if (posts.length) {
+      box.appendChild(el('h3', 'grp', 'وظائفُ الهيكل النافذ'));
+      for (const p of posts) {
+        box.appendChild(el('div', 'meta', p.label + (p.parent_ar ? ' ← يتبع ' + p.parent_ar : '') + ' · ' + (Number(p.filled) > 0 ? 'يشغلها ' + p.filled : 'شاغرة')));
+      }
+    }
+  }
+
+  async function setStructure(st, box) {
+    if (!window.confirm('اعتمادُ «' + st.label + '» هيكلًا لمدرستك؟\nولا يُعتمد إن ترك تكليفًا قائمًا خارجه.')) return;
+    const { data, error } = await M.rpc('v2_structure_set', { p_school: ui.school, p_code: st.code }, 'تغيير الهيكل التنظيمي');
+    if (error) { toast('لم يُعتمد الهيكل:\n' + errText(error)); return; }
+    toast('اعتُمد «' + st.label + '»' + (data && data.posts != null ? ' — وظائفه ' + data.posts : '') + '.', true);
+    structureTool(box);
+  }
+
+  // ----- سجلُّ الاستثناءات: يُقيَّد ولا يُمحى ولا يُعدَّل -----
+  // أنواعُه من قيد الجدول (exceptions_rule_kind_check) — ولا جسرَ يرجع أسماءها بعد
+  const EXC_KINDS = [['staffing', 'الملاك'], ['structure', 'الهيكل'], ['committee', 'اللجان'], ['inheritance', 'الإرث من النظام'], ['other', 'أخرى']];
+  const EXC_AR = Object.fromEntries(EXC_KINDS);
+
+  async function exceptionsTool(box) {
+    box.textContent = '';
+    if (noSchool(box)) return;
+    box.appendChild(el('div', 'meta', 'حيث تخالف المدرسةُ النظامَ بقرارٍ مكتوب. يقيّده المديرُ وحدَه، ولا يُمحى ولا يُعدَّل.'));
+    box.appendChild(btn('قيّد استثناءً', 'btn-accept wide', () => addException(box)));
+    const { data, error } = await M.rpc('v2_exceptions_board', { p_school: ui.school }, 'سجل الاستثناءات');
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const rows = data || [];
+    box.appendChild(el('div', 'meta', rows.length ? rows.length + ' استثناءً — الأحدثُ أوّلًا' : 'لا استثناءَ مقيَّد.'));
+    for (const x of rows) {
+      const row = el('div', 'ev');
+      const top = el('div', 'row1');
+      top.append(el('div', 'name', (EXC_AR[x.rule_kind] || x.rule_kind) + (x.rule_ref ? ' · ' + x.rule_ref : '')),
+        el('span', 'badge b-late', String(x.decided_at || '').slice(0, 16).replace('T', ' ')));
+      row.appendChild(top);
+      row.appendChild(el('div', 'meta', 'النظام: ' + x.system_says));
+      row.appendChild(el('div', 'meta', 'والمدرسة: ' + x.school_does));
+      row.appendChild(el('div', 'detail', 'السبب: ' + x.reason));
+      row.appendChild(el('div', 'meta', 'قرّره: ' + (x.decided_by || '—') + (x.source ? ' · السند: ' + x.source : '')));
+      box.appendChild(row);
+    }
+  }
+
+  async function addException(box) {
+    const sel = $('exKind');
+    if (!sel.options.length) for (const [k, l] of EXC_KINDS) sel.appendChild(new Option(l, k));
+    for (const id of ['exRef', 'exSays', 'exDoes', 'exReason', 'exSource']) $(id).value = '';
+    if (await ask($('excDlg')) !== 'ok') return;
+    const { data, error } = await M.rpc('v2_exception_add', {
+      p_school: ui.school, p_rule_kind: sel.value, p_rule_ref: val('exRef'), p_system_says: val('exSays'),
+      p_school_does: val('exDoes'), p_reason: val('exReason'), p_source: val('exSource'),
+    }, 'تقييد استثناء');
+    if (error) { toast('لم يُقيَّد:\n' + errText(error)); return; }
+    toast((data && data.note) || 'قُيّد الاستثناء.', true);
+    exceptionsTool(box);
+  }
+
+  // ----- المراجعُ الأربعة: تُقرأ ولا تُعدَّل -----
+  function refTool(key) {
+    return async (box) => {
+      box.textContent = '';
+      const { data, error } = await M.rpc('v2_reference', { p_key: key }, 'مرجع');
+      if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+      const r = data || {};
+      box.appendChild(el('div', 'meta', '🔒 ' + (r.label || '') + ' — للقراءة' + (r.source ? ' · السند: ' + r.source : '')));
+      if (r.note) box.appendChild(el('div', 'meta', r.note));
+      (REF_RENDER[key] || (() => {}))(box, r);
+    };
+  }
+  const REF_RENDER = {
+    absence_ladder(box, r) {
+      let cur = null; let row = null;
+      for (const i of (r.items || [])) {
+        if (i.ladder !== cur) { cur = i.ladder; row = el('div', 'ev'); row.appendChild(el('div', 'name', 'السلّم ' + cur)); box.appendChild(row); }
+        row.appendChild(el('div', 'meta', i.ord + '. ' + i.text + (i.owner ? ' — ' + i.owner : '') + (i.evidence ? ' · الإثبات: ' + i.evidence : '')));
+      }
+    },
+    absence_excuses(box, r) {
+      for (const e of (r.items || [])) {
+        const row = el('div', 'ev');
+        const top = el('div', 'row1');
+        top.appendChild(el('div', 'name', e.no + '. ' + e.text));
+        if (e.school_discretion) top.appendChild(el('span', 'badge b-late', 'تقديرُ المدرسة'));
+        row.appendChild(top);
+        if (e.proof) row.appendChild(el('div', 'meta', 'الإثبات: ' + e.proof));
+        if (e.school_discretion) row.appendChild(el('div', 'meta', 'تقرّره لجنةُ التوجيه.'));
+        if (e.source) row.appendChild(el('div', 'meta', 'السند: ' + e.source));
+        box.appendChild(row);
+      }
+    },
+    violence_types(box, r) {
+      for (const v of (r.items || [])) {
+        const row = el('div', 'ev');
+        row.appendChild(el('div', 'name', v.label + ' · ' + v.family));
+        if (v.definition) row.appendChild(el('div', 'meta', v.definition));
+        if (v.source) row.appendChild(el('div', 'meta', 'السند: ' + v.source));
+        box.appendChild(row);
+      }
+    },
+    grading(box, r) {
+      const subj = r.subjects || [];
+      for (const m of (r.models || []).slice().sort((a, b) => a.model_no - b.model_no)) {
+        const row = el('div', 'ev');
+        row.appendChild(el('div', 'name', 'النموذج ' + m.model_no + ': ' + m.title_ar + ' · ' + m.kind + ' · من ' + m.total));
+        const comps = Array.isArray(m.components) ? m.components : [];
+        if (comps.length) row.appendChild(el('div', 'meta', comps.map((x) => x.n + ' ' + x.d).join(' · ')));
+        const ss = subj.filter((s) => s.model_no === m.model_no);
+        if (ss.length) row.appendChild(el('div', 'meta', 'موادّه: ' + ss.map((s) => s.subject_ar + ' (' + s.stages_ar + ')').join(' · ')));
+        if (m.retake_note) row.appendChild(el('div', 'meta', 'الدورُ الثاني: ' + m.retake_note));
+        for (const n of (m.notes_ar || [])) row.appendChild(el('div', 'meta', n));
+        if (m.source_page) row.appendChild(el('div', 'meta', 'السند: ' + (m.source_doc || '') + ' ' + m.source_page));
+        box.appendChild(row);
+      }
+    },
+  };
+  const REF_TOOLS = Object.fromEntries(['absence_ladder', 'absence_excuses', 'violence_types', 'grading'].map((k) => [k, refTool(k)]));
+
   // الأبوابُ التي لها أداةٌ هنا بجسورها — وتُقدَّم على التعديل العامّ
   const OWN_TOOLS = {
     class_practices: practicesTool, practice_scopes: scopesTool,
     staff: staffTool, assignments_panel: staffTool, students: studentsTool, guardians: studentsTool,
     accounts: accountsTool, school_card: schoolCardTool,
+    branding: brandTool, calendar: calendarTool, structure: structureTool, exceptions: exceptionsTool,
   };
 
   $('sReason').addEventListener('input', () => { $('sOk').disabled = $('sReason').value.trim() === ''; });
