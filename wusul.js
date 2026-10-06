@@ -1,255 +1,248 @@
-// مؤيّد · الوصول والانصراف — المناوب.
-// الوصول المتأخر بوقته وقراره (ض٠٥)، وتأخر الانصراف (ض٠٣ وض٠٦).
-// الدقائق والعتبات والإجراء كلها من القاعدة:
-// v2_day_summary · v2_day_classes · v2_day_list · v2_day_dismissals
-// v2_record_arrival · v2_record_dismissal
-// والتبويبان من can: الوصول بـ record_arrival، والانصراف بـ record_dismissal.
+// مؤيّد · الوصولُ والاصطفافُ والانصراف — شاشةٌ واحدةٌ بثلاثة أبواب على نموذج المحاكي.
+// الاصطفاف (record_assembly) · الوصولُ المتأخّر (record_arrival) · تأخّرُ الانصراف (record_dismissal) — كلُّ بابٍ بمفتاحه في can.
+// الأعدادُ والحالاتُ والدقائقُ والعتباتُ والإجراءُ كلُّها من القاعدة:
+// v2_day_summary · v2_day_classes · v2_day_list · v2_day_dismissals · v2_record_assembly · v2_record_arrival · v2_record_dismissal
 (function () {
   'use strict';
 
   const M = window.Moayad;
-  const { sb, $, el, toast, errText, showLoadErr } = M;
+  const V = window.MoayadView;
+  const { $, el, errText, showLoadErr } = M;
+  const { ar, arabize, btn, pick } = V;
 
-  const ui = { summary: null, classes: [], rows: [], tab: null, disDone: [], disDay: [], disDayErr: '' };
+  // حالاتُ الاصطفاف كما في قيد attendance.assembly_state
+  const ASM = [['attended', 'حاضر'], ['not_arrived', 'غائب'], ['missed_inside', 'تخلّف وهو في المدرسة']];
+  const FILTERS = [['all', 'الكلّ'], ['unrecorded', 'لم يُرصد'], ['absent', 'غائب'], ['late', 'متأخّر'], ['permitted', 'مستأذن']];
+  const DECISIONS = [['enter_class', 'دخولُ الفصل بإذن الموافقة'], ['to_counselor', 'تحويلٌ إلى الموجّه الطلابيّ']];
+  const DECISION_AR = Object.fromEntries(DECISIONS);
+  const TABS = [['asm', 'الاصطفاف', 'record_assembly', 'رصد الاصطفاف'], ['arr', 'الوصول', 'record_arrival', 'تسجيل الوصول المتأخّر'], ['dis', 'الانصراف', 'record_dismissal', 'رصد تأخّر الانصراف']];
 
-  function canArr() { return !!M.state.me.can.record_arrival; }
-  function canDis() { return !!M.state.me.can.record_dismissal; }
-
-  const DECISION_AR = { enter_class: 'دخل الفصل بإذن الموافقة', to_counselor: 'حُوّل إلى الموجّه الطلابي' };
-
-  function nowHM() {
-    // وقت الجهاز الآن — قيمة ابتدائية يعدّلها المناوب
-    return new Date().toTimeString().slice(0, 5);
-  }
-
-  function ask(dlg) {
-    return new Promise((resolve) => {
-      dlg.addEventListener('close', () => resolve(dlg.returnValue), { once: true });
-      dlg.returnValue = '';
-      dlg.showModal();
-    });
-  }
-
-  function classLabel(r) {
-    const c = ui.classes.find((k) => k.grade === r.grade && k.section === r.section);
-    return c ? c.label_ar : r.grade + ' — ' + r.section;
-  }
-
-  function matches(r, q) {
-    q = q.trim();
-    return !q || (r.full_name || '').includes(q) || (r.display_name || '').includes(q) || (r.student_no || '').includes(q);
-  }
+  const ui = { summary: null, classes: [], rows: [], dis: [], disErr: '', tab: null, cls: null, filter: 'all', busy: new Set() };
+  const can = (k) => !!(M.state.me && M.state.me.can && M.state.me.can[k]);
+  const owned = () => TABS.filter((t) => can(t[2]));
+  const nowHM = () => new Date().toTimeString().slice(0, 5);
+  const nameOf = (r) => r.display_name || r.full_name;
+  const classKey = (c) => c.grade + '/' + c.section;
+  const classLabel = (r) => { const c = ui.classes.find((k) => k.grade === r.grade && k.section === r.section); return c ? c.label_ar : r.grade + ' — ' + r.section; };
+  const matches = (r, q) => { q = q.trim(); return !q || (r.full_name || '').includes(q) || (r.display_name || '').includes(q) || (r.student_no || '').includes(q); };
+  const isStudy = () => !!ui.summary && (ui.summary.day_kind === 'study' || ui.summary.day_kind === 'exam');
+  const open = () => isStudy() && !ui.summary.closed;
 
   // ---------- الجلب ----------
   async function refresh() {
     if (!M.state.school || !M.state.date) return;
     showLoadErr('');
-    const args = { p_school: M.state.school, p_date: M.state.date };
+    const a = { p_school: M.state.school, p_date: M.state.date };
     const [sum, cls, list, dis] = await Promise.all([
-      M.rpc('v2_day_summary', args),
-      M.rpc('v2_day_classes', args),
-      M.rpc('v2_day_list', args),
-      canDis() ? M.rpc('v2_day_dismissals', args) : Promise.resolve({ data: [] }),
+      M.rpc('v2_day_summary', a, 'ملخّص اليوم'),
+      M.rpc('v2_day_classes', a, 'فصول اليوم'),
+      M.rpc('v2_day_list', a, 'طلّاب اليوم'),
+      can('record_dismissal') ? M.rpc('v2_day_dismissals', a, 'انصرافات اليوم') : Promise.resolve({ data: [] }),
     ]);
     const err = sum.error || cls.error || list.error;
     if (err) { showLoadErr('تعذّر جلب اليوم: ' + errText(err)); return; }
     ui.summary = (sum.data && sum.data[0]) || null;
     ui.classes = cls.data || [];
     ui.rows = list.data || [];
-    // خطأ جسر الانصرافات يُعرض بنصّه في موضعه ولا يُطوى
-    ui.disDayErr = dis.error ? 'تعذّر جلب انصرافات اليوم: ' + errText(dis.error) : '';
-    ui.disDay = dis.data || [];
+    ui.disErr = dis.error ? 'تعذّر جلب انصرافات اليوم: ' + errText(dis.error) : '';
+    ui.dis = dis.data || [];
+    if (ui.cls && !ui.classes.some((c) => classKey(c) === ui.cls)) ui.cls = null;
     render();
   }
 
   // ---------- العرض ----------
-  function isStudy() {
-    const s = ui.summary;
-    return !!s && (s.day_kind === 'study' || s.day_kind === 'exam');
-  }
-
   function render() {
+    V.renderRole();
     const s = ui.summary;
-    if (s) M.renderDates($('dates'), s.hijri, M.state.date, s.day_kind);
-    else $('dates').textContent = '';
+    if (s) M.renderDates($('dates'), s.hijri, M.state.date, s.day_kind); else $('dates').textContent = '';
     $('noStudy').hidden = !s || isStudy();
-    if (s && !isStudy()) {
-      $('noStudy').textContent = 'هذا اليوم ليس يوم دراسة (' + (M.DAY_KIND_AR[s.day_kind] || s.day_kind) + ') — لا يُسجَّل فيه وصول ولا انصراف.';
-    }
+    if (s && !isStudy()) $('noStudy').textContent = 'هذا اليوم ليس يومَ دراسة (' + (M.DAY_KIND_AR[s.day_kind] || s.day_kind) + ') — لا يُرصد فيه اصطفافٌ ولا وصولٌ ولا انصراف.';
     $('closedNote').hidden = !s || !s.closed;
-    // التبويبان بما في can — ولا تبويب لما لا يملكه
-    if (ui.tab === 'arr' && !canArr()) ui.tab = null;
-    if (ui.tab === 'dis' && !canDis()) ui.tab = null;
-    if (!ui.tab) ui.tab = canArr() ? 'arr' : (canDis() ? 'dis' : null);
-    $('tabArr').hidden = !canArr();
-    $('tabDis').hidden = !canDis();
-    $('tabs').hidden = !(canArr() && canDis());
-    const why = canArr() && !canDis() ? M.lacks('رصد تأخر الانصراف')
-      : canDis() && !canArr() ? M.lacks('تسجيل الوصول المتأخر') : '';
-    $('noCanTab').textContent = why;
-    $('noCanTab').hidden = !why;
-    $('tabArr').setAttribute('aria-pressed', ui.tab === 'arr' ? 'true' : 'false');
-    $('tabDis').setAttribute('aria-pressed', ui.tab === 'dis' ? 'true' : 'false');
-    $('arrView').hidden = ui.tab !== 'arr';
-    $('disView').hidden = ui.tab !== 'dis';
-    renderArrivals();
-    renderDismissals();
+
+    const mine = owned();
+    if (!mine.some((t) => t[0] === ui.tab)) ui.tab = mine.length ? mine[0][0] : null;
+    $('tabs').hidden = mine.length < 2;
+    pick($('tabs'), mine.map((t) => [t[0], t[1]]), ui.tab, (v) => { ui.tab = v; render(); });
+    // ما لا تملكه يُكتب سببُه ولا يُخفى
+    const lack = TABS.filter((t) => !can(t[2])).map((t) => t[3]);
+    $('noCanTab').hidden = !lack.length;
+    $('noCanTab').textContent = lack.length ? M.lacks(lack.join(' · ')) : '';
+    for (const [k, id] of [['asm', 'asmView'], ['arr', 'arrView'], ['dis', 'disView']]) $(id).hidden = ui.tab !== k;
+    if (ui.tab === 'asm') renderAssembly();
+    if (ui.tab === 'arr') renderArrivals();
+    if (ui.tab === 'dis') renderDismissals();
   }
 
-  function studentCard(r, badgeCls, badgeText, lines, btnText, onClick, disabled) {
-    const c = el('div', 'st s-' + r.state);
-    const top = el('div', 'row1');
-    const who = el('div');
-    who.append(el('div', 'name', r.display_name || r.full_name), el('div', 'meta', r.student_no + ' · ' + classLabel(r)));
-    top.append(who, el('span', 'badge ' + badgeCls, badgeText));
-    c.appendChild(top);
-    for (const t of lines) if (t) c.appendChild(el('div', 'detail', t));
-    if (btnText) {
-      const acts = el('div', 'acts one');
-      const b = el('button', 'a-go', btnText);
-      b.type = 'button';
-      b.disabled = disabled;
-      b.addEventListener('click', onClick);
-      acts.appendChild(b);
-      c.appendChild(acts);
+  // ① الاصطفاف
+  function renderAssembly() {
+    const done = ui.classes.filter((c) => c.is_done).length;
+    const total = ui.classes.length;
+    $('asmProgress').textContent = !total ? 'لا فصولَ فيها طلّابٌ مقيّدون.'
+      : done === total ? 'رُصدت الفصولُ كلُّها (' + total + ')' : 'رُصد ' + done + ' فصلًا من ' + total + ' — بقي ' + (total - done);
+    pick($('classes'), ui.classes.map((c) => [classKey(c), c.label_ar + (c.is_done ? ' ✓' : ' · ' + c.unrecorded)]), ui.cls, (v) => { ui.cls = v; ui.filter = 'all'; $('qAsm').value = ''; render(); });
+    arabize($('asmProgress'));
+    const c = ui.classes.find((x) => classKey(x) === ui.cls);
+    $('clsCard').hidden = !c;
+    if (!c) return;
+    $('clsTitle').textContent = c.label_ar;
+    $('clsState').textContent = c.is_done ? 'رُصد كاملًا' : 'بقي ' + c.unrecorded + ' من ' + c.enrolled;
+    $('clsCounts').textContent = 'حاضر ' + c.present + ' · غائب ' + c.absent + ' · متأخّر ' + c.late + ' · مستأذن ' + c.permitted + ' · تخلّف عن الاصطفاف ' + c.missed_assembly;
+    pick($('filters'), FILTERS, ui.filter, (v) => { ui.filter = v; renderAssembly(); });
+    const box = $('asmList');
+    box.textContent = '';
+    const q = $('qAsm').value;
+    const inClass = ui.rows.filter((r) => r.grade === c.grade && r.section === c.section);
+    const rows = inClass.filter((r) => (ui.filter === 'all' || r.state === ui.filter) && matches(r, q));
+    if (!rows.length) box.appendChild(el('p', 'rs-empty', inClass.length ? 'لا أحدَ في هذا التصنيف.' : 'لا طلّابَ مقيّدون في هذا الفصل.'));
+    for (const r of rows) {
+      const f = el('div', 'rs-file');
+      const hd = el('div', 'rs-hd');
+      hd.append(el('h5', null, nameOf(r)), el('span', 'rs-who', r.state_ar || ''));
+      f.appendChild(hd);
+      const bits = [r.student_no, r.assembly_ar,
+        r.arrived_at ? 'وصل ' + r.arrived_at.slice(0, 5) + (r.minutes_late != null ? ' — متأخّرًا ' + r.minutes_late + ' دقيقة' : '') : null,
+        r.has_permit ? 'إذنُ موافقة' + (r.permit_decision ? ' (' + (DECISION_AR[r.permit_decision] || r.permit_decision) + ')' : '') : null,
+        r.recorded_role ? 'رصده: ' + r.recorded_role : null].filter(Boolean);
+      f.appendChild(el('p', null, bits.join(' · ')));
+      const chips = el('div', 'rs-pick');
+      if (open() && !ui.busy.has(r.student_id)) pick(chips, ASM, r.assembly_state, (v) => recordAssembly(r, v));
+      else { pick(chips, ASM, r.assembly_state, () => {}); chips.classList.add('rs-off'); }
+      f.appendChild(chips);
+      box.appendChild(f);
     }
-    return c;
+    const nav = $('clsNav');
+    nav.textContent = '';
+    const next = ui.classes.find((x) => !x.is_done && classKey(x) !== ui.cls);
+    if (next) nav.appendChild(btn('الفصلُ التالي: ' + next.label_ar, 'rs-btn soft', () => { ui.cls = classKey(next); ui.filter = 'all'; $('qAsm').value = ''; render(); window.scrollTo(0, 0); }));
+    arabize($('clsCard'));
+  }
+
+  async function recordAssembly(r, state) {
+    if (ui.busy.has(r.student_id)) return;
+    ui.busy.add(r.student_id);
+    V.flash('wait', 'يُرصد ' + nameOf(r) + '…');
+    const { error } = await M.rpc('v2_record_assembly', { p_student: r.student_id, p_date: M.state.date, p_state: state }, 'رصد الاصطفاف');
+    ui.busy.delete(r.student_id);
+    if (error) { V.flash('bad', 'لم يُرصد ' + nameOf(r) + ': ' + errText(error)); renderAssembly(); return; }
+    V.flash('ok', 'رُصد ' + nameOf(r) + ': ' + (ASM.find((a) => a[0] === state) || [])[1]);
+    await refresh();
+  }
+
+  // ② الوصول
+  function stuRow(r, lines, label, fn) {
+    const f = el('div', 'rs-file');
+    const hd = el('div', 'rs-hd');
+    hd.append(el('h5', null, nameOf(r)), el('span', 'rs-who', r.state_ar || ''));
+    f.appendChild(hd);
+    f.appendChild(el('p', null, [r.student_no, classLabel(r)].concat(lines).filter(Boolean).join(' · ')));
+    if (label) {
+      const b = btn(label, 'rs-btn soft', fn);
+      b.disabled = !fn;
+      f.appendChild(b);
+    }
+    return f;
   }
 
   function renderArrivals() {
     const q = $('qArr').value;
-    const canArrNow = isStudy() && !ui.summary.closed && canArr();
-
-    // من لم يصل بعد: غائب أو لم يُرصد — والحالة من القاعدة
+    const go = open();
     const wait = ui.rows.filter((r) => (r.state === 'absent' || r.state === 'unrecorded') && matches(r, q));
     $('waitTitle').textContent = 'لم يصل بعد (' + wait.length + ')';
     const wb = $('waitList');
     wb.textContent = '';
-    if (wait.length === 0) wb.appendChild(el('div', 'empty', q ? 'لا أحد بهذا البحث.' : 'لا أحد ينتظر وصوله.'));
-    for (const r of wait) {
-      wb.appendChild(studentCard(r, 'b-' + r.state, r.state_ar, [r.assembly_ar],
-        'وصل الآن', () => recordArrival(r), !canArrNow));
-    }
-
-    // من سُجّل وصوله متأخراً — بوقته ودقائقه وقراره كما في القاعدة
+    if (!wait.length) wb.appendChild(el('p', 'rs-empty', q ? 'لا أحدَ بهذا البحث.' : 'لا أحدَ ينتظر وصوله.'));
+    for (const r of wait.slice(0, 60)) wb.appendChild(stuRow(r, [r.assembly_ar], 'وصل الآن', go ? () => arrivalForm(r) : null));
     const late = ui.rows.filter((r) => (r.has_permit || r.state === 'late') && matches(r, q));
-    $('lateTitle').textContent = 'سُجّل وصولهم متأخرين (' + late.length + ')';
+    $('lateTitle').textContent = 'سُجّل وصولُهم متأخّرين (' + late.length + ')';
     const lb = $('lateList');
     lb.textContent = '';
-    if (late.length === 0) lb.appendChild(el('div', 'empty', 'لم يُسجَّل وصول متأخر.'));
+    if (!late.length) lb.appendChild(el('p', 'rs-empty', 'لم يُسجَّل وصولٌ متأخّر.'));
     for (const r of late) {
-      const t = r.arrived_at ? 'وصل ' + r.arrived_at.slice(0, 5) +
-        (r.minutes_late != null ? ' — متأخراً ' + r.minutes_late + ' دقيقة' : '') : '';
-      lb.appendChild(studentCard(r, 'b-' + r.state, r.state_ar,
-        [t, r.permit_decision ? (DECISION_AR[r.permit_decision] || r.permit_decision) : ''],
-        'تعديل', () => recordArrival(r), !canArrNow));
+      const t = r.arrived_at ? 'وصل ' + r.arrived_at.slice(0, 5) + (r.minutes_late != null ? ' — متأخّرًا ' + r.minutes_late + ' دقيقة' : '') : '';
+      lb.appendChild(stuRow(r, [t, r.permit_decision ? (DECISION_AR[r.permit_decision] || r.permit_decision) : ''], 'عدّل', go ? () => arrivalForm(r) : null));
     }
+    arabize($('arrView'));
   }
 
-  async function recordArrival(r) {
-    $('arrWho').textContent = (r.display_name || r.full_name) + ' — ' + classLabel(r);
-    $('arrTime').value = r.arrived_at ? r.arrived_at.slice(0, 5) : nowHM();
-    const dec = r.permit_decision || 'enter_class';
-    for (const x of document.querySelectorAll('input[name=arrDec]')) x.checked = x.value === dec;
-    $('arrNote').value = '';
-    if (await ask($('arrDlg')) !== 'ok') return;
-    if (!$('arrTime').value) { toast('لم يُسجَّل: وقت الوصول مطلوب.'); return; }
-    const decision = document.querySelector('input[name=arrDec]:checked').value;
-    const { error } = await M.rpc('v2_record_arrival', {
-      p_student: r.student_id, p_date: M.state.date, p_arrived: $('arrTime').value,
-      p_decision: decision, p_note: $('arrNote').value.trim() || null,
+  function arrivalForm(r) {
+    V.form({
+      title: 'تسجيلُ وصولٍ متأخّر', what: nameOf(r) + ' — ' + classLabel(r),
+      fields: [
+        { key: 'at', type: 'time', label: 'وقتُ الوصول', value: r.arrived_at ? r.arrived_at.slice(0, 5) : nowHM() },
+        { key: 'dec', type: 'pick', label: 'القرار — ض٠٥', items: DECISIONS, value: r.permit_decision || 'enter_class' },
+        { key: 'note', type: 'textarea', label: 'ملاحظة (اختياريّة)', rows: 2 },
+      ],
+      ok: 'سجّل الوصول',
+      onOk: async (v) => {
+        // الوقتُ لازم — وبلا وقتٍ ترفضه القاعدةُ برسالة قيدٍ إنجليزيّة، فلا يُرسل
+        if (!v.at) return { message: 'وقتُ الوصول مطلوب' };
+        const { error } = await M.rpc('v2_record_arrival', { p_student: r.student_id, p_date: M.state.date, p_arrived: v.at || null, p_decision: v.dec || null, p_note: v.note || null }, 'تسجيل الوصول');
+        if (error) return error;
+        V.flash('ok', 'سُجّل وصولُ ' + nameOf(r) + ' — ' + (DECISION_AR[v.dec] || v.dec));
+        await refresh();
+        return null;
+      },
     });
-    if (error) { toast('لم يُسجَّل وصول ' + (r.display_name || r.full_name) + ':\n' + errText(error)); return; }
-    toast('سُجّل وصول ' + (r.display_name || r.full_name) + ' — ' + DECISION_AR[decision] + '.', true);
-    await refresh();
   }
 
+  // ③ الانصراف
   function renderDismissals() {
     const q = $('qDis').value;
-    const canDisNow = isStudy() && canDis();
+    const go = isStudy();
     const box = $('disList');
     box.textContent = '';
-    if (!q.trim()) {
-      box.appendChild(el('div', 'empty', 'ابحث عن الطالب الذي بقي بعد نهاية الدوام.'));
-    } else {
+    if (!q.trim()) box.appendChild(el('p', 'rs-empty', 'ابحث عن الطالب الذي بقي بعد نهاية الدوام.'));
+    else {
       const found = ui.rows.filter((r) => matches(r, q));
-      if (found.length === 0) box.appendChild(el('div', 'empty', 'لا أحد بهذا البحث.'));
-      for (const r of found.slice(0, 20)) {
-        box.appendChild(studentCard(r, 'b-' + r.state, r.state_ar, [], 'سجّل تأخر انصرافه', () => recordDismissal(r), !canDisNow));
-      }
+      if (!found.length) box.appendChild(el('p', 'rs-empty', 'لا أحدَ بهذا البحث.'));
+      for (const r of found.slice(0, 20)) box.appendChild(stuRow(r, [], 'سجّل تأخّرَ انصرافه', go ? () => dismissalForm(r) : null));
     }
-    // انصرافات اليوم من القاعدة — بالدقائق والعتبة والإجراء ومن رصد
-    $('disDayErr').textContent = ui.disDayErr;
-    $('disDayErr').hidden = !ui.disDayErr;
-    $('disDayTitle').textContent = 'انصرافات اليوم' + (ui.disDayErr ? '' : ' (' + ui.disDay.length + ')');
+    $('disDayErr').textContent = ui.disErr;
+    $('disDayErr').hidden = !ui.disErr;
+    $('disDayTitle').textContent = 'انصرافاتُ اليوم' + (ui.disErr ? '' : ' (' + ui.dis.length + ')');
     const day = $('disDay');
     day.textContent = '';
-    if (!ui.disDayErr && ui.disDay.length === 0) day.appendChild(el('div', 'empty', 'لم يُرصد تأخر انصراف في هذا اليوم.'));
-    for (const d of ui.disDay) {
-      const act = d.threshold === 'action_30';
-      const c = el('div', 'ev' + (act ? ' act' : ''));
-      const top = el('div', 'row1');
-      const who = el('div');
-      who.append(el('div', 'name', d.student_name), el('div', 'meta', d.class_ar || ''));
-      top.append(who, el('span', 'badge ' + (act ? 'b-absent' : 'b-late'), d.threshold_ar));
-      c.appendChild(top);
-      c.appendChild(el('div', 'detail', 'خرج ' + (d.left_at || '').slice(0, 5) + ' — بعد نهاية الدوام بـ' + d.minutes_after + ' دقيقة' +
-        (d.reason_ar ? ' · ' + d.reason_ar : '')));
-      c.appendChild(el('div', act ? 'need' : 'detail', d.action_taken));
-      c.appendChild(el('div', 'meta', 'رصده: ' + (d.recorded_role || '—') + ' · ' + (d.guardian_notified ? 'أُبلغ ولي الأمر' : 'لم يُبلَّغ ولي الأمر')));
-      day.appendChild(c);
+    if (!ui.disErr && !ui.dis.length) day.appendChild(el('p', 'rs-empty', 'لم يُرصد تأخّرُ انصرافٍ في هذا اليوم.'));
+    for (const d of ui.dis) {
+      const f = el('div', 'rs-file');
+      const hd = el('div', 'rs-hd');
+      hd.append(el('h5', null, d.student_name), el('span', 'rs-who' + (d.threshold === 'action_30' ? ' rs-state-open' : ''), d.threshold_ar || ''));
+      f.appendChild(hd);
+      f.appendChild(el('p', null, [d.class_ar, 'خرج ' + (d.left_at || '').slice(0, 5) + ' — بعد نهاية الدوام بـ' + d.minutes_after + ' دقيقة', d.reason_ar].filter(Boolean).join(' · ')));
+      if (d.action_taken) f.appendChild(el('p', null, d.action_taken));
+      f.appendChild(el('p', 'rs-meta', 'رصده: ' + (d.recorded_role || '—') + ' · ' + (d.guardian_notified ? 'أُبلغ وليُّ الأمر' : 'لم يُبلَّغ وليُّ الأمر')));
+      day.appendChild(f);
     }
-
-    // ما رُصد في هذه الجلسة يظهر فقط إن تعذّر جلب انصرافات اليوم من القاعدة
-    $('disDoneTitle').hidden = !ui.disDayErr || ui.disDone.length === 0;
-    const done = $('disDone');
-    done.textContent = '';
-    if (!ui.disDayErr) return;
-    for (const d of ui.disDone) {
-      const c = el('div', 'ev' + (d.threshold.includes('30') ? ' act' : ''));
-      c.append(el('div', 'name', d.name),
-        el('div', 'detail', 'خرج ' + d.left + ' — بعد نهاية الدوام بـ' + d.minutes + ' دقيقة · ' + d.threshold),
-        el('div', d.threshold.includes('30') ? 'need' : 'detail', d.action));
-      done.appendChild(c);
-    }
+    arabize($('disView'));
   }
 
-  async function recordDismissal(r) {
-    $('disWho').textContent = (r.display_name || r.full_name) + ' — ' + classLabel(r);
-    $('disTime').value = nowHM();
-    $('disReason').value = '';
-    if (await ask($('disDlg')) !== 'ok') return;
-    if (!$('disTime').value) { toast('لم يُرصد: وقت الخروج مطلوب.'); return; }
-    const { data, error } = await M.rpc('v2_record_dismissal', {
-      p_student: r.student_id, p_date: M.state.date, p_left: $('disTime').value,
-      p_reason: $('disReason').value.trim() || null,
+  function dismissalForm(r) {
+    V.form({
+      title: 'تأخّرٌ عن الانصراف', what: nameOf(r) + ' — ' + classLabel(r),
+      fields: [
+        { key: 'at', type: 'time', label: 'وقتُ خروجه من المدرسة', value: nowHM() },
+        { key: 'why', type: 'textarea', label: 'السبب (اختياريّ)', rows: 2 },
+      ],
+      ok: 'سجّل',
+      onOk: async (v) => {
+        if (!v.at) return { message: 'وقتُ الخروج مطلوب' };
+        const { data, error } = await M.rpc('v2_record_dismissal', { p_student: r.student_id, p_date: M.state.date, p_left: v.at || null, p_reason: v.why || null }, 'رصد تأخر الانصراف');
+        if (error) return error;
+        const x = (data && data[0]) || {};
+        V.flash('ok', 'رُصد تأخّرُ انصراف ' + nameOf(r) + (x.minutes_after != null ? ' — ' + x.minutes_after + ' دقيقة' : '') + (x.action_taken ? ' · ' + x.action_taken : ''));
+        $('qDis').value = '';
+        await refresh();
+        return null;
+      },
     });
-    if (error) { toast('لم يُرصد تأخر انصراف ' + (r.display_name || r.full_name) + ':\n' + errText(error)); return; }
-    const x = (data && data[0]) || {};
-    ui.disDone.unshift({
-      name: r.display_name || r.full_name, left: $('disTime').value,
-      minutes: x.minutes_after, threshold: x.threshold || '', action: x.action_taken || '',
-    });
-    toast('رُصد تأخر انصراف ' + (r.display_name || r.full_name) + ' — ' + (x.threshold || ''), true);
-    $('qDis').value = '';
-    await refresh();
   }
 
-  // ---------- التبويبان والبحث ----------
-  function setTab(t) {
-    ui.tab = t;
-    render();
-  }
-  $('tabArr').addEventListener('click', () => setTab('arr'));
-  $('tabDis').addEventListener('click', () => setTab('dis'));
+  $('qAsm').addEventListener('input', renderAssembly);
   $('qArr').addEventListener('input', renderArrivals);
   $('qDis').addEventListener('input', renderDismissals);
 
   M.start({
     screen: 'wusul',
-    onChange: (why) => {
-      ui.disDone = [];
-      return refresh();
-    },
+    onChange: (why) => { if (why === 'school') ui.cls = null; return refresh(); },
   });
 })();

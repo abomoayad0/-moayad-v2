@@ -16,10 +16,9 @@
 
   // الشاشات المبنية، وما يفتح كلّاً منها من مفاتيح can
   const SCREENS = [
-    { key: 'rasd', title: 'رصد اليوم', desc: 'حصر الغياب في سجل اليوم — فصلاً فصلاً',
-      href: 'rasd.html', allow: (c) => !!c.record_assembly },
-    { key: 'wusul', title: 'الوصول والانصراف', desc: 'الوصول المتأخر بقراره · تأخر الانصراف',
-      href: 'wusul.html', allow: (c) => !!(c.record_arrival || c.record_dismissal) },
+    // الاصطفافُ والوصولُ والانصرافُ شاشةٌ واحدة بثلاثة أبواب — وrasd.html يُحوَّل إليها
+    { key: 'wusul', title: 'الوصول والاصطفاف والانصراف', desc: 'الاصطفاف فصلًا فصلًا · الوصول المتأخّر بقراره · تأخّر الانصراف',
+      href: 'wusul.html', allow: (c) => !!(c.record_assembly || c.record_arrival || c.record_dismissal) },
     { key: 'deputy', title: 'قرارات الوكيل', desc: 'الإقفال · إعادة الفتح · البتّ في الأعذار',
       href: 'deputy.html', allow: (c) => !!(c.close_day || c.reopen_day || c.decide_excuse) },
     // شاشةُ الوكيل (viewW) — حلّت محلّ «رصد المخالفات» القديمة. مفتاحُها wakeel: الوكيلُ والمدير

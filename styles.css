@@ -452,3 +452,5 @@
   .rs-grid td.k-standby { background: var(--chip); }
   .rs-grid td.k-activity { background: var(--warn-bg); }
   .rs-grid th { text-align: center; }
+
+  .rs-pick.rs-off span { pointer-events: none; opacity: .55; }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>مؤيّد · الوصول والانصراف</title>
+<title>مؤيّد · الوصول والاصطفاف والانصراف</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
 
 <header class="top">
   <div>
-    <h1>مؤيّد · الوصول والانصراف</h1>
+    <h1>مؤيّد · الوصول والاصطفاف والانصراف</h1>
     <div class="who" id="who"></div>
   </div>
   <div class="hdr-acts">
@@ -37,80 +37,74 @@
     </div>
   </div>
 
+  <!-- رأسُ الشاشة: الصفةُ من v2_me -->
+  <p class="role" id="roleLine" hidden><i class="dot"></i><span id="roleText"></span></p>
+
+  <!-- شريطُ النتيجة: نصُّه من القاعدة، ويبقى حتى الفعل التالي -->
+  <div class="flash" id="flash" hidden></div>
   <div class="notice err" id="loadErr" hidden></div>
   <div class="notice nostudy" id="noStudy" hidden></div>
+  <div class="notice closed" id="closedNote" hidden>هذا اليوم مقفَل — لا يُرصد فيه شيءٌ إلا بإعادة فتحٍ يقرّرها وكيلُ شؤون الطلاب بسببٍ مكتوب.</div>
 
-  <div class="filters tabs" role="tablist" id="tabs">
-    <button type="button" role="tab" id="tabArr" aria-pressed="true">الوصول المتأخر</button>
-    <button type="button" role="tab" id="tabDis" aria-pressed="false">تأخر الانصراف</button>
-  </div>
+  <!-- الأبوابُ الثلاثة بما في can — ولا بابَ لما لا تملكه -->
+  <div class="rs-pick" id="tabs" role="group" aria-label="الباب"></div>
+  <p class="rs-meta nocan" id="noCanTab" hidden></p>
 
-  <p class="hint nocan" id="noCanTab" hidden></p>
-
-  <!-- الوصول المتأخر — ض٠٥ -->
-  <section id="arrView">
-    <div class="notice closed" id="closedNote" hidden>هذا اليوم مقفَل — لا يُسجَّل فيه وصول إلا بإعادة فتح يقرّرها وكيل شؤون الطلاب بسبب مكتوب.</div>
-    <p class="hint">ض٠٥: في حال التأخر الصباحي يُدخَل الطالب إلى فصله مع إذن الموافقة، أو يُحوَّل إلى الموجّه الطلابي مباشرة.</p>
-    <input id="qArr" type="search" placeholder="ابحث بالاسم أو رقم الطالب" aria-label="بحث">
-    <h3 class="grp" id="waitTitle"></h3>
-    <div id="waitList"></div>
-    <h3 class="grp" id="lateTitle"></h3>
-    <div id="lateList"></div>
+  <!-- ① الاصطفاف — فصلًا فصلًا، والحالةُ ضغطةٌ واحدة -->
+  <section id="asmView" hidden>
+    <section class="rs-card">
+      <h3>الاصطفاف</h3>
+      <p class="rs-meta" id="asmProgress"></p>
+      <div class="rs-label">الفصل</div>
+      <div class="rs-pick" id="classes" role="group" aria-label="الفصل"></div>
+    </section>
+    <section class="rs-card" id="clsCard" hidden>
+      <div class="rs-hd"><h3 id="clsTitle"></h3><span class="rs-occ" id="clsState"></span></div>
+      <p class="rs-meta" id="clsCounts"></p>
+      <div class="rs-pick" id="filters" role="group" aria-label="التصنيف"></div>
+      <input id="qAsm" type="search" placeholder="ابحث بالاسم أو رقم الطالب" aria-label="بحث">
+      <div id="asmList"></div>
+      <div class="rs-row" id="clsNav"></div>
+    </section>
   </section>
 
-  <!-- تأخر الانصراف — ض٠٣ وض٠٦ -->
+  <!-- ② الوصول المتأخر — ض٠٥ -->
+  <section id="arrView" hidden>
+    <section class="rs-card">
+      <h3>الوصولُ المتأخّر</h3>
+      <p class="rs-meta">ض٠٥: يُدخَل الطالبُ فصلَه بإذن الموافقة، أو يُحوَّل إلى الموجّه الطلابيّ مباشرة.</p>
+      <input id="qArr" type="search" placeholder="ابحث بالاسم أو رقم الطالب" aria-label="بحث">
+      <div class="rs-label" id="waitTitle"></div>
+      <div id="waitList"></div>
+    </section>
+    <section class="rs-card">
+      <h3 id="lateTitle"></h3>
+      <div id="lateList"></div>
+    </section>
+  </section>
+
+  <!-- ③ تأخّر الانصراف — ض٠٣ وض٠٦ -->
   <section id="disView" hidden>
-    <p class="hint">ض٠٣: يُحصر المتأخرون بعد نهاية الدوام بخمس عشرة دقيقة · ض٠٦: وبعد ثلاثين دقيقة يُتخذ الإجراء المناسب. والعتبتان تحكم بهما القاعدة.</p>
-    <input id="qDis" type="search" placeholder="ابحث عن الطالب بالاسم أو الرقم" aria-label="بحث">
-    <div id="disList"></div>
-    <h3 class="grp" id="disDayTitle">انصرافات اليوم</h3>
-    <div class="notice err" id="disDayErr" hidden></div>
-    <div id="disDay"></div>
-    <h3 class="grp" id="disDoneTitle" hidden>رُصد في هذه الجلسة</h3>
-    <div id="disDone"></div>
+    <section class="rs-card">
+      <h3>تأخُّرُ الانصراف</h3>
+      <p class="rs-meta">ض٠٣: يُحصر المتأخّرون بعد نهاية الدوام بخمس عشرة دقيقة · ض٠٦: وبعد ثلاثين دقيقةً يُتّخذ الإجراء. والعتبتان تحكم بهما القاعدة.</p>
+      <input id="qDis" type="search" placeholder="ابحث عن الطالب بالاسم أو الرقم" aria-label="بحث">
+      <div id="disList"></div>
+    </section>
+    <section class="rs-card">
+      <h3 id="disDayTitle">انصرافاتُ اليوم</h3>
+      <div class="notice err" id="disDayErr" hidden></div>
+      <div id="disDay"></div>
+    </section>
   </section>
 </main>
-
-<!-- تسجيل الوصول -->
-<dialog id="arrDlg">
-  <form method="dialog">
-    <h3>تسجيل وصول متأخر</h3>
-    <p id="arrWho" class="name"></p>
-    <label for="arrTime">وقت الوصول</label>
-    <input id="arrTime" type="time" required>
-    <label>القرار — ض٠٥</label>
-    <label class="check"><input type="radio" name="arrDec" value="enter_class" checked> دخول الفصل بإذن الموافقة</label>
-    <label class="check"><input type="radio" name="arrDec" value="to_counselor"> تحويل إلى الموجّه الطلابي</label>
-    <label for="arrNote">ملاحظة (اختيارية)</label>
-    <textarea id="arrNote" rows="2"></textarea>
-    <div class="dlg-acts">
-      <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
-      <button value="ok" type="submit" class="btn-accept" id="arrOk">سجّل الوصول</button>
-    </div>
-  </form>
-</dialog>
-
-<!-- تسجيل تأخر الانصراف -->
-<dialog id="disDlg">
-  <form method="dialog">
-    <h3>تأخر عن الانصراف</h3>
-    <p id="disWho" class="name"></p>
-    <label for="disTime">وقت خروجه من المدرسة</label>
-    <input id="disTime" type="time" required>
-    <label for="disReason">السبب (اختياري)</label>
-    <textarea id="disReason" rows="2"></textarea>
-    <div class="dlg-acts">
-      <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
-      <button value="ok" type="submit" class="btn-accept" id="disOk">سجّل</button>
-    </div>
-  </form>
-</dialog>
 
 <div class="toast" id="toast" hidden></div>
 
 <script src="vendor/supabase-2.117.2.js"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
+<script src="views.js"></script>
 <script src="wusul.js"></script>
 </body>
 </html>
