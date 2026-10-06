@@ -227,9 +227,11 @@ ALTER TABLE v2.case_docs
 ALTER TABLE v2.case_docs
     ADD CONSTRAINT case_docs_task_id_fkey FOREIGN KEY (task_id) REFERENCES v2.behavior_tasks(id);
 
--- ── class_practices · md5 9217981631889d95ff365344d85ecde1
+-- ── class_practices · md5 5773b2457e9b29cced30dc27665ffef1
 ALTER TABLE v2.class_practices
     ADD CONSTRAINT class_practices_escalate_to_fkey FOREIGN KEY (escalate_to) REFERENCES v2.conduct_problems(id);
+ALTER TABLE v2.class_practices
+    ADD CONSTRAINT class_practices_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 
 -- ── class_sections · md5 f24bffd0f25514770da91d262aca2122
 ALTER TABLE v2.class_sections
@@ -650,6 +652,10 @@ ALTER TABLE v2.practice_records
     ADD CONSTRAINT practice_records_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id);
 ALTER TABLE v2.practice_records
     ADD CONSTRAINT practice_records_year_id_fkey FOREIGN KEY (year_id) REFERENCES v2.academic_years(id);
+
+-- ── practice_scopes · md5 3de2e79ccda3abfedd57b0a7304de9d1
+ALTER TABLE v2.practice_scopes
+    ADD CONSTRAINT practice_scopes_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 
 -- ── report_filers · md5 f8197dc364fc905bd1362f304591adeb
 ALTER TABLE v2.report_filers

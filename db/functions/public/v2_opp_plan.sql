@@ -1,5 +1,5 @@
 -- public.v2_opp_plan(p_opp uuid, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 976beac3b36a09ac0e286017438b7237
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 cb8a4f5f0ae3e976cc1cc67c566e241c
 CREATE OR REPLACE FUNCTION public.v2_opp_plan(p_opp uuid, p_note text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -11,7 +11,7 @@ begin
   select * into o from v2.merit_opportunities where id=p_opp;
   if o.id is null then raise exception 'الفرصةُ غيرُ موجودة'; end if;
   seat := v2.my_seat(o.school_id,'guidance');
-  if seat is null and v2.my_grant() not in ('owner','admin') then
+  if seat is null and v2.my_grant() is null or v2.my_grant() not in ('owner','admin') then
     raise exception 'مخطّطُ الفرصة للجنة التوجيه'; end if;
   select count(*) into pend from v2.merit_entries
    where opp_id=p_opp and verdict is not null and graded_at is null;

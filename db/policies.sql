@@ -595,6 +595,13 @@ CREATE POLICY pr_t ON v2.practice_records AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 
+-- ── practice_scopes · md5 a7172f1ed7523755896f3775ffcb9e0b
+CREATE POLICY ps_read ON v2.practice_scopes AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY ps_write ON v2.practice_scopes AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
+
 -- ── proc_cards · md5 6dc14d51196d0e863b0eab0b2aa4f6a5
 CREATE POLICY proc_cards_read ON v2.proc_cards AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
