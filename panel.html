@@ -212,7 +212,10 @@
   <label for="bdAccent">اللونُ الثانويّ</label><input id="bdAccent" type="color">
   <label for="bdHeader">الترويسة</label><textarea id="bdHeader" rows="2"></textarea>
   <label for="bdFooter">التذييل</label><textarea id="bdFooter" rows="2"></textarea>
-  <p class="hint">والحقلُ الفارغُ يُبقي ما كان — فالقاعدةُ لا تمحو حقلًا كُتب.</p>
+  <p class="hint">والحقلُ الفارغُ يُبقي ما كان. ولمحو حقلٍ اختره هنا:</p>
+  <label class="chk"><input id="bdClear_logo_path" type="checkbox"> امحُ الشعار</label>
+  <label class="chk"><input id="bdClear_header_ar" type="checkbox"> امحُ الترويسة</label>
+  <label class="chk"><input id="bdClear_footer_ar" type="checkbox"> امحُ التذييل</label>
   <div class="dlg-acts">
     <button value="cancel" type="submit" class="btn-ghost" formnovalidate>تراجع</button>
     <button value="ok" type="submit" class="btn-accept">احفظ</button>
@@ -271,6 +274,45 @@
   <div class="dlg-acts">
     <button value="cancel" type="submit" class="btn-ghost" formnovalidate>تراجع</button>
     <button value="ok" type="submit" class="btn-accept">قيّد الاستثناء</button>
+  </div>
+</form></dialog>
+
+<dialog id="commDlg"><form method="dialog">
+  <h3>لجنةٌ مدرسيّة</h3>
+  <p class="quote">اجتهادُ مدرسةٍ لا نصَّ لها في الدليل — يُنشئها المديرُ وحدَه. ولا لجنةَ بلا رئيسٍ ولا مقرّر.</p>
+  <label for="cmLabel">اسمُ اللجنة</label><input id="cmLabel" type="text" required>
+  <label for="cmPurpose">غرضُها</label><textarea id="cmPurpose" rows="2"></textarea>
+  <label for="cmChair">الرئيس — الوظيفة</label><select id="cmChair"></select>
+  <label for="cmRap">المقرّر — الوظيفة</label><select id="cmRap"></select>
+  <label for="cmMembers">عددُ الأعضاء (سوى الرئيس والمقرّر)</label><input id="cmMembers" type="number" min="1" value="3" inputmode="numeric" required>
+  <label class="chk"><input id="cmElected" type="checkbox"> الأعضاءُ منتخَبون</label>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost" formnovalidate>تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">أنشئ اللجنة</button>
+  </div>
+</form></dialog>
+
+<dialog id="commCloseDlg"><form method="dialog">
+  <h3>إيقافُ لجنة</h3>
+  <p class="quote" id="ccWhat"></p>
+  <p class="hint">لا تُحذف لجنةٌ بل تُوقف، ومحاضرُها باقية. ولا تُوقف ولها اجتماعٌ لم يُعتمد.</p>
+  <label for="ccReason">السبب — إلزاميّ</label><textarea id="ccReason" rows="3" required></textarea>
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost" formnovalidate>تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">أوقف اللجنة</button>
+  </div>
+</form></dialog>
+
+<dialog id="dutyDlg"><form method="dialog">
+  <h3>مهمّةُ لجنة</h3>
+  <p class="quote" id="duWhat"></p>
+  <label for="duText">نصُّ المهمّة</label><textarea id="duText" rows="3" required></textarea>
+  <label for="duCadence">الدوريّة</label>
+  <select id="duCadence"><option value=""></option><option>مستمرّة</option><option>شهريّة</option><option>فصليّة</option><option>سنويّة</option><option>عند الحاجة</option></select>
+  <label for="duOrd">الترتيب</label><input id="duOrd" type="number" min="0" inputmode="numeric">
+  <div class="dlg-acts">
+    <button value="cancel" type="submit" class="btn-ghost" formnovalidate>تراجع</button>
+    <button value="ok" type="submit" class="btn-accept">احفظ</button>
   </div>
 </form></dialog>
 

@@ -1,5 +1,5 @@
 -- public.v2_term_save(p_school uuid, p_year uuid, p_term uuid, p_number smallint, p_starts date, p_ends date, p_current boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 96e16f0eb13875fc3213ec0c1679615b
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 626248ecb651dfc65eaa5bca3f1f586b
 CREATE OR REPLACE FUNCTION public.v2_term_save(p_school uuid, p_year uuid, p_term uuid, p_number smallint, p_starts date, p_ends date, p_current boolean)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -24,10 +24,17 @@ begin
               and t.id is distinct from p_term
               and (p_starts, p_ends) overlaps (t.starts_on, t.ends_on)) then
     raise exception 'هذي المدّةُ تتداخل مع فصلٍ آخر'; end if;
+  -- 🔑 رقمٌ مكرّرٌ عند الإضافة والتعديل معًا
+  if exists (select 1 from v2.terms where year_id=p_year and number=p_number
+              and id is distinct from p_term) then
+    raise exception 'الفصلُ رقم % مسجَّلٌ سلفًا في هذي السنة', p_number; end if;
+
+  if coalesce(p_current,false) then
+    update v2.terms set is_current=false
+     where year_id=p_year and is_current and (p_term is null or id <> p_term);
+  end if;
 
   if p_term is null then
-    if exists (select 1 from v2.terms where year_id=p_year and number=p_number) then
-      raise exception 'الفصلُ رقم % مسجَّلٌ سلفًا في هذي السنة', p_number; end if;
     insert into v2.terms(year_id,number,starts_on,ends_on,is_current)
     values (p_year,p_number,p_starts,p_ends,coalesce(p_current,false))
     returning id into nid;
@@ -37,9 +44,6 @@ begin
     if not found then raise exception 'فصلٌ غيرُ موجودٍ في هذي السنة'; end if;
     nid := p_term;
   end if;
-
-  if coalesce(p_current,false) then
-    update v2.terms set is_current=false where year_id=p_year and id<>nid; end if;
   return jsonb_build_object('ok',true,'term',nid);
 end $function$
 ;

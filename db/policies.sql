@@ -190,6 +190,13 @@ CREATE POLICY class_sections_t ON v2.class_sections AS PERMISSIVE FOR ALL TO aut
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 
+-- ── committee_duties · md5 52fb8fab5661f7290190856477622c5e
+CREATE POLICY cd_read ON v2.committee_duties AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY cd_write ON v2.committee_duties AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
+
 -- ── committee_meetings · md5 6e3a22aeec7463f18a23829c25121ea4
 CREATE POLICY committee_meetings_tenant ON v2.committee_meetings AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))

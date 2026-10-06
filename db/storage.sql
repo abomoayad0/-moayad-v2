@@ -1,9 +1,16 @@
 -- storage.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── storage · md5 40ae5ec0cfea6ddb35d5160ff929bc62
+-- ── storage · md5 c0ef56cb1ee8ea52e787b786b7d873bd
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values ('v2-attachments', 'v2-attachments', false, 10485760, '{image/jpeg,image/png,image/webp,application/pdf}'::text[]) on conflict (id) do nothing;
 
+CREATE POLICY v2att_brand_read ON storage.objects AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((bucket_id = 'v2-attachments'::text) AND v2.brand_path_allows(name, false)));
+CREATE POLICY v2att_brand_update ON storage.objects AS PERMISSIVE FOR UPDATE TO authenticated
+    USING (((bucket_id = 'v2-attachments'::text) AND v2.brand_path_allows(name, true)))
+    WITH CHECK (((bucket_id = 'v2-attachments'::text) AND v2.brand_path_allows(name, true)));
+CREATE POLICY v2att_brand_write ON storage.objects AS PERMISSIVE FOR INSERT TO authenticated
+    WITH CHECK (((bucket_id = 'v2-attachments'::text) AND v2.brand_path_allows(name, true)));
 CREATE POLICY v2att_guardian_r ON storage.objects AS PERMISSIVE FOR SELECT TO authenticated
     USING (((bucket_id = 'v2-attachments'::text) AND v2.attachment_guardian_ok(name)));
 CREATE POLICY v2att_merit_read ON storage.objects AS PERMISSIVE FOR SELECT TO authenticated

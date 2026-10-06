@@ -4,7 +4,8 @@
 // v2_enrol_reasons · v2_guardians_of · v2_guardian_save · v2_accounts_board · v2_account_toggle · v2_portal_toggle · v2_school_card
 // v2_practices(p_school,…) · v2_practices_hidden · v2_practice_save · v2_practice_state · v2_practice_scopes · v2_scope_upsert · v2_committee_rules · v2_committee_rules_get
 // v2_brand_card · v2_brand_save · v2_stamp_save · v2_signature_save · v2_calendar_board · v2_year_save · v2_term_save
-// v2_structure_board · v2_structure_set · v2_exceptions_board · v2_exception_add · v2_reference(p_key)
+// v2_structure_board · v2_structure_set · v2_exceptions_board · v2_exception_add · v2_exception_kinds · v2_reference(p_key)
+// v2_brand_upload_path · v2_committees_list · v2_committee_create · v2_committee_close · v2_committee_duties · v2_committee_duty_save
 // المقفلُ يُقرأ بسببه وسنده ولا زرَّ تعديلٍ عليه. ومن يدخل اللوحة تحكم به القاعدة، ورفضُها يُعرض بنصّه.
 (function () {
   'use strict';
@@ -178,9 +179,6 @@
     box.appendChild(el('h3', 'grp', 'قواعد اللجان وسعة المقاعد'));
     const res = await Promise.all(COMMITTEES.map((k) =>
       M.rpc('v2_committee_board', { p_school: ui.school, p_committee: k }, 'مجلس اللجنة')));
-    // نصُّ النصاب (quorum_ar) من القاعدة كما هو — والمجلسُ لا يرجعه، فيُقرأ من قواعد اللجنة
-    const rules = await Promise.all(COMMITTEES.map((k) =>
-      M.rpc('v2_committee_rules_get', { p_school: ui.school, p_committee: k }, 'قراءة قواعد اللجنة')));
     res.forEach((r, i) => {
       const row = el('div', 'ev');
       if (r.error) { row.appendChild(el('div', 'notice err', COMMITTEES[i] + ': ' + errText(r.error))); box.appendChild(row); return; }
@@ -188,8 +186,8 @@
       const c = b.committee || {};
       row.appendChild(el('div', 'name', c.label || COMMITTEES[i]));
       // قواعدُ مدرستك كما يرجعها المجلس: النصابُ والردُّ عن بُعدٍ وحكمُ التعادل
-      const rl = rules[i];
-      row.appendChild(rl.error ? el('div', 'notice err', 'قواعدُ اللجنة: ' + errText(rl.error)) : el('div', 'meta', ruleText(rl.data || {})));
+      // نصُّ النصاب (quorum_ar) كما يرجعه المجلس — لا يُحسب هنا
+      row.appendChild(el('div', 'meta', ruleText({ quorum_ar: c.quorum_ar, quorum_mode: c.quorum_mode, quorum_min: c.quorum, allow_remote: c.allow_remote, tie_rule: c.tie_rule })));
       if (c.quorum_note) row.appendChild(el('div', 'meta', c.quorum_note));
       // سعةُ الدليل مقابل سعةِ مدرستك — تُعرض حين تختلفان
       for (const s of (b.seats || []).filter((x) => x.count_guide != null && Number(x.count) !== Number(x.count_guide))) {
@@ -810,10 +808,12 @@
   const POS_AR = { right: 'يمين', left: 'يسار', center: 'وسط' };
   const day = (d) => (d ? String(d).slice(0, 10) : '—');
 
-  // تُرفع الصورةُ إلى المخزن أوّلًا، ثمّ يُمرَّر مسارُها — ورفضُ المخزن يُعرض بنصّه ولا يُحفظ شيء
+  // المسارُ من القاعدة (v2_brand_upload_path) لا يُبنى هنا · تُرفع الصورةُ إليه ثمّ يُمرَّر — ورفضُ أيٍّ منهما يُعرض بنصّه ولا يُحفظ شيء
   async function uploadImage(file, kind) {
-    const safe = file.name.replace(/[^A-Za-z0-9._-]/g, '_');
-    const path = 'brand/' + ui.school + '/' + kind + '-' + Date.now() + '-' + safe;
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+    const { data: pd, error: pe } = await M.rpc('v2_brand_upload_path', { p_school: ui.school, p_kind: kind, p_ext: ext }, 'مسار رفع الصورة');
+    if (pe) { toast('لم تُرفع الصورة — ولم يُحفظ شيء:\n' + errText(pe)); return null; }
+    const path = pd && pd.path;
     const up = await M.sb.storage.from(BUCKET).upload(path, file, { upsert: false });
     if (up.error) {
       M.logError({ message: up.error.message, fn: 'storage.upload', action: 'رفع صورة ' + kind, params: { path } });
@@ -852,7 +852,8 @@
     st.appendChild(el('div', 'name', 'ختمُ المدرسة'));
     st.appendChild(c.stamp ? el('div', 'meta', c.stamp.image + ' · يسري من ' + day(c.stamp.from) + (c.stamp.to ? ' إلى ' + day(c.stamp.to) : ''))
       : el('div', 'meta', 'لا ختمَ نافذ'));
-    // السابقُ لا يُحذف — يُعرض بتاريخ انتهائه حين يرجعه الجسر
+    if (c.stamp_next) st.appendChild(el('div', 'meta', 'القادم: ' + c.stamp_next.image + ' · يسري من ' + day(c.stamp_next.from)));
+    // السابقُ لا يُحذف — يُعرض بتاريخ انتهائه
     pastLines(st, c.stamps_past);
     st.appendChild(btn('ختمٌ جديد', 'btn-ghost wide', () => newImage('stamp', box)));
     box.appendChild(st);
@@ -868,7 +869,7 @@
     box.appendChild(sg);
   }
   function pastLines(box, past) {
-    if (!Array.isArray(past)) { box.appendChild(el('div', 'meta nocan', 'السابقُ لا يرجعه v2_brand_card بعد — فلا يُعرض هنا.')); return; }
+    if (!Array.isArray(past) || !past.length) return;
     for (const p of past) box.appendChild(el('div', 'meta', 'سابق: ' + (p.name ? p.name + ' · ' : '') + p.image + ' · ' + day(p.from) + ' — انتهى ' + day(p.to)));
   }
 
@@ -882,15 +883,17 @@
     for (const id in colors) $(id).value = colors[id];
     $('bdHeader').value = b.header_ar || '';
     $('bdFooter').value = b.footer_ar || '';
+    for (const k of ['logo_path', 'header_ar', 'footer_ar']) $('bdClear_' + k).checked = false;
     if (await ask($('brandDlg')) !== 'ok') return;
     const changed = (id) => ($(id).value.toLowerCase() === colors[id].toLowerCase() ? null : $(id).value.toUpperCase());
     let logo = null;
     const f = $('bdLogo').files[0];
     if (f) { logo = await uploadImage(f, 'logo'); if (!logo) return; }
+    const clear = ['logo_path', 'header_ar', 'footer_ar'].filter((k) => $('bdClear_' + k).checked);
     const { error } = await M.rpc('v2_brand_save', {
       p_school: ui.school, p_logo_path: logo, p_logo_position: $('bdPos').value, p_show_ministry: $('bdMinistry').checked,
       p_primary: changed('bdPrimary'), p_accent: changed('bdAccent'),
-      p_header: val('bdHeader'), p_footer: val('bdFooter'),
+      p_header: val('bdHeader'), p_footer: val('bdFooter'), p_clear: clear.length ? clear : null,
     }, 'حفظ الهويّة البصريّة');
     if (error) { toast('لم تُحفظ الهويّة:\n' + errText(error)); return; }
     toast('حُفظت الهويّةُ البصريّة.', true);
@@ -900,7 +903,7 @@
   async function newImage(kind, box) {
     const isSig = kind === 'signature';
     $('imTitle').textContent = isSig ? 'توقيعٌ جديد' : 'ختمٌ جديد';
-    $('imWhat').textContent = isSig ? 'التوقيعُ شخصيّ: صاحبُه أو المديرُ وحدَهما.' : 'ختمُ المدرسة — للمدير وحدَه.';
+    $('imWhat').textContent = isSig ? 'التوقيعُ شخصيّ: يرفعه صاحبُه بنفسه، أو المدير.' : 'ختمُ المدرسة — للمدير وحدَه. ولا ختمان بتاريخٍ واحد.';
     $('imPersonBox').hidden = !isSig;
     $('imFile').value = '';
     $('imFrom').value = '';
@@ -915,7 +918,7 @@
     if (await ask($('imgDlg')) !== 'ok') return;
     const f = $('imFile').files[0];
     if (!f) { toast('اختر الصورة.'); return; }
-    const path = await uploadImage(f, kind);
+    const path = await uploadImage(f, isSig ? 'sign' : 'stamp');
     if (!path) return;
     const { data, error } = isSig
       ? await M.rpc('v2_signature_save', { p_school: ui.school, p_person: $('imPerson').value, p_image_ref: path, p_valid_from: val('imFrom') }, 'حفظ توقيع')
@@ -1004,14 +1007,17 @@
     const cur = c.current;
     box.appendChild(cur ? el('div', 'notice', 'النافذ: ' + cur.label + ' · وكلاؤه ' + (cur.deputies ?? '—') + (cur.source ? ' · السند: ' + cur.source : ''))
       : el('div', 'notice err', 'لم يُختر لمدرستك هيكلٌ بعد.'));
+    const outside = c.outside || [];
+    if (outside.length) box.appendChild(el('div', 'meta', (cur ? 'تكاليفُ خارجَ الهيكل النافذ: ' : 'تكاليفُ مدرستك القائمة: ') + outside.map((o) => o.label).join(' · ')));
     box.appendChild(el('h3', 'grp', 'الهياكلُ في الدليل التنظيميّ — اختيارُ المدير وحدَه'));
     for (const st of (c.all || [])) {
       const row = el('div', 'ev');
       const top = el('div', 'row1');
       const isCur = cur && cur.code === st.code;
-      top.append(el('div', 'name', st.label), el('span', 'badge ' + (isCur ? 'b-present' : 'b-permitted'), isCur ? 'النافذ' : st.posts + ' وظيفة'));
+      const orph = Number(st.orphans) || 0;
+      top.append(el('div', 'name', st.label), el('span', 'badge ' + (isCur ? 'b-present' : orph ? 'b-late' : 'b-permitted'), isCur ? 'النافذ' : orph ? 'يترك ' + orph + ' تكليفًا خارجَه' : 'يسع تكاليفَ مدرستك'));
       row.appendChild(top);
-      row.appendChild(el('div', 'meta', 'وكلاؤه ' + (st.deputies ?? '—') + (st.source ? ' · السند: ' + st.source : '')));
+      row.appendChild(el('div', 'meta', st.posts + ' وظيفة · وكلاؤه ' + (st.deputies ?? '—') + (st.source ? ' · السند: ' + st.source : '')));
       if (!isCur) row.appendChild(btn('اعتمد هذا الهيكل', 'btn-ghost wide', () => setStructure(st, box)));
       box.appendChild(row);
     }
@@ -1033,9 +1039,15 @@
   }
 
   // ----- سجلُّ الاستثناءات: يُقيَّد ولا يُمحى ولا يُعدَّل -----
-  // أنواعُه من قيد الجدول (exceptions_rule_kind_check) — ولا جسرَ يرجع أسماءها بعد
-  const EXC_KINDS = [['staffing', 'الملاك'], ['structure', 'الهيكل'], ['committee', 'اللجان'], ['inheritance', 'الإرث من النظام'], ['other', 'أخرى']];
-  const EXC_AR = Object.fromEntries(EXC_KINDS);
+  // أنواعُه من القاعدة (v2_exception_kinds) — لا تُكتب هنا
+  const exc = { kinds: null };
+  async function excKinds() {
+    if (exc.kinds) return exc.kinds;
+    const { data, error } = await M.rpc('v2_exception_kinds', undefined, 'أنواع الاستثناء');
+    if (error) { toast('تعذّر جلب أنواع الاستثناء:\n' + errText(error)); return []; }
+    exc.kinds = data || [];
+    return exc.kinds;
+  }
 
   async function exceptionsTool(box) {
     box.textContent = '';
@@ -1045,11 +1057,12 @@
     const { data, error } = await M.rpc('v2_exceptions_board', { p_school: ui.school }, 'سجل الاستثناءات');
     if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
     const rows = data || [];
+    const ar = Object.fromEntries((await excKinds()).map((k) => [k.key, k.label]));
     box.appendChild(el('div', 'meta', rows.length ? rows.length + ' استثناءً — الأحدثُ أوّلًا' : 'لا استثناءَ مقيَّد.'));
     for (const x of rows) {
       const row = el('div', 'ev');
       const top = el('div', 'row1');
-      top.append(el('div', 'name', (EXC_AR[x.rule_kind] || x.rule_kind) + (x.rule_ref ? ' · ' + x.rule_ref : '')),
+      top.append(el('div', 'name', (ar[x.rule_kind] || x.rule_kind) + (x.rule_ref ? ' · ' + x.rule_ref : '')),
         el('span', 'badge b-late', String(x.decided_at || '').slice(0, 16).replace('T', ' ')));
       row.appendChild(top);
       row.appendChild(el('div', 'meta', 'النظام: ' + x.system_says));
@@ -1062,7 +1075,7 @@
 
   async function addException(box) {
     const sel = $('exKind');
-    if (!sel.options.length) for (const [k, l] of EXC_KINDS) sel.appendChild(new Option(l, k));
+    if (!sel.options.length) for (const k of await excKinds()) sel.appendChild(new Option(k.label, k.key));
     for (const id of ['exRef', 'exSays', 'exDoes', 'exReason', 'exSource']) $(id).value = '';
     if (await ask($('excDlg')) !== 'ok') return;
     const { data, error } = await M.rpc('v2_exception_add', {
@@ -1072,6 +1085,113 @@
     if (error) { toast('لم يُقيَّد:\n' + errText(error)); return; }
     toast((data && data.note) || 'قُيّد الاستثناء.', true);
     exceptionsTool(box);
+  }
+
+  // ----- لجانُ المدرسة: السبعُ الوزاريّةُ تُقرأ، ولجنةُ المدرسة يُنشئها المديرُ ويوقفها ولا تُحذف -----
+  async function committeesTool(box) {
+    box.textContent = '';
+    if (noSchool(box)) return;
+    box.appendChild(btn('أنشئ لجنةً مدرسيّة', 'btn-accept wide', () => createCommittee(box)));
+    const { data, error } = await M.rpc('v2_committees_list', { p_school: ui.school }, 'لجان المدرسة');
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    for (const c of (data || [])) {
+      const row = el('div', 'ev');
+      const top = el('div', 'row1');
+      top.append(el('div', 'name', c.label), el('span', 'badge ' + (c.mine ? 'b-late' : 'b-permitted'), c.mine ? 'لجنةُ المدرسة' : 'وزاريّة'));
+      row.appendChild(top);
+      if (c.purpose) row.appendChild(el('div', 'meta', c.purpose));
+      row.appendChild(el('div', 'meta', 'أعضاء ' + c.members + ' · مهامّ ' + c.duties + ' · اجتماعات ' + c.meetings +
+        (Number(c.open_tasks) ? ' · قراراتٌ لم تُنفَّذ ' + c.open_tasks : '')));
+      if (c.source) row.appendChild(el('div', 'meta', 'السند: ' + c.source));
+      if (c.mine) row.appendChild(btn('أوقف اللجنة', 'btn-ghost wide', () => closeCommittee(c, box)));
+      else row.appendChild(el('div', 'meta nocan', 'بنصّ الدليل — لا تُنشأ ولا تُوقف.'));
+      box.appendChild(row);
+    }
+  }
+
+  async function createCommittee(box) {
+    const posts = await loadPosts();
+    for (const id of ['cmChair', 'cmRap']) {
+      const sel = $(id);
+      sel.textContent = '';
+      for (const p of posts) sel.appendChild(new Option(p.label, p.key));
+    }
+    if (posts.some((p) => p.key === 'principal')) $('cmChair').value = 'principal';
+    if (posts.some((p) => p.key === 'counselor')) $('cmRap').value = 'counselor';
+    $('cmLabel').value = ''; $('cmPurpose').value = ''; $('cmMembers').value = '3'; $('cmElected').checked = false;
+    if (await ask($('commDlg')) !== 'ok') return;
+    // المقاعد: رئيسٌ ومقرّرٌ بوظيفتيهما، وأعضاءٌ بعددهم — والقاعدةُ ترفض لجنةً بلا رئيسٍ أو مقرّر
+    const seats = [
+      { seat_role: 'chair', post_key: $('cmChair').value, seat_count: 1, ord: 1 },
+      { seat_role: 'rapporteur', post_key: $('cmRap').value, seat_count: 1, ord: 2 },
+      { seat_role: 'member', seat_count: num('cmMembers') || 1, is_elected: $('cmElected').checked, ord: 3 },
+    ];
+    const { data, error } = await M.rpc('v2_committee_create', {
+      p_school: ui.school, p_key: null, p_label: val('cmLabel'), p_purpose: val('cmPurpose'), p_seats: seats,
+    }, 'إنشاء لجنة');
+    if (error) { toast('لم تُنشأ اللجنة:\n' + errText(error)); return; }
+    toast('أُنشئت اللجنة — مقاعدُها ' + (data && data.seats) + '.', true);
+    committeesTool(box);
+  }
+
+  async function closeCommittee(c, box) {
+    $('ccWhat').textContent = c.label;
+    $('ccReason').value = '';
+    if (await ask($('commCloseDlg')) !== 'ok') return;
+    const { data, error } = await M.rpc('v2_committee_close', { p_school: ui.school, p_committee: c.key, p_reason: val('ccReason') }, 'إيقاف لجنة');
+    if (error) { toast('لم تُوقف اللجنة:\n' + errText(error)); return; }
+    toast((data && data.note) || 'أُوقفت اللجنة.', true);
+    committeesTool(box);
+  }
+
+  // ----- مهامُّ اللجان: ما نصّ عليه الدليلُ يُقرأ، وما أضافته المدرسةُ يُعدَّل -----
+  const duty = { committee: '' };
+  async function dutiesTool(box) {
+    box.textContent = '';
+    if (noSchool(box)) return;
+    const { data: list, error: e0 } = await M.rpc('v2_committees_list', { p_school: ui.school }, 'لجان المدرسة');
+    if (e0) { box.appendChild(el('div', 'notice err', errText(e0))); return; }
+    const sel = document.createElement('select');
+    for (const c of (list || [])) sel.appendChild(new Option(c.label + ' (' + c.duties + ')', c.key));
+    if (!duty.committee && list && list.length) duty.committee = list[0].key;
+    sel.value = duty.committee;
+    sel.addEventListener('change', () => { duty.committee = sel.value; dutiesTool(box); });
+    const bar = el('div', 'prow');
+    bar.appendChild(sel);
+    box.appendChild(bar);
+    if (!duty.committee) return;
+    const label = ((list || []).find((c) => c.key === duty.committee) || {}).label || duty.committee;
+    box.appendChild(btn('أضف مهمّةً لمدرستك', 'btn-accept wide', () => editDuty(null, label, box)));
+    const { data, error } = await M.rpc('v2_committee_duties', { p_school: ui.school, p_committee: duty.committee }, 'مهامّ اللجنة');
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const rows = data || [];
+    if (!rows.length) box.appendChild(el('div', 'meta', 'لا مهامَّ مسجَّلة لهذي اللجنة.'));
+    for (const d of rows) {
+      const row = el('div', 'ev');
+      const top = el('div', 'row1');
+      top.append(el('div', 'name', (d.ord != null ? d.ord + '. ' : '') + d.text), el('span', 'badge ' + (d.mine ? 'b-late' : 'b-permitted'), d.mine ? 'أضافتها مدرستُك' : 'بنصّ الدليل'));
+      row.appendChild(top);
+      row.appendChild(el('div', 'meta', 'الدوريّة: ' + (d.cadence || '—') + (d.source ? ' · السند: ' + d.source : '') +
+        (Number(d.done_this_term) ? ' · بنودٌ معتمدةٌ تشبهها: ' + d.done_this_term : '')));
+      if (d.mine) row.appendChild(btn('عدّلها', 'btn-ghost wide', () => editDuty(d, label, box)));
+      else row.appendChild(el('div', 'meta nocan', '🔒 تُقرأ ولا تُعدَّل.'));
+      box.appendChild(row);
+    }
+  }
+
+  async function editDuty(d, label, box) {
+    $('duWhat').textContent = label + (d ? '' : ' — مهمّةٌ جديدة');
+    $('duText').value = d ? d.text : '';
+    $('duCadence').value = d && d.cadence ? d.cadence : '';
+    $('duOrd').value = d && d.ord != null ? d.ord : '';
+    if (await ask($('dutyDlg')) !== 'ok') return;
+    const { data, error } = await M.rpc('v2_committee_duty_save', {
+      p_school: ui.school, p_committee: duty.committee, p_duty: d ? d.id : null,
+      p_text: val('duText'), p_cadence: val('duCadence'), p_ord: num('duOrd'),
+    }, 'حفظ مهمّة لجنة');
+    if (error) { toast('لم تُحفظ المهمّة:\n' + errText(error)); return; }
+    toast('المهمّة ' + ((data && data.mode) || 'حُفظت') + '.', true);
+    dutiesTool(box);
   }
 
   // ----- المراجعُ الأربعة: تُقرأ ولا تُعدَّل -----
@@ -1140,6 +1260,7 @@
     staff: staffTool, assignments_panel: staffTool, students: studentsTool, guardians: studentsTool,
     accounts: accountsTool, school_card: schoolCardTool,
     branding: brandTool, calendar: calendarTool, structure: structureTool, exceptions: exceptionsTool,
+    committees_school: committeesTool, committee_duties: dutiesTool,
   };
 
   $('sReason').addEventListener('input', () => { $('sOk').disabled = $('sReason').value.trim() === ''; });

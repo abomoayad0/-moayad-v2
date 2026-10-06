@@ -241,6 +241,12 @@ ALTER TABLE v2.class_sections
 ALTER TABLE v2.class_sections
     ADD CONSTRAINT class_sections_year_id_fkey FOREIGN KEY (year_id) REFERENCES v2.academic_years(id);
 
+-- ── committee_duties · md5 ed7c68c4657b2ed734ea96d5ce662fb1
+ALTER TABLE v2.committee_duties
+    ADD CONSTRAINT committee_duties_committee_key_fkey FOREIGN KEY (committee_key) REFERENCES v2.committees(key);
+ALTER TABLE v2.committee_duties
+    ADD CONSTRAINT committee_duties_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+
 -- ── committee_meetings · md5 6ea7be02b942b0058ea338cb07ee703e
 ALTER TABLE v2.committee_meetings
     ADD CONSTRAINT committee_meetings_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES v2.people(id);
@@ -278,6 +284,12 @@ ALTER TABLE v2.committee_seats
     ADD CONSTRAINT committee_seats_committee_key_fkey FOREIGN KEY (committee_key) REFERENCES v2.committees(key);
 ALTER TABLE v2.committee_seats
     ADD CONSTRAINT committee_seats_post_key_fkey FOREIGN KEY (post_key) REFERENCES v2.posts(key);
+
+-- ── committees · md5 aaf58edf798a5f5d23837e1d5d710222
+ALTER TABLE v2.committees
+    ADD CONSTRAINT committees_created_by_fkey FOREIGN KEY (created_by) REFERENCES v2.people(id);
+ALTER TABLE v2.committees
+    ADD CONSTRAINT committees_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 
 -- ── conduct_action_items · md5 18860552c03b25be6670eff55126661b
 ALTER TABLE v2.conduct_action_items
@@ -557,7 +569,11 @@ ALTER TABLE v2.meeting_attendance
 ALTER TABLE v2.meeting_attendance
     ADD CONSTRAINT meeting_attendance_person_id_fkey FOREIGN KEY (person_id) REFERENCES v2.people(id);
 
--- ── meeting_items · md5 850968e70af7d792c7718dc6487b369c
+-- ── meeting_items · md5 6b787567582e0a652395e6757549ac4d
+ALTER TABLE v2.meeting_items
+    ADD CONSTRAINT meeting_items_carried_from_fkey FOREIGN KEY (carried_from) REFERENCES v2.meeting_items(id);
+ALTER TABLE v2.meeting_items
+    ADD CONSTRAINT meeting_items_done_by_fkey FOREIGN KEY (done_by) REFERENCES v2.people(id);
 ALTER TABLE v2.meeting_items
     ADD CONSTRAINT meeting_items_meeting_id_fkey FOREIGN KEY (meeting_id) REFERENCES v2.committee_meetings(id) ON DELETE CASCADE;
 ALTER TABLE v2.meeting_items
