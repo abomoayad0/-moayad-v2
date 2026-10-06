@@ -1,5 +1,5 @@
 -- v2.fn_record_arrival(p_student uuid, p_date date, p_arrived time without time zone, p_decision text, p_term smallint, p_by uuid, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 7f4e5fb6fc92bf48531626e16dab52ef
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 b0884c717b6a78137483d8bb4c329d38
 CREATE OR REPLACE FUNCTION v2.fn_record_arrival(p_student uuid, p_date date, p_arrived time without time zone, p_decision text DEFAULT 'enter_class'::text, p_term smallint DEFAULT 1, p_by uuid DEFAULT NULL::uuid, p_note text DEFAULT NULL::text)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -23,6 +23,11 @@ begin
 
   v_role := coalesce(v2.role_ar(v2.my_role()),'المناوب');
   select * into st from v2.day_settings where school_id=v_school;
+  if st.late_cutoff_at is not null and p_arrived > st.late_cutoff_at then
+    raise exception 'وصل الساعةَ % وحدُّ التأخّر في مدرستك % — فيُسجَّل غائبًا لا متأخّرًا%',
+      p_arrived, st.late_cutoff_at,
+      case when st.late_cutoff_note is null then '' else ' · '||st.late_cutoff_note end;
+  end if;
   mins := greatest(0, (extract(epoch from (p_arrived - st.assembly_at))/60)::int - st.late_grace_min);
   insert into v2.entry_permits(school_id,student_id,on_date,arrived_at,minutes_late,decision,issued_by,note)
   values (v_school,p_student,p_date,p_arrived,mins,p_decision,coalesce(p_by,v2.current_person()),p_note)

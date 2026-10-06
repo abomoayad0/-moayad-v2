@@ -2,6 +2,7 @@
 // الاصطفاف (record_assembly) · الوصولُ المتأخّر (record_arrival) · تأخّرُ الانصراف (record_dismissal) — كلُّ بابٍ بمفتاحه في can.
 // الأعدادُ والحالاتُ والدقائقُ والعتباتُ والإجراءُ كلُّها من القاعدة:
 // v2_day_summary · v2_day_classes · v2_day_list · v2_day_dismissals · v2_record_assembly · v2_record_arrival · v2_record_dismissal
+// v2_day_rules (رأسُ باب الوصول) · v2_arrival_check (قبل حفظ الوصول — والحالُ منه لا من الشاشة)
 (function () {
   'use strict';
 
@@ -17,7 +18,7 @@
   const DECISION_AR = Object.fromEntries(DECISIONS);
   const TABS = [['asm', 'الاصطفاف', 'record_assembly', 'رصد الاصطفاف'], ['arr', 'الوصول', 'record_arrival', 'تسجيل الوصول المتأخّر'], ['dis', 'الانصراف', 'record_dismissal', 'رصد تأخّر الانصراف']];
 
-  const ui = { summary: null, classes: [], rows: [], dis: [], disErr: '', tab: null, cls: null, filter: 'all', busy: new Set() };
+  const ui = { rules: null, rulesErr: '', summary: null, classes: [], rows: [], dis: [], disErr: '', tab: null, cls: null, filter: 'all', busy: new Set() };
   const can = (k) => !!(M.state.me && M.state.me.can && M.state.me.can[k]);
   const owned = () => TABS.filter((t) => can(t[2]));
   const nowHM = () => new Date().toTimeString().slice(0, 5);
@@ -33,11 +34,12 @@
     if (!M.state.school || !M.state.date) return;
     showLoadErr('');
     const a = { p_school: M.state.school, p_date: M.state.date };
-    const [sum, cls, list, dis] = await Promise.all([
+    const [sum, cls, list, dis, rules] = await Promise.all([
       M.rpc('v2_day_summary', a, 'ملخّص اليوم'),
       M.rpc('v2_day_classes', a, 'فصول اليوم'),
       M.rpc('v2_day_list', a, 'طلّاب اليوم'),
       can('record_dismissal') ? M.rpc('v2_day_dismissals', a, 'انصرافات اليوم') : Promise.resolve({ data: [] }),
+      can('record_arrival') ? M.rpc('v2_day_rules', { p_school: M.state.school }, 'قواعد اليوم') : Promise.resolve({ data: null }),
     ]);
     const err = sum.error || cls.error || list.error;
     if (err) { showLoadErr('تعذّر جلب اليوم: ' + errText(err)); return; }
@@ -46,6 +48,8 @@
     ui.rows = list.data || [];
     ui.disErr = dis.error ? 'تعذّر جلب انصرافات اليوم: ' + errText(dis.error) : '';
     ui.dis = dis.data || [];
+    ui.rules = rules.data || null;
+    ui.rulesErr = rules.error ? errText(rules.error) : '';
     if (ui.cls && !ui.classes.some((c) => classKey(c) === ui.cls)) ui.cls = null;
     render();
   }
@@ -143,7 +147,22 @@
     return f;
   }
 
+  // قواعدُ اليوم كما رجعت — الأوقاتُ بساعتها ودقيقتها
+  const hm = (t) => (t ? String(t).slice(0, 5) : '—');
+  function renderRules() {
+    const p = $('dayRules');
+    const d = ui.rules;
+    p.hidden = !d && !ui.rulesErr;
+    if (ui.rulesErr) { p.textContent = 'تعذّر جلب قواعد اليوم: ' + ui.rulesErr; return; }
+    if (!d) return;
+    p.textContent = '';
+    p.append('الاصطفاف ' + hm(d.assembly_at) + ' · المهلة ' + (d.grace_min || 0) + ' دقيقة · ', el('b', null, 'حدُّ التأخّر ' + hm(d.late_cutoff_at)),
+      ' — بعده يُسجَّل غائبًا' + (d.late_cutoff_note ? ' · ' + d.late_cutoff_note : ''));
+    arabize(p);
+  }
+
   function renderArrivals() {
+    renderRules();
     const q = $('qArr').value;
     const go = open();
     const wait = ui.rows.filter((r) => (r.state === 'absent' || r.state === 'unrecorded') && matches(r, q));
@@ -174,9 +193,37 @@
       ],
       ok: 'سجّل الوصول',
       onOk: async (v) => {
+        // الحالُ من القاعدة قبل الحفظ (v2_arrival_check) — ولا تُحسب في الشاشة
+        if (v.at) {
+          const { data: c, error: ce } = await M.rpc('v2_arrival_check', { p_school: M.state.school, p_at: v.at }, 'التحقّق من الوصول');
+          if (ce) return ce;
+          if (c && c.can_record_arrival === false) { setTimeout(() => notLateForm(r, v.at, c), 0); return null; }
+        }
         const { error } = await M.rpc('v2_record_arrival', { p_student: r.student_id, p_date: M.state.date, p_arrived: v.at || null, p_decision: v.dec || null, p_note: v.note || null }, 'تسجيل الوصول');
         if (error) return error;
         V.flash('ok', 'سُجّل وصولُ ' + nameOf(r) + ' — ' + (DECISION_AR[v.dec] || v.dec));
+        await refresh();
+        return null;
+      },
+    });
+  }
+
+  // لا يُسجَّل وصولًا متأخّرًا: يُعرض why كما رجع، وبدلُه — إن كان غائبًا — تسجيلُ الغياب بالاصطفاف (not_arrived) لمن يملكه
+  function notLateForm(r, at, c) {
+    const absent = c.state === 'absent';
+    const mayAbsent = absent && can('record_assembly');
+    V.form({
+      title: 'لا يُسجَّل وصولًا متأخّرًا', what: nameOf(r) + ' · وصل ' + at + ' · ' + (c.why || c.state_ar || ''),
+      fields: [],
+      ok: mayAbsent ? 'سجّله غائبًا' : 'حسنًا',
+      onOk: async () => {
+        if (!mayAbsent) {
+          if (absent) V.flash('bad', (c.why || '') + ' · ' + M.lacks('رصد الاصطفاف'));
+          return null;
+        }
+        const { error } = await M.rpc('v2_record_assembly', { p_student: r.student_id, p_date: M.state.date, p_state: 'not_arrived' }, 'تسجيل الغياب');
+        if (error) return error;
+        V.flash('ok', 'سُجّل ' + nameOf(r) + ' غائبًا — ' + (c.why || ''));
         await refresh();
         return null;
       },
