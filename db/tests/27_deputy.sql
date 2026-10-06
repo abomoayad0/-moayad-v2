@@ -33,6 +33,7 @@ do $$ declare s record; r text; begin
     perform set_config('t.s'||s.n, s.l||' ⇐ '||r, true);
   end loop; end $$;
 
+-- الإصدار ٤: أُعيد بنصّه بعد إصلاح إعادة الفتح وموضع الزيادة — ولم يتغيّر فيه شيء.
 -- الإصدار ٣: أصلحت القاعدةُ علّةَ السطر ٣ (الآليُّ يتخطّى من رُصد عليه يدويًّا ويضيف تأخّرَه إلى ملاحظة رصدته) — فالسطر ٣ هو فحصُ الإصلاح، وهنا ما بعده.
 do $$ declare s record; r text; begin
   for s in select * from (values

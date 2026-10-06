@@ -479,9 +479,6 @@
       ],
       ok: 'أثبته',
       onOk: async (v) => {
-        // حارسُ القاعدة (p_channel not in …) لا يقع على الفارغ، فيصل رفضُ القيد بالإنجليزيّة (فحص ٣٠ · ٣) — فلا يُرسل بلاهما
-        if (!v.channel) return { message: 'اختر الوسيلة' };
-        if (!v.outcome) return { message: 'اختر النتيجة' };
         const { data, error } = await M.rpc('v2_contact_log', {
           p_student: stu.student_id, p_task: v.task || null, p_channel: v.channel, p_outcome: v.outcome,
           p_summary: v.summary, p_guardian_say: v.say, p_at: v.at,

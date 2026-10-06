@@ -1,4 +1,5 @@
 -- فحص ٣٠ · ما أصلحته القاعدة: حرّاسُ الوقت العربيّة · v2_forms_catalog · مفتاحا jadwal و delegation.
+-- الإصدار ٢: أصلحت القاعدةُ حارسَ الوسيلة والنتيجة (is null) — فأُعيد مرّةً، وأُضيف السطر ٨ (بلا نتيجة).
 -- كلُّه داخل begin … rollback. الهويّات: مفرح (وكيلُ شؤون الطلاب) · سعيد (الموجّه). لا حسابَ يُمسّ ولا حذف.
 begin;
 set local lock_timeout = '5s';
@@ -15,7 +16,8 @@ do $$ declare s record; r text; begin
     (3, 'مفرح · اتّصالٌ بلا وسيلة', $q$select public.v2_contact_log(current_setting('t.stu')::uuid,null,null,'لم يردّ','فحص',null,null)::text$q$),
     (4, 'مفرح · كتالوجُ النماذج', $q$select jsonb_array_length(r)||' ‖ '||(select string_agg(g||' '||c,' · ') from (select x->>'group' g, count(*) c from jsonb_array_elements(r) x group by 1 order by 1) z)||' ‖ '||(r->0)::text from (select public.v2_forms_catalog(current_setting('t.school')::uuid) r) z$q$),
     (5, 'مفرح · كتالوجُ مدرسةٍ ليست له', $q$select jsonb_array_length(public.v2_forms_catalog('00000000-0000-0000-0000-000000000000'::uuid))::text$q$),
-    (6, 'مفرح · المفاتيح', $q$select 'jadwal='||coalesce(r->'can'->>'jadwal','—')||' · delegation='||coalesce(r->'can'->>'delegation','—')||' · manage_settings='||coalesce(r->'can'->>'manage_settings','—')||' · fill_form='||coalesce(r->'can'->>'fill_form','—')||' · wakeel='||coalesce(r->'can'->>'wakeel','—') from (select public.v2_me() r) z$q$)
+    (6, 'مفرح · المفاتيح', $q$select 'jadwal='||coalesce(r->'can'->>'jadwal','—')||' · delegation='||coalesce(r->'can'->>'delegation','—')||' · manage_settings='||coalesce(r->'can'->>'manage_settings','—')||' · fill_form='||coalesce(r->'can'->>'fill_form','—')||' · wakeel='||coalesce(r->'can'->>'wakeel','—') from (select public.v2_me() r) z$q$),
+    (8, 'مفرح · اتّصالٌ بلا نتيجة', $q$select public.v2_contact_log(current_setting('t.stu')::uuid,null,'هاتف',null,'فحص',null,null)::text$q$)
   ) v(n,l,q) order by n loop
     begin execute s.q into r; r := 'نفذ: '||coalesce(r,'—');
     exception when others then r := 'رُفض: '||sqlerrm; end;
@@ -31,5 +33,5 @@ do $$ declare r text; begin
   perform set_config('t.s7', 'سعيد · المفاتيح ⇐ '||r, true);
 end $$;
 reset role;
-select n::text as "#", left(current_setting('t.s'||n),900) as النتيجة from generate_series(1,7) n;
+select n::text as "#", left(current_setting('t.s'||n),600) as النتيجة from generate_series(1,8) n;
 rollback;

@@ -1,5 +1,5 @@
 -- v2.fn_close_day_inner(p_school uuid, p_date date, p_by uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 346d796be067481baf6ce4d33957526f
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 dcce2c5b37c869e8aa45cefd08f27919
 CREATE OR REPLACE FUNCTION v2.fn_close_day_inner(p_school uuid, p_date date, p_by uuid DEFAULT NULL::uuid)
  RETURNS TABLE("المقيدون" integer, "المرصودون" integer, "غياب" integer, "تأخر" integer, "مشتق" integer, "لم_يُرصد" integer, "أحداث" integer)
  LANGUAGE plpgsql
@@ -49,11 +49,6 @@ begin
     if st.state='absent' then
       n_abs := n_abs + 1;
       perform v2.fn_apply_absence(st.student_id, p_date, st.term_no, p_by);
-      update v2.behavior_records br set note = coalesce(br.note,'')||
-          ' · ومعها تأخّرٌ '||v2.ar_num(coalesce(st.minutes_from_assembly,0))||' دقيقة (رصدٌ آليٌّ عند الإقفال)'
-        where br.student_id=st.student_id and br.problem_id=v_prob
-          and br.status<>'voided' and br.created_at::date=current_date
-          and coalesce(br.note,'') not like '%رصدٌ آليٌّ عند الإقفال%';
       insert into v2.events(school_id,kind,on_date,student_id,title_ar,body_ar,ref_table,ref_id,needs_action,action_ar)
       values (p_school,'absence_report',p_date,st.student_id,'بلاغ غياب',
         'غاب ابنكم اليوم عن الدراسة. ولكم ثلاثة أيام عمل لتقديم العذر مع ما يثبته — م31 بند 6.',
@@ -66,18 +61,23 @@ begin
       n_late := n_late + 1;
       select id into v_prob from v2.conduct_problems where stage_scope=v_scope and mode='onsite'
         and target='general' and text_ar like 'التأخر الصباحي%' limit 1;
-      if v_prob is not null
+      if v_prob is not null and exists (select 1 from v2.behavior_records br
+            where br.student_id=st.student_id and br.problem_id=v_prob
+              and br.status<>'voided' and br.occurred_on=p_date
+              and br.note is distinct from null
+              and br.note not like '%رصد آلي عند إقفال اليوم%') then
+        update v2.behavior_records br set note = coalesce(br.note,'')||
+            ' · ومعها تأخّرٌ '||v2.ar_num(coalesce(st.minutes_from_assembly,0))||' دقيقة (قيسَ عند الإقفال)'
+          where br.student_id=st.student_id and br.problem_id=v_prob
+            and br.status<>'voided' and br.occurred_on=p_date
+            and coalesce(br.note,'') not like '%قيسَ عند الإقفال%';
+      elsif v_prob is not null
          and not exists (select 1 from v2.behavior_records br
                           where br.student_id=st.student_id and br.problem_id=v_prob
-                            and br.status<>'voided' and br.created_at::date=current_date) then
+                            and br.status<>'voided' and br.occurred_on=p_date) then
         perform v2.fn_record_behavior(st.student_id,v_prob,st.term_no,null,'الاصطفاف',
           'تأخر صباحي '||coalesce(st.minutes_from_assembly,0)||' دقيقة — رصد آلي عند إقفال اليوم',null,false,false,false,false,p_by);
       end if;
-      update v2.behavior_records br set note = coalesce(br.note,'')||
-          ' · ومعها تأخّرٌ '||v2.ar_num(coalesce(st.minutes_from_assembly,0))||' دقيقة (رصدٌ آليٌّ عند الإقفال)'
-        where br.student_id=st.student_id and br.problem_id=v_prob
-          and br.status<>'voided' and br.created_at::date=current_date
-          and coalesce(br.note,'') not like '%رصدٌ آليٌّ عند الإقفال%';
       insert into v2.events(school_id,kind,on_date,student_id,title_ar,body_ar,ref_table,ref_id)
       values (p_school,'late_report',p_date,st.student_id,'تأخر صباحي',
         'حضر ابنكم اليوم متأخراً '||coalesce(st.minutes_from_assembly,0)||' دقيقة عن الاصطفاف الصباحي.',
@@ -91,10 +91,20 @@ begin
     if st.assembly_state in ('missed_inside','late_inside') then
       select id into v_prob from v2.conduct_problems where stage_scope=v_scope and mode='onsite' and target='general'
         and text_ar like case st.assembly_state when 'missed_inside' then 'عدم حضور الاصطفاف%' else 'التأخر عن الاصطفاف%' end limit 1;
-      if v_prob is not null
+      if v_prob is not null and exists (select 1 from v2.behavior_records br
+            where br.student_id=st.student_id and br.problem_id=v_prob
+              and br.status<>'voided' and br.occurred_on=p_date
+              and br.note is distinct from null
+              and br.note not like '%رصد آلي عند إقفال اليوم%') then
+        update v2.behavior_records br set note = coalesce(br.note,'')||
+            ' · ومعها تأخّرٌ '||v2.ar_num(coalesce(st.minutes_from_assembly,0))||' دقيقة (قيسَ عند الإقفال)'
+          where br.student_id=st.student_id and br.problem_id=v_prob
+            and br.status<>'voided' and br.occurred_on=p_date
+            and coalesce(br.note,'') not like '%قيسَ عند الإقفال%';
+      elsif v_prob is not null
          and not exists (select 1 from v2.behavior_records br
                           where br.student_id=st.student_id and br.problem_id=v_prob
-                            and br.status<>'voided' and br.created_at::date=current_date) then
+                            and br.status<>'voided' and br.occurred_on=p_date) then
         perform v2.fn_record_behavior(st.student_id,v_prob,st.term_no,null,'الاصطفاف',
           'رصد آلي عند إقفال اليوم',null,false,false,false,false,p_by);
       end if;

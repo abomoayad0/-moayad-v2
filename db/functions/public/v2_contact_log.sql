@@ -1,5 +1,5 @@
 -- public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 38fa2479e73d0a6af32ec3e0828d98e0
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 dec8c4464b886caf990a9109d5899dc1
 CREATE OR REPLACE FUNCTION public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -11,8 +11,12 @@ begin
   perform v2.assert_role(array['deputy_students','deputy','principal','counselor',
       'admin_assistant','admin_assistant_students'],'إثباتَ الاتّصال بوليّ الأمر');
   perform v2.assert_my_student(p_student,'إثبات الاتصال');
+  if p_channel is null or btrim(p_channel)='' then
+    raise exception 'اختر وسيلةَ الاتّصال: هاتفٌ · رسالةٌ · حضورٌ · بوّابة'; end if;
   if p_channel not in ('هاتف','رسالة','حضور','بوّابة') then
     raise exception 'وسيلةُ الاتّصال: هاتفٌ · رسالةٌ · حضورٌ · بوّابة'; end if;
+  if p_outcome is null or btrim(p_outcome)='' then
+    raise exception 'اختر نتيجةَ الاتّصال: ردّ وعلم · ردّ ورفض · لم يردّ · الرقم مغلق · الرقم خطأ'; end if;
   if p_outcome not in ('ردّ وعلم','ردّ ورفض','لم يردّ','الرقم مغلق','الرقم خطأ') then
     raise exception 'نتيجةُ الاتّصال: ردّ وعلم · ردّ ورفض · لم يردّ · الرقم مغلق · الرقم خطأ'; end if;
   if btrim(coalesce(p_summary,''))='' then
@@ -52,8 +56,7 @@ begin
 
   if p_task is not null and p_outcome = 'ردّ وعلم' then
     update v2.behavior_tasks set status='done', done_at=now(),
-        done_by=v2.current_person(),
-        ev_on=coalesce(ev_on,current_date),
+        done_by=v2.current_person(), ev_on=coalesce(ev_on,current_date),
         ev_text='أُثبت الاتّصالُ بوليّ الأمر — '||p_channel||' · '||btrim(p_summary)
      where id=p_task and status<>'done';
     closed := found;

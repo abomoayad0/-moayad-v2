@@ -1,5 +1,5 @@
 -- v2.fn_reopen_day(p_school uuid, p_date date, p_reason text, p_by uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 5cf986483eea38e9e5c78503e00b3489
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 8331ae1e8cff99d4a96a3049d805cd75
 CREATE OR REPLACE FUNCTION v2.fn_reopen_day(p_school uuid, p_date date, p_reason text, p_by uuid DEFAULT NULL::uuid)
  RETURNS TABLE("رصدات_سلوكية_نُقضت" integer, "حالات_غياب_نُقضت" integer, "حسومات_رُدّت" integer, "أحداث_أُلغيت" integer)
  LANGUAGE plpgsql
@@ -14,6 +14,12 @@ begin
     raise exception 'يوم % لم يُقفل أصلاً', p_date; end if;
 
   select id into v_year from v2.academic_years where school_id=p_school and is_current limit 1;
+
+  -- 🔑 تُرفع علامةُ الإقفال أوّلًا — ثمّ يقع النقض
+  update v2.attendance set day_status='provisional'
+   where school_id=p_school and on_date=p_date;
+  update v2.day_closures set reopened_at=now(), reopened_by=p_by, reopen_reason=p_reason
+   where school_id=p_school and on_date=p_date;
 
   update v2.behavior_records r set status='voided', voided_by=p_by,
     void_reason='نُقض بإعادة فتح يوم '||p_date||': '||p_reason
@@ -46,10 +52,6 @@ begin
    from v2.events e where d.event_id=e.id and e.school_id=p_school and e.on_date=p_date
      and d.status in ('queued','sent','delivered');
   get diagnostics n_ev = row_count;
-
-  update v2.attendance set day_status='provisional' where school_id=p_school and on_date=p_date;
-  update v2.day_closures set reopened_at=now(), reopened_by=p_by, reopen_reason=p_reason
-   where school_id=p_school and on_date=p_date;
 
   insert into v2.day_reversals(school_id,on_date,kind,reason,by_person,reverted)
   values (p_school,p_date,'reopen',p_reason,p_by,
