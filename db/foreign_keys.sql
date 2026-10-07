@@ -183,6 +183,10 @@ ALTER TABLE v2.behavior_tasks
 ALTER TABLE v2.branding
     ADD CONSTRAINT branding_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 
+-- ── break_slots · md5 cf77cb970bc572e64dfe022dedbdf14f
+ALTER TABLE v2.break_slots
+    ADD CONSTRAINT break_slots_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+
 -- ── calendar_days · md5 70724c6cb2090becec2af00c2930e8ff
 ALTER TABLE v2.calendar_days
     ADD CONSTRAINT calendar_days_holiday_id_fkey FOREIGN KEY (holiday_id) REFERENCES v2.calendar_holidays(id);
@@ -238,6 +242,12 @@ ALTER TABLE v2.case_docs
     ADD CONSTRAINT case_docs_record_id_fkey FOREIGN KEY (record_id) REFERENCES v2.behavior_records(id) ON DELETE CASCADE;
 ALTER TABLE v2.case_docs
     ADD CONSTRAINT case_docs_task_id_fkey FOREIGN KEY (task_id) REFERENCES v2.behavior_tasks(id);
+
+-- ── census_items · md5 6e197a2003671d3faf5edb8bc06183d8
+ALTER TABLE v2.census_items
+    ADD CONSTRAINT census_items_based_on_fkey FOREIGN KEY (based_on) REFERENCES v2.census_items(id);
+ALTER TABLE v2.census_items
+    ADD CONSTRAINT census_items_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 
 -- ── class_practices · md5 5773b2457e9b29cced30dc27665ffef1
 ALTER TABLE v2.class_practices
@@ -312,6 +322,12 @@ ALTER TABLE v2.conduct_action_items
 -- ── conduct_actions · md5 d6c0f4ff7529b3a723c331bc2b41022d
 ALTER TABLE v2.conduct_actions
     ADD CONSTRAINT conduct_actions_degree_no_fkey FOREIGN KEY (degree_no) REFERENCES v2.conduct_degrees(degree_no);
+
+-- ── conduct_advice · md5 6f9a57de5df003667b68f42017c5cc8a
+ALTER TABLE v2.conduct_advice
+    ADD CONSTRAINT conduct_advice_problem_id_fkey FOREIGN KEY (problem_id) REFERENCES v2.conduct_problems(id);
+ALTER TABLE v2.conduct_advice
+    ADD CONSTRAINT conduct_advice_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 
 -- ── conduct_problems · md5 fbdfa46ee1963e29a1b86c1a5c517c57
 ALTER TABLE v2.conduct_problems
@@ -419,7 +435,9 @@ ALTER TABLE v2.duty_log
 ALTER TABLE v2.duty_log
     ADD CONSTRAINT duty_log_zone_id_fkey FOREIGN KEY (zone_id) REFERENCES v2.duty_zones(id);
 
--- ── duty_roster · md5 60c578033279be46a967bbac241305df
+-- ── duty_roster · md5 e9302644d371734960bbf7b0febd4c2f
+ALTER TABLE v2.duty_roster
+    ADD CONSTRAINT duty_roster_break_id_fkey FOREIGN KEY (break_id) REFERENCES v2.break_slots(id);
 ALTER TABLE v2.duty_roster
     ADD CONSTRAINT duty_roster_person_id_fkey FOREIGN KEY (person_id) REFERENCES v2.people(id);
 ALTER TABLE v2.duty_roster
@@ -651,6 +669,10 @@ ALTER TABLE v2.merit_opportunities
 ALTER TABLE v2.merit_opportunities
     ADD CONSTRAINT merit_opportunities_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 
+-- ── message_templates · md5 558cbc23d8128f5931a8a86c0b18d4fe
+ALTER TABLE v2.message_templates
+    ADD CONSTRAINT message_templates_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+
 -- ── outbox · md5 3bd889dcd7f0981cd09d1ba2004ca0ca
 ALTER TABLE v2.outbox
     ADD CONSTRAINT outbox_delivery_id_fkey FOREIGN KEY (delivery_id) REFERENCES v2.event_deliveries(id) ON DELETE CASCADE;
@@ -682,6 +704,12 @@ ALTER TABLE v2.period_attendance
 -- ── period_slots · md5 50654d9de686fca358164f8a4a08a972
 ALTER TABLE v2.period_slots
     ADD CONSTRAINT period_slots_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+
+-- ── phrase_bank · md5 5d6b0bb8706c0b74c065be6bba964739
+ALTER TABLE v2.phrase_bank
+    ADD CONSTRAINT phrase_bank_problem_id_fkey FOREIGN KEY (problem_id) REFERENCES v2.conduct_problems(id);
+ALTER TABLE v2.phrase_bank
+    ADD CONSTRAINT phrase_bank_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 
 -- ── practice_overrides · md5 477dc0c0d593447cb8115bb3b76de878
 ALTER TABLE v2.practice_overrides

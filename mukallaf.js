@@ -1,7 +1,7 @@
 // مؤيّد · ما عليّ — viewK في المحاكي (شاشةُ المكلَّف): لكلّ منسوبٍ ما أُسند إليه وحدَه.
 // ① إثباتُ مشاركة طالب: ما أُحيل إليك إقرارُه (v2_entries_pending · delegated_to_me) ⇒ v2_entry_verdict
 // ② رأيٌ مطلوبٌ منك: لم يُبنَ في المحرّك
-// ③ كُلّفتَ بحصر سلوكيّات طالب: v2_my_census ⇒ v2_census_file (الإيجابيُّ والسلبيُّ والمسبّباتُ إلزاميّة)
+// ③ كُلّفتَ بحصر سلوكيّات طالب: v2_my_census ⇒ v2_census_file بالقوائم (v2_census_list) — سلبيٌّ واحدٌ على الأقلّ والمسبّباتُ إلزاميّة
 // ④ ما عليّ من اللجان: v2_my_committee_tasks ⇒ v2_committee_task_done
 // ترى هذا الجزءَ وحدَه: لا ملفَّ طالبٍ ولا دراسةَ حالة.
 (function () {
@@ -50,19 +50,25 @@
     V.arabize(box);
   }
 
-  // كلامُ المكلَّف بلسانه — لا بنكَ عباراتٍ هنا
-  function fileCensus(c) {
+  // الحصرُ من قوائم المدرسة بأيقوناتها: لمسةٌ تشرح والثانيةُ تختار — والمسبّباتُ بكلامه، وتحتها بنكُ العبارات لفريق المدرسة
+  let lists = null;
+  async function fileCensus(c) {
+    if (!lists || lists.school !== M.state.school) {
+      const { data, error } = await M.rpc('v2_census_list', { p_school: M.state.school }, 'قوائم الحصر');
+      if (error) { V.flash('bad', errText(error)); return; }
+      lists = { school: M.state.school, negative: (data && data.negative) || [], positive: (data && data.positive) || [] };
+    }
     V.form({
-      title: 'حصرُ سلوكيّات الطالب', what: c.student || '',
+      title: 'حصرُ سلوكيّات الطالب', what: (c.student || '') + (c.problem ? ' — ' + c.problem : ''),
       fields: [
-        { key: 'pos', type: 'textarea', label: 'السلوكيّاتُ الإيجابيّة' },
-        { key: 'neg', type: 'textarea', label: 'السلوكيّاتُ السلبيّة' },
-        { key: 'causes', type: 'textarea', label: 'المسبّبات' },
-        { key: 'sug', type: 'textarea', label: 'مقترحُك (اختياري)', rows: 2 },
+        { key: 'neg', type: 'icons', label: 'السلوكيّاتُ السلبيّة', items: lists.negative },
+        { key: 'pos', type: 'icons', label: 'السلوكيّاتُ الإيجابيّة', items: lists.positive },
+        { key: 'causes', type: 'textarea', label: 'المسبّبات', bank: { key: 'cause' } },
+        { key: 'sug', type: 'textarea', label: 'مقترحُك (اختياري)', rows: 2, bank: { key: 'limit' } },
       ],
       ok: 'سلّم الحصر',
       onOk: async (v) => {
-        const { data, error } = await M.rpc('v2_census_file', { p_census: c.census, p_positives: v.pos, p_negatives: v.neg, p_causes: v.causes, p_suggestion: v.sug }, 'تسليم الحصر');
+        const { data, error } = await M.rpc('v2_census_file', { p_census: c.census, p_neg: v.neg, p_pos: v.pos, p_causes: v.causes, p_suggestion: v.sug }, 'تسليم الحصر');
         if (error) return error;
         V.flash('ok', (data && data.note) || 'سُلّم الحصر');
         loadCensus();

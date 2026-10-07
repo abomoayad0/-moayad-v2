@@ -454,3 +454,21 @@
   .rs-grid th { text-align: center; }
 
   .rs-pick.rs-off span { pointer-events: none; opacity: .55; }
+
+/* ─── الدرجةُ الأولى: شرائطُ الحصر بأيقوناتها · بنكُ العبارات · النتيجةُ الآليّة (من moayad-live.html) ─── */
+  .rs-pick.ico span { display: inline-flex; align-items: center; gap: 6px; }
+  .rs-pick.ico span b { font-size: 20px; font-weight: 400; line-height: 1.1; }
+  .rs-pick.ico span.tap { border-color: var(--brand); }
+  .rs-tip { font-size: 12px; color: var(--mute); margin-top: 6px; min-height: 1.4em; }
+  .rs-bank { background: var(--soft); border-radius: 11px; padding: 9px 11px; margin-top: 7px; }
+  .rs-bank .bkh { font-size: 11.5px; color: var(--mute); display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .rs-bank .bkh b { color: var(--ink); }
+  .rs-bank .bkl { display: flex; flex-direction: column; gap: 5px; }
+  .rs-bank .bkl span { background: var(--card); border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; font-size: 13px; cursor: pointer; }
+  .rs-bank .bkl span:hover { border-color: var(--brand); }
+  .rs-bank .bkl span.mine::after { content: ' · لمدرستك'; color: var(--mute); font-size: 11px; }
+  .flash ul.rs-auto { margin: 6px 0 0; padding: 0 18px 0 0; font-size: 12.5px; }
+  .flash ul.rs-auto li { margin: 2px 0; }
+  .rs-advice { border-right: 3px solid var(--brand); background: var(--soft); border-radius: 8px; padding: 7px 10px; font-size: 13px; margin-top: 8px; }
+  .rs-msg { white-space: pre-wrap; background: var(--soft); border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.7; margin-top: 8px; max-height: 40vh; overflow: auto; }
+  .rs-fld[hidden] { display: none; }

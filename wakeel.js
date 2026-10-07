@@ -2,6 +2,8 @@
 // كلُّ نصٍّ وعددٍ ودرجةٍ وسلّمٍ من القاعدة — والشاشةُ لا تحسب ولا تؤلّف، وما لم يُبنَ في المحرّك يُعرض معطَّلًا بسببه.
 // v2_day_summary · v2_day_classes · v2_day_list · v2_periods · v2_conduct_list · v2_record_behavior · v2_record_amend
 // v2_entries_pending · v2_form_open(5) · v2_student_card · v2_student_tasks · v2_student_timeline(p_student, null)
+// الدرجةُ الأولى: auto[] و advice بعد الرصد · v2_advice_for · v2_census_list · v2_census_self · v2_census_assign · v2_census_sweep
+// v2_contact_log (الحقلُ يتبع النتيجة) · v2_guardian_message · v2_response_check · v2_refer_committee · وبنكُ العبارات v2_bank تحت الحقول
 // وإنجازُ المهامّ بإثباتها في tasks.js
 (function () {
   'use strict';
@@ -189,17 +191,24 @@
   function syncButton() { $('rec').disabled = ui.busy || !ui.stu || !ui.prob; }
 
   // ---------- شريطُ النتيجة ----------
-  function flash(kind, text, acts) {
+  // auto: ما وقع آليًّا بالرصد كما رجع من القاعدة — {kind, text}
+  function flash(kind, text, acts, auto) {
     const f = $('flash');
     f.className = 'flash ' + kind;
     f.textContent = '';
     f.appendChild(el('span', null, text));
+    if (auto && auto.length) {
+      const ul = el('ul', 'rs-auto');
+      for (const a of auto) ul.appendChild(el('li', null, (a.kind === 'advice' ? 'النصيحةُ التربويّة: ' : '') + a.text));
+      f.appendChild(ul);
+    }
     if (acts && acts.length) {
       const row = el('span', 'rs-row');
       for (const a of acts) row.appendChild(a);
       f.appendChild(row);
     }
     f.hidden = false;
+    arabize(f);
   }
 
   // ---------- ① ارصد: ضغطةٌ واحدة ----------
@@ -220,7 +229,7 @@
     flash('ok', (data && data.headline) || 'رُصدت المخالفة', [
       btn('افتح الملفّ', 'rs-btn soft', () => $('files').scrollIntoView({ behavior: 'smooth', block: 'start' })),
       btn('أضِف التفاصيل', 'rs-btn soft', () => openAmend()),
-    ]);
+    ], (data && data.auto) || []);
     ui.period = null;
     const { data: fresh } = await M.rpc('v2_conduct_list', { p_student: stu.student_id, p_mode: 'onsite', p_target: 'general' }, 'قائمة المخالفات');
     if (ui.stu !== stu) return;
@@ -311,9 +320,27 @@
       M.rpc('v2_census_of', { p_student: stu.student_id }, 'حصر السلوكيّات'),
     ]);
     if (ui.stu !== stu) return;
-    // v2_student_tasks بأسمائه الجديدة: task · text · problem · kind · kind_ar
-    ui.files = { card: card.data || {}, tasks: (tasks.data || []).map((t) => Object.assign({}, t, { task_id: t.task_id || t.task, text_ar: t.text_ar || t.text, problem_ar: t.problem_ar || t.problem })), timeline: tl.data || {}, form5: f5, contacts: ct, census: cn, error: card.error || tasks.error || tl.error };
+    // v2_student_tasks بأسمائه الجديدة: task · record · text · problem · kind · kind_ar
+    ui.files = { card: card.data || {}, tasks: (tasks.data || []).map((t) => Object.assign({}, t, { task_id: t.task_id || t.task, record_id: t.record_id || t.record, text_ar: t.text_ar || t.text, problem_ar: t.problem_ar || t.problem })), timeline: tl.data || {}, form5: f5, contacts: ct, census: cn, advice: new Map(), resp: new Map(), error: card.error || tasks.error || tl.error };
     renderStudentCards();
+    loadAdvice(stu);
+    loadResponse(stu);
+  }
+
+  // سلوكُ الملفّ بعناصره من v2_conduct_list — بنصّه كما يرجع في البطاقة
+  const metaOf = (prob) => ui.problems.find((p) => p.text === prob || p.text === String(prob || '').replace(/\.\s*$/, '')) || null;
+
+  // النصيحةُ التربويّة لآخر رصدةٍ في كلّ ملفّ: v2_advice_for(السلوك، رقمُ الرصدة) — نصُّها من القاعدة
+  async function loadAdvice(stu) {
+    const last = new Map();
+    for (const r of (ui.files.card.behavior || [])) if (!last.has(r.problem)) last.set(r.problem, r);
+    await Promise.all([...last].map(async ([prob, r]) => {
+      const m = metaOf(prob);
+      if (!m) return;
+      const { data } = await M.rpc('v2_advice_for', { p_problem: m.id, p_occurrence: r.occurrence }, 'النصيحة التربويّة');
+      if (ui.stu === stu && ui.files && data && data.text) ui.files.advice.set(prob, data.text);
+    }));
+    if (ui.stu === stu) renderFiles();
   }
 
   function renderStudentCards() {
@@ -321,7 +348,7 @@
     $('f5Card').hidden = !show || !ui.full; $('respCard').hidden = !show; $('tlCard').hidden = !show;
     $('contactCard').hidden = !show; $('censusCard').hidden = !show;
     if (ui.full) renderForm5();
-    renderFiles(); renderTimeline(); renderContacts(); renderCensus();
+    renderFiles(); renderTimeline(); renderContacts(); renderCensus(); renderResponse();
   }
 
   // ③ النموذج ٥: صفوفُه كما يرجعها v2_form_open — ويُطبع من النموذج نفسه
@@ -380,7 +407,7 @@
     const hd = el('div', 'rs-hd');
     hd.append(el('h3', null, prob), el('span', 'rs-occ', 'الرصدةُ ' + r.occurrence));
     c.appendChild(hd);
-    const meta = ui.problems.find((p) => p.text === prob || p.text === String(prob).replace(/\.\s*$/, ''));
+    const meta = metaOf(prob);
     c.appendChild(el('p', 'rs-meta', [meta && meta.degree_ar, meta && meta.page_ar, 'آخرُ رصدة ' + (r.on_h || r.on)].filter(Boolean).join(' · ')));
     const steps = meta && meta.steps ? Number(meta.steps) : null;
     if (steps && r.step) {
@@ -392,6 +419,8 @@
       }
       c.appendChild(lad);
     }
+    const adv = ui.files.advice && ui.files.advice.get(prob);
+    if (adv) { const a = el('div', 'rs-advice'); a.append(el('b', null, 'النصيحةُ التربويّة: '), document.createTextNode(adv)); c.appendChild(a); }
     const ts = ui.files.tasks.filter((t) => String(t.problem_ar).replace(/\.\s*$/, '') === String(prob).replace(/\.\s*$/, ''));
     if (ts.length) {
       c.appendChild(el('div', 'rs-label', 'ما على الإجراء:'));
@@ -413,10 +442,12 @@
       const tn = has('notify_guardian');
       if (tn) acts.appendChild(btn('إثباتُ الاتّصال', 'rs-btn soft', () => contactForm(tn.task_id)));
       const tf = has('follow_up');
-      if (tf && ui.full) acts.appendChild(btn('التكليفُ بالحصر', 'rs-btn soft', () => assignCensus(tf.task_id)));
-      // خطابُ الدعوة (نموذج ١٠) والإحالةُ للّجنة (نموذج ١٢): يُنجزان من لوح المهمّة — إثباتُها ونموذجُها من القاعدة
+      if (tf) acts.appendChild(btn('أحصرُ بنفسي', 'rs-btn soft', () => selfCensus(tf.task_id)));
+      if (tf && ui.full) acts.appendChild(btn('أكلّف به أحدًا', 'rs-btn soft', () => assignCensus(tf.task_id)));
+      // خطابُ الدعوة يُرسل آليًّا بالرصد · والإحالةُ للّجنة بقياس الاستجابة أوّلًا
       if (has('summon_guardian')) acts.appendChild(btn('خطابُ الدعوة', 'rs-btn soft', showTasks));
-      if (has('committee')) acts.appendChild(btn('الإحالةُ للّجنة', 'rs-btn soft', showTasks));
+      const tc = has('committee');
+      if (tc) acts.appendChild(btn('الإحالةُ للّجنة', 'rs-btn soft', () => referForm(tc)));
       if (b) c.appendChild(b);
       if (acts.childNodes.length) c.appendChild(acts);
       c.appendChild(tbox);
@@ -466,7 +497,9 @@
         body.style.flex = '1';
         body.appendChild(el('b', null, 'المحاولةُ ' + (x.attempt_ar || x.attempt) + ' · ' + x.channel + ' — ' + x.outcome));
         body.appendChild(el('div', 'rs-meta', [x.summary, x.guardian_say ? 'قال وليُّ الأمر: ' + x.guardian_say : null, x.guardian, x.by ? 'أثبتها ' + x.by : null].filter(Boolean).join(' · ')));
-        li.append(el('i', 'rs-tick' + (x.outcome === 'ردّ وعلم' ? ' ok' : ''), x.outcome === 'ردّ وعلم' ? '✓' : '○'), body, el('small', 'rs-who', [x.on, x.at ? String(x.at).slice(0, 5) : null].filter(Boolean).join(' ')));
+        // ردّ وليُّ الأمر (علم أو رفض) ⇒ أُشعر — كما تُقفل به القاعدةُ المهمّة
+        const got = x.outcome === 'ردّ وعلم' || x.outcome === 'ردّ ورفض';
+        li.append(el('i', 'rs-tick' + (got ? ' ok' : ''), got ? '✓' : '○'), body, el('small', 'rs-who', [x.on, x.at ? String(x.at).slice(0, 5) : null].filter(Boolean).join(' ')));
         ul.appendChild(li);
       }
       box.appendChild(ul);
@@ -484,33 +517,168 @@
     return items.length ? [{ key: 'task', type: 'choose', label: 'عن مهمّة (' + (kind === 'notify_guardian' ? 'إشعارُ وليّ الأمر' : 'حصرُ السلوكيّات') + ')', items, value: items.some((x) => x[0] === pre) ? pre : items[0][0], hint: 'تُقفل المهمّةُ بالقاعدة متى تمّ ما يقفلها' }] : [];
   };
 
+  // الحقلُ يتبع النتيجة كما يحرسها v2_contact_log: ردّ ⇒ ما دار · ورفض ⇒ وقولُه · لم يردّ ⇒ الساعة · الرقم خطأ ⇒ الصحيح
+  const answered = (v) => v.outcome === 'ردّ وعلم' || v.outcome === 'ردّ ورفض';
+  const taskById = (id) => ((ui.files && ui.files.tasks) || []).find((t) => t.task_id === id) || null;
+
   function contactForm(pre) {
     const stu = ui.stu;
+    const tf = taskField('notify_guardian', pre);
+    pre = pre || (tf[0] && tf[0].value);
+    const prob = (id) => { const t = taskById(id); const m = t && metaOf(t.problem_ar); return m ? m.id : null; };
+    // الرسالةُ حين تُختار «رسالة»: نصُّها جاهزٌ من v2_guardian_message لرصدة المهمّة، وزرُّ الإرسال
+    const msg = el('div');
+    let channel = null;
+    const loadMsg = async (taskId) => {
+      msg.textContent = '';
+      if (channel !== 'رسالة') return;
+      const t = taskById(taskId);
+      if (!t || !t.record_id) { msg.appendChild(el('p', 'rs-meta', 'اختر مهمّةَ الإشعار لتظهر رسالتُها.')); return; }
+      msg.appendChild(el('p', 'rs-meta', 'جارٍ تجهيزُ الرسالة…'));
+      const { data, error } = await M.rpc('v2_guardian_message', { p_record: t.record_id }, 'رسالة وليّ الأمر');
+      msg.textContent = '';
+      if (error) { msg.appendChild(el('div', 'flash bad', errText(error))); return; }
+      const d = data || {};
+      msg.appendChild(el('div', 'rs-label', 'الرسالة' + (d.guardian ? ' إلى ' + d.guardian : '') + (d.phone ? ' · ' + d.phone : '')));
+      msg.appendChild(el('div', 'rs-msg', d.body || ''));
+      const row = el('div', 'rs-row');
+      if (d.whatsapp) {
+        const a = el('a', 'rs-btn', 'أرسلها بواتساب');
+        a.href = d.whatsapp; a.target = '_blank'; a.rel = 'noopener';
+        row.appendChild(a);
+      } else row.appendChild(el('span', 'rs-meta', 'لا رقمَ لوليّ الأمر'));
+      row.appendChild(btn('انسخ النصّ', 'rs-btn ghost', async () => {
+        try { await navigator.clipboard.writeText(d.body || ''); V.flash('ok', 'نُسخ نصُّ الرسالة'); } catch (e) { V.flash('bad', 'تعذّر النسخ'); }
+      }));
+      msg.appendChild(row);
+      msg.appendChild(el('p', 'rs-meta', 'ثمّ أثبت النتيجةَ أدناه.'));
+    };
+    if (tf[0]) tf[0].onChange = (id) => loadMsg(id);
     V.form({
       title: 'إثباتُ الاتّصال بوليّ الأمر', what: stu.display_name || stu.full_name,
-      fields: [...taskField('notify_guardian', pre),
-        { key: 'channel', type: 'pick', label: 'الوسيلة', items: CHANNELS.map((x) => [x, x]) },
+      fields: [...tf,
+        { key: 'channel', type: 'pick', label: 'الوسيلة', items: CHANNELS.map((x) => [x, x]), onChange: (x, api) => { channel = x; loadMsg(api.values().task || pre); } },
+        { key: 'msg', type: 'node', node: msg, show: (v) => v.channel === 'رسالة' },
         { key: 'outcome', type: 'pick', label: 'النتيجة', items: OUTCOMES.map((x) => [x, x]) },
-        { key: 'summary', type: 'textarea', label: 'ما دار' },
-        { key: 'say', type: 'textarea', label: 'ما قاله وليُّ الأمر (اختياري)', rows: 2 },
-        { key: 'at', type: 'time', label: 'الساعة (اختياري)' },
+        { key: 'summary', type: 'textarea', label: 'ما دار', show: answered, bank: { key: 'callWhat', problem: prob(pre) } },
+        { key: 'say', type: 'textarea', label: 'ما قاله وليُّ الأمر', rows: 2, hint: 'فرفضُه حجّةٌ تُقيَّد', show: (v) => v.outcome === 'ردّ ورفض' },
+        { key: 'at', type: 'time', label: 'ساعةُ المحاولة', hint: 'فمن لم يردّ يُقيَّد وقتُ طلبه', show: (v) => v.outcome === 'لم يردّ' },
+        { key: 'right', label: 'الرقمُ الصحيح', hint: 'أو اكتب «لا يُعرف»', show: (v) => v.outcome === 'الرقم خطأ' },
       ],
       ok: 'أثبته',
       onOk: async (v) => {
+        // يُرسل حقلُ النتيجة وحدَه — والقاعدةُ تحكم بالنقص
         const { data, error } = await M.rpc('v2_contact_log', {
           p_student: stu.student_id, p_task: v.task || null, p_channel: v.channel, p_outcome: v.outcome,
-          p_summary: v.summary, p_guardian_say: v.say, p_at: v.at,
+          p_summary: answered(v) ? v.summary : null, p_guardian_say: v.outcome === 'ردّ ورفض' ? v.say : null,
+          p_at: v.outcome === 'لم يردّ' ? v.at : null, p_right_number: v.outcome === 'الرقم خطأ' ? v.right : null,
         }, 'إثبات الاتصال');
         if (error) return error;
         // النصُّ من القاعدة، وهو يتبع closed
-        V.flash('ok', ((data && data.note) || 'أُثبت الاتّصال') + ' · المحاولةُ ' + ((data && data.attempt) || ''));
+        V.flash('ok', ((data && data.note) || 'أُثبت الاتّصال') + ' · المحاولةُ ' + ((data && (data.attempt_ar || data.attempt)) || ''));
         loadStudentCards();
         return null;
       },
     });
   }
 
+  // ---------- هل تعدّل؟ قياسُ الاستجابة والإحالةُ إلى اللجنة ----------
+  // لكلّ ملفٍّ بلغ مهمّةَ «الإحالة للّجنة» قياسُه من v2_response_check — حكمُه ومستندُه كما يرجعان
+  const committeeTasks = () => ((ui.files && ui.files.tasks) || []).filter((t) => t.kind === 'committee');
+  async function loadResponse(stu) {
+    await Promise.all(committeeTasks().map(async (t) => {
+      const r = await M.rpc('v2_response_check', { p_record: t.record_id }, 'قياس الاستجابة');
+      if (ui.stu === stu && ui.files) ui.files.resp.set(t.task_id, r);
+    }));
+    if (ui.stu === stu) renderResponse();
+  }
+
+  function respInfo(r) {
+    const box = el('div');
+    if (r.state_ar) box.appendChild(el('p', r.state === 'failed' ? 'rs-state-open' : 'rs-state-done', r.state_ar));
+    if (r.why) box.appendChild(el('div', 'rs-note', r.why));
+    if (r.pre_ar != null || r.post_ar != null) {
+      const lg = el('div', 'rs-lgd');
+      lg.append(el('i', 'k', 'قبل الخطّة:'), el('i', null, r.pre_ar || '—'), el('i', 'k', 'بعدها:'), el('i', null, r.post_ar || '—'));
+      if (r.dates) lg.append(el('i', 'k', 'تواريخُه:'), el('i', null, r.dates));
+      if (r.by) lg.append(el('i', 'k', 'المستند:'), el('i', null, r.by));
+      box.appendChild(lg);
+    }
+    if (r.rule) box.appendChild(el('p', 'rs-meta', r.rule));
+    return box;
+  }
+
+  function renderResponse() {
+    const box = $('resp');
+    if (!box) return;
+    box.textContent = '';
+    if (!ui.stu || !ui.files) return;
+    const ts = committeeTasks();
+    if (!ts.length) { box.appendChild(el('p', 'rs-empty', 'لم يبلغ ملفٌّ الإجراءَ الرابع.')); return; }
+    for (const t of ts) {
+      const f = el('div', 'rs-file');
+      f.appendChild(el('h5', null, (t.problem_ar || '') + (t.step_ar ? ' — الإجراء ' + t.step_ar : '')));
+      const res = ui.files.resp.get(t.task_id);
+      if (!res) f.appendChild(el('p', 'rs-meta', 'جارٍ القياس…'));
+      else if (res.error) f.appendChild(el('div', 'notice err', errText(res.error)));
+      else {
+        f.appendChild(respInfo(res.data || {}));
+        if (t.status === 'open' && res.data && res.data.can_refer) f.appendChild(btn('أحِل الملفَّ إلى اللجنة', 'rs-btn', () => referForm(t)));
+      }
+      box.appendChild(f);
+    }
+    arabize(box);
+  }
+
+  // الإحالة: القياسُ أوّلًا — فإن لم تُفتح عُرض سببُه كما رجع، وإلا فسببُ الإحالة والمطلوبُ من اللجنة
+  async function referForm(t) {
+    const { data, error } = await M.rpc('v2_response_check', { p_record: t.record_id }, 'قياس الاستجابة');
+    if (error) { V.flash('bad', errText(error)); return; }
+    const r = data || {};
+    const m = metaOf(t.problem_ar);
+    const head = { key: 'resp', type: 'node', node: respInfo(r) };
+    if (!r.can_refer) {
+      V.form({ title: 'الإحالةُ إلى لجنة التوجيه', what: t.problem_ar || '', fields: [head], ok: false, cancel: 'فهمت' });
+      return;
+    }
+    V.form({
+      title: 'الإحالةُ إلى لجنة التوجيه', what: t.problem_ar || '',
+      fields: [head,
+        { key: 'why', type: 'textarea', label: 'سببُ الإحالة', bank: { key: 'referWhy', problem: m ? m.id : null } },
+        { key: 'ask', type: 'textarea', label: 'المطلوبُ من اللجنة', bank: { key: 'referAsk', problem: m ? m.id : null } },
+      ],
+      ok: 'أحِل الملفّ',
+      onOk: async (v) => {
+        const { data: d, error: e } = await M.rpc('v2_refer_committee', { p_record: t.record_id, p_task: t.task_id, p_why: v.why, p_ask: v.ask }, 'الإحالة إلى اللجنة');
+        if (e) return e;
+        setTimeout(() => fileSheet(d || {}), 0);
+        loadStudentCards();
+        return null;
+      },
+    });
+  }
+
+  // ملفُّ الإحالة كاملًا كما رجع من v2_refer_committee
+  function fileSheet(d) {
+    const f = d.file || {};
+    const box = el('div');
+    const lg = el('div', 'rs-lgd');
+    for (const [k, v] of [['الطالب', f.student], ['السلوك', f.problem], ['الرصدات', f.occurrences_ar], ['المحسوم', f.deducted_ar], ['حصرُ السلوكيّات', f.census], ['دراسةُ الحالة', f.case]]) {
+      lg.append(el('i', 'k', k + ':'), el('i', null, v == null ? '—' : String(v)));
+    }
+    box.appendChild(lg);
+    if (f.response) box.appendChild(respInfo(f.response));
+    V.flash('ok', d.note || 'أُحيل الملفّ');
+    V.form({ title: 'ملفُّ الإحالة', what: d.note || '', fields: [{ key: 'file', type: 'node', node: box }], ok: false, cancel: 'تمّ' });
+  }
+
   // ---------- حصرُ السلوكيّات ----------
+  // كما يرجع v2_census_of: «حصرُك» أو «حصرُ المكلَّف (فلان)» · وneg[] وpos[] بأيقوناتها · وsummary
+  const chips = (list) => {
+    const b = el('div', 'rs-pick ico');
+    for (const x of list || []) { const s = el('span', 'k'); s.append(el('b', null, x.icon || '•'), document.createTextNode(x.text)); b.appendChild(s); }
+    return b;
+  };
   function renderCensus() {
     const box = $('census');
     box.textContent = '';
@@ -518,29 +686,79 @@
     const r = ui.files.census || {};
     if (r.error) box.appendChild(el('div', 'notice err', errText(r.error)));
     const list = r.data || [];
-    if (!list.length && !r.error) box.appendChild(el('p', 'rs-empty', 'لم يُكلَّف أحدٌ بحصر سلوكيّاته.'));
+    if (!list.length && !r.error) box.appendChild(el('p', 'rs-empty', 'لم تُحصر سلوكيّاتُه بعد.'));
     for (const c of list) {
       const f = el('div', 'rs-file');
-      f.append(el('h5', null, (c.to || '') + ' — ' + (c.state || '')),
-        el('p', null, ['كلّفه ' + (c.by || '—'), 'في ' + (c.assigned_at || '—'), 'يُسلَّم ' + (c.due || '—')].join(' · ')));
+      f.appendChild(el('h5', null, (c.who || '') + ' — ' + (c.state || '')));
+      if (!c.by_self) {
+        const p = el('p', c.late ? 'rs-state-open' : null, ['كلّفه ' + (c.by || '—'), 'في ' + (c.assigned_at || '—'), 'يُسلَّم ' + (c.due || '—'), c.late ? 'انقضت مدّتُه' : null].filter(Boolean).join(' · '));
+        f.appendChild(p);
+      }
       if (c.returned_why) f.appendChild(el('p', null, 'أُعيد: ' + c.returned_why));
-      if (c.filed_at) {
+      if (c.summary) f.appendChild(el('p', 'rs-meta', c.summary));
+      if ((c.neg || []).length) { f.appendChild(el('div', 'rs-label', 'السلبيّة')); f.appendChild(chips(c.neg)); }
+      if ((c.pos || []).length) { f.appendChild(el('div', 'rs-label', 'الإيجابيّة')); f.appendChild(chips(c.pos)); }
+      if (c.causes || c.suggestion) {
         const lg = el('div', 'rs-lgd');
-        lg.append(el('i', 'k', 'الإيجابيّ:'), el('i', null, c.positives || '—'), el('i', 'k', 'السلبيّ:'), el('i', null, c.negatives || '—'),
-          el('i', 'k', 'المسبّبات:'), el('i', null, c.causes || '—'));
+        if (c.causes) lg.append(el('i', 'k', 'المسبّبات:'), el('i', null, c.causes));
         if (c.suggestion) lg.append(el('i', 'k', 'المقترح:'), el('i', null, c.suggestion));
         f.appendChild(lg);
       }
-      if (ui.full && c.state === 'مكتمل') {
+      if (ui.full && c.state === 'مكتمل' && !c.by_self) {
         const row = el('div', 'rs-row');
         row.append(btn('اقبله', 'rs-btn', () => reviewCensus(c, true, null)), btn('أعِده بسبب', 'rs-btn ghost', () => returnCensus(c)));
         f.appendChild(row);
       }
       box.appendChild(f);
     }
-    // ولا تكليفَ بلا مهمّة «حصر السلوكيّات» مفتوحة
-    if (ui.full && openTasks('follow_up').length) box.appendChild(btn('كلّف بالحصر', 'rs-btn', () => assignCensus()));
+    const row = el('div', 'rs-row');
+    row.appendChild(btn('أحصرُ بنفسي', 'rs-btn', () => selfCensus()));
+    if (ui.full) row.appendChild(btn('أكلّف به أحدًا', 'rs-btn soft', () => assignCensus()));
+    if (ui.full) row.appendChild(btn('أعِد ما انقضت مدّتُه', 'rs-btn ghost', sweepCensus));
+    box.appendChild(row);
     arabize(box);
+  }
+
+  // قوائمُ الحصر لمدرسة الشاشة — مرّةً لكلّ مدرسة
+  async function censusLists() {
+    if (ui.lists && ui.lists.school === M.state.school) return ui.lists;
+    const { data, error } = await M.rpc('v2_census_list', { p_school: M.state.school }, 'قوائم الحصر');
+    if (error) { V.flash('bad', errText(error)); return null; }
+    ui.lists = { school: M.state.school, negative: (data && data.negative) || [], positive: (data && data.positive) || [] };
+    return ui.lists;
+  }
+
+  async function selfCensus(pre) {
+    const stu = ui.stu;
+    const L = await censusLists();
+    if (!L) return;
+    const tf = taskField('follow_up', pre);
+    const t = taskById(pre || (tf[0] && tf[0].value));
+    const m = t && metaOf(t.problem_ar);
+    V.form({
+      title: 'حصرُ السلوكيّات — أحصرُ بنفسي', what: stu.display_name || stu.full_name,
+      fields: [...tf,
+        { key: 'neg', type: 'icons', label: 'السلوكيّاتُ السلبيّة', items: L.negative },
+        { key: 'pos', type: 'icons', label: 'السلوكيّاتُ الإيجابيّة', items: L.positive },
+        { key: 'causes', type: 'textarea', label: 'مسبّباتُ السلوك', bank: { key: 'cause', problem: m ? m.id : null } },
+        { key: 'limit', type: 'textarea', label: 'مقترحُ الحدّ منه (اختياريّ)', rows: 2, bank: { key: 'limit', problem: m ? m.id : null } },
+      ],
+      ok: 'احفظ الحصر',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_census_self', { p_student: stu.student_id, p_task: v.task || null, p_neg: v.neg, p_pos: v.pos, p_causes: v.causes, p_limit: v.limit }, 'حصر السلوكيّات');
+        if (error) return error;
+        V.flash('ok', (data && data.note) || 'حُفظ الحصر');
+        loadStudentCards();
+        return null;
+      },
+    });
+  }
+
+  async function sweepCensus() {
+    const { data, error } = await M.rpc('v2_census_sweep', { p_school: M.state.school }, 'إعادة ما انقضت مدّته');
+    if (error) { V.flash('bad', errText(error)); return; }
+    V.flash('ok', (data && data.note) || 'تمّ');
+    loadStudentCards();
   }
 
   async function assignCensus(pre) {
@@ -551,7 +769,7 @@
       ui.staff = data || [];
     }
     V.form({
-      title: 'التكليفُ بحصر السلوكيّات', what: stu.display_name || stu.full_name,
+      title: 'حصرُ السلوكيّات — أكلّف به أحدًا', what: stu.display_name || stu.full_name,
       fields: [...taskField('follow_up', pre),
         { key: 'who', type: 'choose', label: 'المكلَّف', items: ui.staff.map((p) => [p.person_id, p.name_ar, p.post_ar || p.roles_ar || '']) },
         { key: 'days', type: 'number', label: 'المدّةُ بالأيّام', value: 5, hint: 'من يومٍ إلى ثلاثين' },
@@ -578,7 +796,7 @@
 
   function returnCensus(c) {
     V.form({
-      title: 'إعادةُ الحصر لصاحبه', what: c.to || '',
+      title: 'إعادةُ الحصر لصاحبه', what: c.who || '',
       fields: [{ key: 'why', type: 'textarea', label: 'السبب' }],
       ok: 'أعِده',
       onOk: async (v) => {

@@ -1,6 +1,6 @@
 -- v2.behavior_census
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 2f3847bce09733417fe3aa4598577b61
+-- md5 baebd6dbda8da67207ffd35b677851a0
 
 CREATE TABLE v2.behavior_census (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -21,6 +21,11 @@ CREATE TABLE v2.behavior_census (
     suggestion text,
     filed_at timestamp with time zone,
     is_test boolean DEFAULT false NOT NULL,
+    by_self boolean DEFAULT false NOT NULL,
+    neg_items uuid[],
+    pos_items uuid[],
+    closed_at timestamp with time zone,
+    close_why text,
     CONSTRAINT behavior_census_pkey PRIMARY KEY (id),
     CONSTRAINT behavior_census_state_check CHECK ((state = ANY (ARRAY['مكلَّف'::text, 'مكتمل'::text, 'مُعاد'::text])))
 );

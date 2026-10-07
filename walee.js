@@ -1,5 +1,5 @@
 // مؤيّد · بوّابة وليّ الأمر — viewG في المحاكي: بطاقةُ الابن · رصداتُه · ما فعلته المدرسة · سلوكُه المتميّز · نماذج تنتظرك.
-// ⑤ «اتّصلت بك المدرسة» من أحداث guardian_contact في السجلّ
+// ⑤ «اتّصلت بك المدرسة» من أحداث guardian_contact في السجلّ · ودعواتُ المدرسة بردّه: v2_guardian_reply
 // v2_guardian_me · v2_guardian_child · v2_opps_open_for · v2_student_timeline(p_student, 'guardian') · v2_guardian_forms · v2_guardian_form_read
 // v2_guardian_form_reply · v2_form_sign(p_entry, 'ولي الأمر', …)
 // 🔒 لا يرى دراسةَ الحالة ولا الجلسات: يُطلب السجلُّ بصفة 'guardian' لا غير، والقاعدةُ تحجب ما سواه.
@@ -97,6 +97,7 @@
       cbox.appendChild(ul);
     }
     arabize(cbox);
+    renderInvites(evs);
     const beh = evs.filter((e) => e.kind === 'behavior_record');
     if (!beh.length) recs.appendChild(el('p', 'rs-meta', 'لا رصداتِ على ابنك.'));
     else {
@@ -115,6 +116,46 @@
     arabize(recs);
     $('tlSum').textContent = 'السجلّ (' + ar(evs.length) + ')';
     V.events(tlBox, evs);
+  }
+
+  // دعواتُ المدرسة: ما وصله من السجلّ بحاجة فعلٍ منه (needs_action) — كخطاب الدعوة الآليّ
+  const REPLIES = ['أحضر', 'أعتذر وأقترح موعدًا', 'لا أستطيع']; // كما يقبلها v2_guardian_reply — والقاعدةُ ترفض غيرها
+  function renderInvites(evs) {
+    const box = $('invites');
+    box.textContent = '';
+    const list = evs.filter((e) => e.needs_action && e.kind === 'other');
+    if (!list.length) { box.appendChild(el('p', 'rs-meta', 'لا دعوةَ تنتظر ردَّك.')); return; }
+    for (const e of list) {
+      const f = el('div', 'rs-file');
+      f.append(el('h5', null, e.title || ''), el('p', null, [e.body, e.on].filter(Boolean).join(' · ')));
+      if (e.action) f.appendChild(el('p', 'rs-meta', e.action));
+      f.appendChild(btn('ردّ على الدعوة', 'rs-btn', () => inviteReply(e)));
+      box.appendChild(f);
+    }
+    arabize(box);
+  }
+
+  function inviteReply(e) {
+    const k = ui.kid;
+    V.form({
+      title: 'ردُّك على الدعوة', what: e.title || '',
+      fields: [
+        { key: 'reply', type: 'pick', label: 'ردُّك', items: REPLIES.map((x) => [x, x]) },
+        { key: 'date', type: 'date', label: 'الموعدُ الذي تقترحه', show: (v) => v.reply === 'أعتذر وأقترح موعدًا' },
+        { key: 'note', type: 'textarea', label: 'ملاحظتُك', rows: 2, hint: 'وإن لم تستطع فاكتب سببَك' },
+      ],
+      ok: 'أرسل ردَّك',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_guardian_reply', {
+          p_student: k.student_id, p_event: null, p_kind: 'دعوة', p_reply: v.reply, p_note: v.note,
+          p_suggested: v.reply === 'أعتذر وأقترح موعدًا' ? v.date : null,
+        }, 'ردّ وليّ الأمر');
+        if (error) return error;
+        flash('ok', (data && data.note) || 'وصل ردُّك إلى المدرسة');
+        loadKid();
+        return null;
+      },
+    });
   }
 
   // ④ ما قدّرته اللجنة
@@ -244,7 +285,7 @@
     box.textContent = '';
     box.append(
       V.offCard('خطّةُ تعديل السلوك — ورأيُك فيها', 'نموذج ٣ · ص٦٠'),
-      V.offCard('خطابُ الدعوة الآليّ', 'يصلك هنا متى بُني — وما وصلك منه يدويًّا تردّ عليه في «نماذج تنتظرك»'));
+      V.offCard('النصيحةُ التربويّة لابنك', 'تُحفظ مع الرصدة ولا يرجعها جسرٌ لوليّ الأمر: السجلُّ لا يحمل رقمَ السلوك الذي يطلبه v2_advice_for'));
   }
 
   $('toast').addEventListener('click', () => { $('toast').hidden = true; });

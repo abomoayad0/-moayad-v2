@@ -1,6 +1,6 @@
 -- v2.duty_roster
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 32b7f50b8c5fc954f1167c014d750240
+-- md5 42fd9dccee41113b75df8ce8eef501c8
 
 CREATE TABLE v2.duty_roster (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -26,6 +26,7 @@ END) STORED,
     ends_on date,
     note text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    break_id uuid,
     CONSTRAINT duty_roster_pkey PRIMARY KEY (id),
     CONSTRAINT duty_roster_school_id_year_id_term_no_weekday_zone_id_perso_key UNIQUE (school_id, year_id, term_no, weekday, zone_id, person_id),
     CONSTRAINT duty_roster_kind_check CHECK ((kind = ANY (ARRAY['duty'::text, 'supervision'::text]))),

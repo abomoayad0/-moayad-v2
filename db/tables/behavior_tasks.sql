@@ -1,6 +1,6 @@
 -- v2.behavior_tasks
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 71bcbae74ed137b486af9baa1becf99c
+-- md5 7f837e4d626ec80402ea592483490d13
 
 CREATE TABLE v2.behavior_tasks (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -33,6 +33,7 @@ CREATE TABLE v2.behavior_tasks (
     delegated_by uuid,
     delegated_at timestamp with time zone,
     delegate_note text,
+    auto_note text,
     CONSTRAINT behavior_tasks_pkey PRIMARY KEY (id),
     CONSTRAINT behavior_tasks_response_level_check CHECK ((response_level = ANY (ARRAY['استجاب'::text, 'استجاب جزئياً'::text, 'لم يستجب'::text, 'لم يُقيَّم بعد'::text]))),
     CONSTRAINT behavior_tasks_status_check CHECK ((status = ANY (ARRAY['open'::text, 'done'::text, 'skipped'::text, 'refused'::text, 'auto'::text]))),

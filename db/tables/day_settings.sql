@@ -1,6 +1,6 @@
 -- v2.day_settings
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 e6e1ce3e032ec667cc6097b46fb7c810
+-- md5 646bfc870bf7586a1a25ee199b17fccf
 
 CREATE TABLE v2.day_settings (
     school_id uuid NOT NULL,
@@ -13,8 +13,11 @@ CREATE TABLE v2.day_settings (
     close_note text DEFAULT 'منتصف الحصة الثانية — قرار مفرح'::text,
     late_grace_min smallint DEFAULT 0 NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    late_cutoff_at time without time zone,
+    late_cutoff_note text,
     CONSTRAINT day_settings_pkey PRIMARY KEY (school_id),
     CONSTRAINT day_settings_period_minutes_check CHECK (((period_minutes >= 20) AND (period_minutes <= 90)))
 );
 ALTER TABLE v2.day_settings ENABLE ROW LEVEL SECURITY;
 COMMENT ON TABLE v2.day_settings IS 'إعدادات اليوم الدراسي — كلها من البناء لا من الدليل، وتُضبط من لوحة التحكم ولا تُزرع في الكود.';
+COMMENT ON COLUMN v2.day_settings.late_cutoff_at IS 'حدُّ التأخّر: من وصل بعده يُسجَّل غائبًا لا متأخّرًا. اجتهادُ مدرسةٍ — ولا نصَّ يحدّده. ٦/١٠/٢٠٢٦';

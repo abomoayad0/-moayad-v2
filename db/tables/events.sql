@@ -1,6 +1,6 @@
 -- v2.events
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 1a27cb5cb2aa4a22dc746999ce6dbf38
+-- md5 19c41f3952d143b777430965ded98dbd
 
 CREATE TABLE v2.events (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE v2.events (
     is_test boolean DEFAULT false NOT NULL,
     visible_to text DEFAULT 'staff'::text NOT NULL,
     CONSTRAINT events_pkey PRIMARY KEY (id),
-    CONSTRAINT events_kind_check CHECK ((kind = ANY (ARRAY['absence_prenotice'::text, 'absence_report'::text, 'late_report'::text, 'period_absence'::text, 'behavior_record'::text, 'excuse_submitted'::text, 'excuse_decided'::text, 'task_due'::text, 'ladder_step'::text, 'deduction'::text, 'restore'::text, 'case_study'::text, 'counselor_session'::text, 'case_report'::text, 'committee'::text, 'other'::text]))),
+    CONSTRAINT events_kind_check CHECK ((kind = ANY (ARRAY['absence_prenotice'::text, 'absence_report'::text, 'late_report'::text, 'period_absence'::text, 'behavior_record'::text, 'excuse_submitted'::text, 'excuse_decided'::text, 'task_due'::text, 'ladder_step'::text, 'deduction'::text, 'restore'::text, 'case_study'::text, 'counselor_session'::text, 'case_report'::text, 'committee'::text, 'guardian_contact'::text, 'census'::text, 'merit'::text, 'other'::text]))),
     CONSTRAINT events_visible_to_check CHECK ((visible_to = ANY (ARRAY['all'::text, 'staff'::text, 'counselor_only'::text])))
 );
 CREATE INDEX ev_day_idx ON v2.events USING btree (school_id, on_date);

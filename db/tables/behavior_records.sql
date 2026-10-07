@@ -1,6 +1,6 @@
 -- v2.behavior_records
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 99813f5325c14f6d85c70d001a63b567
+-- md5 3bc7bfe71f7642250f542821fdac2f45
 
 CREATE TABLE v2.behavior_records (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -29,6 +29,7 @@ CREATE TABLE v2.behavior_records (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     incident_place_ar text,
     is_test boolean DEFAULT false NOT NULL,
+    advice_ar text,
     CONSTRAINT behavior_records_pkey PRIMARY KEY (id),
     CONSTRAINT behavior_records_occurrence_no_check CHECK ((occurrence_no > 0)),
     CONSTRAINT behavior_records_status_check CHECK ((status = ANY (ARRAY['open'::text, 'closed'::text, 'voided'::text])))

@@ -1,6 +1,6 @@
 -- v2.guardian_contacts
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 6533a06f85b544f39bb12591d353f472
+-- md5 925db61401e40cf2b1757c54d2463ced
 
 CREATE TABLE v2.guardian_contacts (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -19,6 +19,7 @@ CREATE TABLE v2.guardian_contacts (
     attempt_no smallint DEFAULT 1 NOT NULL,
     is_test boolean DEFAULT false NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    right_number text,
     CONSTRAINT guardian_contacts_pkey PRIMARY KEY (id),
     CONSTRAINT guardian_contacts_channel_check CHECK ((channel = ANY (ARRAY['هاتف'::text, 'رسالة'::text, 'حضور'::text, 'بوّابة'::text]))),
     CONSTRAINT guardian_contacts_outcome_check CHECK ((outcome = ANY (ARRAY['ردّ وعلم'::text, 'ردّ ورفض'::text, 'لم يردّ'::text, 'الرقم مغلق'::text, 'الرقم خطأ'::text])))

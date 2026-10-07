@@ -129,7 +129,7 @@
 
   // اللوحُ المنزلق بحقوله — لما يحتاج حقولًا وحدَه. onOk(values) يرجع خطأ القاعدة أو null:
   // فإن رجع خطأٌ بقي اللوحُ بما كُتب فيه، وعُرض نصُّه كما هو في أعلاه.
-  // الحقول: { key, type: text|textarea|date|time|number|pick|choose|file, label, items, value, hint }
+  // الحقول: { key, type: text|textarea|date|time|number|pick|choose|file|icons|node, label, items, value, hint, show(values), bank: {key, problem}, node }
   let formBox = null;
   function form(o) {
     if (!formBox) {
@@ -150,22 +150,29 @@
     err.hidden = true;
     sh.appendChild(err);
     const get = {};
+    const shows = []; // [[wrap, show(values)]] — حقلٌ يتبع غيرَه (كالنتيجة في إثبات الاتّصال)
+    const sync = () => { const v = api.values(); for (const [w, fn] of shows) w.hidden = !fn(v); };
     for (const f of o.fields || []) {
       const id = 'fm_' + f.key;
+      const w = el('div', 'rs-fld');
+      sh.appendChild(w);
+      if (f.show) shows.push([w, f.show]);
+      if (f.type === 'node') { w.appendChild(f.node); continue; }
+      if (f.type === 'icons') { get[f.key] = icons(w, f); continue; }
       if (f.type === 'pick' || f.type === 'choose') {
-        sh.appendChild(el('div', 'rs-label', f.label));
+        w.appendChild(el('div', 'rs-label', f.label));
         const box = el('div', f.type === 'pick' ? 'rs-pick' : null);
-        sh.appendChild(box);
+        w.appendChild(box);
         if (f.type === 'pick') {
           let v = f.value == null ? null : f.value;
-          const draw = () => pick(box, f.items, v, (x) => { v = x; draw(); if (f.onChange) f.onChange(x, api); });
+          const draw = () => pick(box, f.items, v, (x) => { v = x; draw(); sync(); if (f.onChange) f.onChange(x, api); });
           draw();
           get[f.key] = () => v;
         } else {
-          const c = chooser(box, f.items, f.value, null);
+          const c = chooser(box, f.items, f.value, () => { sync(); if (f.onChange) f.onChange(c.get(), api); });
           get[f.key] = c.get;
         }
-        if (f.hint) sh.appendChild(el('p', 'rs-meta', f.hint));
+        if (f.hint) w.appendChild(el('p', 'rs-meta', f.hint));
         continue;
       }
       const l = el('label', null, f.label);
@@ -175,16 +182,18 @@
       if (f.type === 'textarea') inp.rows = f.rows || 3;
       else inp.type = f.type || 'text';
       if (f.value != null && f.type !== 'file') inp.value = f.value;
-      sh.append(l, inp);
-      if (f.hint) sh.appendChild(el('p', 'rs-meta', f.hint));
+      w.append(l, inp);
+      if (f.hint) w.appendChild(el('p', 'rs-meta', f.hint));
+      if (f.bank) bank(w, inp, f.bank);
       get[f.key] = f.type === 'file' ? () => inp.files[0] || null
         : f.type === 'number' ? () => (inp.value === '' ? null : Number(inp.value))
         : () => { const v = inp.value.trim(); return v === '' ? null : v; };
     }
     const row = el('div', 'rs-row');
     const ok = btn(o.ok || 'تأكيد', 'rs-btn');
-    const no = btn('تراجع', 'rs-btn ghost', () => { formBox.hidden = true; });
-    row.append(ok, no);
+    const no = btn(o.cancel || 'تراجع', 'rs-btn ghost', () => { formBox.hidden = true; });
+    if (o.ok !== false) row.appendChild(ok);
+    row.appendChild(no);
     sh.appendChild(row);
     const api = { values: () => { const r = {}; for (const k in get) r[k] = get[k](); return r; } };
     // كلُّ زرٍّ في اللوح يرجع خطأَ القاعدة أو null — فإن رجع خطأٌ بقي اللوحُ ونصُّه في أعلاه
@@ -203,10 +212,82 @@
       b.addEventListener('click', () => run(b, x.onClick));
       row.appendChild(b);
     }
+    sync();
     arabize(sh);
     formBox.hidden = false;
     const first = sh.querySelector('textarea, input');
     if (first) first.focus();
+    return api;
+  }
+
+  // شرائطُ الحصر بأيقونتها (v2_census_list): لمسةٌ تشرح، والثانيةُ تختار — وتُرجع ما اختير ids
+  // { items: [{id, icon, text, hint, mine}], value: [ids] }
+  function icons(w, f) {
+    w.appendChild(el('div', 'rs-label', f.label));
+    w.appendChild(el('p', 'rs-meta', 'المس الأيقونةَ ليظهر شرحُها · والمسةُ الثانيةُ تختارها'));
+    const box = el('div', 'rs-pick ico');
+    const tip = el('div', 'rs-tip', '—');
+    w.append(box, tip);
+    const on = new Set(f.value || []);
+    let tapped = null;
+    const draw = () => {
+      box.textContent = '';
+      for (const x of f.items || []) {
+        const s = el('span', (on.has(x.id) ? 'on' : '') + (tapped === x.id ? ' tap' : ''));
+        s.setAttribute('role', 'button');
+        s.tabIndex = 0;
+        s.setAttribute('aria-pressed', String(on.has(x.id)));
+        s.append(el('b', null, x.icon || '•'), document.createTextNode(x.text));
+        const go = () => {
+          if (tapped !== x.id) { tapped = x.id; tip.textContent = x.hint || x.text; }
+          else { if (on.has(x.id)) on.delete(x.id); else on.add(x.id); }
+          draw();
+        };
+        s.addEventListener('click', go);
+        s.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+        box.appendChild(s);
+      }
+    };
+    draw();
+    if (f.hint) w.appendChild(el('p', 'rs-meta', f.hint));
+    return () => (f.items || []).filter((x) => on.has(x.id)).map((x) => x.id);
+  }
+
+  // بنكُ العبارات تحت الحقل (v2_bank): المسها فتُضاف · ولك أن تعدّل — لفريق المدرسة وحده، والقاعدةُ تحرسه
+  // { key, problem }
+  async function bank(w, inp, b) {
+    const box = el('div', 'rs-bank');
+    box.hidden = true;
+    w.appendChild(box);
+    const { data, error } = await M.rpc('v2_bank', { p_key: b.key, p_problem: b.problem == null ? null : b.problem, p_school: M.state.school || null }, 'بنك العبارات');
+    if (error || !data || !data.length) return;
+    const hd = el('div', 'bkh');
+    hd.append(el('b', null, 'بنكُ العبارات'), document.createTextNode(' — المسها فتُضاف · ولك أن تعدّل'));
+    const list = el('div', 'bkl');
+    let from = 0;
+    const more = btn('غيّرها', 'rs-btn ghost');
+    const draw = () => {
+      list.textContent = '';
+      for (const x of data.slice(from, from + 4)) {
+        const s = el('span', x.mine ? 'mine' : null, x.text);
+        s.setAttribute('role', 'button');
+        s.tabIndex = 0;
+        const add = () => {
+          const cur = inp.value.trim();
+          inp.value = cur ? cur + (inp.tagName === 'TEXTAREA' ? '\n' : '، ') + x.text : x.text;
+          inp.dispatchEvent(new Event('input'));
+        };
+        s.addEventListener('click', add);
+        s.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); add(); } });
+        list.appendChild(s);
+      }
+    };
+    more.hidden = data.length <= 4;
+    more.addEventListener('click', () => { from = from + 4 >= data.length ? 0 : from + 4; draw(); });
+    hd.appendChild(more);
+    box.append(hd, list);
+    draw();
+    box.hidden = false;
   }
 
   // بطاقةُ إقرار مشاركةٍ من v2_entries_pending — مشتركةٌ بين رائد النشاط والمكلَّف.

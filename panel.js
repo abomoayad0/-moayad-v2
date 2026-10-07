@@ -1280,6 +1280,12 @@
     break_slots: (b) => window.MoayadYawm.breaksTool(b),
     // الإنابةُ في الصفات — inaba.js
     delegations: (b) => window.MoayadInaba.delegationsTool(b),
+    // جداولُ مرجع الدرجة الأولى — marja.js
+    census_items: (b) => window.MoayadMarja.censusItemsTool(b),
+    phrase_bank: (b) => window.MoayadMarja.bankTool(b),
+    conduct_advice: (b) => window.MoayadMarja.adviceTool(b),
+    message_templates: (b) => window.MoayadMarja.templateTool(b),
+    behavior_census: (b) => window.MoayadMarja.censusSweepTool(b),
   };
 
   $('sReason').addEventListener('input', () => { $('sOk').disabled = $('sReason').value.trim() === ''; });

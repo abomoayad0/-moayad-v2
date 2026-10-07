@@ -1,7 +1,7 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 628a88aba05d2256710643820dee7b74
+-- ── grants · md5 087818b3bd3532e5e936fd20a9aaef22
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 
@@ -12,6 +12,8 @@ REVOKE ALL ON FUNCTION v2.acting_school() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.acting_school() TO authenticated;
 REVOKE ALL ON FUNCTION v2.ar_num(n numeric) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.ar_num(n numeric) TO authenticated;
+REVOKE ALL ON FUNCTION v2.arrival_state(p_school uuid, p_at time without time zone) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.arrival_state(p_school uuid, p_at time without time zone) TO authenticated;
 REVOKE ALL ON FUNCTION v2.assert_grant(p_allowed text[], p_what text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.assert_grant(p_allowed text[], p_what text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.assert_my_child(p_student uuid, p_what text) FROM PUBLIC;
@@ -258,12 +260,16 @@ REVOKE ALL ON FUNCTION v2.g_vote_allowed() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.grade_ar(g smallint) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.grade_ar(g smallint) TO authenticated;
+REVOKE ALL ON FUNCTION v2.has_post(p_posts text[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.has_post(p_posts text[]) TO authenticated;
 REVOKE ALL ON FUNCTION v2.is_absent_today(p_student uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.is_absent_today(p_student uuid) TO authenticated;
 REVOKE ALL ON FUNCTION v2.is_counselor(p_school uuid) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.is_test_school(p_school uuid) FROM PUBLIC;
 
+REVOKE ALL ON FUNCTION v2.ladder_auto(p_record uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.ladder_auto(p_record uuid) TO authenticated;
 REVOKE ALL ON FUNCTION v2.merit_path_allows(p_path text, p_write boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.merit_path_allows(p_path text, p_write boolean) TO authenticated;
 REVOKE ALL ON FUNCTION v2.my_grant() FROM PUBLIC;
@@ -278,8 +284,12 @@ REVOKE ALL ON FUNCTION v2.my_seat(p_school uuid, p_committee text) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.ord_ar(n integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.ord_ar(n integer) TO authenticated;
+REVOKE ALL ON FUNCTION v2.owner_ar(p text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.owner_ar(p text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.page_ar(p text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.page_ar(p text) TO authenticated;
+REVOKE ALL ON FUNCTION v2.plain_ar(t text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.plain_ar(t text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.quorum_of(p_school uuid, p_committee text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.quorum_of(p_school uuid, p_committee text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.role_ar(p text) FROM PUBLIC;
@@ -290,8 +300,12 @@ REVOKE ALL ON FUNCTION v2.seat_cap(p_school uuid, p_committee text, p_seat_role 
 GRANT EXECUTE ON FUNCTION v2.seat_cap(p_school uuid, p_committee text, p_seat_role text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.stage_ar(p text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.stage_ar(p text) TO authenticated;
+REVOKE ALL ON FUNCTION v2.task_form_no(p_kind text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.task_form_no(p_kind text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.term_of_strict(p_school uuid, p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.term_of_strict(p_school uuid, p_date date) TO authenticated;
+REVOKE ALL ON FUNCTION v2.time_ar(t time without time zone) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.time_ar(t time without time zone) TO authenticated;
 REVOKE ALL ON FUNCTION v2.trg_abs_task_evidence() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.trg_attendance_calendar_guard() FROM PUBLIC;
@@ -308,6 +322,8 @@ REVOKE ALL ON FUNCTION v2.trg_tt_clash() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.trg_tt_period() FROM PUBLIC;
 
+REVOKE ALL ON FUNCTION v2.workdays_after(p_school uuid, p_from date, p_n integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.workdays_after(p_school uuid, p_from date, p_n integer) TO authenticated;
 REVOKE ALL ON FUNCTION v2.wrap(p_fn text, p_sql text, p_params jsonb) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION public.v2_absence_task_delegate(p_task uuid, p_person uuid, p_note text) FROM PUBLIC;
@@ -328,9 +344,18 @@ GRANT EXECUTE ON FUNCTION public.v2_accounts_board(p_school uuid) TO service_rol
 REVOKE ALL ON FUNCTION public.v2_act_as(p_role text, p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_act_as(p_role text, p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_act_as(p_role text, p_school uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_advice_for(p_problem integer, p_occurrence smallint) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_advice_for(p_problem integer, p_occurrence smallint) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_advice_for(p_problem integer, p_occurrence smallint) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_advice_save(p_school uuid, p_problem integer, p_occurrence smallint, p_text text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_advice_save(p_school uuid, p_problem integer, p_occurrence smallint, p_text text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_advice_save(p_school uuid, p_problem integer, p_occurrence smallint, p_text text) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_age_ar(p_birth date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_age_ar(p_birth date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_age_ar(p_birth date) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_arrival_check(p_school uuid, p_at time without time zone) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_arrival_check(p_school uuid, p_at time without time zone) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_arrival_check(p_school uuid, p_at time without time zone) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_assign_add(p_school uuid, p_person uuid, p_post text, p_letter_no text, p_letter_date date, p_started_on date, p_entitled boolean, p_reason text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_assign_add(p_school uuid, p_person uuid, p_post text, p_letter_no text, p_letter_date date, p_started_on date, p_entitled boolean, p_reason text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_assign_add(p_school uuid, p_person uuid, p_post text, p_letter_no text, p_letter_date date, p_started_on date, p_entitled boolean, p_reason text) TO service_role;
@@ -343,6 +368,12 @@ GRANT EXECUTE ON FUNCTION public.v2_attach(p_student uuid, p_kind text, p_file_n
 REVOKE ALL ON FUNCTION public.v2_attachments(p_student uuid, p_kind text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_attachments(p_student uuid, p_kind text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_attachments(p_student uuid, p_kind text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_bank(p_key text, p_problem integer, p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_bank(p_key text, p_problem integer, p_school uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_bank(p_key text, p_problem integer, p_school uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_bank_save(p_school uuid, p_id uuid, p_key text, p_problem integer, p_text text, p_ord smallint, p_active boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_bank_save(p_school uuid, p_id uuid, p_key text, p_problem integer, p_text text, p_ord smallint, p_active boolean) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_bank_save(p_school uuid, p_id uuid, p_key text, p_problem integer, p_text text, p_ord smallint, p_active boolean) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_brand_card(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_brand_card(p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_brand_card(p_school uuid) TO service_role;
@@ -355,6 +386,15 @@ GRANT EXECUTE ON FUNCTION public.v2_brand_upload_path(p_school uuid, p_kind text
 REVOKE ALL ON FUNCTION public.v2_branding(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_branding(p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_branding(p_school uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_break_remove(p_school uuid, p_break uuid, p_why text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_break_remove(p_school uuid, p_break uuid, p_why text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_break_remove(p_school uuid, p_break uuid, p_why text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_break_save(p_school uuid, p_break uuid, p_kind text, p_label text, p_starts time without time zone, p_ends time without time zone, p_after smallint, p_needs_duty boolean, p_min_staff smallint, p_note text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_break_save(p_school uuid, p_break uuid, p_kind text, p_label text, p_starts time without time zone, p_ends time without time zone, p_after smallint, p_needs_duty boolean, p_min_staff smallint, p_note text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_break_save(p_school uuid, p_break uuid, p_kind text, p_label text, p_starts time without time zone, p_ends time without time zone, p_after smallint, p_needs_duty boolean, p_min_staff smallint, p_note text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_breaks(p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_breaks(p_school uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_breaks(p_school uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_calendar_board(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_calendar_board(p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_calendar_board(p_school uuid) TO service_role;
@@ -373,15 +413,27 @@ GRANT EXECUTE ON FUNCTION public.v2_case_write(p_case uuid, p_student_view text,
 REVOKE ALL ON FUNCTION public.v2_census_assign(p_student uuid, p_task uuid, p_person uuid, p_days smallint) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_census_assign(p_student uuid, p_task uuid, p_person uuid, p_days smallint) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_census_assign(p_student uuid, p_task uuid, p_person uuid, p_days smallint) TO service_role;
-REVOKE ALL ON FUNCTION public.v2_census_file(p_census uuid, p_positives text, p_negatives text, p_causes text, p_suggestion text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.v2_census_file(p_census uuid, p_positives text, p_negatives text, p_causes text, p_suggestion text) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.v2_census_file(p_census uuid, p_positives text, p_negatives text, p_causes text, p_suggestion text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_census_file(p_census uuid, p_neg uuid[], p_pos uuid[], p_causes text, p_suggestion text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_census_file(p_census uuid, p_neg uuid[], p_pos uuid[], p_causes text, p_suggestion text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_census_file(p_census uuid, p_neg uuid[], p_pos uuid[], p_causes text, p_suggestion text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_census_item_save(p_school uuid, p_item uuid, p_polarity text, p_icon text, p_text text, p_hint text, p_ord smallint, p_active boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_census_item_save(p_school uuid, p_item uuid, p_polarity text, p_icon text, p_text text, p_hint text, p_ord smallint, p_active boolean) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_census_item_save(p_school uuid, p_item uuid, p_polarity text, p_icon text, p_text text, p_hint text, p_ord smallint, p_active boolean) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_census_list(p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_census_list(p_school uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_census_list(p_school uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_census_of(p_student uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_census_of(p_student uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_census_of(p_student uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_census_review(p_census uuid, p_accept boolean, p_why text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_census_review(p_census uuid, p_accept boolean, p_why text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_census_review(p_census uuid, p_accept boolean, p_why text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_census_self(p_student uuid, p_task uuid, p_neg uuid[], p_pos uuid[], p_causes text, p_limit text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_census_self(p_student uuid, p_task uuid, p_neg uuid[], p_pos uuid[], p_causes text, p_limit text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_census_self(p_student uuid, p_task uuid, p_neg uuid[], p_pos uuid[], p_causes text, p_limit text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_census_sweep(p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_census_sweep(p_school uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_census_sweep(p_school uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_close_day(p_school uuid, p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_close_day(p_school uuid, p_date date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_close_day(p_school uuid, p_date date) TO service_role;
@@ -427,15 +479,18 @@ GRANT EXECUTE ON FUNCTION public.v2_committees_list(p_school uuid) TO service_ro
 REVOKE ALL ON FUNCTION public.v2_conduct_list(p_student uuid, p_mode text, p_target text, p_stage text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_conduct_list(p_student uuid, p_mode text, p_target text, p_stage text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_conduct_list(p_student uuid, p_mode text, p_target text, p_stage text) TO service_role;
-REVOKE ALL ON FUNCTION public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone, p_right_number text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone, p_right_number text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone, p_right_number text) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_contacts_of(p_student uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_contacts_of(p_student uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_contacts_of(p_student uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_counsel_board(p_school uuid, p_state text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_counsel_board(p_school uuid, p_state text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_counsel_board(p_school uuid, p_state text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_day_build(p_school uuid, p_assembly time without time zone, p_period_minutes smallint, p_periods smallint, p_breaks jsonb, p_apply text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_day_build(p_school uuid, p_assembly time without time zone, p_period_minutes smallint, p_periods smallint, p_breaks jsonb, p_apply text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_day_build(p_school uuid, p_assembly time without time zone, p_period_minutes smallint, p_periods smallint, p_breaks jsonb, p_apply text) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_day_classes(p_school uuid, p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_day_classes(p_school uuid, p_date date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_day_classes(p_school uuid, p_date date) TO service_role;
@@ -448,6 +503,12 @@ GRANT EXECUTE ON FUNCTION public.v2_day_list(p_school uuid, p_date date) TO serv
 REVOKE ALL ON FUNCTION public.v2_day_log(p_school uuid, p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_day_log(p_school uuid, p_date date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_day_log(p_school uuid, p_date date) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_day_plan(p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_day_plan(p_school uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_day_plan(p_school uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_day_rules(p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_day_rules(p_school uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_day_rules(p_school uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_day_summary(p_school uuid, p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_day_summary(p_school uuid, p_date date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_day_summary(p_school uuid, p_date date) TO service_role;
@@ -544,6 +605,9 @@ GRANT EXECUTE ON FUNCTION public.v2_form_sign(p_entry uuid, p_signer text, p_sig
 REVOKE ALL ON FUNCTION public.v2_form_void(p_entry uuid, p_reason text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_form_void(p_entry uuid, p_reason text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_form_void(p_entry uuid, p_reason text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_forms_catalog(p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_forms_catalog(p_school uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_forms_catalog(p_school uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_guardian_child(p_student uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_guardian_child(p_student uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_guardian_child(p_student uuid) TO service_role;
@@ -562,9 +626,15 @@ GRANT EXECUTE ON FUNCTION public.v2_guardian_forms() TO service_role;
 REVOKE ALL ON FUNCTION public.v2_guardian_me() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_guardian_me() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_guardian_me() TO service_role;
+REVOKE ALL ON FUNCTION public.v2_guardian_message(p_record uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_guardian_message(p_record uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_guardian_message(p_record uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_guardian_read(p_event uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_guardian_read(p_event uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_guardian_read(p_event uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_guardian_reply(p_student uuid, p_event uuid, p_kind text, p_reply text, p_note text, p_suggested date) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_guardian_reply(p_student uuid, p_event uuid, p_kind text, p_reply text, p_note text, p_suggested date) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_guardian_reply(p_student uuid, p_event uuid, p_kind text, p_reply text, p_note text, p_suggested date) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_guardian_save(p_student uuid, p_guardian uuid, p_full_name text, p_relation text, p_national_id text, p_phone text, p_work_phone text, p_home_phone text, p_workplace text, p_is_primary boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_guardian_save(p_student uuid, p_guardian uuid, p_full_name text, p_relation text, p_national_id text, p_phone text, p_work_phone text, p_home_phone text, p_workplace text, p_is_primary boolean) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_guardian_save(p_student uuid, p_guardian uuid, p_full_name text, p_relation text, p_national_id text, p_phone text, p_work_phone text, p_home_phone text, p_workplace text, p_is_primary boolean) TO service_role;
@@ -631,6 +701,9 @@ GRANT EXECUTE ON FUNCTION public.v2_meetings_list(p_school uuid, p_committee tex
 REVOKE ALL ON FUNCTION public.v2_merits() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_merits() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_merits() TO service_role;
+REVOKE ALL ON FUNCTION public.v2_message_template_save(p_school uuid, p_key text, p_body text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_message_template_save(p_school uuid, p_key text, p_body text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_message_template_save(p_school uuid, p_key text, p_body text) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_my_acting(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_my_acting(p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_my_acting(p_school uuid) TO service_role;
@@ -655,6 +728,9 @@ GRANT EXECUTE ON FUNCTION public.v2_my_schools() TO service_role;
 REVOKE ALL ON FUNCTION public.v2_my_sections(p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_my_sections(p_date date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_my_sections(p_date date) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_now_slot(p_school uuid, p_at time without time zone) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_now_slot(p_school uuid, p_at time without time zone) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_now_slot(p_school uuid, p_at time without time zone) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_opp_card(p_opp uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_opp_card(p_opp uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_opp_card(p_opp uuid) TO service_role;
@@ -751,12 +827,18 @@ GRANT EXECUTE ON FUNCTION public.v2_record_period(p_student uuid, p_period small
 REVOKE ALL ON FUNCTION public.v2_record_practice(p_student uuid, p_code text, p_period smallint, p_subject text, p_note text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_record_practice(p_student uuid, p_code text, p_period smallint, p_subject text, p_note text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_record_practice(p_student uuid, p_code text, p_period smallint, p_subject text, p_note text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_refer_committee(p_record uuid, p_task uuid, p_why text, p_ask text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_refer_committee(p_record uuid, p_task uuid, p_why text, p_ask text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_refer_committee(p_record uuid, p_task uuid, p_why text, p_ask text) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_reference(p_key text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_reference(p_key text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_reference(p_key text) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_reopen_day(p_school uuid, p_date date, p_reason text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_reopen_day(p_school uuid, p_date date, p_reason text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_reopen_day(p_school uuid, p_date date, p_reason text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_response_check(p_record uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_response_check(p_record uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_response_check(p_record uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_school_card(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_school_card(p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_school_card(p_school uuid) TO service_role;

@@ -1,12 +1,12 @@
 -- public.v2_record_behavior(p_student uuid, p_problem integer, p_place text, p_note text, p_period smallint, p_victim uuid, p_injury boolean, p_damage boolean, p_seizure boolean, p_seizure_legal boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 ce90ce2c07e3ca27eed6db32bddfcb8c
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 34e18c75633040567c4afa71b9fe27bd
 CREATE OR REPLACE FUNCTION public.v2_record_behavior(p_student uuid, p_problem integer, p_place text DEFAULT NULL::text, p_note text DEFAULT NULL::text, p_period smallint DEFAULT NULL::smallint, p_victim uuid DEFAULT NULL::uuid, p_injury boolean DEFAULT false, p_damage boolean DEFAULT false, p_seizure boolean DEFAULT false, p_seizure_legal boolean DEFAULT false)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'v2', 'public'
 AS $function$
-declare rid uuid; r record; ded numeric; tm smallint; sc uuid; yid uuid;
+declare rid uuid; r record; ded numeric; tm smallint; sc uuid; yid uuid; auto jsonb;
         ptxt text; msg text; st text; d text; h text; ctx text;
 begin
   perform v2.assert_role(array['counselor','deputy_students','deputy','principal',
@@ -55,8 +55,10 @@ begin
         coalesce((select test_mode from v2.schools where id=r.school_id),false));
   end if;
 
+  auto := v2.ladder_auto(rid);
   return jsonb_build_object(
-    'ok',true,'record',rid,'problem',ptxt,
+    'ok',true,'record',rid,'problem',ptxt,'auto',auto,
+    'advice',(select advice_ar from v2.behavior_records where id=rid),
     'degree_ar', v2.degree_ar(r.dno),
     'page_ar', v2.page_ar(r.spg),
     'term', tm,
