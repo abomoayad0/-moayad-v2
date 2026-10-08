@@ -1,5 +1,5 @@
 -- v2.fn_student_card(p_student uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 1c978ba0f2ec824073c622d2b939acb9
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 75f1d484ccaebe0786b190be86cdab49
 CREATE OR REPLACE FUNCTION v2.fn_student_card(p_student uuid)
  RETURNS jsonb
  LANGUAGE sql
@@ -28,7 +28,7 @@ select jsonb_build_object(
      'place', r.place,'note',r.note,
      'tasks_open', (select count(*) from v2.behavior_tasks t where t.record_id=r.id and t.status='open'),
      'tasks_all', (select count(*) from v2.behavior_tasks t where t.record_id=r.id),
-     'test', r.is_test) order by r.occurred_on desc)
+     'test', r.is_test) order by r.occurred_on desc, r.occurrence_no desc, r.created_at desc)
    from v2.behavior_records r join v2.conduct_problems p on p.id=r.problem_id
    where r.student_id=p_student),'[]'::jsonb),
  'tasks', coalesce((select jsonb_agg(jsonb_build_object(

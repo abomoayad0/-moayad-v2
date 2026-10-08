@@ -57,9 +57,28 @@
     }
     f.hidden = false;
     arabize(f);
+    seen(f);
+  }
+
+  // ما يُكتب في شريطٍ يجب أن يُرى: إن كان خارج الشاشة مُرّر إليه (الشريطُ فوق والزرُّ أسفلَ اللوح)
+  function seen(node) {
+    const r = node.getBoundingClientRect();
+    if (r.top < 60 || r.bottom > window.innerHeight) node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // اللمسةُ على الهاتف: تُلتقط من touchend نفسِه (بلا انتظار click الذي قد يُسقطه Safari على iPhone)،
+  // والفأرةُ ولوحةُ المفاتيح بـ click و Enter كما هما. ولا يقع الفعلُ مرّتين: touchend يمنع click الذي يليه.
+  function tap(node, fn) {
+    let sx = 0; let sy = 0; let moved = false;
+    node.addEventListener('touchstart', (e) => { const t = e.touches[0]; sx = t.clientX; sy = t.clientY; moved = false; }, { passive: true });
+    node.addEventListener('touchmove', (e) => { const t = e.touches[0]; if (Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10) moved = true; }, { passive: true });
+    node.addEventListener('touchend', (e) => { if (moved) return; e.preventDefault(); fn(e); });
+    node.addEventListener('click', fn);
+    node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(e); } });
   }
 
   // شرائطُ الاختيار القصير (٢–٩): [[value, text]] ⇒ onPick(value)
+  // يُعلَّم المختارُ في موضعه قبل onPick — فلا يُعاد بناءُ الشريطة تحت الإصبع (iPhone يُسقط اللمسةَ إن تغيّر ما تحتها)
   function pick(box, items, cur, onPick) {
     box.textContent = '';
     for (const [v, t] of items) {
@@ -67,9 +86,11 @@
       s.setAttribute('role', 'button');
       s.tabIndex = 0;
       s.setAttribute('aria-pressed', String(v === cur));
-      const go = () => onPick(v);
-      s.addEventListener('click', go);
-      s.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+      const go = () => {
+        for (const c of box.children) { const on = c === s; c.classList.toggle('on', on); c.setAttribute('aria-pressed', String(on)); }
+        onPick(v);
+      };
+      tap(s, go);
       box.appendChild(s);
     }
     arabize(box);
@@ -115,7 +136,7 @@
         const b = el('button', 'rs-item' + (v === val ? ' on' : ''));
         b.type = 'button';
         b.append(el('span', null, text), el('small', null, sub || ''));
-        b.addEventListener('click', () => { val = v; draw(); if (onPick) onPick(v); });
+        tap(b, () => { val = v; draw(); if (onPick) onPick(v); });
         list.appendChild(b);
       }
       if (!n) list.appendChild(el('div', 'rs-meta', 'لا نتائج.'));
@@ -165,8 +186,8 @@
         w.appendChild(box);
         if (f.type === 'pick') {
           let v = f.value == null ? null : f.value;
-          const draw = () => pick(box, f.items, v, (x) => { v = x; draw(); sync(); if (f.onChange) f.onChange(x, api); });
-          draw();
+          // الشريطةُ تُبنى مرّةً، والاختيارُ يُعلَّم في موضعه — والقيمةُ تُحفظ لحظةَ اللمس
+          pick(box, f.items, v, (x) => { v = x; sync(); if (f.onChange) f.onChange(x, api); });
           get[f.key] = () => v;
         } else {
           const c = chooser(box, f.items, f.value, () => { sync(); if (f.onChange) f.onChange(c.get(), api); });
@@ -202,7 +223,7 @@
       formBox.busy = true; b.disabled = true;
       let e = null;
       try { e = await fn(api.values()); } finally { formBox.busy = false; b.disabled = false; }
-      if (e) { err.textContent = typeof e === 'string' ? e : M.errText(e); err.hidden = false; arabize(err); return; }
+      if (e) { err.textContent = typeof e === 'string' ? e : M.errText(e); err.hidden = false; arabize(err); err.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
       formBox.hidden = true;
     };
     ok.addEventListener('click', () => run(ok, o.onOk));
@@ -215,8 +236,10 @@
     sync();
     arabize(sh);
     formBox.hidden = false;
+    sh.scrollTop = 0;
+    // لا تركيزَ آليًّا على اللمس: لوحةُ المفاتيح تغطّي اللوحَ وتبتلع اللمسةَ الأولى
     const first = sh.querySelector('textarea, input');
-    if (first) first.focus();
+    if (first && !(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) first.focus();
     return api;
   }
 
@@ -230,25 +253,31 @@
     w.append(box, tip);
     const on = new Set(f.value || []);
     let tapped = null;
-    const draw = () => {
-      box.textContent = '';
-      for (const x of f.items || []) {
-        const s = el('span', (on.has(x.id) ? 'on' : '') + (tapped === x.id ? ' tap' : ''));
-        s.setAttribute('role', 'button');
-        s.tabIndex = 0;
+    const nodes = [];
+    // تُبنى الشرائطُ مرّةً، وتُعلَّم في موضعها — فلا تتغيّر تحت الإصبع
+    const mark = () => {
+      for (const [x, s] of nodes) {
+        s.classList.toggle('on', on.has(x.id));
+        s.classList.toggle('tap', tapped === x.id);
         s.setAttribute('aria-pressed', String(on.has(x.id)));
-        s.append(el('b', null, x.icon || '•'), document.createTextNode(x.text));
-        const go = () => {
-          if (tapped !== x.id) { tapped = x.id; tip.textContent = x.hint || x.text; }
-          else { if (on.has(x.id)) on.delete(x.id); else on.add(x.id); }
-          draw();
-        };
-        s.addEventListener('click', go);
-        s.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
-        box.appendChild(s);
       }
     };
-    draw();
+    for (const x of f.items || []) {
+      const s = el('span');
+      s.setAttribute('role', 'button');
+      s.tabIndex = 0;
+      s.append(el('b', null, x.icon || '•'), document.createTextNode(x.text));
+      const go = () => {
+        if (tapped !== x.id) { tapped = x.id; tip.textContent = x.hint || x.text; }
+        else if (on.has(x.id)) { on.delete(x.id); tip.textContent = 'أُزيل: ' + x.text; }
+        else { on.add(x.id); tip.textContent = 'اختير: ' + x.text; }
+        mark();
+      };
+      tap(s, go);
+      box.appendChild(s);
+      nodes.push([x, s]);
+    }
+    mark();
     if (f.hint) w.appendChild(el('p', 'rs-meta', f.hint));
     return () => (f.items || []).filter((x) => on.has(x.id)).map((x) => x.id);
   }
@@ -259,7 +288,7 @@
     const box = el('div', 'rs-bank');
     box.hidden = true;
     w.appendChild(box);
-    const { data, error } = await M.rpc('v2_bank', { p_key: b.key, p_problem: b.problem == null ? null : b.problem, p_school: M.state.school || null }, 'بنك العبارات');
+    const { data, error } = await M.rpc('v2_bank', { p_key: b.key, p_problem: b.problem == null ? null : b.problem, p_school: M.state.school || null, p_all: false }, 'بنك العبارات');
     if (error || !data || !data.length) return;
     const hd = el('div', 'bkh');
     hd.append(el('b', null, 'بنكُ العبارات'), document.createTextNode(' — المسها فتُضاف · ولك أن تعدّل'));
@@ -277,8 +306,7 @@
           inp.value = cur ? cur + (inp.tagName === 'TEXTAREA' ? '\n' : '، ') + x.text : x.text;
           inp.dispatchEvent(new Event('input'));
         };
-        s.addEventListener('click', add);
-        s.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); add(); } });
+        tap(s, add);
         list.appendChild(s);
       }
     };
@@ -363,5 +391,5 @@
     return f;
   }
 
-  window.MoayadView = { ar, arabize, btn, notBuilt, offCard, renderRole, flash, pick, sheet, events, chooser, form, verdictCard, committeeTask };
+  window.MoayadView = { ar, arabize, btn, notBuilt, offCard, renderRole, flash, seen, tap, pick, sheet, events, chooser, form, verdictCard, committeeTask };
 })();

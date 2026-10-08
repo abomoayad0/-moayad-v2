@@ -1,6 +1,6 @@
 -- v2.guardian_contacts
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 925db61401e40cf2b1757c54d2463ced
+-- md5 b063ece10433394cf269ed2d4eada599
 
 CREATE TABLE v2.guardian_contacts (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE v2.guardian_contacts (
     on_date date DEFAULT CURRENT_DATE NOT NULL,
     at_time time without time zone,
     outcome text NOT NULL,
-    summary_ar text NOT NULL,
+    summary_ar text,
     guardian_say text,
     by_person uuid,
     attempt_no smallint DEFAULT 1 NOT NULL,

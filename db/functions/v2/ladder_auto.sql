@@ -1,5 +1,5 @@
 -- v2.ladder_auto(p_record uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e5e091319c408410f2d01e9565a104e3
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 ae70dd0e2d9d804607c659e8d7ff7908
 CREATE OR REPLACE FUNCTION v2.ladder_auto(p_record uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -45,6 +45,10 @@ begin
         did := did || jsonb_build_object('kind','opportunity','opp',nid,
           'text','فُتحت فرصةُ تعويضٍ للطالب');
       end if;
+      if nid is null then
+        did := did || jsonb_build_object('kind','opportunity',
+          'text','فرصُ التعويض مفتوحةٌ للطالب سلفًا — ولم تُفتح جديدة');
+      end if;
       update v2.behavior_tasks set status='done', done_at=now(), done_by=r.recorded_by,
         auto_note='فُتحت للطالب فرصُ التعويض — وله أن يسجّل فيها'
        where id=t.id;
@@ -60,6 +64,10 @@ begin
         returning id into nid;
         did := did || jsonb_build_object('kind','counsel','case',nid,
           'text','أُحيل الملفُّ إلى الموجّه الطلابيّ لدراسة حالته');
+      end if;
+      if nid is null then
+        did := did || jsonb_build_object('kind','counsel',
+          'text','للطالب حالةٌ مفتوحةٌ عند الموجّه سلفًا — ولم تُفتح جديدة');
       end if;
       update v2.behavior_tasks set status='done', done_at=now(), done_by=r.recorded_by,
         auto_note='أُحيل آليًّا إلى الموجّه — والدراسةُ عنده'

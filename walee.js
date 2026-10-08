@@ -1,5 +1,6 @@
 // مؤيّد · بوّابة وليّ الأمر — viewG في المحاكي: بطاقةُ الابن · رصداتُه · ما فعلته المدرسة · سلوكُه المتميّز · نماذج تنتظرك.
-// ⑤ «اتّصلت بك المدرسة» من أحداث guardian_contact في السجلّ · ودعواتُ المدرسة بردّه: v2_guardian_reply
+// ⑤ «اتّصلت بك المدرسة» من أحداث guardian_contact في السجلّ · ودعواتُ المدرسة: v2_guardian_pending ⇒ v2_guardian_reply
+// خطّةُ تعديل السلوك ورأيُه: v2_plan_of ⇒ v2_plan_opinion(guardian) · ونصيحةُ الرصدة: v2_record_advice
 // v2_guardian_me · v2_guardian_child · v2_opps_open_for · v2_student_timeline(p_student, 'guardian') · v2_guardian_forms · v2_guardian_form_read
 // v2_guardian_form_reply · v2_form_sign(p_entry, 'ولي الأمر', …)
 // 🔒 لا يرى دراسةَ الحالة ولا الجلسات: يُطلب السجلُّ بصفة 'guardian' لا غير، والقاعدةُ تحجب ما سواه.
@@ -27,10 +28,12 @@
     const k = ui.kid;
     if (!k) return;
     // بطاقةُ الابن من جسور البوّابة وحدها: v2_guardian_child — لا بطاقةُ المنسوبين (v2_student_card)
-    const [child, opp, tl] = await Promise.all([
+    const [child, opp, tl, pend, plans] = await Promise.all([
       M.rpc('v2_guardian_child', { p_student: k.student_id }, 'بطاقة الابن'),
       M.rpc('v2_opps_open_for', { p_student: k.student_id }, 'درجة السلوك'),
       M.rpc('v2_student_timeline', { p_student: k.student_id, p_as: 'guardian' }, 'سجلّ الابن'),
+      M.rpc('v2_guardian_pending', { p_student: k.student_id }, 'الدعوات المنتظرة'),
+      M.rpc('v2_plan_of', { p_student: k.student_id }, 'خطّة تعديل السلوك'),
     ]);
     const st = (child.data && child.data.student) || k;
     $('kidName').textContent = st.name || k.name || '';
@@ -49,6 +52,8 @@
     arabize($('kidCard'));
     renderScore(opp);
     renderTimeline(tl);
+    renderInvites(pend);
+    renderPlans(plans);
     renderMerit(opp);
     renderForms();
   }
@@ -97,7 +102,6 @@
       cbox.appendChild(ul);
     }
     arabize(cbox);
-    renderInvites(evs);
     const beh = evs.filter((e) => e.kind === 'behavior_record');
     if (!beh.length) recs.appendChild(el('p', 'rs-meta', 'لا رصداتِ على ابنك.'));
     else {
@@ -110,6 +114,9 @@
         if (e.body) body.appendChild(el('div', 'rs-meta', e.body));
         li.append(el('i', 'rs-tick ok', '✓'), body, el('small', 'rs-who', e.on || ''));
         ul.appendChild(li);
+        // النصيحةُ التربويّة من الرصدة نفسِها (v2_record_advice) — متى حمل الحدثُ رقمَ رصدته
+        const rec = e.record || e.ref_id;
+        if (rec) adviceOf(rec, body);
       }
       recs.appendChild(ul);
     }
@@ -118,18 +125,31 @@
     V.events(tlBox, evs);
   }
 
-  // دعواتُ المدرسة: ما وصله من السجلّ بحاجة فعلٍ منه (needs_action) — كخطاب الدعوة الآليّ
+  async function adviceOf(rec, body) {
+    const { data } = await M.rpc('v2_record_advice', { p_record: rec }, 'نصيحة الرصدة');
+    if (!data || !data.text) return;
+    const a = el('div', 'rs-advice');
+    a.append(el('b', null, 'نصيحةٌ لابنك: '), document.createTextNode(data.text));
+    body.appendChild(a);
+  }
+
+  // دعواتُ المدرسة من v2_guardian_pending: ما لم يُردّ عليه ينتظر ردَّه، وما ردّ عليه يظهر ردُّه ولا يُسأل ثانية
   const REPLIES = ['أحضر', 'أعتذر وأقترح موعدًا', 'لا أستطيع']; // كما يقبلها v2_guardian_reply — والقاعدةُ ترفض غيرها
-  function renderInvites(evs) {
+  function renderInvites(r) {
     const box = $('invites');
     box.textContent = '';
-    const list = evs.filter((e) => e.needs_action && e.kind === 'other');
+    if (r.error) { box.appendChild(el('div', 'notice err', errText(r.error))); return; }
+    const list = r.data || [];
     if (!list.length) { box.appendChild(el('p', 'rs-meta', 'لا دعوةَ تنتظر ردَّك.')); return; }
     for (const e of list) {
       const f = el('div', 'rs-file');
-      f.append(el('h5', null, e.title || ''), el('p', null, [e.body, e.on].filter(Boolean).join(' · ')));
-      if (e.action) f.appendChild(el('p', 'rs-meta', e.action));
-      f.appendChild(btn('ردّ على الدعوة', 'rs-btn', () => inviteReply(e)));
+      f.append(el('h5', null, e.title || ''), el('p', null, [e.body, e.on_date].filter(Boolean).join(' · ')));
+      if (e.replied) {
+        f.appendChild(el('p', 'rs-state-done', 'ردُّك: ' + (e.reply || '') + (e.suggested ? ' · تقترح ' + e.suggested : '') + (e.reply_note ? ' — ' + e.reply_note : '')));
+      } else {
+        if (e.action) f.appendChild(el('p', 'rs-meta', e.action));
+        f.appendChild(btn('ردّ على الدعوة', 'rs-btn', () => inviteReply(e)));
+      }
       box.appendChild(f);
     }
     arabize(box);
@@ -147,7 +167,7 @@
       ok: 'أرسل ردَّك',
       onOk: async (v) => {
         const { data, error } = await M.rpc('v2_guardian_reply', {
-          p_student: k.student_id, p_event: null, p_kind: 'دعوة', p_reply: v.reply, p_note: v.note,
+          p_student: k.student_id, p_event: e.event || null, p_kind: 'دعوة', p_reply: v.reply, p_note: v.note,
           p_suggested: v.reply === 'أعتذر وأقترح موعدًا' ? v.date : null,
         }, 'ردّ وليّ الأمر');
         if (error) return error;
@@ -156,6 +176,36 @@
         return null;
       },
     });
+  }
+
+  // خطّةُ تعديل السلوك ورأيُه فيها: رأيُ وليّ الأمر يكتبه هو (v2_plan_opinion · guardian)
+  function renderPlans(r) {
+    const box = $('plans');
+    box.textContent = '';
+    if (r.error) { box.appendChild(el('div', 'notice err', 'تعذّر جلبُ الخطّة: ' + errText(r.error))); return; }
+    const list = r.data || [];
+    if (!list.length) { box.appendChild(el('p', 'rs-meta', 'لم تُكتب لابنك خطّة.')); return; }
+    for (const p of list) {
+      const f = el('div', 'rs-file');
+      f.append(el('h5', null, (p.target || '—') + ' — ' + (p.state_ar || '')), el('p', null, p.desc || ''));
+      const steps = (Array.isArray(p.steps) ? p.steps : String(p.steps || '').split('\n')).filter((x) => String(x).trim() !== '');
+      if (steps.length) { const ul = el('ul', 'rs-acts'); for (const x of steps) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }
+      f.appendChild(el('p', null, 'رأيُك: ' + (p.guardian || 'لم تُبدِه بعد')));
+      if (p.status === 'draft') f.appendChild(btn(p.guardian ? 'عدّل رأيَك' : 'أبدِ رأيَك', 'rs-btn', () => V.form({
+        title: 'رأيُك في الخطّة', what: p.target || '',
+        fields: [{ key: 'text', type: 'textarea', label: 'رأيُك', rows: 3, value: p.guardian }],
+        ok: 'أرسل رأيَك',
+        onOk: async (v) => {
+          const { error } = await M.rpc('v2_plan_opinion', { p_plan: p.plan, p_who: 'guardian', p_text: v.text }, 'رأيُ وليّ الأمر');
+          if (error) return error;
+          flash('ok', 'وصل رأيُك إلى المدرسة');
+          loadKid();
+          return null;
+        },
+      })));
+      box.appendChild(f);
+    }
+    arabize(box);
   }
 
   // ④ ما قدّرته اللجنة
@@ -284,8 +334,7 @@
     const box = $('offCards');
     box.textContent = '';
     box.append(
-      V.offCard('خطّةُ تعديل السلوك — ورأيُك فيها', 'نموذج ٣ · ص٦٠'),
-      V.offCard('النصيحةُ التربويّة لابنك', 'تُحفظ مع الرصدة ولا يرجعها جسرٌ لوليّ الأمر: السجلُّ لا يحمل رقمَ السلوك الذي يطلبه v2_advice_for'));
+      V.offCard('النصيحةُ التربويّة لابنك', 'v2_record_advice جاهزٌ ويُنادى هنا — لكنّ السجلَّ لا يحمل رقمَ الرصدة الذي يطلبه'));
   }
 
   $('toast').addEventListener('click', () => { $('toast').hidden = true; });

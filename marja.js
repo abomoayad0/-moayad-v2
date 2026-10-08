@@ -1,8 +1,9 @@
 // مؤيّد · جداولُ مرجع الدرجة الأولى في لوحة التحكّم — أبوابُها بجسورها الخاصّة:
 // ① «قوائم حصر السلوكيات»: v2_census_list · v2_census_item_save (المشتركُ يُعدَّل بنسخةٍ لمدرستك تحجبه)
 // ② «بنك العبارات التربوية»: v2_bank · v2_bank_save (المشتركُ لا يُعدَّل — تُضاف عبارتُك)
-// ③ «النصائح التربوية»: v2_advice_for · v2_advice_save — ثلاثٌ لكلّ سلوكٍ تتدرّج بالرصدة
-// ④ «قوالب رسائل ولي الأمر»: v2_message_template_save
+// ③ «النصائح التربوية»: v2_problems · v2_advice_for(p_school) · v2_advice_save — ثلاثٌ لكلّ سلوكٍ تتدرّج بالرصدة
+// ④ «قوالب رسائل ولي الأمر»: v2_message_template · v2_message_template_save
+// والقوائمُ والبنكُ بـ p_all: الموقوفُ يظهر موسومًا ويُعاد تفعيلُه
 // ⑤ «حصر السلوكيات»: v2_census_sweep — يعيد ما انقضت مدّتُه
 // لا حسابَ هنا: النصوصُ والأيقوناتُ والترتيبُ من القاعدة، والقاعدةُ تحرس من يضبط.
 (function () {
@@ -20,7 +21,8 @@
   async function censusItemsTool(box) {
     box.textContent = '';
     box.appendChild(el('p', 'rs-meta', 'جارٍ جلب القوائم…'));
-    const { data, error } = await M.rpc('v2_census_list', { p_school: school() }, 'قوائم الحصر');
+    // p_all: والموقوفُ معها — فيُعاد تفعيلُه
+    const { data, error } = await M.rpc('v2_census_list', { p_school: school(), p_all: true }, 'قوائم الحصر');
     box.textContent = '';
     if (error) { errBox(box, error); return; }
     for (const [pol, title] of [['negative', 'السلوكيّاتُ السلبيّة'], ['positive', 'السلوكيّاتُ الإيجابيّة']]) {
@@ -29,7 +31,7 @@
       for (const x of list) {
         const f = el('div', 'rs-file');
         const hd = el('div', 'rs-hd');
-        hd.append(el('h5', null, (x.icon || '•') + ' ' + x.text), el('span', 'rs-who', x.mine ? 'لمدرستك' : 'مشترك'));
+        hd.append(el('h5', null, (x.icon || '•') + ' ' + x.text), el('span', 'rs-who', (x.mine ? 'لمدرستك' : 'مشترك') + (x.active === false ? ' · موقوف' : '')));
         f.appendChild(hd);
         if (x.hint) f.appendChild(el('p', null, x.hint));
         f.appendChild(btn('عدّل', 'rs-btn soft', () => itemForm(box, pol, x)));
@@ -48,7 +50,7 @@
         { key: 'text', label: 'النصّ', value: x ? x.text : null },
         { key: 'hint', type: 'textarea', label: 'شرحُه (يظهر باللمسة الأولى)', rows: 2, value: x ? x.hint : null },
         { key: 'ord', type: 'number', label: 'الترتيب (اختياريّ)', value: x ? x.ord : null },
-        ...(x ? [{ key: 'active', type: 'pick', label: 'الحال', items: ACTIVE, value: 'yes' }] : []),
+        ...(x ? [{ key: 'active', type: 'pick', label: 'الحال', items: ACTIVE, value: x.active === false ? 'no' : 'yes' }] : []),
       ],
       ok: 'احفظ',
       onOk: async (v) => {
@@ -79,14 +81,14 @@
     const draw = async () => {
       pick(keys, KEYS.map((k) => [k, k]), bankKey, (k) => { bankKey = k; draw(); });
       list.textContent = '';
-      const { data, error } = await M.rpc('v2_bank', { p_key: bankKey, p_problem: null, p_school: school() }, 'بنك العبارات');
+      const { data, error } = await M.rpc('v2_bank', { p_key: bankKey, p_problem: null, p_school: school(), p_all: true }, 'بنك العبارات');
       if (error) { errBox(list, error); return; }
       const rows = data || [];
       list.appendChild(el('p', 'rs-meta', bankKey + ' · ' + rows.length + ' عبارة'));
       for (const x of rows) {
         const f = el('div', 'rs-file');
         const hd = el('div', 'rs-hd');
-        hd.append(el('p', null, x.text), el('span', 'rs-who', x.mine ? 'لمدرستك' : 'مشتركة'));
+        hd.append(el('p', null, x.text), el('span', 'rs-who', (x.mine ? 'لمدرستك' : 'مشتركة') + (x.active === false ? ' · موقوفة' : '')));
         f.appendChild(hd);
         if (x.mine) f.appendChild(btn('عدّل', 'rs-btn soft', () => phraseForm(x, draw)));
         list.appendChild(f);
@@ -103,7 +105,7 @@
       fields: [
         { key: 'text', type: 'textarea', label: 'العبارة', rows: 2, value: x ? x.text : null },
         { key: 'ord', type: 'number', label: 'الترتيب (اختياريّ)', value: x ? x.ord : null },
-        ...(x ? [{ key: 'active', type: 'pick', label: 'الحال', items: ACTIVE, value: 'yes' }] : []),
+        ...(x ? [{ key: 'active', type: 'pick', label: 'الحال', items: ACTIVE, value: x.active === false ? 'no' : 'yes' }] : []),
       ],
       ok: 'احفظ',
       onOk: async (v) => {
@@ -120,22 +122,19 @@
   }
 
   // ================= ③ النصائحُ التربويّة =================
-  // لا جسرَ يسرد السلوكيّاتِ بلا طالب: تُؤخذ قائمتُها من v2_conduct_list لأوّل طالبٍ مقيَّدٍ في المدرسة (مرحلتُها واحدة)
+  // السلوكيّاتُ من v2_problems(p_school) بلا طالب — ومعها عددُ نصائحه وعباراته
   let problems = null;
   async function adviceTool(box) {
     box.textContent = '';
     if (!problems || problems.school !== school()) {
       box.appendChild(el('p', 'rs-meta', 'جارٍ جلب السلوكيّات…'));
-      const st = await M.rpc('v2_students_board', { p_school: school(), p_grade: null, p_section: null, p_q: null }, 'كشف الطلّاب');
-      const first = st.data && st.data[0];
-      if (st.error || !first) { box.textContent = ''; if (st.error) errBox(box, st.error); else box.appendChild(el('p', 'rs-meta', 'لا طالبَ مقيَّدٌ تُعرف به قائمةُ السلوكيّات.')); return; }
-      const { data, error } = await M.rpc('v2_conduct_list', { p_student: first.student, p_mode: 'onsite', p_target: null }, 'قائمة السلوكيّات');
+      const { data, error } = await M.rpc('v2_problems', { p_school: school(), p_degree: null }, 'السلوكيّات');
       box.textContent = '';
       if (error) { errBox(box, error); return; }
       problems = { school: school(), list: data || [] };
     }
     const sec = el('div');
-    V.chooser(box, problems.list.map((p) => [p.id, p.text, p.degree_ar]), null, (id) => showAdvice(sec, problems.list.find((p) => p.id === id)));
+    V.chooser(box, problems.list.map((p) => [p.id, p.text, [p.degree_ar, p.advice_n != null ? 'نصائحُه ' + p.advice_n : null].filter(Boolean).join(' · ')]), null, (id) => showAdvice(sec, problems.list.find((p) => p.id === id)));
     box.appendChild(sec);
   }
 
@@ -144,7 +143,7 @@
     if (!p) return;
     sec.appendChild(el('h4', 'rs-sub', p.text));
     // النصائحُ الثلاث بالرصدة: ١ · ٢ · ٣ — وما بعدها يأخذ الأخيرة
-    const rows = await Promise.all([1, 2, 3].map((n) => M.rpc('v2_advice_for', { p_problem: p.id, p_occurrence: n }, 'النصيحة التربويّة')));
+    const rows = await Promise.all([1, 2, 3].map((n) => M.rpc('v2_advice_for', { p_problem: p.id, p_occurrence: n, p_school: school() }, 'النصيحة التربويّة')));
     rows.forEach((r, i) => {
       const n = i + 1;
       const f = el('div', 'rs-file');
@@ -176,23 +175,27 @@
   }
 
   // ================= ④ قالبُ رسالة وليّ الأمر =================
-  const VARS = '{المدرسة} {الطالب} {الفصل} {السلوك} {الرصدة} {الأثر} {الموقّع}';
-  function templateTool(box) {
+  // القالبُ القائمُ ومتغيّراتُه من v2_message_template — ويُعدَّل لمدرستك بـ v2_message_template_save
+  async function templateTool(box) {
     box.textContent = '';
-    box.appendChild(el('p', 'rs-meta', 'المتغيّرات: ' + VARS + ' — و{الطالب} لا بدّ منه.'));
-    box.appendChild(el('div', 'rs-note', 'لا جسرَ يقرأ القالبَ القائم — فما يُكتب هنا يحلّ محلّه لمدرستك. وتراه كاملًا في «رسالة» من إثبات الاتّصال.'));
-    box.appendChild(btn('اكتب قالبَ مدرستك', 'rs-btn', () => V.form({
-      title: 'قالبُ رسالة وليّ الأمر', what: VARS,
-      fields: [{ key: 'body', type: 'textarea', label: 'نصُّ الرسالة', rows: 12 }],
+    const { data, error } = await M.rpc('v2_message_template', { p_school: school(), p_key: null }, 'قالب الرسالة');
+    if (error) { errBox(box, error); return; }
+    const d = data || {};
+    const vars = (d.vars || []).join(' ');
+    box.appendChild(el('p', 'rs-meta', (d.mine ? 'قالبُ مدرستك' : 'القالبُ المشترك') + ' · المتغيّرات: ' + vars));
+    box.appendChild(el('div', 'rs-msg', d.body || '—'));
+    box.appendChild(btn(d.mine ? 'عدّل قالبَ مدرستك' : 'اكتب قالبًا لمدرستك', 'rs-btn', () => V.form({
+      title: 'قالبُ رسالة وليّ الأمر', what: vars,
+      fields: [{ key: 'body', type: 'textarea', label: 'نصُّ الرسالة', rows: 14, value: d.body || '' }],
       ok: 'احفظ القالب',
       onOk: async (v) => {
-        const { error } = await M.rpc('v2_message_template_save', { p_school: school(), p_key: 'guardian_notice', p_body: v.body }, 'حفظ القالب');
-        if (error) return error;
+        const { error: e } = await M.rpc('v2_message_template_save', { p_school: school(), p_key: 'guardian_notice', p_body: v.body }, 'حفظ القالب');
+        if (e) return e;
         flash('ok', 'حُفظ قالبُ مدرستك');
+        templateTool(box);
         return null;
       },
     })));
-    arabize(box);
   }
 
   // ================= ⑤ حصرُ السلوكيّات: ما انقضت مدّتُه =================

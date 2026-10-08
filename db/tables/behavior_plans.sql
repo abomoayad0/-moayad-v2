@@ -1,6 +1,6 @@
 -- v2.behavior_plans
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 16bbd7c6b3777ef6999b44d8f0d8e0bd
+-- md5 00d5017fa78c6321799f0c09488b6f43
 
 CREATE TABLE v2.behavior_plans (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE v2.behavior_plans (
     guardian_at timestamp with time zone,
     is_test boolean DEFAULT false NOT NULL,
     CONSTRAINT behavior_plans_pkey PRIMARY KEY (id),
-    CONSTRAINT behavior_plans_status_check CHECK ((status = ANY (ARRAY['draft'::text, 'active'::text, 'closed'::text]))),
+    CONSTRAINT behavior_plans_status_check CHECK ((status = ANY (ARRAY['draft'::text, 'active'::text, 'final'::text, 'closed'::text, 'cancelled'::text]))),
     CONSTRAINT plan_dates CHECK (((ends_on IS NULL) OR (starts_on IS NULL) OR (ends_on >= starts_on)))
 );
 ALTER TABLE v2.behavior_plans ENABLE ROW LEVEL SECURITY;

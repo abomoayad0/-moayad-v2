@@ -1,5 +1,5 @@
 -- public.v2_guardian_message(p_record uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 924d2fbee3d5da204d35b1032bc16139
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 9f5485205a2fb0e3a059a4d81fe2e596
 CREATE OR REPLACE FUNCTION public.v2_guardian_message(p_record uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -49,7 +49,7 @@ begin
     'whatsapp', case when g.ph is null then null
       else 'https://wa.me/'||regexp_replace(
         case when g.ph like '0%' then '966'||substr(g.ph,2) else g.ph end,'[^0-9]','','g')
-        ||'?text='||replace(replace(body,' ','%20'),E'\n','%0A') end,
+        ||'?text='||v2.url_enc(body) end,
     'step', r.step_no);
 end $function$
 ;

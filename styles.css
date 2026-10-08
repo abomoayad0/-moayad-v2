@@ -472,3 +472,12 @@
   .rs-advice { border-right: 3px solid var(--brand); background: var(--soft); border-radius: 8px; padding: 7px 10px; font-size: 13px; margin-top: 8px; }
   .rs-msg { white-space: pre-wrap; background: var(--soft); border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.7; margin-top: 8px; max-height: 40vh; overflow: auto; }
   .rs-fld[hidden] { display: none; }
+
+/* ─── اللمس على الهاتف: لا تكبيرَ بالنقرتين ولا تأخيرَ على الشرائط والأزرار ─── */
+  .rs-pick span, .rs-btn, .rs-item, .rs-ib, .rs-bank .bkl span, button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  .rs-pick span, .rs-ib { -webkit-user-select: none; user-select: none; }
+/* أفعالُ المهمّة في سطرها — كـ .ib في المحاكي */
+  .rs-ib { border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; border-radius: 9px; padding: 5px 10px; font: inherit; font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto; }
+  .rs-ib:hover, .rs-ib:focus { border-color: var(--brand); color: var(--brand); }
+  ul.rs-acts li .rs-ibs { display: flex; gap: 6px; flex-wrap: wrap; margin-inline-start: auto; }
+  ul.rs-acts li .rs-done-line { display: block; font-size: 11.5px; color: var(--mute); }

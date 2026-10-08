@@ -90,8 +90,7 @@
       const s = el('span', on ? 'on' : null, ar(c.label_ar));
       s.setAttribute('role', 'button'); s.tabIndex = 0; s.setAttribute('aria-pressed', String(on));
       const pick = () => { ui.cls = c; renderClasses(); resetStudent(); $('qStu').disabled = false; renderStudents(); };
-      s.addEventListener('click', pick);
-      s.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+      V.tap(s, pick);
       box.appendChild(s);
     }
   }
@@ -161,8 +160,11 @@
     syncButton();
   }
   $('qProb').addEventListener('input', renderProblems);
+  // على iPhone يقع change ثانيةً حين تُغلق عجلةُ الاختيار بلمس شريطة الحصّة — فلا تُمحى الحصّةُ إلا إن تغيّر السلوكُ فعلًا
   $('prob').addEventListener('change', () => {
-    ui.prob = ui.problems.find((p) => String(p.id) === $('prob').value) || null;
+    const np = ui.problems.find((p) => String(p.id) === $('prob').value) || null;
+    if (np === ui.prob) return;
+    ui.prob = np;
     ui.period = null;
     renderPeriods();
     syncButton();
@@ -176,16 +178,17 @@
     box.textContent = '';
     if (!show) return;
     if (!ui.periods.length) { box.appendChild(el('span', 'k', 'لا حصصَ مسجّلةٌ للمدرسة — تُضبط من لوحة التحكّم')); return; }
+    // تُبنى مرّةً وتُعلَّم في موضعها — والحصّةُ تُحفظ لحظةَ اللمس
+    const mark = () => { for (const c of box.children) { const on = Number(c.dataset.no) === ui.period; c.classList.toggle('on', on); c.setAttribute('aria-pressed', String(on)); } };
     for (const p of ui.periods) {
-      const on = ui.period === p.no;
-      const s = el('span', on ? 'on' : null, p.no_ar);
+      const s = el('span', null, p.no_ar);
       s.title = p.label || '';
-      s.setAttribute('role', 'button'); s.tabIndex = 0; s.setAttribute('aria-pressed', String(on));
-      const pick = () => { ui.period = on ? null : p.no; renderPeriods(); };
-      s.addEventListener('click', pick);
-      s.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+      s.dataset.no = p.no;
+      s.setAttribute('role', 'button'); s.tabIndex = 0;
+      V.tap(s, () => { ui.period = ui.period === p.no ? null : p.no; mark(); });
       box.appendChild(s);
     }
+    mark();
   }
 
   function syncButton() { $('rec').disabled = ui.busy || !ui.stu || !ui.prob; }
@@ -209,6 +212,7 @@
     }
     f.hidden = false;
     arabize(f);
+    V.seen(f);
   }
 
   // ---------- ① ارصد: ضغطةٌ واحدة ----------
@@ -315,17 +319,18 @@
     if (!stu) return;
     // آخرُ نداءٍ هو الحاكم — فلا يغطّي ردٌّ قديمٌ وصل متأخّرًا ما بعده
     const seq = ui.seq = (ui.seq || 0) + 1;
-    const [card, tasks, tl, f5, ct, cn] = await Promise.all([
+    const [card, tasks, tl, f5, ct, cn, pl] = await Promise.all([
       M.rpc('v2_student_card', { p_student: stu.student_id }, 'بطاقة الطالب'),
       M.rpc('v2_student_tasks', { p_student: stu.student_id }, 'مهامّ الطالب'),
       M.rpc('v2_student_timeline', { p_student: stu.student_id, p_as: null }, 'سجلّ الملفّ'),
       ui.full ? M.rpc('v2_form_open', { p_form: 5, p_student: stu.student_id }, 'النموذج ٥') : Promise.resolve({}),
       M.rpc('v2_contacts_of', { p_student: stu.student_id }, 'سجلّ الاتّصال'),
       M.rpc('v2_census_of', { p_student: stu.student_id }, 'حصر السلوكيّات'),
+      M.rpc('v2_plan_of', { p_student: stu.student_id }, 'خطّة تعديل السلوك'),
     ]);
     if (ui.stu !== stu || seq !== ui.seq) return;
     // v2_student_tasks بأسمائه الجديدة: task · record · text · problem · kind · kind_ar
-    ui.files = { card: card.data || {}, tasks: (tasks.data || []).map((t) => Object.assign({}, t, { task_id: t.task_id || t.task, record_id: t.record_id || t.record, text_ar: t.text_ar || t.text, problem_ar: t.problem_ar || t.problem })), timeline: tl.data || {}, form5: f5, contacts: ct, census: cn, advice: new Map(), resp: new Map(), error: card.error || tasks.error || tl.error };
+    ui.files = { card: card.data || {}, tasks: (tasks.data || []).map((t) => Object.assign({}, t, { task_id: t.task_id || t.task, record_id: t.record_id || t.record, text_ar: t.text_ar || t.text, problem_ar: t.problem_ar || t.problem })), timeline: tl.data || {}, form5: f5, contacts: ct, census: cn, plans: pl, advice: new Map(), resp: new Map(), error: card.error || tasks.error || tl.error };
     renderStudentCards();
     loadAdvice(stu);
     loadResponse(stu);
@@ -341,7 +346,7 @@
     await Promise.all([...last].map(async ([prob, r]) => {
       const m = metaOf(prob);
       if (!m) return;
-      const { data } = await M.rpc('v2_advice_for', { p_problem: m.id, p_occurrence: r.occurrence }, 'النصيحة التربويّة');
+      const { data } = await M.rpc('v2_advice_for', { p_problem: m.id, p_occurrence: r.occurrence, p_school: M.state.school }, 'النصيحة التربويّة');
       if (ui.stu === stu && ui.files && data && data.text) ui.files.advice.set(prob, data.text);
     }));
     if (ui.stu === stu) renderFiles();
@@ -350,9 +355,9 @@
   function renderStudentCards() {
     const show = !!ui.stu;
     $('f5Card').hidden = !show || !ui.full; $('respCard').hidden = !show; $('tlCard').hidden = !show;
-    $('contactCard').hidden = !show; $('censusCard').hidden = !show;
+    $('contactCard').hidden = !show; $('censusCard').hidden = !show; $('planCard').hidden = !show;
     if (ui.full) renderForm5();
-    renderFiles(); renderTimeline(); renderContacts(); renderCensus(); renderResponse();
+    renderFiles(); renderTimeline(); renderContacts(); renderCensus(); renderPlans(); renderResponse();
   }
 
   // ③ النموذج ٥: صفوفُه كما يرجعها v2_form_open — ويُطبع من النموذج نفسه
@@ -433,33 +438,67 @@
     if (adv) { const a = el('div', 'rs-advice'); a.append(el('b', null, 'النصيحةُ التربويّة: '), document.createTextNode(adv)); c.appendChild(a); }
     const ts = ui.files.tasks.filter((t) => String(t.problem_ar).replace(/\.\s*$/, '') === String(prob).replace(/\.\s*$/, ''));
     if (ts.length) {
+      // كالمحاكي: لكلّ مهمّةٍ سطرُها، وفعلُها زرٌّ صغيرٌ فيه — وما تمّ ينتقل إلى «ما تمّ» بعلامته
+      const tbox = el('div');
+      const showTasks = () => { window.MoayadTasks.render(tbox, ui.stu.student_id); tbox.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+      const open = ts.filter((t) => t.status === 'open');
+      const done = ts.filter((t) => t.status !== 'open');
+      const tip = el('div', 'rs-tip', '—');
+      const ib = (label, desc, fn) => { const b = btn(label, 'rs-ib', fn); b.title = desc; b.addEventListener('pointerenter', () => { tip.textContent = desc; }); return b; };
+      const row = (t, isDone, acts, line) => {
+        const li = el('li');
+        const body = el('span');
+        body.style.flex = '1';
+        body.appendChild(document.createTextNode(t.text_ar));
+        if (line) body.appendChild(el('span', 'rs-done-line', line));
+        li.append(el('i', 'rs-tick' + (isDone ? ' ok' : ''), isDone ? '✓' : '○'), body);
+        if (acts.length) { const w = el('span', 'rs-ibs'); w.append(...acts); li.appendChild(w); }
+        li.appendChild(el('span', 'rs-who', (t.kind_ar || t.owner_ar || t.owner_role_ar || t.owner_role || '') + (isDone ? ' · تمّ' : '')));
+        return li;
+      };
+      // أفعالُ المهمّة المفتوحة بنوعها — ولا فعلَ بلا مهمّة
+      const openActs = (t) => {
+        if (t.kind === 'notify_guardian') return [ib('📞 اتّصل', 'الاتّصالُ بوليّ الأمر وإثباتُه — والحقلُ يتبع النتيجة', () => contactForm(t.task_id))];
+        if (t.kind === 'follow_up') {
+          const a = [ib('📋 احصر', 'تحصر سلوكيّاتِ الطالب بنفسك: السلبيّةَ والإيجابيّةَ ومسبّباتِها', () => selfCensus(t.task_id))];
+          if (ui.full) a.push(ib('👤 كلّف', 'تكلّف منسوبًا بالحصر بمدّةٍ تحدّدها، ثمّ ينظر فيه الوكيل', () => assignCensus(t.task_id)));
+          return a;
+        }
+        if (t.kind === 'plan') return [ib('📝 الخطّة', 'خطّةُ تعديل السلوك (نموذج ٣): تُكتب، ثمّ رأيُ معلّم الفصل، ثمّ تُعتمد', () => planForm(t, null))];
+        if (t.kind === 'committee') return [ib('⚖️ أحِل', 'لا تُفتح إلا بعد اعتماد الخطّة وبرصدةٍ بعدها', () => referForm(t))];
+        if (t.kind === 'summon_guardian') return [ib('✉️ الخطاب', 'خطابُ الدعوة (نموذج ١٠) وإثباتُه في لوح المهمّة', showTasks)];
+        return [];
+      };
+      // ما تمّ: الاتّصالُ والحصرُ يبقيان «مرّةً أخرى» ومعهما سطرُ ما وقع
+      const contacts = (ui.files.contacts && ui.files.contacts.data) || [];
+      const census = (ui.files.census && ui.files.census.data) || [];
+      const doneActs = (t) => {
+        if (t.kind === 'notify_guardian') {
+          const last = contacts[0];
+          return [[ib('📞 تواصل مرّةً أخرى', 'إضافةُ اتّصالٍ آخر — والتواصلُ ثانيةً لا ضرر فيه', () => contactForm(t.task_id))],
+            last ? 'أُثبت ' + contacts.length + ' · آخرُها ' + [last.on, last.at ? String(last.at).slice(0, 5) : null].filter(Boolean).join(' ') : null];
+        }
+        if (t.kind === 'follow_up') {
+          const filed = census.filter((c) => c.filed_at);
+          const last = filed[0];
+          return [[ib('📋 احصر مرّةً أخرى', 'حصرٌ آخرُ للسلوكيّات', () => selfCensus(t.task_id))],
+            last ? 'حُصر ' + filed.length + ' · آخرُه ' + String(last.filed_at).slice(0, 16).replace('T', ' ') : null];
+        }
+        return [[], t.ev_text || null];
+      };
       c.appendChild(el('div', 'rs-label', 'ما على الإجراء:'));
       const ul = el('ul', 'rs-acts');
-      for (const t of ts) {
-        const done = t.status !== 'open';
-        const li = el('li');
-        li.append(el('i', 'rs-tick' + (done ? ' ok' : ''), done ? '✓' : '○'), el('span', null, t.text_ar), el('span', 'rs-who', t.kind_ar || t.owner_ar || t.owner_role_ar || t.owner_role || ''));
-        ul.appendChild(li);
-      }
+      if (!open.length) ul.appendChild(el('li', 'rs-meta', 'لا شيءَ مفتوح.'));
+      for (const t of open) ul.appendChild(row(t, false, openActs(t), null));
       c.appendChild(ul);
-      const open = ts.filter((t) => t.status === 'open').length;
-      const tbox = el('div');
-      const showTasks = () => { if (b) b.hidden = true; window.MoayadTasks.render(tbox, ui.stu.student_id); tbox.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-      const b = open ? btn('أنجز المهامّ (' + open + ')', 'rs-btn soft', showTasks) : null;
-      // أفعالُ الوكيل: زرٌّ لكلّ مهمّةٍ مفتوحةٍ في tasks بنوعها، ولا زرَّ بلا مهمّة
-      const acts = el('div', 'rs-row');
-      const has = (kind) => ts.find((t) => t.kind === kind && t.status === 'open');
-      const tn = has('notify_guardian');
-      if (tn) acts.appendChild(btn('إثباتُ الاتّصال', 'rs-btn soft', () => contactForm(tn.task_id)));
-      const tf = has('follow_up');
-      if (tf) acts.appendChild(btn('أحصرُ بنفسي', 'rs-btn soft', () => selfCensus(tf.task_id)));
-      if (tf && ui.full) acts.appendChild(btn('أكلّف به أحدًا', 'rs-btn soft', () => assignCensus(tf.task_id)));
-      // خطابُ الدعوة يُرسل آليًّا بالرصد · والإحالةُ للّجنة بقياس الاستجابة أوّلًا
-      if (has('summon_guardian')) acts.appendChild(btn('خطابُ الدعوة', 'rs-btn soft', showTasks));
-      const tc = has('committee');
-      if (tc) acts.appendChild(btn('الإحالةُ للّجنة', 'rs-btn soft', () => referForm(tc)));
-      if (b) c.appendChild(b);
-      if (acts.childNodes.length) c.appendChild(acts);
+      c.appendChild(tip);
+      if (done.length) {
+        c.appendChild(el('div', 'rs-label', 'ما تمّ:'));
+        const ul2 = el('ul', 'rs-acts');
+        for (const t of done) { const [acts, line] = doneActs(t); ul2.appendChild(row(t, true, acts, line)); }
+        c.appendChild(ul2);
+      }
+      if (open.length) c.appendChild(btn('أنجز المهامّ بإثباتها (' + open.length + ')', 'rs-btn soft', showTasks));
       c.appendChild(tbox);
     }
     const det = el('details', 'rs-dt');
@@ -515,7 +554,7 @@
       box.appendChild(ul);
     }
     // لا حارسَ في الواجهة: الإثباتُ مفتوحٌ، والمهمّةُ تُختار إن كانت — والقاعدةُ تحكم برسالتها
-    box.appendChild(btn('أثبت اتّصالًا', 'rs-btn', () => contactForm()));
+    box.appendChild(btn(list.length ? 'تواصل مرّةً أخرى' : 'أثبت اتّصالًا', 'rs-btn', () => contactForm()));
     arabize(box);
   }
 
@@ -536,16 +575,18 @@
     const tf = taskField('notify_guardian', pre);
     pre = pre || (tf[0] && tf[0].value);
     const prob = (id) => { const t = taskById(id); const m = t && metaOf(t.problem_ar); return m ? m.id : null; };
-    // الرسالةُ حين تُختار «رسالة»: نصُّها جاهزٌ من v2_guardian_message لرصدة المهمّة، وزرُّ الإرسال
+    // الرسالةُ لحظةَ اختيار «رسالة»: v2_guardian_message لرصدة المهمّة — أو آخرِ رصدةٍ للطالب إن لم تُختر مهمّة —
+    // ويظهر body كما يرجع، وزرٌّ يفتح whatsapp كما يرجع (لا يُبنى الرابطُ هنا)
     const msg = el('div');
     let channel = null;
     const loadMsg = async (taskId) => {
       msg.textContent = '';
       if (channel !== 'رسالة') return;
-      const t = taskById(taskId);
-      if (!t || !t.record_id) { msg.appendChild(el('p', 'rs-meta', 'اختر مهمّةَ الإشعار لتظهر رسالتُها.')); return; }
+      const t = taskById(taskId) || taskById(pre);
+      const rec = (t && t.record_id) || ((((ui.files && ui.files.tasks) || []).find((x) => x.record_id)) || {}).record_id;
+      if (!rec) { msg.appendChild(el('p', 'rs-meta', 'لا رصدةَ للطالب تُبنى عليها الرسالة.')); return; }
       msg.appendChild(el('p', 'rs-meta', 'جارٍ تجهيزُ الرسالة…'));
-      const { data, error } = await M.rpc('v2_guardian_message', { p_record: t.record_id }, 'رسالة وليّ الأمر');
+      const { data, error } = await M.rpc('v2_guardian_message', { p_record: rec }, 'رسالة وليّ الأمر');
       msg.textContent = '';
       if (error) { msg.appendChild(el('div', 'flash bad', errText(error))); return; }
       const d = data || {};
@@ -682,6 +723,114 @@
     V.form({ title: 'ملفُّ الإحالة', what: d.note || '', fields: [{ key: 'file', type: 'node', node: box }], ok: false, cancel: 'تمّ' });
   }
 
+  // ---------- خطّةُ تعديل السلوك (نموذج ٣) ----------
+  // كما يرجع v2_plan_of: الحالُ والمحتوى والآراءُ، و needs_teacher و can_final — والاعتمادُ بكتابة «أعتمد»
+  const lines = (v) => (Array.isArray(v) ? v : String(v || '').split('\n')).filter((x) => String(x).trim() !== '');
+  function renderPlans() {
+    const box = $('plans');
+    box.textContent = '';
+    if (!ui.stu || !ui.files) return;
+    const r = ui.files.plans || {};
+    if (r.error) box.appendChild(el('div', 'notice err', errText(r.error)));
+    const list = r.data || [];
+    if (!list.length && !r.error) box.appendChild(el('p', 'rs-empty', 'لم تُكتب له خطّة.'));
+    for (const p of list) {
+      const f = el('div', 'rs-file');
+      f.appendChild(el('h5', null, (p.target || '—') + ' — ' + (p.state_ar || p.status || '')));
+      f.appendChild(el('p', null, ['كتبها ' + (p.by || '—'), p.starts ? 'من ' + p.starts : null, p.ends ? 'إلى ' + p.ends : null, p.final_at ? 'اعتمدها ' + (p.final_by || '—') + ' في ' + String(p.final_at).slice(0, 10) : null].filter(Boolean).join(' · ')));
+      const lg = el('div', 'rs-lgd');
+      for (const [k, v] of [['السلوك', p.desc], ['مظاهرُه', p.manifest], ['ما يسبقه', p.ante], ['ما يليه', p.conseq], ['ما يحقّقه منه', p.gain], ['ما سبق من إجراء', p.prior]]) if (v) lg.append(el('i', 'k', k + ':'), el('i', null, v));
+      f.appendChild(lg);
+      const st = lines(p.steps);
+      if (st.length) { f.appendChild(el('div', 'rs-label', 'إجراءاتُ التعديل')); const ul = el('ul', 'rs-acts'); for (const x of st) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }
+      const op = el('div', 'rs-lgd');
+      op.append(el('i', 'k', 'رأيُ معلّم الفصل:'), el('i', p.needs_teacher ? 'rs-state-open' : null, p.teacher || 'لم يُبدِه بعد'),
+        el('i', 'k', 'رأيُ وليّ الأمر:'), el('i', null, p.guardian || 'لم يُبدِه بعد'),
+        el('i', 'k', 'رأيُ الوكيل:'), el('i', null, p.deputy || '—'));
+      f.appendChild(op);
+      if (p.status === 'draft') {
+        const row = el('div', 'rs-row');
+        row.append(btn('عدّلها', 'rs-btn soft', () => planForm(null, p)),
+          btn('رأيُ معلّم الفصل', 'rs-btn soft', () => opinionForm(p, 'teacher', 'رأيُ معلّم الفصل', p.teacher)),
+          btn('رأيُ الوكيل', 'rs-btn soft', () => opinionForm(p, 'deputy', 'رأيُ الوكيل', p.deputy)));
+        if (p.can_final) row.appendChild(btn('اعتمدها', 'rs-btn', () => finalForm(p)));
+        f.appendChild(row);
+        if (!p.can_final && p.needs_teacher) f.appendChild(el('p', 'rs-meta', 'لا تُعتمد حتى يُبدي معلّمُ الفصل رأيَه.'));
+      }
+      box.appendChild(f);
+    }
+    if (!list.some((p) => p.status === 'draft')) {
+      const t = ((ui.files && ui.files.tasks) || []).find((x) => x.kind === 'plan' && x.status === 'open');
+      box.appendChild(btn('اكتب خطّة', 'rs-btn', () => planForm(t || null, null)));
+    }
+    arabize(box);
+  }
+
+  // كتابةُ الخطّة أو تعديلُ مسودّتها — وتحت حقولها بنكُ العبارات (plDesc · plAnte · plPost · plGain)
+  function planForm(t, p) {
+    const stu = ui.stu;
+    const draft = p || (((ui.files && ui.files.plans && ui.files.plans.data) || []).find((x) => x.status === 'draft')) || null;
+    const m = t && metaOf(t.problem_ar);
+    const pr = m ? m.id : null;
+    V.form({
+      title: draft ? 'خطّةُ تعديل السلوك — مسودّة' : 'خطّةُ تعديل السلوك', what: (stu.display_name || stu.full_name) + (t && t.problem_ar ? ' — ' + t.problem_ar : ''),
+      fields: [
+        { key: 'desc', type: 'textarea', label: 'وصفُ السلوك المراد تعديلُه', rows: 2, value: draft ? draft.desc : null, bank: { key: 'plDesc', problem: pr } },
+        { key: 'manifest', type: 'textarea', label: 'مظاهرُه عند الطالب (اختياريّ)', rows: 2, value: draft ? draft.manifest : null },
+        { key: 'ante', type: 'textarea', label: 'ما يسبقه — مثيراتُه (اختياريّ)', rows: 2, value: draft ? draft.ante : null, bank: { key: 'plAnte', problem: pr } },
+        { key: 'conseq', type: 'textarea', label: 'ما يليه (اختياريّ)', rows: 2, value: draft ? draft.conseq : null, bank: { key: 'plPost', problem: pr } },
+        { key: 'gain', type: 'textarea', label: 'ما يحقّقه الطالبُ منه (اختياريّ)', rows: 2, value: draft ? draft.gain : null, bank: { key: 'plGain', problem: pr } },
+        { key: 'prior', type: 'textarea', label: 'ما سبق من إجراء (اختياريّ)', rows: 2, value: draft ? draft.prior : null },
+        { key: 'target', type: 'textarea', label: 'السلوكُ البديلُ المستهدف', rows: 2, value: draft ? draft.target : null },
+        { key: 'steps', type: 'textarea', label: 'إجراءاتُ التعديل — سطرٌ لكلّ إجراء', rows: 4, value: draft ? lines(draft.steps).join('\n') : null },
+        { key: 'starts', type: 'date', label: 'تبدأ', value: draft ? draft.starts : null },
+        { key: 'ends', type: 'date', label: 'تنتهي (اختياريّ)', value: draft ? draft.ends : null },
+      ],
+      ok: draft ? 'احفظ التعديل' : 'احفظها مسودّة',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_plan_write', {
+          p_student: stu.student_id, p_record: t ? t.record_id : null, p_task: t ? t.task_id : null, p_plan: draft ? draft.plan : null,
+          p_desc: v.desc, p_manifest: v.manifest, p_ante: v.ante, p_conseq: v.conseq, p_gain: v.gain, p_prior: v.prior,
+          p_target: v.target, p_steps: v.steps, p_starts: v.starts, p_ends: v.ends,
+        }, 'كتابة الخطّة');
+        if (error) return error;
+        V.flash('ok', (data && data.note) || 'حُفظت الخطّة');
+        loadStudentCards();
+        return null;
+      },
+    });
+  }
+
+  function opinionForm(p, who, label, cur) {
+    V.form({
+      title: label, what: p.target || '',
+      fields: [{ key: 'text', type: 'textarea', label: label, rows: 3, value: cur }],
+      ok: 'احفظ الرأي',
+      onOk: async (v) => {
+        const { error } = await M.rpc('v2_plan_opinion', { p_plan: p.plan, p_who: who, p_text: v.text }, 'رأيٌ في الخطّة');
+        if (error) return error;
+        V.flash('ok', 'حُفظ ' + label);
+        loadStudentCards();
+        return null;
+      },
+    });
+  }
+
+  function finalForm(p) {
+    V.form({
+      title: 'اعتمادُ الخطّة', what: 'باعتماد الخطّة يبدأ قياسُ استجابة الطالب، وعليه تُبنى إحالتُه للّجنة',
+      fields: [{ key: 'confirm', label: 'اكتب: أعتمد' }],
+      ok: 'اعتمدها',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_plan_final', { p_plan: p.plan, p_confirm: v.confirm }, 'اعتماد الخطّة');
+        if (error) return error;
+        V.flash('ok', (data && data.note) || 'اعتُمدت الخطّة');
+        loadStudentCards();
+        return null;
+      },
+    });
+  }
+
   // ---------- حصرُ السلوكيّات ----------
   // كما يرجع v2_census_of: «حصرُك» أو «حصرُ المكلَّف (فلان)» · وneg[] وpos[] بأيقوناتها · وsummary
   const chips = (list) => {
@@ -722,7 +871,7 @@
       box.appendChild(f);
     }
     const row = el('div', 'rs-row');
-    row.appendChild(btn('أحصرُ بنفسي', 'rs-btn', () => selfCensus()));
+    row.appendChild(btn(list.some((c) => c.filed_at) ? 'احصر مرّةً أخرى' : 'أحصرُ بنفسي', 'rs-btn', () => selfCensus()));
     if (ui.full) row.appendChild(btn('أكلّف به أحدًا', 'rs-btn soft', () => assignCensus()));
     if (ui.full) row.appendChild(btn('أعِد ما انقضت مدّتُه', 'rs-btn ghost', sweepCensus));
     box.appendChild(row);
@@ -732,7 +881,7 @@
   // قوائمُ الحصر لمدرسة الشاشة — مرّةً لكلّ مدرسة
   async function censusLists() {
     if (ui.lists && ui.lists.school === M.state.school) return ui.lists;
-    const { data, error } = await M.rpc('v2_census_list', { p_school: M.state.school }, 'قوائم الحصر');
+    const { data, error } = await M.rpc('v2_census_list', { p_school: M.state.school, p_all: false }, 'قوائم الحصر');
     if (error) { V.flash('bad', errText(error)); return null; }
     ui.lists = { school: M.state.school, negative: (data && data.negative) || [], positive: (data && data.positive) || [] };
     return ui.lists;
