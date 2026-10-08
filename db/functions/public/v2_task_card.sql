@@ -1,5 +1,5 @@
 -- public.v2_task_card(p_task uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 6e24964f4a81bc7b4fd0f25e219a6758
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 3547b202e078a088f3025c27889e9698
 CREATE OR REPLACE FUNCTION public.v2_task_card(p_task uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -9,8 +9,10 @@ AS $function$
 declare
   t record; k record; fn smallint; sgn text; lbl_sign text;
   v_entry uuid; v_estatus text; v_efinal boolean;
+  v_notify_open boolean; v_grounds text; v_by_name text;
 begin
   select bt.*, br.student_id, br.school_id, br.step_no, br.occurrence_no,
+         br.has_injury, br.has_damage, br.has_seizure, br.seizure_is_legal_matter,
          cp.text_ar problem_ar, cp.degree_no
     into t
     from v2.behavior_tasks bt
@@ -37,6 +39,23 @@ begin
 
   lbl_sign := case when sgn is null then k.lbl_sign
                    else 'وقّع '||sgn||' بالعلم' end;
+
+  -- من أقفل المهمّة: إنسانٌ باسمه، أم النظامُ بشرطٍ مكتوب؟
+  select v2.fn_display_name(pe.full_name) into v_by_name
+    from v2.people pe where pe.id = t.done_by;
+
+  -- بندُ التبليغ الأمنيّ: ما في الواقعة من موجبٍ ظاهر
+  if t.kind = 'police' then
+    v_grounds := nullif(concat_ws(' · ',
+      case when t.has_injury              then 'في الواقعة إصابة' end,
+      case when t.seizure_is_legal_matter then 'وفيها مضبوطٌ ورد فيه نصٌّ نظاميّ' end,
+      case when t.has_seizure and not t.seizure_is_legal_matter then 'وفيها مضبوطٌ بحوزة الطالب' end), '');
+
+    select exists (select 1 from v2.behavior_tasks x
+                    where x.record_id = t.record_id
+                      and x.kind = 'notify_guardian' and x.status = 'open')
+      into v_notify_open;
+  end if;
 
   return jsonb_build_object(
     'task', jsonb_build_object(
@@ -75,11 +94,43 @@ begin
       'ev_on', t.ev_on, 'ev_text', t.ev_text, 'ev_file', t.ev_file,
       'ev_ref', t.ev_ref, 'ev_people', t.ev_people,
       'ev_signed', t.ev_signed, 'ev_refused_reason', t.ev_refused_reason),
+    -- ① النفيُ المعروض — لبند التبليغ وحدَه، وما دام مفتوحًا
+    'proposal', case
+      when t.kind = 'police' and t.status = 'open' and v_grounds is null then
+        jsonb_build_object(
+          'word_ar','لا موجبَ للتبليغ',
+          'text_ar','عايَنتُ الواقعةَ: لا إصابةَ ولا مضبوطَ ولا شِقَّ نظاميًّا فيها — فلا موجبَ لتبليغ الجهات الأمنيّة',
+          'ask_ar','أتُقرُّ هذا النفيَ باسمك؟ — ويُثبت باسمك وتاريخه، ولا يُسقطه النظامُ عنك',
+          'how_ar','يُقرُّ من بابِ النفي بالسببِ المعروض — ولك أن تُعدّله قبل الإقرار')
+      else null end,
+    -- وإن كان في الواقعة موجبٌ ظاهر، فلا نفيَ معروضًا — بل تنبيه
+    'grounds_ar', v_grounds,
+    -- ③ ما يمنع الإقفالَ الآن
+    'blocked_ar', case
+      when t.kind = 'police' and t.status = 'open' and v_notify_open then
+        'نصُّ الدليل: «تبليغُ الجهات الأمنيّة المختصّة فور وقوع المشكلة، بعد إشعار وليّ الأمر» — فأتمِم بندَ إشعار وليّ الأمر أوّلًا، أو أسقِطه بسببٍ إن لم يُستجَب له'
+      else null end,
+    -- ② من أقفله
+    'settled_ar', case
+      when t.status = 'skipped' and t.done_by is null then
+        'تخطّاه النظامُ بشرطٍ مكتوب: '||coalesce(t.skip_reason,'')
+      when t.status = 'skipped' then
+        'نفاه '||coalesce(v_by_name,'أحدُ المنسوبين')||
+        ' في '||coalesce(to_char(t.done_at,'YYYY-MM-DD'),'—')||': '||coalesce(t.skip_reason,'')
+      when t.status = 'refused' then
+        'امتُنع عنه بسببٍ مكتوب: '||coalesce(t.ev_refused_reason,'')
+      when t.status = 'done' then
+        'أدّاه '||coalesce(v_by_name,'أحدُ المنسوبين')||
+        ' في '||coalesce(to_char(t.done_at,'YYYY-MM-DD'),'—')
+      when t.status = 'auto' then 'وقع آليًّا بالمحرّك'
+      else null end,
     'door', case
       when t.kind = 'notify_guardian' then 'بابُه إثباتُ الاتّصال بوليّ الأمر'
       when t.kind = 'plan'            then 'بابُه كتابةُ خطّة تعديل السلوك'
       when t.kind = 'committee'       then 'بابُه تحويلُ الطالب إلى اللجنة'
       when t.kind = 'follow_up'       then 'بابُه حصرُ السلوكيّات'
+      when t.kind = 'police'          then 'بابان: إثباتُ البلاغ · أو نفيُ موجبه باسمك'
+      when t.kind = 'beyond_ladder'   then 'بابُه بيانُ ما اتُّخذ بعد نفاد إجراءات الدرجة'
       when t.evidence_kind = 'auto'   then 'يقع آليًّا — لا يُثبَت باليد'
       else 'بابُ الإثبات' end);
 end

@@ -1,12 +1,13 @@
 -- public.v2_plan_write(p_student uuid, p_record uuid, p_task uuid, p_plan uuid, p_desc text, p_manifest text, p_ante text, p_conseq text, p_gain text, p_prior text, p_target text, p_steps text, p_starts date, p_ends date)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2609b495dcdd2e1debb78eb2057f15cc
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 875e50ffdea8e87c7be18c768dfdfd2b
 CREATE OR REPLACE FUNCTION public.v2_plan_write(p_student uuid, p_record uuid, p_task uuid, p_plan uuid, p_desc text, p_manifest text, p_ante text, p_conseq text, p_gain text, p_prior text, p_target text, p_steps text, p_starts date, p_ends date)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'v2', 'public'
 AS $function$
-declare nid uuid; sc uuid; cur record;
+declare nid uuid; sc uuid; cur record; prev record;
+        v_new text[]; v_prob integer;
 begin
   perform v2.assert_role(array['counselor','deputy_students','deputy','principal'],
                          'كتابةَ خطّة تعديل السلوك');
@@ -17,6 +18,36 @@ begin
 
   select e.school_id into sc from v2.enrolments e
    where e.student_id=p_student and e.status='active' limit 1;
+
+  -- 🔑 الحارسُ: الخطّةُ التالية تُغيَّر ولا تُنسَخ
+  if p_record is not null then
+    select r.problem_id into v_prob from v2.behavior_records r where r.id=p_record;
+
+    select bp.id, bp.steps, bp.final_at, bp.target_behavior into prev
+      from v2.behavior_plans bp
+      join v2.behavior_records br on br.id = bp.record_id
+     where bp.student_id = p_student
+       and br.problem_id = v_prob
+       and bp.status = 'final'
+       and (p_plan is null or bp.id <> p_plan)
+     order by bp.final_at desc nulls last
+     limit 1;
+
+    if prev.id is not null then
+      select array_agg(btrim(x) order by btrim(x))
+        into v_new
+        from unnest(string_to_array(btrim(p_steps), E'\n')) x
+       where btrim(x) <> '';
+
+      if v_new is not null
+         and v_new = (select array_agg(btrim(y) order by btrim(y))
+                        from unnest(prev.steps) y where btrim(y) <> '') then
+        raise exception
+          'إجراءُ هذي الخطوة يقوم على تغيير خطّة تعديل السلوك — وهذي نسخةٌ من الخطّة المعتمدة في %: لم تتغيّر إجراءاتُ التعديل · وللسلوكِ المستهدف أن يبقى كما هو (فالمشكلةُ لم تتغيّر)، والذي يجب أن يتغيّر هو الطريقُ إليه',
+          coalesce(to_char(prev.final_at,'YYYY-MM-DD'),'خطّةٍ سابقة');
+      end if;
+    end if;
+  end if;
 
   if p_plan is null then
     insert into v2.behavior_plans(school_id,student_id,record_id,task_id,
@@ -52,5 +83,6 @@ begin
     starts_on=coalesce(p_starts,starts_on), ends_on=coalesce(p_ends,ends_on)
    where id=p_plan;
   return jsonb_build_object('ok',true,'plan',p_plan,'note','عُدّلت الخطّة');
-end $function$
+end
+$function$
 ;

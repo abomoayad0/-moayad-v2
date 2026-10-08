@@ -1,5 +1,5 @@
 -- v2.fn_record_behavior(p_student uuid, p_problem integer, p_term smallint, p_period smallint, p_place text, p_note text, p_victim uuid, p_injury boolean, p_damage boolean, p_seizure boolean, p_seizure_legal boolean, p_by uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 f0465d32a5ba43fb06a253fee7fa4257
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 dd7ccc1a45113442ddbbe0e8405c84ea
 CREATE OR REPLACE FUNCTION v2.fn_record_behavior(p_student uuid, p_problem integer, p_term smallint DEFAULT 1, p_period smallint DEFAULT NULL::smallint, p_place text DEFAULT NULL::text, p_note text DEFAULT NULL::text, p_victim uuid DEFAULT NULL::uuid, p_injury boolean DEFAULT false, p_damage boolean DEFAULT false, p_seizure boolean DEFAULT false, p_seizure_legal boolean DEFAULT false, p_by uuid DEFAULT NULL::uuid)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare
   v_school uuid; v_year uuid; v_stage text; v_mode text;
   v_prob record; v_scope text; v_count int; v_step int; v_max int; v_action record;
   v_rec uuid; v_ded numeric; v_open numeric; it record; un record;
-  v_skip boolean; v_why text; v_beyond boolean; v_same record;
+  v_skip boolean; v_why text; v_beyond boolean; v_same record; v_ded_ar text;
 begin
   select e.school_id, e.year_id, e.stage into v_school, v_year, v_stage
   from v2.enrolments e where e.student_id=p_student and e.status='active'
@@ -115,6 +115,17 @@ begin
         case when un.body_ar like '%الهلال الأحمر%' and not p_injury then 'skipped' else 'open' end,
         case when un.body_ar like '%الهلال الأحمر%' and not p_injury then 'لا ينطبق: لا مصاب في الواقعة' else null end);
     end loop;
+
+  else
+    -- 🔑 ما بعد نهاية السلّم — اجتهادٌ مدرسيٌّ لا نصُّ الدليل:
+    --    لا إجراءَ زائدًا ولا حسمَ — ولكن لا تُترك الرصدةُ بلا من ينظر فيها،
+    --    ولا تُستوفى من تلقاء نفسها لأنّها خالية
+    insert into v2.behavior_tasks(record_id,ord,kind,text_ar,owner_role,origin,status,evidence_kind)
+    values (v_rec, 99::smallint, 'beyond_ladder',
+      'نُفِدت إجراءاتُ '||v2.degree_ar(v_prob.degree_no)||' لهذي المخالفة ('||
+        v2.ar_num(v_max)||' إجراءات) — وهذي واقعةٌ زائدةٌ عليها · بيّن ما اتُّخذ ومن قرّره'||
+      ' · ولا حسمَ عليها ولا إجراءَ جديدًا في نصّ الدليل',
+      'إدارة المدرسة','اجتهاد مدرسي','open','beyond_ladder');
   end if;
 
   if not exists (select 1 from v2.behavior_ledger
@@ -127,9 +138,18 @@ begin
 
   if (not v_beyond) and coalesce(v_action.deducts_points,false) then
     select deduction into v_ded from v2.conduct_degrees where degree_no=v_prob.degree_no;
+
+    -- 🔑 لفظٌ عربيٌّ يقرؤه الطالبُ ووليُّ أمره — لا رقمٌ عاريًا
+    v_ded_ar := case
+                  when v_ded = 1 then 'درجةً واحدة'
+                  when v_ded = 2 then 'درجتين'
+                  when v_ded >= 3 and v_ded <= 10 then v2.ar_num(v_ded)||' درجات'
+                  else v2.ar_num(v_ded)||' درجة'
+                end;
+
     insert into v2.behavior_ledger(school_id,year_id,term_no,student_id,kind,points,record_id,reason,by_person)
     values (v_school,v_year,p_term,p_student,'deduction',-v_ded,v_rec,
-      'حسم '||v_ded||' درجة · الإجراء '||v_action.step_no||' من الدرجة '||v_prob.degree_no||
+      'حسم '||v_ded_ar||' · الإجراء '||v_action.step_no||' من الدرجة '||v_prob.degree_no||
       ' · '||v_prob.text_ar||' · '||v_prob.source_doc||' '||v_prob.source_page, p_by);
   end if;
 

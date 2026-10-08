@@ -249,6 +249,24 @@ ALTER TABLE v2.census_items
 ALTER TABLE v2.census_items
     ADD CONSTRAINT census_items_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 
+-- ── class_moves · md5 3610e8fe26f64068b52324e97be61a1d
+ALTER TABLE v2.class_moves
+    ADD CONSTRAINT class_moves_meeting_item_fkey FOREIGN KEY (meeting_item) REFERENCES v2.meeting_items(id);
+ALTER TABLE v2.class_moves
+    ADD CONSTRAINT class_moves_moved_by_fkey FOREIGN KEY (moved_by) REFERENCES v2.people(id);
+ALTER TABLE v2.class_moves
+    ADD CONSTRAINT class_moves_record_id_fkey FOREIGN KEY (record_id) REFERENCES v2.behavior_records(id);
+ALTER TABLE v2.class_moves
+    ADD CONSTRAINT class_moves_return_item_fkey FOREIGN KEY (return_item) REFERENCES v2.meeting_items(id);
+ALTER TABLE v2.class_moves
+    ADD CONSTRAINT class_moves_returned_by_fkey FOREIGN KEY (returned_by) REFERENCES v2.people(id);
+ALTER TABLE v2.class_moves
+    ADD CONSTRAINT class_moves_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.class_moves
+    ADD CONSTRAINT class_moves_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id);
+ALTER TABLE v2.class_moves
+    ADD CONSTRAINT class_moves_task_id_fkey FOREIGN KEY (task_id) REFERENCES v2.behavior_tasks(id);
+
 -- ── class_practices · md5 5773b2457e9b29cced30dc27665ffef1
 ALTER TABLE v2.class_practices
     ADD CONSTRAINT class_practices_escalate_to_fkey FOREIGN KEY (escalate_to) REFERENCES v2.conduct_problems(id);

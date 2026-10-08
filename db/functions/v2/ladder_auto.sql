@@ -1,5 +1,5 @@
 -- v2.ladder_auto(p_record uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 ae755a6e925600871665142b21ec2c6c
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 19b472d410e460f2911d40ea00e805bd
 CREATE OR REPLACE FUNCTION v2.ladder_auto(p_record uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION v2.ladder_auto(p_record uuid)
 AS $function$
 declare
   r record; t record; did jsonb := '[]'::jsonb; nid uuid; d date; adv text;
-  v_rules record; v_issue jsonb; v_time time; v_form smallint; v_comp jsonb;
+  v_rules record; v_issue jsonb; v_time time; v_form smallint; v_comp jsonb; v_mv jsonb;
 begin
   select br.*, cp.text_ar ptext, cp.degree_no dno into r
     from v2.behavior_records br join v2.conduct_problems cp on cp.id=br.problem_id
@@ -45,7 +45,24 @@ begin
       did := did || jsonb_build_object('kind','services',
         'text','متابعةُ الموجّه حالٌ مستمرّةٌ — تُعرض ولا تُطالَب');
 
-    -- ══ ③ التدوينُ في سجلّ المشكلات: فعلُ النظام · والتوقيعُ يبقى على الناس ══
+    -- ══ نقلُ الفصل: يُتخطّى إن لم يكن له محلّ · ولا يُدَّعى ══
+    elsif t.kind='move_class' then
+      v_mv := v2.ladder_move_class_check(p_record);
+      if (v_mv->>'skip')::boolean then
+        update v2.behavior_tasks set status='skipped', skip_reason=(v_mv->>'why')
+         where id=t.id;
+        did := did || jsonb_build_object('kind','move_class','skipped',true,
+          'text', v_mv->>'why');
+      else
+        update v2.behavior_tasks set
+          auto_note='ينتظر قرارَ لجنة التوجيه الطلابيّ — والنقلُ لا يقع إلّا به · '||
+                    'والفصولُ المتاحةُ '||v2.ar_num((v_mv->>'targets')::numeric)
+         where id=t.id;
+        did := did || jsonb_build_object('kind','move_class','skipped',false,
+          'targets',(v_mv->>'targets')::int,
+          'text','نقلُ الفصل ينتظر قرارَ لجنة التوجيه — ولا يقع بغيره');
+      end if;
+
     elsif t.kind='record_sign' then
       v_form := v2.form_for_kind('record_sign', r.school_id);
       if v_form is not null then
@@ -68,7 +85,6 @@ begin
         end if;
       end if;
 
-    -- ══ ② التعويضُ بنموذجه ══
     elsif t.kind='compensation' then
       v_comp := v2.fn_open_compensation(p_record);
       did := did || v_comp;
@@ -97,7 +113,6 @@ begin
         end if;
       end if;
 
-    -- ══ ① الإحالةُ للموجّه بنموذجها السرّيّ ══
     elsif t.kind='counselor' then
       if not exists (select 1 from v2.counsel_cases c
                       where c.student_id=r.student_id and c.state='قيد المعالجة') then
@@ -141,7 +156,6 @@ begin
                       ' · والمهمّةُ باقيةٌ حتى يخرج ويُسلَّم'
            where id=t.id;
           did := did || jsonb_build_object('kind','refer_form','status',v_issue->>'status',
-            'missing',v_issue->'missing',
             'text','لم يخرج نموذجُ الإحالة — '||coalesce(v_issue->>'why',''));
         end if;
       end if;
@@ -197,7 +211,6 @@ begin
            where id=t.id;
           did := did || jsonb_build_object('kind','summon','due',d,
             'entry',v_issue->>'entry','status',v_issue->>'status',
-            'missing',v_issue->'missing',
             'text','لم يخرج خطابُ الدعوة — '||coalesce(v_issue->>'why',''));
         end if;
       end if;

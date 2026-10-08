@@ -27,8 +27,10 @@ CREATE TRIGGER mark_test BEFORE INSERT ON v2.attendance_ledger FOR EACH ROW EXEC
 -- ── behavior_records · md5 3c6dc30a9c912dc41a4c5c8ce503a70b
 CREATE TRIGGER mark_test BEFORE INSERT ON v2.behavior_records FOR EACH ROW EXECUTE FUNCTION v2.trg_mark_test();
 
--- ── behavior_tasks · md5 7ebc1b929c8d1f40c81f4ec349a5b6b8
+-- ── behavior_tasks · md5 ca3c91a5f146355534f672453e47d23f
 CREATE TRIGGER t_open_case_on_refer AFTER INSERT ON v2.behavior_tasks FOR EACH ROW EXECUTE FUNCTION v2.g_open_case_on_refer();
+CREATE TRIGGER t_police_after_guardian BEFORE UPDATE OF status ON v2.behavior_tasks FOR EACH ROW EXECUTE FUNCTION v2.trg_police_after_guardian();
+CREATE TRIGGER t_record_settle AFTER INSERT OR DELETE OR UPDATE OF status ON v2.behavior_tasks FOR EACH ROW EXECUTE FUNCTION v2.trg_record_settle();
 CREATE TRIGGER task_evidence BEFORE INSERT ON v2.behavior_tasks FOR EACH ROW EXECUTE FUNCTION v2.trg_task_evidence();
 
 -- ── calendar_entries · md5 4911db044f51aa18ef7d89a59c90c0e1

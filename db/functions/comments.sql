@@ -1,13 +1,14 @@
 -- functions/comments.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── fn_comments · md5 1f1079f2816f5781ee8b44989160e156
+-- ── fn_comments · md5 fe2611fbc2f5848bbb1dcc1ed7824c7a
 COMMENT ON FUNCTION v2.arrival_state(p_school uuid, p_at time without time zone) IS 'حالُ الوصول بحسب وقته: حاضرٌ قبل المهلة · متأخّرٌ بعدها · غائبٌ بعد حدّ التأخّر';
 COMMENT ON FUNCTION v2.assert_role(p_allowed text[], p_what text) IS 'حارسُ الصفة. ومالكُ النظام (owner) يمرّ عليه بقرار مفرح ٦/١٠/٢٠٢٦ — ولا يمسُّ ذلك سرَّ الموجّه، فجسورُه تُحرس بـ v2.is_counselor لا بهذا الحارس.';
 COMMENT ON FUNCTION v2.assert_student_or_kin(p_student uuid, p_what text) IS 'يمرّ الطالبُ ووليُّ أمره، وإلا فحارسُ المنسوبين. ولا يُنادى إلا في جسور البوّابة — فالكتابةُ على الطالب للمنسوبين وحدَهم';
 COMMENT ON FUNCTION v2.behavior_score(p_student uuid, p_year uuid, p_term smallint) IS 'درجةُ السلوك: الإيجابيُّ ٨٠ سقفًا · والمتميّزُ ٢٠ سقفًا · والمجموعُ ١٠٠ — CONDUCT-1447-OFF ص15';
 COMMENT ON FUNCTION v2.caller_kind(p_student uuid) IS 'صفةُ المتّصل من القاعدة لا من الشاشة. 🔑 والصفةُ المختارةُ تحكم: من اختار صفةً غيرَ الموجّه الطلابيّ لا يرى ما وُسم counselor_only ولو كان هو الموجّه — قرار مفرح ٥/١٠/٢٠٢٦: فصلٌ تامّ بين الصفات.';
 COMMENT ON FUNCTION v2.evidence_ok(p_entry uuid, p_path text) IS 'المرفقُ يُقبل إن كان في مسار مشاركته: merit/<المدرسة>/<الطالب>/<المشاركة>/ — فلا يصلح شاهدُ طالبٍ لآخر';
+COMMENT ON FUNCTION v2.fn_action_items_expanded(p_action uuid) IS 'نسخةٌ لا تُنادى — أُنشئت بخطأٍ في نوع المعرّف · والعاملةُ هي نسخةُ integer · وتُحذف بإقرار مفرح';
 COMMENT ON FUNCTION v2.fn_audit() IS 'فاحص البناء — 58 فحصاً. قراءة محضة. ويُشغَّل من محرّر SQL بصلاحية المالك وحده: نتائجه تشمل القاعدة كلها وفيها أسماء طلاب، فلا جسر له في public.';
 COMMENT ON FUNCTION v2.fn_day_classes(p_school uuid, p_date date) IS 'فصول اليوم للرصد بالفصل. الفصل «مرصود» إذا لم يبقَ فيه طالب حالته unrecorded — والحكم في القاعدة لا في الشاشة.';
 COMMENT ON FUNCTION v2.fn_day_log(p_school uuid, p_date date) IS 'سجل الوقائع اليومية: كل غياب وتأخر واستئذان ومخالفة سلوكية وإجراء غياب وقع في يوم واحد على مستوى المدرسة، مرتَّباً بوقته.';
