@@ -114,23 +114,14 @@
         if (e.body) body.appendChild(el('div', 'rs-meta', e.body));
         li.append(el('i', 'rs-tick ok', '✓'), body, el('small', 'rs-who', e.on || ''));
         ul.appendChild(li);
-        // النصيحةُ التربويّة من الرصدة نفسِها (v2_record_advice) — متى حمل الحدثُ رقمَ رصدته
-        const rec = e.record || e.ref_id;
-        if (rec) adviceOf(rec, body);
+        // النصيحةُ التربويّة من الرصدة نفسِها — advice مع الحدث، أو v2_record_advice برقمها
+        body.appendChild(V.recordAdvice(e, 'نصيحةٌ لابنك'));
       }
       recs.appendChild(ul);
     }
     arabize(recs);
     $('tlSum').textContent = 'السجلّ (' + ar(evs.length) + ')';
     V.events(tlBox, evs);
-  }
-
-  async function adviceOf(rec, body) {
-    const { data } = await M.rpc('v2_record_advice', { p_record: rec }, 'نصيحة الرصدة');
-    if (!data || !data.text) return;
-    const a = el('div', 'rs-advice');
-    a.append(el('b', null, 'نصيحةٌ لابنك: '), document.createTextNode(data.text));
-    body.appendChild(a);
   }
 
   // دعواتُ المدرسة من v2_guardian_pending: ما لم يُردّ عليه ينتظر ردَّه، وما ردّ عليه يظهر ردُّه ولا يُسأل ثانية
@@ -188,7 +179,7 @@
     for (const p of list) {
       const f = el('div', 'rs-file');
       f.append(el('h5', null, (p.target || '—') + ' — ' + (p.state_ar || '')), el('p', null, p.desc || ''));
-      const steps = (Array.isArray(p.steps) ? p.steps : String(p.steps || '').split('\n')).filter((x) => String(x).trim() !== '');
+      const steps = (Array.isArray(p.steps_list) ? p.steps_list : String(p.steps || '').split('\n')).filter((x) => String(x).trim() !== '');
       if (steps.length) { const ul = el('ul', 'rs-acts'); for (const x of steps) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }
       f.appendChild(el('p', null, 'رأيُك: ' + (p.guardian || 'لم تُبدِه بعد')));
       if (p.status === 'draft') f.appendChild(btn(p.guardian ? 'عدّل رأيَك' : 'أبدِ رأيَك', 'rs-btn', () => V.form({
@@ -333,8 +324,7 @@
   function renderOff() {
     const box = $('offCards');
     box.textContent = '';
-    box.append(
-      V.offCard('النصيحةُ التربويّة لابنك', 'v2_record_advice جاهزٌ ويُنادى هنا — لكنّ السجلَّ لا يحمل رقمَ الرصدة الذي يطلبه'));
+    box.textContent = '';
   }
 
   $('toast').addEventListener('click', () => { $('toast').hidden = true; });

@@ -1,5 +1,5 @@
 -- public.v2_student_timeline(p_student uuid, p_as text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 7e6eafde0fbe2d23f0a8cf87234f5382
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 7a9ad20e0cb18bd2d336fbc52517b65d
 CREATE OR REPLACE FUNCTION public.v2_student_timeline(p_student uuid, p_as text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -28,7 +28,11 @@ begin
 
   select coalesce(jsonb_agg(jsonb_build_object(
       'on',e.on_date,'kind',e.kind,'title',e.title_ar,'body',e.body_ar,
-      'needs_action',e.needs_action,'action',e.action_ar)
+      'needs_action',e.needs_action,'action',e.action_ar,
+      'event',e.id,
+      'record_id', case when e.ref_table='behavior_records' then e.ref_id end,
+      'advice', case when e.ref_table='behavior_records'
+        then (select br.advice_ar from v2.behavior_records br where br.id=e.ref_id) end)
       order by e.on_date desc, e.created_at desc),'[]'::jsonb)
   into r from v2.events e
   where e.student_id = p_student and e.visible_to = any(lvl);

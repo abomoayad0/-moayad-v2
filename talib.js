@@ -167,6 +167,8 @@
       body.style.flex = '1';
       body.appendChild(el('span', null, e.title || ''));
       if (e.body) body.appendChild(el('div', 'rs-meta', e.body));
+      // نصيحتُك من الرصدة نفسِها — advice مع الحدث، أو v2_record_advice برقمها
+      body.appendChild(V.recordAdvice(e, 'نصيحةٌ لك'));
       li.append(el('i', 'rs-tick ok', '✓'), body, el('small', 'rs-who', e.on || ''));
       ul.appendChild(li);
     }

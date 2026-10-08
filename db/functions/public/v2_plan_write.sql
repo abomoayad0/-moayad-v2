@@ -1,5 +1,5 @@
 -- public.v2_plan_write(p_student uuid, p_record uuid, p_task uuid, p_plan uuid, p_desc text, p_manifest text, p_ante text, p_conseq text, p_gain text, p_prior text, p_target text, p_steps text, p_starts date, p_ends date)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 15688d28085dc9c3b30aedfc932230d0
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2609b495dcdd2e1debb78eb2057f15cc
 CREATE OR REPLACE FUNCTION public.v2_plan_write(p_student uuid, p_record uuid, p_task uuid, p_plan uuid, p_desc text, p_manifest text, p_ante text, p_conseq text, p_gain text, p_prior text, p_target text, p_steps text, p_starts date, p_ends date)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -27,7 +27,7 @@ begin
         btrim(p_desc),nullif(btrim(coalesce(p_manifest,'')),''),
         nullif(btrim(coalesce(p_ante,'')),''),nullif(btrim(coalesce(p_conseq,'')),''),
         nullif(btrim(coalesce(p_gain,'')),''),nullif(btrim(coalesce(p_prior,'')),''),
-        btrim(p_target),btrim(p_steps),
+        btrim(p_target),string_to_array(btrim(p_steps),E'\n'),
         coalesce(p_starts,current_date),p_ends,
         'draft',v2.current_person(),
         coalesce((select test_mode from v2.schools where id=sc),false))
@@ -43,7 +43,7 @@ begin
     raise exception 'اعتُمدت هذي الخطّةُ — فلا تُعدَّل. وإن تغيّر الحالُ فاكتب خطّةً جديدة'; end if;
 
   update v2.behavior_plans set
-    problem_desc=btrim(p_desc), target_behavior=btrim(p_target), steps=btrim(p_steps),
+    problem_desc=btrim(p_desc), target_behavior=btrim(p_target), steps=string_to_array(btrim(p_steps),E'\n'),
     manifestations=nullif(btrim(coalesce(p_manifest,'')),''),
     antecedents=nullif(btrim(coalesce(p_ante,'')),''),
     consequences=nullif(btrim(coalesce(p_conseq,'')),''),

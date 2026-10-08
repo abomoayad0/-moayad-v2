@@ -134,7 +134,7 @@
       problems = { school: school(), list: data || [] };
     }
     const sec = el('div');
-    V.chooser(box, problems.list.map((p) => [p.id, p.text, [p.degree_ar, p.advice_n != null ? 'نصائحُه ' + p.advice_n : null].filter(Boolean).join(' · ')]), null, (id) => showAdvice(sec, problems.list.find((p) => p.id === id)));
+    V.chooser(box, problems.list.map((p) => [p.id, p.text, [p.degree_ar, p.page_ar, p.advice_n != null ? 'نصائحُه ' + p.advice_n : null].filter(Boolean).join(' · ')]), null, (id) => showAdvice(sec, problems.list.find((p) => p.id === id)));
     box.appendChild(sec);
   }
 

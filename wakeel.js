@@ -741,7 +741,7 @@
       const lg = el('div', 'rs-lgd');
       for (const [k, v] of [['السلوك', p.desc], ['مظاهرُه', p.manifest], ['ما يسبقه', p.ante], ['ما يليه', p.conseq], ['ما يحقّقه منه', p.gain], ['ما سبق من إجراء', p.prior]]) if (v) lg.append(el('i', 'k', k + ':'), el('i', null, v));
       f.appendChild(lg);
-      const st = lines(p.steps);
+      const st = lines(p.steps_list || p.steps);
       if (st.length) { f.appendChild(el('div', 'rs-label', 'إجراءاتُ التعديل')); const ul = el('ul', 'rs-acts'); for (const x of st) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }
       const op = el('div', 'rs-lgd');
       op.append(el('i', 'k', 'رأيُ معلّم الفصل:'), el('i', p.needs_teacher ? 'rs-state-open' : null, p.teacher || 'لم يُبدِه بعد'),
@@ -782,7 +782,7 @@
         { key: 'gain', type: 'textarea', label: 'ما يحقّقه الطالبُ منه (اختياريّ)', rows: 2, value: draft ? draft.gain : null, bank: { key: 'plGain', problem: pr } },
         { key: 'prior', type: 'textarea', label: 'ما سبق من إجراء (اختياريّ)', rows: 2, value: draft ? draft.prior : null },
         { key: 'target', type: 'textarea', label: 'السلوكُ البديلُ المستهدف', rows: 2, value: draft ? draft.target : null },
-        { key: 'steps', type: 'textarea', label: 'إجراءاتُ التعديل — سطرٌ لكلّ إجراء', rows: 4, value: draft ? lines(draft.steps).join('\n') : null },
+        { key: 'steps', type: 'textarea', label: 'إجراءاتُ التعديل — سطرٌ لكلّ إجراء', rows: 4, value: draft ? lines(draft.steps_list || draft.steps).join('\n') : null },
         { key: 'starts', type: 'date', label: 'تبدأ', value: draft ? draft.starts : null },
         { key: 'ends', type: 'date', label: 'تنتهي (اختياريّ)', value: draft ? draft.ends : null },
       ],

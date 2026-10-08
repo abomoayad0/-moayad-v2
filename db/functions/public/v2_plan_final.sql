@@ -1,5 +1,5 @@
 -- public.v2_plan_final(p_plan uuid, p_confirm text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 dac631cc386d3913078b4b148a5a8e81
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 9e3604c04570c26b9b0215885c83cd47
 CREATE OR REPLACE FUNCTION public.v2_plan_final(p_plan uuid, p_confirm text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -13,7 +13,7 @@ begin
   select * into cur from v2.behavior_plans where id=p_plan;
   if cur.id is null then raise exception 'الخطّةُ غيرُ موجودة'; end if;
   if cur.status='final' then raise exception 'اعتُمدت هذي الخطّةُ سلفًا'; end if;
-  if btrim(coalesce(cur.target_behavior,''))='' or btrim(coalesce(cur.steps,''))='' then
+  if btrim(coalesce(cur.target_behavior,''))='' or coalesce(array_length(cur.steps,1),0)=0 then
     raise exception 'لا تُعتمد خطّةٌ بلا سلوكٍ مستهدفٍ وإجراءاتِ تعديل'; end if;
   if cur.teacher_opinion is null then
     raise exception 'لم يُبدِ معلّمُ الفصل رأيَه بعد — والخطّةُ تُبنى على ما يراه في الصفّ'; end if;

@@ -77,6 +77,16 @@
     node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(e); } });
   }
 
+  // نصيحةُ الرصدة تحت حدثها في السجلّ: advice كما يرجع مع الحدث، وإلا فمن v2_record_advice برقم الرصدة (record_id)
+  function recordAdvice(e, label) {
+    const box = el('div', 'rs-advice');
+    box.hidden = true;
+    const put = (t) => { if (!t) return; box.textContent = ''; box.append(el('b', null, label + ': '), document.createTextNode(t)); box.hidden = false; };
+    if (e.advice) put(e.advice);
+    else if (e.record_id) M.rpc('v2_record_advice', { p_record: e.record_id }, 'نصيحة الرصدة').then((r) => put(r.data && r.data.text));
+    return box;
+  }
+
   // شرائطُ الاختيار القصير (٢–٩): [[value, text]] ⇒ onPick(value)
   // يُعلَّم المختارُ في موضعه قبل onPick — فلا يُعاد بناءُ الشريطة تحت الإصبع (iPhone يُسقط اللمسةَ إن تغيّر ما تحتها)
   function pick(box, items, cur, onPick) {
@@ -391,5 +401,5 @@
     return f;
   }
 
-  window.MoayadView = { ar, arabize, btn, notBuilt, offCard, renderRole, flash, seen, tap, pick, sheet, events, chooser, form, verdictCard, committeeTask };
+  window.MoayadView = { ar, arabize, btn, notBuilt, offCard, renderRole, flash, seen, tap, recordAdvice, pick, sheet, events, chooser, form, verdictCard, committeeTask };
 })();
