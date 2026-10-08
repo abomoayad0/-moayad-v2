@@ -110,6 +110,15 @@
       recs.appendChild(ul);
     }
     arabize(recs);
+    // إعلامُ السحب في صندوقه: رصدةٌ أُلغيت وسُحب ما خرج عليها — نصُّه كما كتبه الجسر
+    const wbox = $('withdrawn');
+    wbox.textContent = '';
+    for (const e of evs.filter((x) => x.kind === 'restore')) {
+      const f = el('div', 'rs-file rs-withdrawn');
+      f.append(el('h5', null, e.title || ''), el('p', null, e.body || ''), el('p', 'rs-meta', e.on || ''));
+      wbox.appendChild(f);
+    }
+    arabize(wbox);
     $('tlSum').textContent = 'السجلّ (' + ar(evs.length) + ')';
     V.events(tlBox, evs);
   }

@@ -635,3 +635,4 @@
   table.rs-open td .rs-row { margin-top: 0; }
   @media (max-width: 699px) { table.rs-open tr.wait { border-inline-start: 4px solid var(--info-c); } table.rs-open tr.wait td:first-child { box-shadow: none; } }
   .rs-prev { border-inline-start: 4px solid var(--grey); }
+  .rs-withdrawn { border-inline-start: 4px solid var(--grey); }
