@@ -1,5 +1,5 @@
 -- public.v2_record_behavior(p_student uuid, p_problem integer, p_place text, p_note text, p_period smallint, p_victim uuid, p_injury boolean, p_damage boolean, p_seizure boolean, p_seizure_legal boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 0b57a3ab7ec39dec58c58e5c42f8e4db
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 902cae6b5066a28f1d39afcc19288122
 CREATE OR REPLACE FUNCTION public.v2_record_behavior(p_student uuid, p_problem integer, p_place text DEFAULT NULL::text, p_note text DEFAULT NULL::text, p_period smallint DEFAULT NULL::smallint, p_victim uuid DEFAULT NULL::uuid, p_injury boolean DEFAULT false, p_damage boolean DEFAULT false, p_seizure boolean DEFAULT false, p_seizure_legal boolean DEFAULT false)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,6 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_record_behavior(p_student uuid, p_problem i
 AS $function$
 declare rid uuid; r record; ded numeric; tm smallint; sc uuid; yid uuid; auto jsonb;
         ptxt text; msg text; st text; d text; h text; ctx text; v_adv text; v_ded_ar text;
+        v_waive text;
 begin
   perform v2.assert_role(array['counselor','deputy_students','deputy','principal',
       'admin_assistant','admin_assistant_students','subject_teacher','sped_teacher',
@@ -28,10 +29,12 @@ begin
   rid := v2.fn_record_behavior(p_student,p_problem,tm,p_period,p_place,p_note,
       p_victim,p_injury,p_damage,p_seizure,p_seizure_legal, v2.current_person());
 
-  select br.*, cp.text_ar ptext, cp.degree_no dno, cp.source_page spg into r
+  select br.*, cp.text_ar ptext, cp.degree_no dno, cp.source_page spg,
+         cp.advice_waived_ar waive into r
     from v2.behavior_records br join v2.conduct_problems cp on cp.id=br.problem_id
    where br.id=rid;
   ptxt := rtrim(btrim(r.ptext),'.');
+  v_waive := r.waive;
   select coalesce(-sum(points),0) into ded from v2.behavior_ledger
    where record_id=rid and kind='deduction';
 
@@ -59,14 +62,20 @@ begin
 
   auto := v2.ladder_auto(rid);
 
-  -- 🔑 النصيحةُ الغائبةُ تُقال ولا يُسكَت عنها — وتُقدَّم في موضعها الأوّل
+  -- 🔑 النصيحةُ الغائبةُ تُقال ولا يُسكَت عنها · ويُفرَّق بين النقصِ والقرار
   select advice_ar into v_adv from v2.behavior_records where id=rid;
   if v_adv is null then
-    auto := jsonb_build_array(jsonb_build_object(
-              'kind','advice_missing',
-              'text','لا نصيحةَ مسجّلةٌ لهذي المخالفة في الواقعة '||
-                     v2.ord_ar(r.occurrence_no)||
-                     ' — فالطالبُ رُصد ولم يُنصَح · وتُضاف النصائحُ من لوحة التحكّم')) || auto;
+    if v_waive is not null then
+      auto := jsonb_build_array(jsonb_build_object(
+                'kind','advice_waived',
+                'text','لا نصيحةَ لهذي المخالفة بقرار — والسببُ: '||v_waive)) || auto;
+    else
+      auto := jsonb_build_array(jsonb_build_object(
+                'kind','advice_missing',
+                'text','لا نصيحةَ مسجّلةٌ لهذي المخالفة في الواقعة '||
+                       v2.ord_ar(r.occurrence_no)||
+                       ' — فالطالبُ رُصد ولم يُنصَح · وتُضاف النصائحُ من لوحة التحكّم')) || auto;
+    end if;
   end if;
 
   perform v2.log_action(sc,p_student,'record_behavior','رُصدت مخالفة',
@@ -74,7 +83,8 @@ begin
   return jsonb_build_object(
     'ok',true,'record',rid,'problem',ptxt,'auto',auto,
     'advice', v_adv,
-    'advice_missing', (v_adv is null),
+    'advice_missing', (v_adv is null and v_waive is null),
+    'advice_waived_ar', case when v_adv is null then v_waive else null end,
     'degree_ar', v2.degree_ar(r.dno),
     'page_ar', v2.page_ar(r.spg),
     'term', tm,

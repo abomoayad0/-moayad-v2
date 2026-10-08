@@ -1,7 +1,7 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 a90951eab2cc247cc7d23fa1322f9c67
+-- ── grants · md5 a83cdd49e4158722443a5f4018b5f410
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 
@@ -308,8 +308,12 @@ REVOKE ALL ON FUNCTION v2.my_school(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.my_school(p_school uuid) TO authenticated;
 REVOKE ALL ON FUNCTION v2.my_seat(p_school uuid, p_committee text) FROM PUBLIC;
 
+REVOKE ALL ON FUNCTION v2.next_outgoing_serial(p_school uuid, p_year uuid) FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.ord_ar(n integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.ord_ar(n integer) TO authenticated;
+REVOKE ALL ON FUNCTION v2.outgoing_card(p_mail uuid) FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.owner_ar(p text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.owner_ar(p text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.page_ar(p text) FROM PUBLIC;
@@ -825,6 +829,36 @@ GRANT EXECUTE ON FUNCTION public.v2_outbox_pull(p_limit integer) TO service_role
 REVOKE ALL ON FUNCTION public.v2_outbox_result(p_id uuid, p_ok boolean, p_ref text, p_err text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_outbox_result(p_id uuid, p_ok boolean, p_ref text, p_err text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_outbox_result(p_id uuid, p_ok boolean, p_ref text, p_err text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_outgoing_attach(p_mail uuid, p_kind text, p_name text, p_url text, p_file_ref text, p_barcode text, p_form_entry uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_attach(p_mail uuid, p_kind text, p_name text, p_url text, p_file_ref text, p_barcode text, p_form_entry uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_attach(p_mail uuid, p_kind text, p_name text, p_url text, p_file_ref text, p_barcode text, p_form_entry uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_outgoing_cancel(p_mail uuid, p_why text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_cancel(p_mail uuid, p_why text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_cancel(p_mail uuid, p_why text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_outgoing_close(p_mail uuid, p_note text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_close(p_mail uuid, p_note text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_close(p_mail uuid, p_note text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_outgoing_create(p_subject text, p_to_entity text, p_body text, p_kind text, p_secrecy text, p_needs_reply boolean, p_reply_due date, p_reply_to_mail uuid, p_ref_table text, p_ref_id uuid, p_tasks uuid[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_create(p_subject text, p_to_entity text, p_body text, p_kind text, p_secrecy text, p_needs_reply boolean, p_reply_due date, p_reply_to_mail uuid, p_ref_table text, p_ref_id uuid, p_tasks uuid[]) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_create(p_subject text, p_to_entity text, p_body text, p_kind text, p_secrecy text, p_needs_reply boolean, p_reply_due date, p_reply_to_mail uuid, p_ref_table text, p_ref_id uuid, p_tasks uuid[]) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_outgoing_one(p_mail uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_one(p_mail uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_one(p_mail uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_outgoing_pending(p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_pending(p_school uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_pending(p_school uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_outgoing_register(p_school uuid, p_days integer, p_status text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_register(p_school uuid, p_days integer, p_status text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_register(p_school uuid, p_days integer, p_status text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_outgoing_reply(p_mail uuid, p_on date, p_ref text, p_note text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_reply(p_mail uuid, p_on date, p_ref text, p_note text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_reply(p_mail uuid, p_on date, p_ref text, p_note text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_outgoing_send(p_mail uuid, p_channel text, p_ref text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_send(p_mail uuid, p_channel text, p_ref text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_send(p_mail uuid, p_channel text, p_ref text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_outgoing_sign(p_mail uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_sign(p_mail uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_outgoing_sign(p_mail uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_pending_excuses(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_pending_excuses(p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_pending_excuses(p_school uuid) TO service_role;

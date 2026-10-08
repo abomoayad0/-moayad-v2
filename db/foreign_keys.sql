@@ -703,6 +703,30 @@ ALTER TABLE v2.outbox
 ALTER TABLE v2.outbox
     ADD CONSTRAINT outbox_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 
+-- ── outgoing_attachments · md5 784329cc2ed092b759d36dbf41b5072b
+ALTER TABLE v2.outgoing_attachments
+    ADD CONSTRAINT outgoing_attachments_form_entry_fkey FOREIGN KEY (form_entry) REFERENCES v2.form_entries(id);
+ALTER TABLE v2.outgoing_attachments
+    ADD CONSTRAINT outgoing_attachments_mail_id_fkey FOREIGN KEY (mail_id) REFERENCES v2.outgoing_mail(id) ON DELETE CASCADE;
+
+-- ── outgoing_mail · md5 6b13a9f3a5753665752cc84ba87010c7
+ALTER TABLE v2.outgoing_mail
+    ADD CONSTRAINT outgoing_mail_prepared_by_fkey FOREIGN KEY (prepared_by) REFERENCES v2.people(id);
+ALTER TABLE v2.outgoing_mail
+    ADD CONSTRAINT outgoing_mail_reply_to_mail_fkey FOREIGN KEY (reply_to_mail) REFERENCES v2.incoming_mail(id);
+ALTER TABLE v2.outgoing_mail
+    ADD CONSTRAINT outgoing_mail_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.outgoing_mail
+    ADD CONSTRAINT outgoing_mail_signed_by_fkey FOREIGN KEY (signed_by) REFERENCES v2.people(id);
+ALTER TABLE v2.outgoing_mail
+    ADD CONSTRAINT outgoing_mail_year_id_fkey FOREIGN KEY (year_id) REFERENCES v2.academic_years(id);
+
+-- ── outgoing_mail_tasks · md5 fa2b0db72823294f32eca670ce8fa7a7
+ALTER TABLE v2.outgoing_mail_tasks
+    ADD CONSTRAINT outgoing_mail_tasks_mail_id_fkey FOREIGN KEY (mail_id) REFERENCES v2.outgoing_mail(id) ON DELETE CASCADE;
+ALTER TABLE v2.outgoing_mail_tasks
+    ADD CONSTRAINT outgoing_mail_tasks_task_id_fkey FOREIGN KEY (task_id) REFERENCES v2.behavior_tasks(id) ON DELETE CASCADE;
+
 -- ── people · md5 30ab9b803e980a7255ebf4a3913dd04e
 ALTER TABLE v2.people
     ADD CONSTRAINT people_post_key_fkey FOREIGN KEY (post_key) REFERENCES v2.posts(key);

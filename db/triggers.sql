@@ -92,6 +92,9 @@ CREATE TRIGGER t_verdict_needs_filing BEFORE INSERT OR UPDATE ON v2.merit_entrie
 -- ── outbox · md5 a2ac2a03c8c6a7f17ae3c63e36235973
 CREATE TRIGGER mark_test BEFORE INSERT ON v2.outbox FOR EACH ROW EXECUTE FUNCTION v2.trg_mark_test();
 
+-- ── outgoing_mail · md5 3d97d61e36732f61387100e5129259aa
+CREATE TRIGGER mark_test BEFORE INSERT ON v2.outgoing_mail FOR EACH ROW EXECUTE FUNCTION v2.trg_mark_test();
+
 -- ── people · md5 412ca5db1e16b5fcbb22a29506637eee
 CREATE TRIGGER trg_person_silence BEFORE INSERT OR UPDATE OF status ON v2.people FOR EACH ROW EXECUTE FUNCTION v2.fn_person_silence();
 
