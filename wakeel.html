@@ -45,6 +45,14 @@
 
   <div class="notice err" id="loadErr" hidden></div>
 
+  <!-- صدرُ الشاشة: ما بقي فيه بندٌ مفتوح (v2_open_records) — الأقدمُ أوّلًا كما يرجع، ولا أحمرَ ولا مدّة -->
+  <section class="rs-card" id="openCard" hidden>
+    <h3>ما بقي فيه بندٌ مفتوح</h3>
+    <p class="rs-sum" id="openSum"></p>
+    <div id="openList"></div>
+    <p class="rs-meta" id="openNote"></p>
+  </section>
+
   <!-- ① ارصد مخالفة — ضغطةٌ واحدة، ولا نافذةَ تعترض -->
   <section class="rs-card" id="recCard">
     <h3>ارصد مخالفة</h3>
@@ -62,7 +70,7 @@
       <div class="rs-pick" id="periods" role="group" aria-label="الحصّة"></div>
     </div>
     <div class="rs-note">مداخلُ متعدّدةٌ ومخرجٌ واحد — <b>وأوّلُ من يدوّن يُقفل البابَ على الباقين</b>، ويُحفظ من دوّن وبأيّ صفة</div>
-    <button type="button" class="rs-btn big" id="rec" disabled>ارصد</button>
+    <button type="button" class="rs-btn big" id="rec">ارصد</button>
   </section>
 
   <!-- ② شواهدُ بانتظارك -->

@@ -79,6 +79,102 @@
     ui.full = !!(M.state.me && M.state.me.can && M.state.me.can.wakeel_full);
     $('evCard').hidden = !ui.full;
     if (ui.full) loadEvidence();
+    loadOpen();
+  }
+
+  // ---------- صدرُ الشاشة: v2_open_records ----------
+  // summary_ar سطرٌ بارز · والصفوفُ بترتيبها كما ترجع (الأقدمُ أوّلًا) · ولا أحمرَ ولا مدّة · و note_ar تحت القائمة كما هو
+  // ومن ينتظر لجنةً بلون support.1 ومعه why_ar — فلا يُحسب إهمالًا
+  let openSeq = 0;
+  async function loadOpen() {
+    const card = $('openCard');
+    if (!ui.full || !M.state.school) { card.hidden = true; return; }
+    const seq = ++openSeq;
+    const { data, error } = await M.rpc('v2_open_records', { p_school: M.state.school }, 'الرصدات المفتوحة');
+    if (seq !== openSeq) return;
+    card.hidden = false;
+    const d = data || {};
+    $('openSum').textContent = error ? '' : (d.summary_ar || '');
+    $('openNote').textContent = error ? '' : (d.note_ar || '');
+    const box = $('openList');
+    box.textContent = '';
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const rows = d.rows || [];
+    if (!rows.length) return; // summary_ar يقول ذلك بجملته
+    const w = el('div', 'rs-tablewrap');
+    const tb = el('table', 'rs-table rs-open');
+    const hr = el('tr');
+    for (const h of ['الطالب', 'المخالفة', 'الرصدة', 'منذ', 'المفتوح', 'أقدمُ بندٍ مفتوح', 'الحال', '']) hr.appendChild(el('th', null, h));
+    const th = el('thead'); th.appendChild(hr); tb.appendChild(th);
+    const body = el('tbody');
+    for (const r of rows) {
+      const tr = el('tr', r.waits_committee ? 'wait' : null);
+      const td = (...n) => { const c = el('td'); c.append(...n); tr.appendChild(c); return c; };
+      const who = el('b', null, r.student_ar || '');
+      const c1 = td(who);
+      if (r.is_test) c1.appendChild(el('span', 'rs-tag', 'تجريبيّة'));
+      td(document.createTextNode([r.problem_ar, r.degree_ar, r.step_ar ? 'الإجراء ' + r.step_ar : null].filter(Boolean).join(' · ')));
+      td(document.createTextNode([r.occurrence_ar, r.on_date].filter(Boolean).join(' · ')));
+      td(document.createTextNode(r.age_ar || ''));
+      td(document.createTextNode(r.open_ar || ''));
+      td(document.createTextNode((r.oldest_item_ar || '') + (r.oldest_owner_ar ? ' — عند ' + r.oldest_owner_ar : '')));
+      const st = td(el('span', 'rs-state ' + (r.waits_committee ? 'wait' : 'open'), r.state_ar || ''));
+      if (r.why_ar) st.appendChild(el('div', 'rs-why', r.why_ar));
+      const acts = el('div', 'rs-row');
+      acts.append(btn('افتح ملفَّه', 'rs-btn', () => openFromRow(r)),
+        btn('ألغِ الرصدة', 'rs-btn irrev', () => voidForm(r)));
+      td(acts);
+      body.appendChild(tr);
+    }
+    tb.appendChild(body);
+    w.appendChild(tb);
+    box.appendChild(w);
+    arabize(box);
+  }
+
+  // من صفّ القائمة إلى ملفّ الطالب: فصلُه من قائمة اليوم إن كان فيها، وإلا فبرقمه واسمه كما رجعا
+  function openFromRow(r, prob) {
+    const row = (ui.rows || []).find((x) => x.student_id === r.student) || { student_id: r.student, display_name: r.student_ar, full_name: r.student_ar };
+    const c = ui.classes.find((x) => x.grade === row.grade && x.section === row.section);
+    if (c) { ui.cls = c; renderClasses(); $('qStu').disabled = false; }
+    openStudent(row).then(() => {
+      if (c) renderStudents();
+      const go = () => { const t = prob && [...document.querySelectorAll('#files .rs-card h3')].find((h) => h.textContent.replace(/\.\s*$/, '') === String(prob).replace(/\.\s*$/, '')); (t ? t.closest('.rs-card') : $('files')).scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+      setTimeout(go, 600);
+    });
+  }
+
+  // ---------- بابُ الإلغاء: v2_record_void ----------
+  // السببُ · ثمّ كلمةُ الحارس «أُلغي» بيد المستعمل (لا تُملأ ولا تُقترح) · ثمّ ما يقع بالإلغاء · والزرُّ بحدٍّ تحذيريّ في آخر الشريط
+  // ولا يُخفى بحساب الشاشة: يُضغط، والجسرُ يقول من يملكه ومتى
+  function voidForm(r) {
+    V.form({
+      title: 'إلغاءُ الرصدة',
+      what: [r.student_ar, r.problem_ar, r.occurrence_ar ? 'الرصدة ' + r.occurrence_ar : null, r.on_date].filter(Boolean).join(' · '),
+      fields: [
+        { key: 'reason', type: 'textarea', label: 'سببُ الإلغاء *', rows: 3, hint: 'يبقى السببُ في الملفّ باسمك — ولا يُحذف الصفُّ الأصليّ' },
+        { key: 'confirm', label: 'اكتب «أُلغي» لتأكيده *' },
+        { key: 'what', type: 'node', node: el('div', 'rs-info', 'وبالإلغاء: تُردُّ الدرجاتُ المحسومة · وتُسحب النماذجُ الخارجة · ويُعلَم وليُّ الأمر بالسحب') },
+      ],
+      ok: 'أُلغي الرصدة',
+      okCls: 'rs-btn irrev',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_record_void', { p_record: r.record, p_reason: v.reason, p_confirm: v.confirm }, 'إلغاء رصدة');
+        if (error) {
+          // «أَلغِ أوّلًا: …» ⇒ النصُّ كما هو، ومعه زرٌّ ينقله إلى ملفّ تلك الرصدات
+          if (/أَلغِ أوّلًا/.test(String(error.message || ''))) {
+            return { text: errText(error), acts: [btn('انتقل إلى تلك الرصدات', 'rs-btn', () => { $('flash').hidden = true; document.querySelector('.rs-modal:not([hidden])') && (document.querySelector('.rs-modal:not([hidden])').hidden = true); openFromRow(r, r.problem_ar); })] };
+          }
+          return error;
+        }
+        if (!data || data.ok !== true) return 'لم يُلغِ الجسرُ الرصدة';
+        // note_ar كاملًا: ما رُدّ وما سُحب ومن أُعلم — وأنّ ما كسبه الطالبُ من تعويضٍ لا يُستردّ
+        flash('ok', data.note_ar || '');
+        loadOpen();
+        if (ui.stu) loadStudentCards();
+        return null;
+      },
+    });
   }
 
   // نمطُ التعليم في رأس الشاشة كما يرجع من v2_problems (mode_ar · note_ar) — والسلّمُ الآخرُ لا يُعرض
@@ -202,7 +298,8 @@
     mark();
   }
 
-  function syncButton() { $('rec').disabled = ui.busy || !ui.stu || !ui.prob; }
+  // «ارصد» لا يُعطَّل بحساب الشاشة: يُضغط، والجسرُ يردّ بنصّه إن نقص الطالبُ أو السلوكُ أو الحصّة
+  function syncButton() { /* لا شيء — الإرسالُ وحدَه يُشغله (busyOn) */ }
 
   // ---------- شريطُ النتيجة ----------
   // auto: ما وقع آليًّا بالرصد كما رجع من القاعدة — {kind, text}
@@ -229,16 +326,16 @@
 
   // ---------- ① ارصد: ضغطةٌ واحدة ----------
   $('rec').addEventListener('click', async () => {
-    if (!ui.stu || !ui.prob || ui.busy) return;
+    if (ui.busy) return;
     const stu = ui.stu; const p = ui.prob;
-    ui.busy = true; syncButton();
+    ui.busy = true; V.busyOn($('rec'));
     // ١ · الأثرُ فورًا بحال «يُرسل» — ولا درجةَ تُنقص قبل ردّ القاعدة
-    flash('wait', 'يُرسل… ' + p.text);
-    // ٢ · القاعدة
+    if (p) flash('wait', 'يُرسل… ' + p.text);
+    // ٢ · القاعدة — وإن نقص شيءٌ فنصُّها يقول ما هو
     const { data, error } = await M.rpc('v2_record_behavior', {
-      p_student: stu.student_id, p_problem: p.id, p_period: p.needs_period ? ui.period : null,
+      p_student: stu ? stu.student_id : null, p_problem: p ? p.id : null, p_period: p && p.needs_period ? ui.period : null,
     }, 'رصد مخالفة');
-    ui.busy = false; syncButton();
+    ui.busy = false; V.busyOff($('rec'));
     // ٣ · رُفض ⇒ نصُّ الرفض كما هو · نجح ⇒ headline كما يرجع
     if (error) { flash('bad', errText(error)); return; }
     ui.last = { record: data && data.record, problem: data && data.problem, student: stu };
@@ -249,6 +346,7 @@
     ui.period = null;
     // بعد كلّ رصدة: تُعاد قراءةُ البطاقة والمهامّ من القاعدة — فرقمُ الرصدة والإجراءُ كما صارا فيها
     loadStudentCards();
+    loadOpen();
     const { data: fresh } = await M.rpc('v2_conduct_list', { p_student: stu.student_id, p_mode: null, p_target: 'general' }, 'قائمة المخالفات');
     if (ui.stu !== stu) return;
     if (fresh) { ui.problems = fresh; ui.prob = ui.problems.find((x) => x.id === p.id) || null; }
@@ -346,6 +444,7 @@
     renderStudentCards();
     loadAdvice(stu);
     loadResponse(stu);
+    loadOpen();
   }
 
   // سلوكُ الملفّ بعناصره من v2_conduct_list — بنصّه كما يرجع في البطاقة
@@ -463,6 +562,8 @@
         body.style.flex = '1';
         body.appendChild(document.createTextNode(t.text_ar));
         if (line) body.appendChild(el('span', 'rs-done-line', line));
+        // المصدرُ ظاهرًا إن لم يكن نصَّ الدليل (كـ«اجتهاد مدرسي» لبند ما بعد نهاية السلّم)
+        if (t.origin && t.origin !== 'الدليل') body.appendChild(el('span', 'rs-tag own', t.origin));
         li.append(el('i', 'rs-tick' + (isDone ? ' ok' : ''), isDone ? '✓' : '○'), body);
         if (acts.length) { const w = el('span', 'rs-ibs'); w.append(...acts); li.appendChild(w); }
         li.appendChild(el('span', 'rs-who', (t.kind_ar || t.owner_ar || t.owner_role_ar || t.owner_role || '') + (isDone ? ' · تمّ' : '')));
@@ -479,7 +580,8 @@
         if (t.kind === 'plan') return [ib('📝 الخطّة', 'خطّةُ تعديل السلوك (نموذج ٣): تُكتب، ثمّ رأيُ معلّم الفصل، ثمّ تُعتمد', () => planForm(t, null))];
         if (t.kind === 'committee') return [ib('⚖️ أحِل', 'لا تُفتح إلا بعد اعتماد الخطّة وبرصدةٍ بعدها', () => referForm(t))];
         // وما سواها: بابُ الإثبات العامّ إن كان بابَها (door_ar كما يرجع)
-        if (t.door_ar === 'بابُ الإثبات') return [ib('🧾 أثبت', t.evidence_ar || t.door_ar, () => window.MoayadTasks.evidenceDoor(t.task_id, ui.stu.student_id, () => loadStudentCards()))];
+        if (t.kind === 'move_class') return [ib('🔀 انقل', 'نقلُ الفصل — لا يقع إلّا بقرار لجنة التوجيه الطلابيّ', () => moveForm(t))];
+        if (t.door_ar === 'بابُ الإثبات') return [ib('🧾 أثبت', t.evidence_ar || t.door_ar, () => window.MoayadTasks.evidenceDoor(t.task_id, ui.stu.student_id, () => loadStudentCards(), { doors: DOORS }))];
         return [];
       };
       // ما تمّ: الاتّصالُ والحصرُ يبقيان «مرّةً أخرى» ومعهما سطرُ ما وقع
@@ -497,6 +599,8 @@
           return [[ib('📋 احصر مرّةً أخرى', 'حصرٌ آخرُ للسلوكيّات', () => selfCensus(t.task_id))],
             last ? 'حُصر ' + filed.length + ' · آخرُه ' + String(last.filed_at).slice(0, 16).replace('T', ' ') : null];
         }
+        // نُقل ⇒ له أن يعود بقرار اللجنة نفسِها (ev_ref رقمُ النقل كما أثبته v2_move_class)
+        if (t.kind === 'move_class' && t.status === 'done' && t.ev_ref) return [[ib('↩︎ أعِده إلى فصله', 'الإعادةُ بقرار لجنةٍ معتمدٍ بعد تاريخ النقل', () => returnForm(t))], t.ev_text || null];
         return [[], t.ev_text || null];
       };
       c.appendChild(el('div', 'rs-label', 'ما على الإجراء:'));
@@ -537,6 +641,11 @@
     for (const e of evs) {
       const d = el('div');
       d.append(el('b', null, e.title || ''), document.createTextNode(' · ' + (e.on || '') + (e.body ? ' — ' + e.body : '')));
+      // حدثُ الرصد نفسُه ⇒ بابُ إلغائه (والجسرُ يقول من يملكه)
+      if (ui.full && e.kind === 'behavior_record' && e.record_id) {
+        const b = btn('ألغِ هذي الرصدة', 'rs-btn irrev', () => voidForm({ record: e.record_id, student: ui.stu.student_id, student_ar: ui.stu.display_name || ui.stu.full_name, problem_ar: e.title, on_date: e.on }));
+        const r = el('div', 'rs-row'); r.appendChild(b); d.appendChild(r);
+      }
       box.appendChild(d);
     }
     if (!evs.length) box.appendChild(el('div', null, 'لا أحداثَ بعد.'));
@@ -784,15 +893,92 @@
     arabize(box);
   }
 
+  // أبوابُ المهامّ الخاصّة — يُنقل إليها من بابِ الإثبات العامّ (opts.doors)
+  const DOORS = {
+    notify_guardian: (ct) => contactForm(ct.id),
+    follow_up: (ct) => selfCensus(ct.id),
+    plan: (ct) => planForm(taskById(ct.id), null),
+    committee: (ct) => referForm(taskById(ct.id)),
+    move_class: (ct) => moveForm(taskById(ct.id)),
+  };
+
+  // ---------- نقلُ الفصل: v2_move_class_targets ثمّ v2_move_class ----------
+  // blocks[] كما هي · privacy_ar بنصّه · والوجهةُ من targets وحدَها · وكلمةُ الحارس confirm_word بيد المستعمل
+  // ولا يُعرض سببُ النقل لمعلّمي الفصل الجديد (show_reason_to_new_class = false) — والسببُ هنا يُكتب للسجلّ لا لهم
+  async function moveForm(t) {
+    if (!t) return;
+    const { data: b, error } = await M.rpc('v2_move_class_targets', { p_record: t.record_id }, 'فصول النقل');
+    if (error) { flash('bad', errText(error)); return; }
+    const head = el('div');
+    head.appendChild(el('p', 'rs-meta', [b.problem_ar, b.degree_ar, b.grade_ar, b.from_section ? 'فصلُه الآن ' + b.from_section : null].filter(Boolean).join(' · ')));
+    if (b.decision) head.appendChild(el('div', 'rs-settled', ['قرارُ اللجنة' + (b.decision.held_on ? ' في ' + b.decision.held_on : ''), b.decision.decision_ar, b.decision.recommend_ar].filter(Boolean).join(' — ')));
+    for (const x of b.blocks || []) head.appendChild(el('div', 'rs-info', x));
+    if (b.warning_ar) head.appendChild(el('div', 'rs-info', b.warning_ar));
+    for (const x of b.excluded || []) head.appendChild(el('p', 'rs-meta', (x.label_ar || x.section) + ' — ' + (x.why || '')));
+    if (b.privacy_ar) head.appendChild(el('div', 'rs-note', b.privacy_ar));
+    const items = (b.targets || []).map((x) => [x.section, (x.label_ar || x.section) + (x.note_ar ? ' · ' + x.note_ar : '')]);
+    const fields = [{ key: 'h', type: 'node', node: head }];
+    if (items.length) fields.push({ key: 'to', type: 'pick', label: 'إلى فصل', items });
+    fields.push({ key: 'reason', type: 'textarea', label: 'سببُ النقل — يُقيَّد في سجلّ الطالب', rows: 2 });
+    fields.push({ key: 'confirm', label: 'اكتب «' + (b.confirm_word || '') + '» لتُقرّه' });
+    V.form({
+      title: t.text_ar || '', what: (ui.stu && (ui.stu.display_name || ui.stu.full_name)) || '',
+      fields,
+      ok: b.confirm_word || 'تأكيد',
+      okCls: 'rs-btn irrev',
+      onOk: async (v) => {
+        const { data, error: e } = await M.rpc('v2_move_class', { p_record: t.record_id, p_task: t.task_id, p_to_section: v.to || null, p_reason: v.reason, p_confirm: v.confirm }, 'نقل الفصل');
+        if (e) return e;
+        if (!data || data.ok !== true) return 'لم ينقل الجسرُ الطالب';
+        flash('ok', [data.headline, data.privacy_ar, data.warning_ar, data.return_ar].filter(Boolean).join(' · '));
+        loadStudentCards();
+        return null;
+      },
+    });
+  }
+
+  function returnForm(t) {
+    V.form({
+      title: 'إعادةُ الطالب إلى فصله', what: t.ev_text || '',
+      fields: [
+        { key: 'reason', type: 'textarea', label: 'سببُ الإعادة — يُقيَّد كما قُيّد النقل', rows: 2 },
+        { key: 'confirm', label: 'اكتب «أُعيد» لتُقرّه' },
+      ],
+      ok: 'أُعيد',
+      okCls: 'rs-btn irrev',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_move_class_return', { p_move: t.ev_ref, p_reason: v.reason, p_confirm: v.confirm }, 'إعادة الطالب إلى فصله');
+        if (error) return error;
+        if (!data || data.ok !== true) return 'لم يُعِده الجسر';
+        flash('ok', [data.headline, data.note_ar].filter(Boolean).join(' · '));
+        loadStudentCards();
+        return null;
+      },
+    });
+  }
+
   // كتابةُ الخطّة أو تعديلُ مسودّتها — وتحت حقولها بنكُ العبارات (plDesc · plAnte · plPost · plGain)
   function planForm(t, p) {
     const stu = ui.stu;
     const draft = p || (((ui.files && ui.files.plans && ui.files.plans.data) || []).find((x) => x.status === 'draft')) || null;
     const m = t && metaOf(t.problem_ar);
     const pr = m ? m.id : null;
+    // حارسُ تغيير الخطّة: الخطّةُ المعتمدةُ السابقةُ إلى جوار الحقول (v2_plan_of) — ليرى الوكيلُ ما يُغيّره ولا يُجبَر على التذكّر
+    const finals = ((ui.files && ui.files.plans && ui.files.plans.data) || []).filter((x) => x.status === 'final' && x.final_at);
+    const prev = finals.sort((a, b) => String(b.final_at).localeCompare(String(a.final_at)))[0] || null;
+    const prevBox = el('div');
+    if (prev) {
+      const f = el('div', 'rs-file rs-prev');
+      f.appendChild(el('h5', null, 'الخطّةُ المعتمدةُ السابقة — ' + String(prev.final_at).slice(0, 10)));
+      if (prev.target) f.appendChild(el('p', null, 'السلوكُ المستهدف: ' + prev.target));
+      const st = lines(prev.steps_list || prev.steps);
+      if (st.length) { const ul = el('ul', 'rs-acts'); for (const x of st) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }
+      prevBox.appendChild(f);
+    }
     V.form({
       title: draft ? 'خطّةُ تعديل السلوك — مسودّة' : 'خطّةُ تعديل السلوك', what: (stu.display_name || stu.full_name) + (t && t.problem_ar ? ' — ' + t.problem_ar : ''),
       fields: [
+        { key: 'prev', type: 'node', node: prevBox },
         { key: 'desc', type: 'textarea', label: 'وصفُ السلوك المراد تعديلُه', rows: 2, value: draft ? draft.desc : null, bank: { key: 'plDesc', problem: pr } },
         { key: 'manifest', type: 'textarea', label: 'مظاهرُه عند الطالب (اختياريّ)', rows: 2, value: draft ? draft.manifest : null },
         { key: 'ante', type: 'textarea', label: 'ما يسبقه — مثيراتُه (اختياريّ)', rows: 2, value: draft ? draft.ante : null, bank: { key: 'plAnte', problem: pr } },

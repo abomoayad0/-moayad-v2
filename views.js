@@ -278,8 +278,10 @@
     // زرّا التوقيع: متساويان · ظاهران معًا · كلاهما بحدٍّ لا ممتلئ — ونصُّ الامتناع تحتهما كما هو
     const pair = o.pair ? el('div', 'rs-pair') : null;
     if (pair) { if (o.ok !== false) pair.appendChild(ok); row.appendChild(pair); if (o.pairNote) row.appendChild(el('p', 'rs-meta rs-pairnote', o.pairNote)); }
-    else if (o.ok !== false) row.appendChild(ok);
+    else if (o.ok !== false && !/\birrev\b/.test(ok.className)) row.appendChild(ok);
     row.appendChild(no);
+    // الفعلُ الذي لا يُرجَع في النهاية البعيدة (يسارًا) — لا يُلامس غيرَه
+    if (!pair && o.ok !== false && /\birrev\b/.test(ok.className)) row.appendChild(ok);
     sh.appendChild(row);
     const api = { values: () => { const r = {}; for (const k in get) r[k] = get[k](); return r; }, ok };
     // زرُّ التأكيد معطَّلٌ حتى يقول الجسرُ إنّه جاهز (كالنموذج قبل اعتماده) — okDisabled
@@ -290,7 +292,12 @@
       formBox.busy = true; busyOn(b);
       let e = null;
       try { e = await fn(api.values()); } finally { formBox.busy = false; busyOff(b); b.disabled = b === ok && !!o.okDisabled; }
-      if (e) { err.textContent = typeof e === 'string' ? e : M.errText(e); err.hidden = false; arabize(err); err.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
+      if (e) {
+        err.textContent = '';
+        // { text, acts } ⇒ النصُّ كما هو ومعه أزرارٌ تنقله إلى ما يدلّ عليه
+        if (e.text != null) { err.appendChild(el('span', null, e.text)); if (e.acts && e.acts.length) { const r = el('div', 'rs-row'); r.append(...e.acts); err.appendChild(r); } }
+        else err.textContent = typeof e === 'string' ? e : M.errText(e);
+        err.hidden = false; arabize(err); err.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
       formBox.hidden = true;
     };
     ok.addEventListener('click', () => run(ok, o.onOk));

@@ -614,7 +614,7 @@
   .rs-neg h5 { margin: 0 0 8px; }
   .rs-neg textarea { width: 100%; }
   .rs-ask { font-weight: 700; margin: 8px 0 0; }
-  .rs-tag { display: inline-block; font-size: 13px; line-height: 20px; border: 1px solid var(--line); border-radius: 999px; padding: 0 10px; color: var(--muted); margin: 4px 0; }
+  .rs-tag { display: inline-block; font-size: 13px; line-height: 20px; border: 1px solid var(--line); border-radius: 999px; padding: 0 10px; color: var(--muted); margin: 4px 0; margin-inline-start: 8px; }
   .rs-tag.own { border-color: var(--info-c); color: var(--info-c); font-weight: 700; }
 
 /* ٧ · القوائم: على الهاتف بطاقاتٌ لا جدولٌ يُمرَّر أفقيًّا (data-label من common.js) */
@@ -627,3 +627,11 @@
     table.rs-table td { border: 0; padding: 4px 0; text-align: start; height: auto; }
     table.rs-table td[data-label]::before { content: attr(data-label); display: block; font-size: 13px; line-height: 20px; color: var(--muted); font-weight: 600; }
   }
+
+/* صدرُ شاشة الوكيل: v2_open_records — summary_ar سطرٌ بارز · ومن ينتظر لجنةً بلون support.1 ومعه سببُه */
+  .rs-sum { font-size: 17px; line-height: 28px; font-weight: 700; color: var(--text); margin: 4px 0 8px; }
+  .rs-why { color: var(--info-c); font-size: 13px; line-height: 20px; margin-top: 4px; }
+  table.rs-open tr.wait td:first-child { box-shadow: inset -4px 0 0 var(--info-c); }
+  table.rs-open td .rs-row { margin-top: 0; }
+  @media (max-width: 699px) { table.rs-open tr.wait { border-inline-start: 4px solid var(--info-c); } table.rs-open tr.wait td:first-child { box-shadow: none; } }
+  .rs-prev { border-inline-start: 4px solid var(--grey); }
