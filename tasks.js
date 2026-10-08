@@ -2,6 +2,7 @@
 // نوع الإثبات ومتطلّباته من القاعدة (needs_*)، ولا يُغلق شيء بزرّ وحده:
 // v2_student_tasks · v2_student_absence_tasks · v2_task_done · v2_absence_task_done
 // v2_task_skip · v2_absence_task_skip
+// ومهامُّ السلوك من بابِ الإثبات العامّ: v2_task_card ⇒ v2_task_evidence (حقولُه ونموذجُه وتوقيعُه من البطاقة)
 (function () {
   'use strict';
 
@@ -189,6 +190,78 @@
       (t.task_id ? '&task=' + encodeURIComponent(t.task_id) : '');
   }
 
+  // ---------- بابُ الإثبات العامّ: يرسم حقولَه من v2_task_card ويُقفل بـ v2_task_evidence ----------
+  // لا حسابَ هنا: الحقولُ وعناوينُها والنموذجُ والتوقيعُ والامتناعُ كلُّها من البطاقة — والجسرُ وحدَه يُقفل
+  async function evidenceDoor(taskId, studentId, onChanged) {
+    const V = window.MoayadView;
+    const { data: c, error } = await M.rpc('v2_task_card', { p_task: taskId }, 'بطاقة المهمّة');
+    if (error) { V.flash('bad', errText(error)); return; }
+    const t = c.task || {};
+    const ev = c.evidence || {};
+    const need = ev.needs || {};
+    const lb = ev.labels || {};
+    const fl = c.filled || {};
+    const head = el('div');
+    head.appendChild(el('p', 'rs-meta', [t.problem_ar, t.degree_ar, t.step_ar ? 'الإجراء ' + t.step_ar : null, t.occurrence_ar ? 'الرصدة ' + t.occurrence_ar : null].filter(Boolean).join(' · ')));
+    if (ev.label_ar) head.appendChild(el('p', null, ev.label_ar + (ev.hint_ar ? ' — ' + ev.hint_ar : '')));
+    // ليس هذا بابَها ⇒ اسمُ بابها كما يرجع، ولا حقول
+    if (c.door !== 'بابُ الإثبات') {
+      head.appendChild(el('div', 'rs-note', c.door || ''));
+      V.form({ title: t.text_ar || '', fields: [{ key: 'h', type: 'node', node: head }], ok: false, cancel: 'فهمت' });
+      return;
+    }
+    const fields = [{ key: 'h', type: 'node', node: head }];
+    if (need.date) fields.push({ key: 'on', type: 'date', label: lb.date || '', value: fl.ev_on });
+    if (need.text) fields.push({ key: 'text', type: 'textarea', label: lb.text || '', value: fl.ev_text });
+    if (need.file) fields.push({ key: 'file', label: lb.file || '', value: fl.ev_file });
+    if (need.ref) fields.push({ key: 'ref', label: lb.ref || '', value: fl.ev_ref });
+    if (need.people) fields.push({ key: 'people', label: lb.people || '', value: fl.ev_people });
+    // النموذجُ إن طلبته المهمّة: بطاقتُه كما ترجع، وزرُّ «افتح النموذج» حتى يُعتمد — و«أثبت» معطَّلٌ قبل ready
+    const f = c.form;
+    const formWait = !!(need.form && f && !f.ready);
+    if (need.form && f) {
+      const fc = el('div', 'rs-file');
+      fc.append(el('h5', null, 'النموذج ' + f.form_no + (f.title_ar ? ': ' + f.title_ar : '')));
+      if (f.source) fc.appendChild(el('p', 'rs-meta', f.source));
+      if (f.why_ar) fc.appendChild(el('p', null, f.why_ar));
+      fc.appendChild(el('p', f.ready ? 'rs-state-done' : 'rs-state-open', f.ready ? 'اعتُمد النموذج' : (f.entry ? 'لم يُعتمد بعد' : 'لم يُفتح بعد')));
+      if (!f.ready) {
+        fc.appendChild(window.MoayadView.btn('افتح النموذج', 'rs-btn soft', () => {
+          ensureDialogs();
+          const src = 'form.html?form=' + f.form_no + '&student=' + encodeURIComponent(studentId) + (t.record ? '&ref=' + encodeURIComponent(t.record) : '') + '&task=' + encodeURIComponent(taskId);
+          $('formDlgTitle').textContent = 'النموذج ' + f.form_no + (f.title_ar ? ': ' + f.title_ar : '');
+          $('formFrame').src = src + '&embed=1';
+          // بعد إغلاق النموذج تُقرأ البطاقةُ من جديد — فإن اعتُمد تفعّل «أثبت»
+          $('formDlg').addEventListener('close', () => { evidenceDoor(taskId, studentId, onChanged); onChanged(); }, { once: true });
+          $('formDlg').showModal();
+        }));
+      }
+      fields.push({ key: 'form', type: 'node', node: fc });
+    }
+    // التوقيع: زرّان لا زرّ — «وقّع» و«امتنع» من أوّل وهلة، والامتناعُ بسببٍ مكتوبٍ يُتمّ الخطوة
+    const rf = c.refusal;
+    if (need.signature && rf) fields.push({ key: 'refuse', type: 'textarea', label: 'سببُ الامتناع — إن امتنع', rows: 2, hint: rf.note_ar || '' });
+    const send = async (v, signed, refuse) => {
+      const { data, error: e } = await M.rpc('v2_task_evidence', {
+        p_task: taskId, p_on: v.on || null, p_text: v.text || null, p_file: v.file || null, p_ref: v.ref || null,
+        p_people: v.people || null, p_signed: signed, p_refuse: refuse,
+      }, 'إثبات تنفيذ المهمّة');
+      if (e) return e;
+      if (!data || data.ok !== true) return 'لم يُقفل الجسرُ المهمّة';
+      V.flash('ok', data.note || '');
+      onChanged();
+      return null;
+    };
+    V.form({
+      title: t.text_ar || '', what: c.signer_ar ? 'التوقيع: ' + c.signer_ar : '',
+      fields,
+      ok: need.signature ? (lb.sign || '') : 'أثبت',
+      okDisabled: formWait,
+      onOk: (v) => send(v, need.signature ? true : null, null),
+      extra: need.signature && rf ? [{ text: rf.label_ar || '', cls: 'rs-btn ghost', onClick: (v) => send(v, false, v.refuse) }] : [],
+    });
+  }
+
   async function closeTask(kind, t, onChanged, studentId) {
     ensureDialogs();
     setFormLink(t, studentId);
@@ -279,6 +352,20 @@
         c.appendChild(el('div', 'meta nocan', M.lacks('إغلاق المهامّ')));
       } else if (t.evidence_kind === 'auto') {
         c.appendChild(el('div', 'meta', 'تقع آلياً في القاعدة — لا تُغلق من هنا.'));
+      } else if (kind === 'behavior' && t.door_ar && t.door_ar !== 'بابُ الإثبات') {
+        // ليس من باب الإثبات: اسمُ بابه كما يرجع — ومتابعةُ الموجّه حالٌ تُعرض ولا تُطالَب
+        c.classList.toggle('t-grey', t.evidence_kind === 'services_review');
+        c.appendChild(el('div', 'meta', t.door_ar));
+      } else if (kind === 'behavior') {
+        const acts = el('div', 'acts two');
+        const ok = el('button', 'a-accept', 'أثبت');
+        ok.type = 'button';
+        ok.addEventListener('click', () => evidenceDoor(t.task_id, studentId, onChanged));
+        const no = el('button', 'a-reject', 'إسقاط بسبب');
+        no.type = 'button';
+        no.addEventListener('click', () => skipTask(kind, t, onChanged));
+        acts.append(ok, no);
+        c.appendChild(acts);
       } else {
         const acts = el('div', 'acts two');
         const ok = el('button', 'a-accept', 'أغلقها بإثبات');
@@ -330,5 +417,5 @@
     if (window.MoayadView) window.MoayadView.arabize(box);
   }
 
-  window.MoayadTasks = { render };
+  window.MoayadTasks = { render, evidenceDoor };
 })();

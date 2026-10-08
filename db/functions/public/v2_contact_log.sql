@@ -1,12 +1,13 @@
 -- public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone, p_right_number text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 553180c8862f12cc5beea6507e53f1e5
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 9b5c6425e7735d755d52dfdf8300554d
 CREATE OR REPLACE FUNCTION public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone, p_right_number text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
- SET search_path TO 'v2', 'public'
+ SET search_path TO ''
 AS $function$
-declare sc uuid; gid uuid; rid uuid; n smallint; nid uuid; t record; closed boolean := false;
+declare sc uuid; gid uuid; rid uuid; n smallint; nid uuid; t record;
+        closed boolean := false; v_issue jsonb; v_answered boolean; v_note text; v_form smallint;
 begin
   perform v2.assert_role(array['deputy_students','deputy','principal','counselor',
       'admin_assistant','admin_assistant_students'],'إثباتَ الاتّصال بوليّ الأمر');
@@ -20,7 +21,6 @@ begin
   if p_outcome not in ('ردّ وعلم','ردّ ورفض','لم يردّ','الرقم مغلق','الرقم خطأ') then
     raise exception 'نتيجةُ الاتّصال: ردّ وعلم · ردّ ورفض · لم يردّ · الرقم مغلق · الرقم خطأ'; end if;
 
-  -- 🔑 الحقلُ يتبع النتيجة
   if p_outcome in ('ردّ وعلم','ردّ ورفض') and btrim(coalesce(p_summary,''))='' then
     raise exception 'اكتب ما دار في الاتّصال — فقد ردّ وليُّ الأمر'; end if;
   if p_outcome = 'ردّ ورفض' and btrim(coalesce(p_guardian_say,''))='' then
@@ -66,21 +66,57 @@ begin
       'guardian_contacts',nid,'all',
       coalesce((select test_mode from v2.schools where id=sc),false));
 
-  if p_task is not null and p_outcome in ('ردّ وعلم','ردّ ورفض') then
-    update v2.behavior_tasks set status='done', done_at=now(),
-        done_by=v2.current_person(), ev_on=coalesce(ev_on,current_date),
-        ev_text='أُشعر وليُّ الأمر — '||p_channel||' · '||p_outcome||
-                coalesce(' · '||btrim(p_summary),'')
-     where id=p_task and status<>'done';
-    closed := found;
+  if p_task is not null and rid is not null then
+    v_answered := p_outcome in ('ردّ وعلم','ردّ ورفض');
+    v_form := v2.form_for_kind('notify_guardian', sc);
+
+    if v_form is null then
+      update v2.behavior_tasks
+         set auto_note='لم يخرج الإشعارُ المكتوب — لم يُضبط نموذجُ الإشعار في لوحة التحكّم'
+       where id=p_task;
+    else
+      v_issue := v2.fn_form_issue(
+        v_form, p_student, rid, p_task,
+        jsonb_build_object('on_date', current_date),
+        v2.current_person());
+
+      if (v_issue->>'ok')::boolean then
+        v_note := case when v_answered
+          then 'أُشعر وليُّ الأمر — '||p_channel||' · '||p_outcome||
+               coalesce(' · '||btrim(p_summary),'')||
+               ' · وخرج الإشعارُ المكتوب ('||
+               (select title_ar from v2.official_forms where form_no=v_form)||
+               ') وسُلّم إلى بوّابته'
+          else 'تعذّر الاتصال ('||p_outcome||') — فخرج الإشعارُ المكتوب بديلًا '||
+               'وسُلّم إلى بوّابته · وأُشّر بتعذّر الاتصال' end;
+        update v2.behavior_tasks set status='done', done_at=now(),
+            done_by=v2.current_person(), ev_on=coalesce(ev_on,current_date),
+            ev_text=v_note, ev_ref=(v_issue->>'entry')
+         where id=p_task and status<>'done';
+        closed := found;
+      else
+        update v2.behavior_tasks
+           set ev_ref=(v_issue->>'entry'),
+               auto_note='لم يخرج الإشعارُ المكتوب بعد — '||coalesce(v_issue->>'why','')||
+                         ' · والمهمّةُ باقيةٌ حتى يخرج ويُسلَّم'
+         where id=p_task;
+      end if;
+    end if;
   end if;
 
   perform v2.log_action(sc,p_student,'contact_log','أُثبت اتّصالٌ بوليّ الأمر',
     'guardian_contacts',nid, jsonb_build_object('channel',p_channel,'outcome',p_outcome));
   return jsonb_build_object('ok',true,'contact',nid,'attempt',n,
     'attempt_ar',v2.ar_num(n),'closed',closed,
-    'note', case when closed then 'أُثبت الإشعارُ وأُقفلت المهمّة'
-                 when p_outcome in ('ردّ وعلم','ردّ ورفض') then 'أُثبت الإشعار'
-                 else 'أُثبتت المحاولةُ — والمهمّةُ باقيةٌ حتى يُشعَر' end);
-end $function$
+    'notice', v_issue,
+    'note', case
+      when closed and p_outcome in ('ردّ وعلم','ردّ ورفض')
+        then 'أُثبت الاتصالُ وخرج الإشعارُ المكتوب وسُلّم — وأُقفلت المهمّة'
+      when closed
+        then 'تعذّر الاتصالُ وخرج الإشعارُ المكتوب بديلًا وسُلّم — وأُقفلت المهمّة وأُشّر بالتعذّر'
+      when v_issue is not null
+        then 'أُثبتت المحاولةُ — ولم يخرج الإشعارُ المكتوب: '||coalesce(v_issue->>'why','')
+      else 'أُثبتت المحاولة' end);
+end
+$function$
 ;

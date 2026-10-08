@@ -132,8 +132,10 @@
       const { data, error } = await M.rpc('v2_problems', { p_school: school(), p_degree: null }, 'السلوكيّات');
       box.textContent = '';
       if (error) { errBox(box, error); return; }
-      problems = { school: school(), list: data || [] };
+      // v2_problems صار كائنًا: items للقائمة · و note_ar لنمط التعليم
+      problems = { school: school(), list: (data && data.items) || [], note: data && data.note_ar };
     }
+    if (problems.note) box.appendChild(el('p', 'rs-meta', problems.note));
     const sec = el('div');
     V.chooser(box, problems.list.map((p) => [p.id, p.text, [p.degree_ar, p.page_ar, p.advice_n != null ? 'نصائحُه ' + p.advice_n : null].filter(Boolean).join(' · ')]), null, (id) => showAdvice(sec, problems.list.find((p) => p.id === id)));
     box.appendChild(sec);

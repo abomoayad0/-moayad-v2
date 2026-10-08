@@ -226,22 +226,25 @@
     if (o.ok !== false) row.appendChild(ok);
     row.appendChild(no);
     sh.appendChild(row);
-    const api = { values: () => { const r = {}; for (const k in get) r[k] = get[k](); return r; } };
+    const api = { values: () => { const r = {}; for (const k in get) r[k] = get[k](); return r; }, ok };
+    // زرُّ التأكيد معطَّلٌ حتى يقول الجسرُ إنّه جاهز (كالنموذج قبل اعتماده) — okDisabled
+    if (o.okDisabled) ok.disabled = true;
     // كلُّ زرٍّ في اللوح يرجع خطأَ القاعدة أو null — فإن رجع خطأٌ بقي اللوحُ ونصُّه في أعلاه
     const run = async (b, fn) => {
       if (formBox.busy) return;
       formBox.busy = true; b.disabled = true;
       let e = null;
-      try { e = await fn(api.values()); } finally { formBox.busy = false; b.disabled = false; }
+      try { e = await fn(api.values()); } finally { formBox.busy = false; b.disabled = b === ok && !!o.okDisabled; }
       if (e) { err.textContent = typeof e === 'string' ? e : M.errText(e); err.hidden = false; arabize(err); err.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
       formBox.hidden = true;
     };
     ok.addEventListener('click', () => run(ok, o.onOk));
     // أزرارٌ أخرى (كالحذف) — { text, cls, onClick(values) }
+    // والأزرارُ الأخرى بجوار التأكيد قبل «تراجع» — فـ«وقّع» و«امتنع» يُريان معًا
     for (const x of o.extra || []) {
       const b = btn(x.text, x.cls || 'rs-btn ghost');
       b.addEventListener('click', () => run(b, x.onClick));
-      row.appendChild(b);
+      row.insertBefore(b, no);
     }
     sync();
     arabize(sh);

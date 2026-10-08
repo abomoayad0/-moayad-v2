@@ -333,6 +333,12 @@ ALTER TABLE v2.conduct_advice
 ALTER TABLE v2.conduct_problems
     ADD CONSTRAINT conduct_problems_degree_no_fkey FOREIGN KEY (degree_no) REFERENCES v2.conduct_degrees(degree_no);
 
+-- ── conduct_school_rules · md5 3e0030af7519f94863e2344732fee8f9
+ALTER TABLE v2.conduct_school_rules
+    ADD CONSTRAINT conduct_school_rules_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+ALTER TABLE v2.conduct_school_rules
+    ADD CONSTRAINT conduct_school_rules_set_by_fkey FOREIGN KEY (set_by) REFERENCES v2.people(id);
+
 -- ── conduct_universal · md5 3ac326ea3c34966e5607b100e1f325f9
 ALTER TABLE v2.conduct_universal
     ADD CONSTRAINT conduct_universal_degree_no_fkey FOREIGN KEY (degree_no) REFERENCES v2.conduct_degrees(degree_no);
@@ -854,6 +860,12 @@ ALTER TABLE v2.students
 -- ── subject_plan · md5 5aad647ddc38aa4a6e8cd14e89770970
 ALTER TABLE v2.subject_plan
     ADD CONSTRAINT subject_plan_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+
+-- ── task_kind_forms · md5 b351c925b8f870f2bcf4e343a75f4436
+ALTER TABLE v2.task_kind_forms
+    ADD CONSTRAINT task_kind_forms_form_no_fkey FOREIGN KEY (form_no) REFERENCES v2.official_forms(form_no);
+ALTER TABLE v2.task_kind_forms
+    ADD CONSTRAINT task_kind_forms_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
 
 -- ── teacher_subjects · md5 0c4db25fd62525499b4a61e5be22326b
 ALTER TABLE v2.teacher_subjects

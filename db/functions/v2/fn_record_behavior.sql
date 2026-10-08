@@ -1,28 +1,37 @@
 -- v2.fn_record_behavior(p_student uuid, p_problem integer, p_term smallint, p_period smallint, p_place text, p_note text, p_victim uuid, p_injury boolean, p_damage boolean, p_seizure boolean, p_seizure_legal boolean, p_by uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 cb346f23bc9918f302cff21e02588e10
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 f0465d32a5ba43fb06a253fee7fa4257
 CREATE OR REPLACE FUNCTION v2.fn_record_behavior(p_student uuid, p_problem integer, p_term smallint DEFAULT 1, p_period smallint DEFAULT NULL::smallint, p_place text DEFAULT NULL::text, p_note text DEFAULT NULL::text, p_victim uuid DEFAULT NULL::uuid, p_injury boolean DEFAULT false, p_damage boolean DEFAULT false, p_seizure boolean DEFAULT false, p_seizure_legal boolean DEFAULT false, p_by uuid DEFAULT NULL::uuid)
  RETURNS uuid
  LANGUAGE plpgsql
- SET search_path TO 'v2', 'public'
+ SECURITY DEFINER
+ SET search_path TO ''
 AS $function$
 declare
-  v_school uuid; v_year uuid; v_stage text; v_mode text := 'onsite';
+  v_school uuid; v_year uuid; v_stage text; v_mode text;
   v_prob record; v_scope text; v_count int; v_step int; v_max int; v_action record;
   v_rec uuid; v_ded numeric; v_open numeric; it record; un record;
-  v_skip boolean; v_why text; v_beyond boolean; v_same record; v_who text;
+  v_skip boolean; v_why text; v_beyond boolean; v_same record;
 begin
   select e.school_id, e.year_id, e.stage into v_school, v_year, v_stage
   from v2.enrolments e where e.student_id=p_student and e.status='active'
   order by e.created_at desc limit 1;
   if v_school is null then raise exception 'الطالب لا قيد فعّال له في سنة دراسية'; end if;
 
+  -- 🔑 نمطُ التعليم من إعداد المدرسة — لا من الكود
+  v_mode := v2.conduct_mode_of(v_school);
+  if v_mode is null then
+    raise exception 'لم يُضبط نمطُ التعليم لمدرستك — اضبطه من لوحة التحكّم: «إعداداتُ السلوك للمدرسة»';
+  end if;
+
   select * into v_prob from v2.conduct_problems where id=p_problem;
   if v_prob.id is null then raise exception 'المخالفة غير معروفة'; end if;
   v_scope := case when v_stage='primary' then 'primary' else 'intermediate_secondary' end;
   if v_prob.stage_scope not in (v_scope,'all') then raise exception 'هذه المخالفة لا تنطبق على مرحلة الطالب'; end if;
-  if v_prob.mode <> v_mode then raise exception 'نمط التعليم لا يطابق'; end if;
+  if v_prob.mode <> v_mode then
+    raise exception 'هذي المخالفةُ من سلّم % — ومدرستُك تعمل بـ% · والسلّمُ الآخرُ محفوظٌ كاملًا، ويُفتح بتغيير نمط التعليم من لوحة التحكّم',
+      v2.conduct_mode_ar(v_prob.mode), v2.conduct_mode_ar(v_mode);
+  end if;
 
-  -- 🔑 القفلُ يتبع طبيعةَ السلوك
   if v_prob.once_per_day then
     select r.*, pe.full_name nm into v_same
       from v2.behavior_records r left join v2.people pe on pe.id=r.recorded_by
@@ -47,7 +56,6 @@ begin
         coalesce(v2.fn_display_name(v_same.nm),'غيرُك');
     end if;
   else
-    -- تُميَّز بالوقت: لا تُدوَّن مرّتين في ساعةٍ واحدة
     select r.*, pe.full_name nm into v_same
       from v2.behavior_records r left join v2.people pe on pe.id=r.recorded_by
      where r.student_id=p_student and r.problem_id=p_problem
@@ -126,5 +134,6 @@ begin
   end if;
 
   return v_rec;
-end $function$
+end
+$function$
 ;

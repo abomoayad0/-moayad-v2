@@ -1,7 +1,7 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 7ec2c991b450a26b338a33f260999672
+-- ── grants · md5 75292c4276d691d7c85496d7aa0df9a3
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 
@@ -738,6 +738,9 @@ GRANT EXECUTE ON FUNCTION public.v2_my_roles() TO service_role;
 REVOKE ALL ON FUNCTION public.v2_my_schools() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_my_schools() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_my_schools() TO service_role;
+REVOKE ALL ON FUNCTION public.v2_my_score(p_student uuid, p_term smallint) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_my_score(p_student uuid, p_term smallint) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_my_score(p_student uuid, p_term smallint) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_my_sections(p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_my_sections(p_date date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_my_sections(p_date date) TO service_role;
@@ -945,12 +948,18 @@ GRANT EXECUTE ON FUNCTION public.v2_students_board(p_school uuid, p_grade smalli
 REVOKE ALL ON FUNCTION public.v2_submit_excuse(p_student uuid, p_from date, p_to date, p_reason text, p_by text, p_channel text, p_excuse_item smallint, p_attachment_name text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_submit_excuse(p_student uuid, p_from date, p_to date, p_reason text, p_by text, p_channel text, p_excuse_item smallint, p_attachment_name text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_submit_excuse(p_student uuid, p_from date, p_to date, p_reason text, p_by text, p_channel text, p_excuse_item smallint, p_attachment_name text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_task_card(p_task uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_task_card(p_task uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_task_card(p_task uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_task_delegate(p_task uuid, p_person uuid, p_note text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_task_delegate(p_task uuid, p_person uuid, p_note text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_task_delegate(p_task uuid, p_person uuid, p_note text) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_task_done(p_task uuid, p_ev jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_task_done(p_task uuid, p_ev jsonb) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_task_done(p_task uuid, p_ev jsonb) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_task_evidence(p_task uuid, p_on date, p_text text, p_file text, p_ref text, p_people text, p_signed boolean, p_refuse text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_task_evidence(p_task uuid, p_on date, p_text text, p_file text, p_ref text, p_people text, p_signed boolean, p_refuse text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_task_evidence(p_task uuid, p_on date, p_text text, p_file text, p_ref text, p_people text, p_signed boolean, p_refuse text) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_task_skip(p_task uuid, p_reason text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_task_skip(p_task uuid, p_reason text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_task_skip(p_task uuid, p_reason text) TO service_role;
@@ -975,5 +984,5 @@ GRANT EXECUTE ON FUNCTION public.v2_weekday(p_date date) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_year_save(p_school uuid, p_year uuid, p_name text, p_starts date, p_ends date, p_current boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_year_save(p_school uuid, p_year uuid, p_name text, p_starts date, p_ends date, p_current boolean) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_year_save(p_school uuid, p_year uuid, p_name text, p_starts date, p_ends date, p_current boolean) TO service_role;
--- دوالٌّ بلا ACL صريح (الافتراضيّ: EXECUTE لـ PUBLIC): 0
+-- دوالٌّ بلا ACL صريح (الافتراضيّ: EXECUTE لـ PUBLIC): 5
 

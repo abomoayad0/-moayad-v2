@@ -72,12 +72,23 @@
     ui.rows = (list.data || []).filter((r) => r.state !== 'absent');
     ui.periods = per.data || [];
     ui.cls = null;
+    loadMode();
     renderClasses();
     resetStudent();
     // ما ليس للمعلّم: الشواهد والنموذج ٥ والتكليفُ بالحصر — بمفتاح wakeel_full (الوكيلُ والمدير)
     ui.full = !!(M.state.me && M.state.me.can && M.state.me.can.wakeel_full);
     $('evCard').hidden = !ui.full;
     if (ui.full) loadEvidence();
+  }
+
+  // نمطُ التعليم في رأس الشاشة كما يرجع من v2_problems (mode_ar · note_ar) — والسلّمُ الآخرُ لا يُعرض
+  async function loadMode() {
+    const box = $('modeLine');
+    const { data, error } = await M.rpc('v2_problems', { p_school: M.state.school, p_degree: null }, 'نمط التعليم');
+    box.hidden = false;
+    box.className = error ? 'notice err' : 'rs-note';
+    box.textContent = error ? errText(error) : ((data && (data.note_ar || data.mode_ar)) || '');
+    if (!box.textContent) box.hidden = true;
   }
 
   // ---------- ① الفصل: شريطة ----------
@@ -138,7 +149,7 @@
     renderStudents();
     renderStudentCards();
     fill($('prob'), [], 'جارٍ جلب السلوكيّات…');
-    const { data, error } = await M.rpc('v2_conduct_list', { p_student: r.student_id, p_mode: 'onsite', p_target: 'general' }, 'قائمة المخالفات');
+    const { data, error } = await M.rpc('v2_conduct_list', { p_student: r.student_id, p_mode: null, p_target: 'general' }, 'قائمة المخالفات');
     if (ui.stu !== r) return;
     if (error) { fill($('prob'), [], 'تعذّر الجلب'); flash('bad', errText(error)); return; }
     ui.problems = data || [];
@@ -202,7 +213,8 @@
     f.appendChild(el('span', null, text));
     if (auto && auto.length) {
       const ul = el('ul', 'rs-auto');
-      for (const a of auto) ul.appendChild(el('li', null, (a.kind === 'advice' ? 'النصيحةُ التربويّة: ' : '') + a.text));
+      // وما لم يخرج («لم يخرج…») يُعرض أحمرَ بسببه — فالمهمّةُ باقيةٌ مفتوحة
+      for (const a of auto) ul.appendChild(el('li', /^لم يخرج/.test(String(a.text || '')) ? 'bad' : null, (a.kind === 'advice' ? 'النصيحةُ التربويّة: ' : '') + a.text));
       f.appendChild(ul);
     }
     if (acts && acts.length) {
@@ -237,7 +249,7 @@
     ui.period = null;
     // بعد كلّ رصدة: تُعاد قراءةُ البطاقة والمهامّ من القاعدة — فرقمُ الرصدة والإجراءُ كما صارا فيها
     loadStudentCards();
-    const { data: fresh } = await M.rpc('v2_conduct_list', { p_student: stu.student_id, p_mode: 'onsite', p_target: 'general' }, 'قائمة المخالفات');
+    const { data: fresh } = await M.rpc('v2_conduct_list', { p_student: stu.student_id, p_mode: null, p_target: 'general' }, 'قائمة المخالفات');
     if (ui.stu !== stu) return;
     if (fresh) { ui.problems = fresh; ui.prob = ui.problems.find((x) => x.id === p.id) || null; }
     renderProblems(); renderPeriods();
@@ -466,7 +478,8 @@
         }
         if (t.kind === 'plan') return [ib('📝 الخطّة', 'خطّةُ تعديل السلوك (نموذج ٣): تُكتب، ثمّ رأيُ معلّم الفصل، ثمّ تُعتمد', () => planForm(t, null))];
         if (t.kind === 'committee') return [ib('⚖️ أحِل', 'لا تُفتح إلا بعد اعتماد الخطّة وبرصدةٍ بعدها', () => referForm(t))];
-        if (t.kind === 'summon_guardian') return [ib('✉️ الخطاب', 'خطابُ الدعوة (نموذج ١٠) وإثباتُه في لوح المهمّة', showTasks)];
+        // وما سواها: بابُ الإثبات العامّ إن كان بابَها (door_ar كما يرجع)
+        if (t.door_ar === 'بابُ الإثبات') return [ib('🧾 أثبت', t.evidence_ar || t.door_ar, () => window.MoayadTasks.evidenceDoor(t.task_id, ui.stu.student_id, () => loadStudentCards()))];
         return [];
       };
       // ما تمّ: الاتّصالُ والحصرُ يبقيان «مرّةً أخرى» ومعهما سطرُ ما وقع
@@ -489,7 +502,11 @@
       c.appendChild(el('div', 'rs-label', 'ما على الإجراء:'));
       const ul = el('ul', 'rs-acts');
       if (!open.length) ul.appendChild(el('li', 'rs-meta', 'لا شيءَ مفتوح.'));
-      for (const t of open) ul.appendChild(row(t, false, openActs(t), null));
+      for (const t of open) {
+        // متابعةُ الموجّه حالٌ تُعرض ولا تُطالَب: رماديّةٌ بلا زرّ، ومعها بابُها كما يرجع
+        if (t.evidence_kind === 'services_review') { const li = row(t, false, [], t.door_ar || null); li.classList.add('grey'); ul.appendChild(li); continue; }
+        ul.appendChild(row(t, false, openActs(t), null));
+      }
       c.appendChild(ul);
       c.appendChild(tip);
       if (done.length) {
