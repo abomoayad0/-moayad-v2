@@ -3,6 +3,7 @@
 // ② رأيٌ مطلوبٌ منك: لم يُبنَ في المحرّك
 // ③ كُلّفتَ بحصر سلوكيّات طالب: v2_my_census ⇒ v2_census_file بالقوائم (v2_census_list) — سلبيٌّ واحدٌ على الأقلّ والمسبّباتُ إلزاميّة
 // ④ ما عليّ من اللجان: v2_my_committee_tasks ⇒ v2_committee_task_done
+// ويومي: v2_my_now · v2_my_sections · v2_my_duties · v2_mail_my_tasks — للقراءة كما ترجع
 // ترى هذا الجزءَ وحدَه: لا ملفَّ طالبٍ ولا دراسةَ حالة.
 (function () {
   'use strict';
@@ -16,7 +17,32 @@
     showLoadErr('');
     V.renderRole();
     renderOff();
-    await Promise.all([loadDelegated(), loadCensus(), loadCommittee()]);
+    await Promise.all([loadMine(), loadDelegated(), loadCensus(), loadCommittee()]);
+  }
+
+  // ---------- يومي: كلٌّ من جسره كما يرجع — ولا حسابَ هنا ----------
+  const hm = (t) => (t ? String(t).slice(0, 5) : '');
+  const list = (box, r, empty, line) => {
+    box.textContent = '';
+    if (r.error) { box.appendChild(el('div', 'notice err', errText(r.error))); return; }
+    const rows = r.data || [];
+    if (!rows.length) { box.appendChild(el('p', 'rs-meta', empty)); return; }
+    const ul = el('ul', 'rs-acts');
+    for (const x of rows) { const [main, sub, who, done] = line(x); const li = el('li'); const b = el('span'); b.style.flex = '1'; b.appendChild(el('b', null, main)); if (sub) b.appendChild(el('div', 'rs-meta', sub)); li.append(el('i', 'rs-tick' + (done ? ' ok' : ''), done ? '✓' : '○'), b, el('small', 'rs-who', who || '')); ul.appendChild(li); }
+    box.appendChild(ul);
+    V.arabize(box);
+  };
+  async function loadMine() {
+    const [now, sec, dut, mail] = await Promise.all([
+      M.rpc('v2_my_now', { p_school: M.state.school }, 'الآن'),
+      M.rpc('v2_my_sections', { p_date: M.state.date || null }, 'حصصي اليوم'),
+      M.rpc('v2_my_duties', { p_school: M.state.school }, 'مناوبتي'),
+      M.rpc('v2_mail_my_tasks', { p_school: M.state.school }, 'ما عليّ من الوارد'),
+    ]);
+    list($('now'), now, 'لا حصّةَ عليك الآن.', (x) => ['الحصّة ' + x.period_no + ' · ' + (x.section_label || ''), [x.subject_ar, x.room_ar, x.students_n != null ? x.students_n + ' طالبًا' : null].filter(Boolean).join(' · '), hm(x.starts_at) + ' — ' + hm(x.ends_at) + (x.state ? ' · ' + x.state : ''), false]);
+    list($('sections'), sec, 'لا حصصَ لك اليوم.', (x) => ['الحصّة ' + x.period_no + ' · ' + (x.class_ar || ''), [x.subject_ar, 'رُصد ' + x.recorded_n + ' من ' + x.students_n].filter(Boolean).join(' · '), hm(x.starts_at) + ' — ' + hm(x.ends_at) + (x.state ? ' · ' + x.state : ''), x.is_done]);
+    list($('duties'), dut, 'لا مناوبةَ لك.', (x) => [(x.weekday_ar || '') + ' · ' + (x.zone_ar || ''), [x.segment, x.kind].filter(Boolean).join(' · '), '', false]);
+    list($('mail'), mail, 'لا شيءَ عليك من الوارد.', (x) => ['وارد ' + (x.serial_no || '') + ' · ' + (x.subject_ar || ''), x.text_ar || '', (x.due_h || '') + (x.is_late ? ' · متأخّر' : ''), false]);
   }
 
   async function loadDelegated() {
