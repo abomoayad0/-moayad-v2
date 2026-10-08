@@ -17,38 +17,38 @@
   // الشاشات المبنية، وما يفتح كلّاً منها من مفاتيح can
   const SCREENS = [
     // الاصطفافُ والوصولُ والانصرافُ شاشةٌ واحدة بثلاثة أبواب — وrasd.html يُحوَّل إليها
-    { key: 'wusul', title: 'الوصول والاصطفاف والانصراف', desc: 'الاصطفاف فصلًا فصلًا · الوصول المتأخّر بقراره · تأخّر الانصراف',
+    { key: 'wusul', group: 'اليوم', title: 'الوصول والاصطفاف والانصراف', desc: 'الاصطفاف فصلًا فصلًا · الوصول المتأخّر بقراره · تأخّر الانصراف',
       href: 'wusul.html', allow: (c) => !!(c.record_assembly || c.record_arrival || c.record_dismissal) },
     // جدولُ الحصص بأبوابه الخمسة — مفتاحُه jadwal: المديرُ والوكيلُ والوكيلُ التعليميّ
-    { key: 'jadwal', title: 'جدول الحصص', desc: 'الشبكة · النصاب · خطّة المواد · التخصّصات · التوزيع الآليّ',
+    { key: 'jadwal', group: 'اليوم', title: 'جدول الحصص', desc: 'الشبكة · النصاب · خطّة المواد · التخصّصات · التوزيع الآليّ',
       href: 'jadwal.html', allow: (c) => !!c.jadwal },
     // الإنابةُ في الصفات — مفتاحُها delegation: المديرُ ووكيلُ الطلّاب والوكيل
-    { key: 'inaba', title: 'الإنابة في الصفات', desc: 'من يعمل بصفة غيره، وإلى متى، وبأيّ سبب',
+    { key: 'inaba', group: 'الإدارة', title: 'الإنابة في الصفات', desc: 'من يعمل بصفة غيره، وإلى متى، وبأيّ سبب',
       href: 'inaba.html', allow: (c) => !!c.delegation },
     // النماذجُ الرسميّة بأرقامها وعناوينها من v2_forms_catalog — تُفتح لطالب بمفتاح fill_form
-    { key: 'namadhij', title: 'النماذج', desc: 'النماذجُ الرسميّة بأرقامها وما فُتح منها وما وُقّع',
+    { key: 'namadhij', group: 'السلوك', title: 'النماذج', desc: 'النماذجُ الرسميّة بأرقامها وما فُتح منها وما وُقّع',
       href: 'namadhij.html', allow: (c) => !!c.fill_form },
-    { key: 'deputy', title: 'قرارات الوكيل', desc: 'الإقفال · إعادة الفتح · البتّ في الأعذار',
+    { key: 'deputy', group: 'اليوم', title: 'قرارات الوكيل', desc: 'الإقفال · إعادة الفتح · البتّ في الأعذار',
       href: 'deputy.html', allow: (c) => !!(c.close_day || c.reopen_day || c.decide_excuse) },
     // شاشةُ الوكيل (viewW) — حلّت محلّ «رصد المخالفات» القديمة. مفتاحُها wakeel: الوكيلُ والمدير
-    { key: 'wakeel', title: 'شاشة الوكيل', desc: 'الرصد · الشواهد · النموذج ٥ · ملفّات الطالب · سجلّ الملفّ',
+    { key: 'wakeel', group: 'السلوك', title: 'شاشة الوكيل', desc: 'الرصد · الشواهد · النموذج ٥ · ملفّات الطالب · سجلّ الملفّ',
       href: 'wakeel.html', allow: (c) => !!c.wakeel },
-    { key: 'errors', title: 'لوحة الأخطاء', desc: 'ما سجّلته الشاشات والجسور — الأعطاب والحرّاس',
+    { key: 'errors', group: 'الإدارة', title: 'لوحة الأخطاء', desc: 'ما سجّلته الشاشات والجسور — الأعطاب والحرّاس',
       href: 'errors.html', allow: (c) => !!c.view_errors },
     // شاشةُ رائد النشاط (viewA) — حلّت مع شاشة اللجنة محلّ «التعويض والتميّز». مفتاحُها raed: رائدُ النشاط وحدَه
-    { key: 'raed', title: 'شاشة رائد النشاط', desc: 'دوري · إقرار المشاركات · فرصٌ أقيمها',
+    { key: 'raed', group: 'السلوك', title: 'شاشة رائد النشاط', desc: 'دوري · إقرار المشاركات · فرصٌ أقيمها',
       href: 'raed.html', allow: (c) => !!c.raed },
     // شاشةُ الموجّه (viewM) — حلّت محلّ counsel، والقاعدةُ تحرس السرّ وراءها
-    { key: 'muwajjih', title: 'شاشة الموجّه', desc: 'دوري · مؤشّر الحالات · دراسة الحالة والجلسات والتقرير · سجلّ الملفّ',
+    { key: 'muwajjih', group: 'السلوك', title: 'شاشة الموجّه', desc: 'دوري · مؤشّر الحالات · دراسة الحالة والجلسات والتقرير · سجلّ الملفّ',
       href: 'muwajjih.html', allow: (c) => !!c.muwajjih },
     // شاشةُ اللجنة (viewC) — حلّت محلّ «اللجان» وبنكِ الفرص والتقدير من «التعويض». مفتاحُها lajna: من له مقعدٌ في لجنة
-    { key: 'lajna', title: 'شاشة اللجنة', desc: 'اختصاصُها · الشواهد والتقدير · الفرص · المحاضر · ما عليّ',
+    { key: 'lajna', group: 'السلوك', title: 'شاشة اللجنة', desc: 'اختصاصُها · الشواهد والتقدير · الفرص · المحاضر · ما عليّ',
       href: 'lajna.html', allow: (c) => !!c.lajna },
     // شاشةُ المكلَّف (viewK) — «ما عليّ» لكلّ منسوب (mukallaf)، وآخرًا كي لا يُفتح عليها إلا من لا شاشةَ له غيرها
-    { key: 'mukallaf', title: 'ما عليّ', desc: 'إثباتُ مشاركة طالب · ما عليّ من اللجان',
+    { key: 'mukallaf', group: 'ما عليّ', title: 'ما عليّ', desc: 'إثباتُ مشاركة طالب · ما عليّ من اللجان',
       href: 'mukallaf.html', allow: (c) => !!c.mukallaf },
     // والقاعدةُ تحرس الدخول إلى اللوحة
-    { key: 'panel', title: 'لوحة التحكّم', desc: 'أبواب الإعداد — المقفلُ بسببه وسنده',
+    { key: 'panel', group: 'الإدارة', title: 'لوحة التحكّم', desc: 'أبواب الإعداد — المقفلُ بسببه وسنده',
       href: 'panel.html', allow: (c) => !!c.manage_settings },
   ];
 
@@ -70,6 +70,11 @@
     let res;
     try { res = await sb.rpc(fn, args); } catch (e) { res = { data: null, error: { message: String(e && e.message || e) } }; }
     if (res.error) {
+      // «أنت تعمل الآن في «كذا» — بدّل مدرستك» ⇒ المبدّلُ يُعرض في الحال
+      if (/بدّل مدرستك/.test(String(res.error.message || ''))) {
+        const sw = $('schoolSwitch');
+        if (sw) { sw.classList.add('want'); sw.scrollIntoView({ behavior: 'smooth', block: 'center' }); const s2 = sw.querySelector('select'); if (s2) s2.focus(); }
+      }
       logError({
         message: res.error.message, fn, action: action || fn, params: args || null,
         sqlstate: res.error.code || null, detail: res.error.details || null, hint: res.error.hint || null,
@@ -206,6 +211,31 @@
     }
     who.appendChild(box);
 
+    // مبدّلُ المدرسة: لمن كُلِّف في أكثر من مدرسة — والمثبّتةُ تحكم، فالتبديلُ تثبيتُ صفته نفسِها في الأخرى (v2_act_as)
+    const schools = [];
+    for (const r of roles) if (r.school_id && !schools.some((x) => x.id === r.school_id)) schools.push({ id: r.school_id, name: r.school || '' });
+    if (schools.length > 1 && onRole) {
+      const sb2 = el('div', 'schoolbox');
+      sb2.id = 'schoolSwitch';
+      const ssel = document.createElement('select');
+      ssel.className = 'rolesel';
+      ssel.setAttribute('aria-label', 'بدّل مدرستك');
+      for (const x of schools) {
+        const o = document.createElement('option');
+        o.value = x.id;
+        o.textContent = x.name;
+        if (cur && cur.school_id === x.id) o.selected = true;
+        ssel.appendChild(o);
+      }
+      ssel.addEventListener('change', () => {
+        const sid = ssel.value;
+        const r = roles.find((x) => x.school_id === sid && cur && x.role_key === cur.role_key) || roles.find((x) => x.school_id === sid);
+        if (r && r.is_current !== true) onRole(r);
+      });
+      sb2.append(el('span', 'role-l', 'المدرسة:'), ssel);
+      who.appendChild(sb2);
+    }
+
     const tm = (me.schools || []).filter((x) => x.test_mode);
     const t = $('testMode');
     t.hidden = tm.length === 0;
@@ -235,17 +265,41 @@
     $('who').appendChild(box);
   }
 
-  // ---------- شريط الشاشات: من can وحدها ----------
+  // ---------- قائمةُ الشاشات: جانبيّةٌ بمجموعاتها، تُفتح بزرّ ☰ في الرأس — من can وحدها ----------
+  const GROUPS = ['اليوم', 'السلوك', 'ما عليّ', 'الإدارة'];
   function renderNav(me, currentKey) {
     const nav = $('screens');
     nav.textContent = '';
+    nav.className = 'screens drawer';
+    nav.hidden = true;
     const list = screensFor(me);
-    nav.hidden = list.length === 0;
-    for (const x of list) {
-      const a = el('a', 'nav-i' + (x.key === currentKey ? ' on' : ''), x.title);
-      a.href = x.href;
-      if (x.key === currentKey) a.setAttribute('aria-current', 'page');
-      nav.appendChild(a);
+    let tg = $('navToggle');
+    if (!tg) {
+      tg = el('button', 'hbtn navtg', '☰');
+      tg.id = 'navToggle';
+      tg.type = 'button';
+      tg.setAttribute('aria-label', 'الشاشات');
+      tg.setAttribute('aria-controls', 'screens');
+      tg.addEventListener('click', () => { nav.hidden = !nav.hidden; tg.setAttribute('aria-expanded', String(!nav.hidden)); });
+      const acts = document.querySelector('.hdr-acts');
+      if (acts) acts.prepend(tg);
+      // يُطوى بلمسةٍ خارجه
+      document.addEventListener('click', (e) => { if (!nav.hidden && !nav.contains(e.target) && e.target !== tg) { nav.hidden = true; tg.setAttribute('aria-expanded', 'false'); } });
+    }
+    tg.hidden = list.length === 0;
+    for (const g of GROUPS) {
+      const xs = list.filter((x) => (x.group || 'الإدارة') === g);
+      if (!xs.length) continue;
+      const sec = el('div', 'nav-g');
+      sec.appendChild(el('div', 'nav-gt', g));
+      for (const x of xs) {
+        const a = el('a', 'nav-i' + (x.key === currentKey ? ' on' : ''));
+        a.href = x.href;
+        a.append(el('b', null, x.title), el('small', null, x.desc || ''));
+        if (x.key === currentKey) a.setAttribute('aria-current', 'page');
+        sec.appendChild(a);
+      }
+      nav.appendChild(sec);
     }
   }
 
