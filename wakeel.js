@@ -231,11 +231,13 @@
       btn('أضِف التفاصيل', 'rs-btn soft', () => openAmend()),
     ], (data && data.auto) || []);
     ui.period = null;
+    // بعد كلّ رصدة: تُعاد قراءةُ البطاقة والمهامّ من القاعدة — فرقمُ الرصدة والإجراءُ كما صارا فيها
+    loadStudentCards();
     const { data: fresh } = await M.rpc('v2_conduct_list', { p_student: stu.student_id, p_mode: 'onsite', p_target: 'general' }, 'قائمة المخالفات');
     if (ui.stu !== stu) return;
     if (fresh) { ui.problems = fresh; ui.prob = ui.problems.find((x) => x.id === p.id) || null; }
     renderProblems(); renderPeriods();
-    loadStudentCards();
+    renderFiles();
   });
 
   // ---------- تفاصيلُ الرصدة بعد الرصد: v2_record_amend ----------
@@ -311,6 +313,8 @@
   async function loadStudentCards() {
     const stu = ui.stu;
     if (!stu) return;
+    // آخرُ نداءٍ هو الحاكم — فلا يغطّي ردٌّ قديمٌ وصل متأخّرًا ما بعده
+    const seq = ui.seq = (ui.seq || 0) + 1;
     const [card, tasks, tl, f5, ct, cn] = await Promise.all([
       M.rpc('v2_student_card', { p_student: stu.student_id }, 'بطاقة الطالب'),
       M.rpc('v2_student_tasks', { p_student: stu.student_id }, 'مهامّ الطالب'),
@@ -319,7 +323,7 @@
       M.rpc('v2_contacts_of', { p_student: stu.student_id }, 'سجلّ الاتّصال'),
       M.rpc('v2_census_of', { p_student: stu.student_id }, 'حصر السلوكيّات'),
     ]);
-    if (ui.stu !== stu) return;
+    if (ui.stu !== stu || seq !== ui.seq) return;
     // v2_student_tasks بأسمائه الجديدة: task · record · text · problem · kind · kind_ar
     ui.files = { card: card.data || {}, tasks: (tasks.data || []).map((t) => Object.assign({}, t, { task_id: t.task_id || t.task, record_id: t.record_id || t.record, text_ar: t.text_ar || t.text, problem_ar: t.problem_ar || t.problem })), timeline: tl.data || {}, form5: f5, contacts: ct, census: cn, advice: new Map(), resp: new Map(), error: card.error || tasks.error || tl.error };
     renderStudentCards();
@@ -333,7 +337,7 @@
   // النصيحةُ التربويّة لآخر رصدةٍ في كلّ ملفّ: v2_advice_for(السلوك، رقمُ الرصدة) — نصُّها من القاعدة
   async function loadAdvice(stu) {
     const last = new Map();
-    for (const r of (ui.files.card.behavior || [])) if (!last.has(r.problem)) last.set(r.problem, r);
+    for (const r of (ui.files.card.behavior || [])) if (!last.has(r.problem) || Number(r.occurrence) > Number(last.get(r.problem).occurrence)) last.set(r.problem, r);
     await Promise.all([...last].map(async ([prob, r]) => {
       const m = metaOf(prob);
       if (!m) return;
@@ -393,8 +397,14 @@
     const head = el('div', 'rs-card');
     head.appendChild(el('h3', null, 'ملفّاتُ ' + (ui.stu.display_name || ui.stu.full_name) + ' السلوكيّة'));
     if (!recs.length) { head.appendChild(el('p', 'rs-empty', 'لا ملفّاتٍ — ارصد لترى')); box.appendChild(head); return; }
+    // آخرُ رصدةٍ في كلّ ملفّ أعلاها رقمًا كما رجع — فالبطاقةُ ترتّب بالتاريخ وحده، ورصداتُ اليوم الواحد تتساوى فيه
     const byProb = new Map();
-    for (const r of recs) if (!byProb.has(r.problem)) byProb.set(r.problem, { last: r, all: recs.filter((x) => x.problem === r.problem) });
+    for (const r of recs) {
+      const f = byProb.get(r.problem);
+      if (!f) byProb.set(r.problem, { last: r, all: [r] });
+      else { f.all.push(r); if (Number(r.occurrence) > Number(f.last.occurrence)) f.last = r; }
+    }
+    for (const f of byProb.values()) f.all.sort((a, b) => Number(b.occurrence) - Number(a.occurrence));
     head.appendChild(el('p', 'rs-meta', ar(byProb.size) + ' ملفًّا'));
     box.appendChild(head);
     for (const [prob, f] of byProb) box.appendChild(fileCard(prob, f));
@@ -504,8 +514,8 @@
       }
       box.appendChild(ul);
     }
-    // ولا إثباتَ بلا مهمّة «إشعار وليّ الأمر» مفتوحة
-    if (openTasks('notify_guardian').length) box.appendChild(btn('أثبت اتّصالًا', 'rs-btn', () => contactForm()));
+    // لا حارسَ في الواجهة: الإثباتُ مفتوحٌ، والمهمّةُ تُختار إن كانت — والقاعدةُ تحكم برسالتها
+    box.appendChild(btn('أثبت اتّصالًا', 'rs-btn', () => contactForm()));
     arabize(box);
   }
 
@@ -744,6 +754,8 @@
         { key: 'limit', type: 'textarea', label: 'مقترحُ الحدّ منه (اختياريّ)', rows: 2, bank: { key: 'limit', problem: m ? m.id : null } },
       ],
       ok: 'احفظ الحصر',
+      // وزرّان لا واحد: يُحفظ الحصرُ بنفسك، أو يُكلَّف به غيرُك
+      extra: [{ text: 'كلّف به أحدًا', cls: 'rs-btn soft', onClick: (v) => { setTimeout(() => assignCensus(v.task || pre), 0); return null; } }],
       onOk: async (v) => {
         const { data, error } = await M.rpc('v2_census_self', { p_student: stu.student_id, p_task: v.task || null, p_neg: v.neg, p_pos: v.pos, p_causes: v.causes, p_limit: v.limit }, 'حصر السلوكيّات');
         if (error) return error;
