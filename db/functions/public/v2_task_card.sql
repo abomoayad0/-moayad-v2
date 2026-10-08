@@ -1,5 +1,5 @@
 -- public.v2_task_card(p_task uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 3547b202e078a088f3025c27889e9698
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 ab080bbbbbcd4a5abf78d72b05c73bb9
 CREATE OR REPLACE FUNCTION public.v2_task_card(p_task uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -40,20 +40,21 @@ begin
   lbl_sign := case when sgn is null then k.lbl_sign
                    else 'وقّع '||sgn||' بالعلم' end;
 
-  -- من أقفل المهمّة: إنسانٌ باسمه، أم النظامُ بشرطٍ مكتوب؟
   select v2.fn_display_name(pe.full_name) into v_by_name
     from v2.people pe where pe.id = t.done_by;
 
-  -- بندُ التبليغ الأمنيّ: ما في الواقعة من موجبٍ ظاهر
   if t.kind = 'police' then
     v_grounds := nullif(concat_ws(' · ',
       case when t.has_injury              then 'في الواقعة إصابة' end,
       case when t.seizure_is_legal_matter then 'وفيها مضبوطٌ ورد فيه نصٌّ نظاميّ' end,
       case when t.has_seizure and not t.seizure_is_legal_matter then 'وفيها مضبوطٌ بحوزة الطالب' end), '');
 
+    -- 🔑 إشعارُ وليّ الأمر اسمُه 'notify_guardian' في موضعٍ واحدٍ من السلّم،
+    --    و'summon_guardian' في بقيّة المواضع — فيُنظَر في الاثنين
     select exists (select 1 from v2.behavior_tasks x
                     where x.record_id = t.record_id
-                      and x.kind = 'notify_guardian' and x.status = 'open')
+                      and x.kind in ('notify_guardian','summon_guardian')
+                      and x.status = 'open')
       into v_notify_open;
   end if;
 
@@ -94,7 +95,6 @@ begin
       'ev_on', t.ev_on, 'ev_text', t.ev_text, 'ev_file', t.ev_file,
       'ev_ref', t.ev_ref, 'ev_people', t.ev_people,
       'ev_signed', t.ev_signed, 'ev_refused_reason', t.ev_refused_reason),
-    -- ① النفيُ المعروض — لبند التبليغ وحدَه، وما دام مفتوحًا
     'proposal', case
       when t.kind = 'police' and t.status = 'open' and v_grounds is null then
         jsonb_build_object(
@@ -103,14 +103,11 @@ begin
           'ask_ar','أتُقرُّ هذا النفيَ باسمك؟ — ويُثبت باسمك وتاريخه، ولا يُسقطه النظامُ عنك',
           'how_ar','يُقرُّ من بابِ النفي بالسببِ المعروض — ولك أن تُعدّله قبل الإقرار')
       else null end,
-    -- وإن كان في الواقعة موجبٌ ظاهر، فلا نفيَ معروضًا — بل تنبيه
     'grounds_ar', v_grounds,
-    -- ③ ما يمنع الإقفالَ الآن
     'blocked_ar', case
       when t.kind = 'police' and t.status = 'open' and v_notify_open then
-        'نصُّ الدليل: «تبليغُ الجهات الأمنيّة المختصّة فور وقوع المشكلة، بعد إشعار وليّ الأمر» — فأتمِم بندَ إشعار وليّ الأمر أوّلًا، أو أسقِطه بسببٍ إن لم يُستجَب له'
+        'نصُّ الدليل: «تبليغُ الجهات الأمنيّة المختصّة فور وقوع المشكلة، بعد إشعار وليّ الأمر» — فأتمِم بندَ إشعار وليّ الأمر (أو دعوتِه) أوّلًا، أو أسقِطه بسببٍ إن لم يُستجَب له'
       else null end,
-    -- ② من أقفله
     'settled_ar', case
       when t.status = 'skipped' and t.done_by is null then
         'تخطّاه النظامُ بشرطٍ مكتوب: '||coalesce(t.skip_reason,'')

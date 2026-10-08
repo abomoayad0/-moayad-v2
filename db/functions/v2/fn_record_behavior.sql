@@ -1,5 +1,5 @@
 -- v2.fn_record_behavior(p_student uuid, p_problem integer, p_term smallint, p_period smallint, p_place text, p_note text, p_victim uuid, p_injury boolean, p_damage boolean, p_seizure boolean, p_seizure_legal boolean, p_by uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 dd7ccc1a45113442ddbbe0e8405c84ea
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 128002f509b63d9f0f42289e8dd67fd6
 CREATE OR REPLACE FUNCTION v2.fn_record_behavior(p_student uuid, p_problem integer, p_term smallint DEFAULT 1, p_period smallint DEFAULT NULL::smallint, p_place text DEFAULT NULL::text, p_note text DEFAULT NULL::text, p_victim uuid DEFAULT NULL::uuid, p_injury boolean DEFAULT false, p_damage boolean DEFAULT false, p_seizure boolean DEFAULT false, p_seizure_legal boolean DEFAULT false, p_by uuid DEFAULT NULL::uuid)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -11,13 +11,13 @@ declare
   v_prob record; v_scope text; v_count int; v_step int; v_max int; v_action record;
   v_rec uuid; v_ded numeric; v_open numeric; it record; un record;
   v_skip boolean; v_why text; v_beyond boolean; v_same record; v_ded_ar text;
+  v_outgoing_note text; v_rule record;
 begin
   select e.school_id, e.year_id, e.stage into v_school, v_year, v_stage
   from v2.enrolments e where e.student_id=p_student and e.status='active'
   order by e.created_at desc limit 1;
   if v_school is null then raise exception 'الطالب لا قيد فعّال له في سنة دراسية'; end if;
 
-  -- 🔑 نمطُ التعليم من إعداد المدرسة — لا من الكود
   v_mode := v2.conduct_mode_of(v_school);
   if v_mode is null then
     raise exception 'لم يُضبط نمطُ التعليم لمدرستك — اضبطه من لوحة التحكّم: «إعداداتُ السلوك للمدرسة»';
@@ -86,6 +86,11 @@ begin
       p_by,p_note,p_victim,p_injury,p_damage,p_seizure,p_seizure_legal)
   returning id into v_rec;
 
+  v_outgoing_note := case when to_regclass('v2.outgoing_mail') is null
+    then 'ينتظر سجلَّ الصادر — ولم يُبنَ بعد · ويُرفع اليومَ بالورق خارجَ النظام · '||
+         'وتُفتح هذي البنودُ من تلقاء نفسها حين يُبنى سجلُّ الصادر'
+    else null end;
+
   if not v_beyond then
     for it in select * from v2.fn_action_items_expanded(v_action.id) loop
       v_skip := false; v_why := null;
@@ -94,13 +99,14 @@ begin
       if it.kind='seize' and p_seizure and p_seizure_legal then
         v_skip:=true; v_why:='يُمنع الإتلاف: المضبوط مما ورد فيه نص نظامي — يُحال إلى مسار الجهات المختصة';
       end if;
-      insert into v2.behavior_tasks(record_id,item_id,ord,kind,text_ar,owner_role,origin,status,skip_reason)
+      insert into v2.behavior_tasks(record_id,item_id,ord,kind,text_ar,owner_role,origin,status,skip_reason,auto_note)
       values (v_rec,it.item_id,it.ord::smallint,it.kind,
         it.text_ar || case when it.from_step <> v_action.step_no
                       then ' [موروث من الإجراء '||it.from_step||' بنص: «جميع ما ذُكر في الإجراء السابق»]' else '' end,
         it.owner_role,it.origin,
         case when v_skip then 'skipped' when it.kind in ('deduct','compensation') then 'auto' else 'open' end,
-        v_why);
+        v_why,
+        case when it.kind in ('edu_decision','edu_report') then v_outgoing_note else null end);
     end loop;
 
     for un in select * from v2.conduct_universal
@@ -117,9 +123,6 @@ begin
     end loop;
 
   else
-    -- 🔑 ما بعد نهاية السلّم — اجتهادٌ مدرسيٌّ لا نصُّ الدليل:
-    --    لا إجراءَ زائدًا ولا حسمَ — ولكن لا تُترك الرصدةُ بلا من ينظر فيها،
-    --    ولا تُستوفى من تلقاء نفسها لأنّها خالية
     insert into v2.behavior_tasks(record_id,ord,kind,text_ar,owner_role,origin,status,evidence_kind)
     values (v_rec, 99::smallint, 'beyond_ladder',
       'نُفِدت إجراءاتُ '||v2.degree_ar(v_prob.degree_no)||' لهذي المخالفة ('||
@@ -130,22 +133,21 @@ begin
 
   if not exists (select 1 from v2.behavior_ledger
                   where student_id=p_student and year_id=v_year and term_no=p_term and kind='opening') then
-    select value_num into v_open from v2.conduct_rules where key='behavior.positive';
+    -- 🔑 النصُّ وسندُه من الجدول لا من الكود
+    select r.value_num, r.text_ar, r.article_no, r.source_doc, r.source_page
+      into v_rule
+      from v2.conduct_rules r where r.key='behavior.positive';
+    v_open := v_rule.value_num;
     insert into v2.behavior_ledger(school_id,year_id,term_no,student_id,kind,points,reason)
     values (v_school,v_year,p_term,p_student,'opening',v_open,
-      'يُعدّ كل طالب مستحقًا لدرجة السلوك الإيجابي (80) درجة بشكل تلقائي في بداية كل فصل دراسي — م5 · CONDUCT-1447-OFF ص15');
+      rtrim(btrim(v_rule.text_ar),'.')||' — م'||v_rule.article_no||
+      ' · '||v_rule.source_doc||' '||v_rule.source_page);
   end if;
 
   if (not v_beyond) and coalesce(v_action.deducts_points,false) then
     select deduction into v_ded from v2.conduct_degrees where degree_no=v_prob.degree_no;
 
-    -- 🔑 لفظٌ عربيٌّ يقرؤه الطالبُ ووليُّ أمره — لا رقمٌ عاريًا
-    v_ded_ar := case
-                  when v_ded = 1 then 'درجةً واحدة'
-                  when v_ded = 2 then 'درجتين'
-                  when v_ded >= 3 and v_ded <= 10 then v2.ar_num(v_ded)||' درجات'
-                  else v2.ar_num(v_ded)||' درجة'
-                end;
+    v_ded_ar := v2.ar_count(v_ded,'درجةً واحدة','درجتين','درجات','درجة');
 
     insert into v2.behavior_ledger(school_id,year_id,term_no,student_id,kind,points,record_id,reason,by_person)
     values (v_school,v_year,p_term,p_student,'deduction',-v_ded,v_rec,

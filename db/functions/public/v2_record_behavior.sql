@@ -1,5 +1,5 @@
 -- public.v2_record_behavior(p_student uuid, p_problem integer, p_place text, p_note text, p_period smallint, p_victim uuid, p_injury boolean, p_damage boolean, p_seizure boolean, p_seizure_legal boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 73987a96224df1a4df8b8cc68188c814
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 0b57a3ab7ec39dec58c58e5c42f8e4db
 CREATE OR REPLACE FUNCTION public.v2_record_behavior(p_student uuid, p_problem integer, p_place text DEFAULT NULL::text, p_note text DEFAULT NULL::text, p_period smallint DEFAULT NULL::smallint, p_victim uuid DEFAULT NULL::uuid, p_injury boolean DEFAULT false, p_damage boolean DEFAULT false, p_seizure boolean DEFAULT false, p_seizure_legal boolean DEFAULT false)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION public.v2_record_behavior(p_student uuid, p_problem i
  SET search_path TO 'v2', 'public'
 AS $function$
 declare rid uuid; r record; ded numeric; tm smallint; sc uuid; yid uuid; auto jsonb;
-        ptxt text; msg text; st text; d text; h text; ctx text;
+        ptxt text; msg text; st text; d text; h text; ctx text; v_adv text; v_ded_ar text;
 begin
   perform v2.assert_role(array['counselor','deputy_students','deputy','principal',
       'admin_assistant','admin_assistant_students','subject_teacher','sped_teacher',
@@ -35,13 +35,15 @@ begin
   select coalesce(-sum(points),0) into ded from v2.behavior_ledger
    where record_id=rid and kind='deduction';
 
+  v_ded_ar := v2.ar_count(ded,'درجةٌ واحدة','درجتان','درجات','درجة');
+
   insert into v2.events(school_id,kind,on_date,student_id,title_ar,body_ar,
       ref_table,ref_id,visible_to,is_test)
   values (r.school_id,'behavior_record',current_date,p_student,
       'رُصدت مخالفة — '||ptxt,
-      'الرصدةُ '||v2.ord_ar(r.occurrence_no)||' · '||v2.degree_ar(r.dno)||
+      'الواقعةُ '||v2.ord_ar(r.occurrence_no)||' · '||v2.degree_ar(r.dno)||
       ' · '||v2.page_ar(r.spg)||
-      case when ded>0 then ' · وحُسمت '||v2.ar_num(ded)||' من السلوك الإيجابيّ' else '' end,
+      case when ded>0 then ' · وحُسمت '||v_ded_ar||' من السلوك الإيجابيّ' else '' end,
       'behavior_records',rid,'all',
       coalesce((select test_mode from v2.schools where id=r.school_id),false));
 
@@ -49,31 +51,44 @@ begin
     insert into v2.events(school_id,kind,on_date,student_id,title_ar,body_ar,
         ref_table,ref_id,visible_to,is_test)
     values (r.school_id,'deduction',current_date,p_student,
-        'حُسمت '||v2.ar_num(ded)||' من السلوك الإيجابيّ',
+        'حُسمت '||v_ded_ar||' من السلوك الإيجابيّ',
         'الإجراءُ '||v2.ar_num(r.step_no)||' · '||ptxt,
         'behavior_records',rid,'all',
         coalesce((select test_mode from v2.schools where id=r.school_id),false));
   end if;
 
   auto := v2.ladder_auto(rid);
+
+  -- 🔑 النصيحةُ الغائبةُ تُقال ولا يُسكَت عنها — وتُقدَّم في موضعها الأوّل
+  select advice_ar into v_adv from v2.behavior_records where id=rid;
+  if v_adv is null then
+    auto := jsonb_build_array(jsonb_build_object(
+              'kind','advice_missing',
+              'text','لا نصيحةَ مسجّلةٌ لهذي المخالفة في الواقعة '||
+                     v2.ord_ar(r.occurrence_no)||
+                     ' — فالطالبُ رُصد ولم يُنصَح · وتُضاف النصائحُ من لوحة التحكّم')) || auto;
+  end if;
+
   perform v2.log_action(sc,p_student,'record_behavior','رُصدت مخالفة',
     'behavior_records',rid, jsonb_build_object('problem',ptxt));
   return jsonb_build_object(
     'ok',true,'record',rid,'problem',ptxt,'auto',auto,
-    'advice',(select advice_ar from v2.behavior_records where id=rid),
+    'advice', v_adv,
+    'advice_missing', (v_adv is null),
     'degree_ar', v2.degree_ar(r.dno),
     'page_ar', v2.page_ar(r.spg),
     'term', tm,
     'occurrence', r.occurrence_no,
     'occurrence_ar', v2.ord_ar(r.occurrence_no),
     'step', r.step_no, 'deducted', ded,
+    'deducted_ar', case when ded > 0 then v_ded_ar else null end,
     'headline',
-      'رُصدت المخالفة — '||ptxt||' · الرصدةُ '||v2.ord_ar(r.occurrence_no)||
-      case when ded > 0 then ' · وحُسمت '||v2.ar_num(ded)||' من السلوك الإيجابيّ'
+      'رُصدت المخالفة — '||ptxt||' · الواقعةُ '||v2.ord_ar(r.occurrence_no)||
+      case when ded > 0 then ' · وحُسمت '||v_ded_ar||' من السلوك الإيجابيّ'
            else ' · ولا حسمَ في هذي المرّة' end,
     'tasks', (select coalesce(jsonb_agg(jsonb_build_object(
           'id',t.id,'kind',t.kind,'text',t.text_ar,'owner',t.owner_role,
-          'status',t.status,'skip_reason',t.skip_reason) order by t.ord),'[]'::jsonb)
+          'status',t.status,'skip_reason',t.skip_reason,'auto_note',t.auto_note) order by t.ord),'[]'::jsonb)
         from v2.behavior_tasks t where t.record_id=rid),
     'score', v2.behavior_score(p_student, r.year_id, r.term_no));
 exception when others then

@@ -1,6 +1,6 @@
 -- v2.official_forms
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 a006f6cf22bf44941a805236929ad25d
+-- md5 5a6993929bcf16f51f5e37881bbd0f95
 
 CREATE TABLE v2.official_forms (
     form_no smallint NOT NULL,
@@ -22,6 +22,7 @@ CREATE TABLE v2.official_forms (
     goes_to_ar text[],
     final_label_ar text,
     final_done_ar text,
+    index_title_ar text,
     CONSTRAINT official_forms_pkey PRIMARY KEY (form_no)
 );
 ALTER TABLE v2.official_forms ENABLE ROW LEVEL SECURITY;
@@ -29,3 +30,4 @@ COMMENT ON TABLE v2.official_forms IS 'النماذج الرسمية السبع�
 COMMENT ON COLUMN v2.official_forms.source_guide IS 'الدليل الذي ورد فيه النموذج. نماذج قواعد السلوك أرقامها 1–17، ونماذج رفق 101–104.';
 COMMENT ON COLUMN v2.official_forms.goes_to IS 'إلى من يصل النموذج بعد اعتماده: guardian بوابة ولي الأمر · student الطالب · counselor الموجه · committee لجنة التوجيه · external جهة خارجية · school يبقى في المدرسة.';
 COMMENT ON COLUMN v2.official_forms.final_label_ar IS 'نصّ زرّ الإنهاء: «أرسله إلى …» لما يخرج من المدرسة، و«اعتمده» لما يبقى فيها.';
+COMMENT ON COLUMN v2.official_forms.index_title_ar IS 'لفظُ الفهرس حين يختلف عن متن الصفحة — يُبحث به ولا يُطبع · والمطبوعُ title_ar';

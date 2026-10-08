@@ -1,10 +1,14 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 61bb3e7f0d6ed63bdc822d015e495d2d
+-- ── grants · md5 a90951eab2cc247cc7d23fa1322f9c67
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 
+
+REVOKE ALL ON FUNCTION v2.absence_truth_ar(p_v text) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION v2.absence_truth_of(p_school uuid) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.acting_posts(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.acting_posts(p_school uuid) TO authenticated;
@@ -629,6 +633,9 @@ GRANT EXECUTE ON FUNCTION public.v2_exceptions_board(p_school uuid) TO service_r
 REVOKE ALL ON FUNCTION public.v2_form(p_form smallint, p_student uuid, p_ref uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_form(p_form smallint, p_student uuid, p_ref uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_form(p_form smallint, p_student uuid, p_ref uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_form_inbox_read(p_inbox uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_form_inbox_read(p_inbox uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_form_inbox_read(p_inbox uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_form_open(p_form smallint, p_student uuid, p_ref uuid, p_task uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_form_open(p_form smallint, p_student uuid, p_ref uuid, p_task uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_form_open(p_form smallint, p_student uuid, p_ref uuid, p_task uuid) TO service_role;
@@ -767,6 +774,9 @@ GRANT EXECUTE ON FUNCTION public.v2_my_committee_tasks(p_school uuid) TO service
 REVOKE ALL ON FUNCTION public.v2_my_duties(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_my_duties(p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_my_duties(p_school uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_my_form_inbox() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_my_form_inbox() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_my_form_inbox() TO service_role;
 REVOKE ALL ON FUNCTION public.v2_my_now(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_my_now(p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_my_now(p_school uuid) TO service_role;
@@ -1022,6 +1032,9 @@ GRANT EXECUTE ON FUNCTION public.v2_timetable_suggest(p_school uuid, p_keep_fixe
 REVOKE ALL ON FUNCTION public.v2_undo_practice(p_record uuid, p_reason text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_undo_practice(p_record uuid, p_reason text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_undo_practice(p_record uuid, p_reason text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_void_blockers(p_record uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_void_blockers(p_record uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_void_blockers(p_record uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_weekday(p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_weekday(p_date date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_weekday(p_date date) TO service_role;
