@@ -1,0 +1,511 @@
+// مؤيّد · بريدُ المدرسة (تكليفُ الشاشات ③) — الصادرُ والوارد
+// الصادر: v2_outgoing_pending · v2_outgoing_register · v2_outgoing_one · v2_outgoing_create · v2_outgoing_sign
+//         v2_outgoing_send · v2_outgoing_reply · v2_outgoing_close · v2_outgoing_cancel · v2_outgoing_attach
+// الوارد: v2_mail_inbox · v2_mail_card · v2_mail_my_tasks · v2_mail_ack · v2_mail_followup_done
+// 🔑 الصادرُ ليس دفترَ أرقام بل بابٌ يُقفل ما أوجبه الدليل — فصدرُه البنودُ التي تنتظر خطابًا،
+//    والفرقُ بين «يُقفل بالخروج» و«لا يُقفل إلّا بالجواب» يُعرض في القائمة والإنشاء والبطاقة.
+// وكلُّ بابٍ كاتبٍ يرجع ببطاقة الخطاب كاملةً ومعها note_ar — فتُعرض كما رجعت ولا يُعاد النداء. ولا حذفَ في هذا الباب.
+(function () {
+  'use strict';
+
+  const M = window.Moayad;
+  const V = window.MoayadView;
+  const { $, el, errText, showLoadErr } = M;
+  const { arabize, btn, flash, pick } = V;
+
+  // ما يقبله الجسرُ كما في التكليف — والقاعدةُ ترفض غيره
+  const KINDS = [['letter', 'خطاب'], ['report', 'تقريرٌ أو محضر'], ['decision', 'قرار'], ['referral', 'إحالة'], ['circular', 'تعميم'], ['reply', 'ردٌّ على وارد']];
+  const SECRECY = [['عادي', 'عادي'], ['سري', 'سري'], ['سري للغاية', 'سري للغاية']];
+  const CHANNELS = [['نظام رسمي', 'نظام رسمي'], ['بريد', 'بريد'], ['يد', 'يد'], ['ورق', 'ورق']];
+  const ATTACH = [['link', 'رابط'], ['barcode', 'باركود'], ['file', 'ملفّ (مرجعه)'], ['form', 'نموذج']];
+  // السجلُّ يرجع الحالَ بمفتاحه بلا state_ar — فهذي ألفاظُ بطاقة الخطاب نفسِها (v2.outgoing_card) مختصرة
+  const STATUS = [['', 'الكلّ'], ['draft', 'مسوّدة'], ['signed', 'مُوقَّع'], ['sent', 'خرج'], ['replied', 'وصل جوابُه'], ['closed', 'مُقفل'], ['cancelled', 'ملغى']];
+  const DAYS = [[30, '٣٠ يومًا'], [90, '٩٠ يومًا'], [365, 'سنة']];
+
+  const ui = { tab: 'pend', pend: null, picked: new Set(), rStatus: '', rDays: 365, mine: [] };
+
+  const TABS = [['pend', 'ما ينتظر الصادر'], ['reg', 'السجلّ'], ['in', 'الوارد']];
+  function renderTabs() {
+    pick($('tabs'), TABS, ui.tab, (v) => { ui.tab = v; show(); });
+  }
+  function show() {
+    $('pendView').hidden = ui.tab !== 'pend';
+    $('regView').hidden = ui.tab !== 'reg';
+    $('inView').hidden = ui.tab !== 'in';
+    if (ui.tab === 'pend') loadPending();
+    if (ui.tab === 'reg') loadRegister();
+    if (ui.tab === 'in') loadIncoming();
+  }
+
+  async function refresh() {
+    if (!M.state.school) return;
+    showLoadErr('');
+    V.renderRole();
+    renderTabs();
+    show();
+  }
+
+  // ---------- ① ما ينتظر الصادر ----------
+  const sec = (title) => { const s = el('div'); s.appendChild(el('h4', 'rs-sub', title)); return s; };
+  async function loadPending() {
+    const { data, error } = await M.rpc('v2_outgoing_pending', { p_school: M.state.school }, 'ما ينتظر الصادر');
+    const body = $('pBody');
+    body.textContent = '';
+    if (error) { $('pSum').textContent = ''; $('pNote').textContent = ''; body.appendChild(el('div', 'notice err', errText(error))); return; }
+    const d = ui.pend = data || {};
+    $('pSum').textContent = d.summary_ar || '';
+    $('pNote').textContent = d.note_ar || '';
+    const tw = d.tasks_without_letter || [];
+    for (const k of [...ui.picked]) if (!tw.some((x) => x.task === k)) ui.picked.delete(k);
+    // ١ · بنودُ السلّم التي تنتظر خطابًا — أبرزُها، ومنها يبدأ كلُّ شيء · واختيارٌ متعدّد: خطابٌ واحدٌ يحمل بنودًا
+    if (tw.length) {
+      const s = sec('بنودٌ أوجب الدليلُ رفعَها ولم تخرج بعد');
+      s.appendChild(el('p', 'rs-meta', 'المس البندَ لتختاره — والخطابُ الواحدُ يحمل بنودًا عدّة'));
+      const many = btn('', 'rs-btn pri', () => createForm([...ui.picked].map((id) => tw.find((x) => x.task === id)).filter(Boolean)));
+      const sync = () => { many.textContent = 'اكتب خطابًا بالمختارة (' + ui.picked.size + ')'; many.hidden = ui.picked.size < 2; arabize(many); };
+      for (const t of tw) {
+        const f = el('div', 'rs-file rs-sel' + (ui.picked.has(t.task) ? ' on' : ''));
+        f.setAttribute('role', 'button');
+        f.tabIndex = 0;
+        f.setAttribute('aria-pressed', String(ui.picked.has(t.task)));
+        f.append(el('h5', null, t.text || ''), el('p', null, [t.student, t.owner].filter(Boolean).join(' · ')), el('div', 'rs-need', t.need_ar || ''));
+        V.tap(f, (e) => {
+          if (e && e.target && e.target.closest('button')) return;
+          if (ui.picked.has(t.task)) ui.picked.delete(t.task); else ui.picked.add(t.task);
+          f.classList.toggle('on', ui.picked.has(t.task)); f.setAttribute('aria-pressed', String(ui.picked.has(t.task)));
+          sync();
+        });
+        const r = el('div', 'rs-row');
+        r.appendChild(btn('اكتب خطابًا بها', 'rs-btn', () => { const sel = new Set(ui.picked); sel.add(t.task); createForm([...sel].map((id) => tw.find((x) => x.task === id)).filter(Boolean)); }));
+        f.appendChild(r);
+        s.appendChild(f);
+      }
+      s.appendChild(many);
+      sync();
+      body.appendChild(s);
+    }
+    // ٢ · المسوّدات
+    if ((d.drafts || []).length) {
+      const s = sec('مسوّداتٌ تنتظر التوقيع');
+      for (const m of d.drafts) {
+        const f = el('div', 'rs-file');
+        f.append(el('h5', null, m.subject || ''), el('p', null, [m.to_entity, 'منذ ' + m.age_days + ' يومًا'].filter(Boolean).join(' · ')));
+        const r = el('div', 'rs-row');
+        r.append(btn('أكمِلها', 'rs-btn', () => openCard(m.mail)), btn('اعرضها للتوقيع', 'rs-btn', () => act('v2_outgoing_sign', { p_mail: m.mail }, 'توقيع الصادر')));
+        f.appendChild(r);
+        s.appendChild(f);
+      }
+      body.appendChild(s);
+    }
+    // ٣ · مُوقَّعٌ لم يخرج
+    if ((d.signed_not_sent || []).length) {
+      const s = sec('مُوقَّعٌ لم يخرج');
+      for (const m of d.signed_not_sent) {
+        const f = el('div', 'rs-file');
+        f.append(el('h5', null, 'الصادر رقم ' + m.serial + ' · ' + (m.subject || '')), el('p', null, [m.to_entity, m.signed_ar, 'منذ ' + m.age_days + ' يومًا'].filter(Boolean).join(' · ')));
+        const r = el('div', 'rs-row');
+        r.appendChild(btn('أخرِجه', 'rs-btn', () => sendForm({ mail: m.mail, serial_ar: 'الصادر رقم ' + m.serial, subject: m.subject })));
+        f.appendChild(r);
+        s.appendChild(f);
+      }
+      body.appendChild(s);
+    }
+    // ٤ · خرج وينتظر جوابًا — والمتأخّرُ بالتحذيريّ لا بالأحمر
+    if ((d.awaiting_reply || []).length) {
+      const s = sec('خرج وينتظر جوابًا');
+      for (const m of d.awaiting_reply) {
+        const f = el('div', 'rs-file' + (m.late_days > 0 ? ' rs-late' : ''));
+        f.append(el('h5', null, 'الصادر رقم ' + m.serial + ' · ' + (m.subject || '')), el('p', null, [m.to_entity, m.sent_on ? 'خرج ' + m.sent_on : null, m.due_on ? 'موعدُ المراجعة ' + m.due_on : null].filter(Boolean).join(' · ')));
+        if (m.late_days > 0) f.appendChild(el('span', 'rs-state late', 'متأخّرٌ عن موعده: ' + m.late_days));
+        const r = el('div', 'rs-row');
+        r.append(btn('سجّل الجواب', 'rs-btn', () => replyForm({ mail: m.mail, serial_ar: 'الصادر رقم ' + m.serial, subject: m.subject })), btn('افتحه', 'rs-btn ghost', () => openCard(m.mail)));
+        f.appendChild(r);
+        s.appendChild(f);
+      }
+      body.appendChild(s);
+    }
+    arabize(body);
+  }
+
+  // ---------- ② إنشاءُ خطاب ----------
+  // pre: { subject, reply_to: {mail, subject, from, serial} }
+  function createForm(tasks, pre) {
+    pre = pre || {};
+    const tb = el('div');
+    if (pre.reply_to) tb.appendChild(el('div', 'rs-info', 'ردٌّ على الوارد' + (pre.reply_to.serial ? ' رقم ' + pre.reply_to.serial : '') + ' — ' + (pre.reply_to.subject || '') + (pre.reply_to.from ? ' · من ' + pre.reply_to.from : '')));
+    if (tasks && tasks.length) {
+      const c = el('div', 'rs-file');
+      c.appendChild(el('h5', null, 'البنودُ التي يحملها الخطاب'));
+      // الخطابُ الواحدُ يُقفل بعضَها بخروجه وبعضَها لا يُقفل إلّا بجواب الجهة — وهذا ما يُسأل عنه أوّلَ مرّة
+      if (ui.pend && ui.pend.note_ar) c.appendChild(el('p', 'rs-meta', ui.pend.note_ar));
+      const ul = el('ul', 'rs-acts');
+      for (const t of tasks) { const li = el('li'); const b = el('span'); b.append(el('span', null, t.text || ''), el('div', 'rs-need', t.need_ar || '')); li.append(el('i', 'rs-tick', '○'), b); ul.appendChild(li); }
+      c.appendChild(ul);
+      tb.appendChild(c);
+    }
+    V.form({
+      title: pre.reply_to ? 'ردٌّ على وارد' : 'إنشاءُ خطابٍ صادر',
+      fields: [
+        { key: 'h', type: 'node', node: tb },
+        { key: 'subject', label: 'الموضوع', value: pre.subject || null },
+        { key: 'to', label: 'الجهة', value: pre.to || null },
+        { key: 'kind', type: 'pick', label: 'النوع', items: KINDS, value: pre.reply_to ? 'reply' : (tasks && tasks.length ? 'report' : 'letter') },
+        { key: 'secrecy', type: 'pick', label: 'السرّيّة', items: SECRECY, value: 'عادي' },
+        { key: 'body', type: 'textarea', label: 'النصّ', rows: 4 },
+        { key: 'needs', type: 'pick', label: 'ينتظر جوابًا؟', items: [['yes', 'نعم'], ['no', 'لا']], value: 'no' },
+        // مدّةُ متابعة الجواب لا أصلَ لها في اللوحة بعد — تُكتب باليد (ينتظر كلمةَ مفرح)
+        { key: 'due', type: 'date', label: 'موعدُ المراجعة', hint: 'يُكتب إن كان ينتظر جوابًا' },
+      ],
+      ok: 'أنشئ المسوّدة',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_outgoing_create', {
+          p_subject: v.subject, p_to_entity: v.to, p_body: v.body, p_kind: v.kind || 'letter', p_secrecy: v.secrecy || 'عادي',
+          p_needs_reply: v.needs === 'yes', p_reply_due: v.due, p_reply_to_mail: pre.reply_to ? pre.reply_to.mail : null,
+          p_ref_table: null, p_ref_id: null, p_tasks: tasks && tasks.length ? tasks.map((t) => t.task) : null,
+        }, 'إنشاء خطاب صادر');
+        if (error) return error;
+        if (!data || data.ok !== true) return 'لم يُنشئ الجسرُ المسوّدة';
+        ui.picked.clear();
+        setTimeout(() => showCard(data, data.note_ar), 0); // بعد أن يُطوى اللوحُ الحاليّ
+        reloadView();
+        return null;
+      },
+    });
+  }
+
+  // ---------- ③ بطاقةُ الخطاب ----------
+  async function openCard(mail) {
+    const { data, error } = await M.rpc('v2_outgoing_one', { p_mail: mail }, 'بطاقة الصادر');
+    if (error) { flash('bad', errText(error)); return; }
+    showCard(data, null);
+  }
+  function cardNode(c, note) {
+    const n = el('div');
+    if (note) n.appendChild(el('div', 'rs-done-note', note));
+    if (c.reply_to) n.appendChild(el('div', 'rs-info', 'ردٌّ على الوارد' + (c.reply_to.serial ? ' رقم ' + c.reply_to.serial : '') + ' — ' + (c.reply_to.subject || '') + (c.reply_to.from ? ' · من ' + c.reply_to.from : '')));
+    n.appendChild(el('p', 'rs-sum', c.serial_ar || ''));
+    n.appendChild(el('span', 'rs-state ' + (c.status === 'closed' ? 'done' : c.status === 'cancelled' ? 'void' : 'open'), c.state_ar || ''));
+    if (c.overdue_ar) n.appendChild(el('span', 'rs-state late', c.overdue_ar));
+    const lg = el('div', 'rs-lgd');
+    for (const [k, v] of [['الموضوع', c.subject], ['الجهة', c.to_entity], ['النوع', c.kind_ar], ['السرّيّة', c.secrecy], ['التاريخ', c.issued_ar], ['أعدّه', c.prepared_by], ['وقّعه', c.signed_by],
+      ['خرج', [c.sent_on, c.sent_channel, c.sent_ref].filter(Boolean).join(' · ')], ['موعدُ المراجعة', c.reply_due_on], ['الجواب', [c.reply_on, c.reply_ref, c.reply_note].filter(Boolean).join(' · ')], ['الإقفال', c.close_note]]) {
+      if (v) lg.append(el('i', 'k', k + ':'), el('i', null, String(v)));
+    }
+    n.appendChild(lg);
+    if (c.body) n.appendChild(el('p', 'rs-msg', c.body));
+    if ((c.tasks || []).length) {
+      n.appendChild(el('div', 'rs-label', 'البنودُ التي يحملها'));
+      const ul = el('ul', 'rs-acts');
+      for (const t of c.tasks) {
+        const li = el('li');
+        const b = el('span');
+        b.append(el('span', null, t.text || ''), el('div', 'rs-need', t.closes_on_ar || ''));
+        if (t.student) b.appendChild(el('div', 'rs-meta', t.student));
+        li.append(el('i', 'rs-tick' + (t.status === 'done' ? ' ok' : ''), t.status === 'done' ? '✓' : '○'), b);
+        ul.appendChild(li);
+      }
+      n.appendChild(ul);
+    }
+    if ((c.attachments || []).length) {
+      n.appendChild(el('div', 'rs-label', 'المرفقات'));
+      for (const a of c.attachments) {
+        const p = el('p');
+        if (a.url) { const l = el('a', null, a.name || a.url); l.href = a.url; l.target = '_blank'; l.rel = 'noopener'; p.appendChild(l); }
+        else p.textContent = [a.name, a.barcode, a.form_entry ? 'نموذجٌ مرفق' : null].filter(Boolean).join(' · ');
+        n.appendChild(p);
+      }
+    }
+    return n;
+  }
+  // الأفعالُ بحال الخطاب كما في التكليف: الممكنُ وحدَه يظهر، ولا يُعطَّل شيء — والذي لا يُرجَع في آخر الشريط
+  function showCard(c, note) {
+    if (!c) return;
+    const extra = [];
+    let ok = false; let onOk = null;
+    const st = c.status;
+    const attach = { text: 'أرفِق', cls: 'rs-btn', onClick: () => { setTimeout(() => attachForm(c), 0); return null; } };
+    const cancel = { text: 'ألغِ', cls: 'rs-btn irrev', onClick: () => { setTimeout(() => cancelForm(c), 0); return null; } };
+    if (st === 'draft') { ok = 'اعرضه للتوقيع'; onOk = () => act('v2_outgoing_sign', { p_mail: c.mail }, 'توقيع الصادر', true); extra.push(attach, cancel); }
+    else if (st === 'signed') { ok = 'أخرِجه'; onOk = () => { setTimeout(() => sendForm(c), 0); return null; }; extra.push(attach, cancel); }
+    else if (st === 'sent') {
+      if (c.needs_reply) { ok = 'سجّل الجواب'; onOk = () => { setTimeout(() => replyForm(c), 0); return null; }; }
+      else { ok = 'أقفِله'; onOk = () => { setTimeout(() => closeForm(c), 0); return null; }; }
+      extra.push(attach);
+    } else if (st === 'replied') { ok = 'أقفِله'; onOk = () => { setTimeout(() => closeForm(c), 0); return null; }; extra.push(attach); }
+    V.form({ title: c.subject || c.serial_ar || '', fields: [{ key: 'c', type: 'node', node: cardNode(c, note) }], ok, onOk, extra, cancel: 'إغلاق' });
+  }
+
+  // فعلٌ بلا حقول (التوقيع): يرجع ببطاقته و note_ar فتُعرض كما رجعت
+  async function act(fn, args, what, inForm) {
+    const { data, error } = await M.rpc(fn, args, what);
+    if (error) { if (inForm) return error; flash('bad', errText(error)); return null; }
+    if (!data || data.ok !== true) return inForm ? 'لم يُتمّ الجسرُ الفعل' : null;
+    setTimeout(() => showCard(data, data.note_ar), 0);
+    reloadView();
+    return null;
+  }
+
+  // ---------- ④ الإخراج: القناةُ والمرجعُ وتاريخُ اليوم ثابتًا ----------
+  function sendForm(c) {
+    V.form({
+      title: 'إخراجُ ' + (c.serial_ar || 'الخطاب'), what: c.subject || '',
+      fields: [
+        { key: 'ch', type: 'pick', label: 'القناة', items: CHANNELS },
+        { key: 'ref', label: 'المرجع — مطلوبٌ إن خرج في «نظام رسمي»' },
+        { key: 'on', type: 'node', node: el('p', 'rs-meta', 'تاريخُ الإخراج: اليوم ' + M.state.date) },
+      ],
+      ok: 'أخرِجه',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_outgoing_send', { p_mail: c.mail, p_channel: v.ch || null, p_ref: v.ref }, 'إخراج الصادر');
+        if (error) return error;
+        if (!data || data.ok !== true) return 'لم يُخرجه الجسر';
+        setTimeout(() => showCard(data, data.note_ar), 0); // ما أُقفل وما بقي ينتظر جوابًا — كاملًا، بعد أن يُطوى اللوحُ الحاليّ
+        reloadView();
+        return null;
+      },
+    });
+  }
+
+  // ---------- ⑤ تسجيلُ الجواب ----------
+  function replyForm(c) {
+    V.form({
+      title: 'جوابُ ' + (c.to_entity || 'الجهة') + ' على ' + (c.serial_ar || 'الخطاب'), what: c.subject || '',
+      fields: [
+        { key: 'ref', label: 'مرجعُ الجواب' },
+        { key: 'note', type: 'textarea', label: 'خلاصتُه', rows: 3, hint: 'واحدٌ منهما على الأقلّ' },
+        { key: 'on', type: 'date', label: 'تاريخُ الجواب', value: M.state.date },
+      ],
+      ok: 'سجّل الجواب',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_outgoing_reply', { p_mail: c.mail, p_on: v.on, p_ref: v.ref, p_note: v.note }, 'تسجيل جواب الجهة');
+        if (error) return error;
+        if (!data || data.ok !== true) return 'لم يُسجّله الجسر';
+        setTimeout(() => showCard(data, data.note_ar), 0); // بعد أن يُطوى اللوحُ الحاليّ
+        reloadView();
+        return null;
+      },
+    });
+  }
+
+  function closeForm(c) {
+    V.form({
+      title: 'إقفالُ ' + (c.serial_ar || 'الخطاب'), what: c.subject || '',
+      fields: [{ key: 'note', type: 'textarea', label: 'ملاحظةُ الإقفال (اختياريّة)', rows: 2 }],
+      ok: 'أقفِله',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_outgoing_close', { p_mail: c.mail, p_note: v.note }, 'إقفال الصادر');
+        if (error) return error;
+        if (!data || data.ok !== true) return 'لم يُقفله الجسر';
+        setTimeout(() => showCard(data, data.note_ar), 0); // بعد أن يُطوى اللوحُ الحاليّ
+        reloadView();
+        return null;
+      },
+    });
+  }
+
+  function attachForm(c) {
+    V.form({
+      title: 'إرفاقٌ على ' + (c.serial_ar || 'الخطاب'), what: c.subject || '',
+      fields: [
+        { key: 'kind', type: 'pick', label: 'النوع', items: ATTACH, value: 'link' },
+        { key: 'name', label: 'الاسم' },
+        { key: 'url', label: 'الرابط', show: (v) => v.kind === 'link' },
+        { key: 'ref', label: 'مرجعُ الملفّ', show: (v) => v.kind === 'file' },
+        { key: 'barcode', label: 'الباركود', show: (v) => v.kind === 'barcode' },
+        { key: 'entry', label: 'رقمُ قيد النموذج', show: (v) => v.kind === 'form' },
+      ],
+      ok: 'أرفِقه',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_outgoing_attach', {
+          p_mail: c.mail, p_kind: v.kind || 'file', p_name: v.name, p_url: v.kind === 'link' ? v.url : null,
+          p_file_ref: v.kind === 'file' ? v.ref : null, p_barcode: v.kind === 'barcode' ? v.barcode : null, p_form_entry: v.kind === 'form' ? v.entry : null,
+        }, 'إرفاق على الصادر');
+        if (error) return error;
+        if (!data || data.ok !== true) return 'لم يُرفقه الجسر';
+        setTimeout(() => showCard(data, data.note_ar || null), 0);
+        return null;
+      },
+    });
+  }
+
+  // ---------- ⑦ الإلغاء: السببُ بيد المستعمل · وما خرج لا يُلغى بل يُستدرك ----------
+  function cancelForm(c) {
+    V.form({
+      title: 'إلغاءُ ' + (c.serial_ar || 'الخطاب'), what: c.subject || '',
+      fields: [{ key: 'why', type: 'textarea', label: 'سببُ الإلغاء *', rows: 3, hint: 'يبقى في السجلّ باسمك — ولا يُحذف الخطاب' }],
+      ok: 'ألغِ',
+      okCls: 'rs-btn irrev',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_outgoing_cancel', { p_mail: c.mail, p_why: v.why }, 'إلغاء صادر');
+        if (error) {
+          if (/يُستدرك/.test(String(error.message || ''))) {
+            return { text: errText(error), acts: [btn('اكتب خطابَ استدراك', 'rs-btn', () => {
+              const m = document.querySelector('.rs-modal:not([hidden])'); if (m) m.hidden = true;
+              setTimeout(() => createForm([], { subject: 'استدراكٌ على ' + (c.serial_ar || 'الصادر') + ' — ', to: c.to_entity }), 0);
+            })] };
+          }
+          return error;
+        }
+        if (!data || data.ok !== true) return 'لم يُلغه الجسر';
+        setTimeout(() => showCard(data, data.note_ar), 0); // بعد أن يُطوى اللوحُ الحاليّ
+        reloadView();
+        return null;
+      },
+    });
+  }
+
+  function reloadView() {
+    if (ui.tab === 'pend') loadPending();
+    if (ui.tab === 'reg') loadRegister();
+  }
+
+  // ---------- ⑥ السجلّ ----------
+  async function loadRegister() {
+    pick($('rStatus'), STATUS, ui.rStatus, (v) => { ui.rStatus = v; loadRegister(); });
+    pick($('rDays'), DAYS, ui.rDays, (v) => { ui.rDays = v; loadRegister(); });
+    const { data, error } = await M.rpc('v2_outgoing_register', { p_school: M.state.school, p_days: ui.rDays, p_status: ui.rStatus || null }, 'سجلّ الصادر');
+    const box = $('rBody');
+    box.textContent = '';
+    if (error) { $('rSum').textContent = ''; $('rNote').textContent = ''; box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const d = data || {};
+    $('rSum').textContent = d.summary_ar || '';
+    $('rNote').textContent = d.note_ar || '';
+    const rows = d.rows || [];
+    if (!rows.length) return;
+    const w = el('div', 'rs-tablewrap');
+    const tb = el('table', 'rs-table');
+    const hr = el('tr');
+    for (const h of ['الرقم', 'الموضوع', 'الجهة', 'الحال', 'التاريخ', '']) hr.appendChild(el('th', null, h));
+    const th = el('thead'); th.appendChild(hr); tb.appendChild(th);
+    const body = el('tbody');
+    const label = (s) => (STATUS.find((x) => x[0] === s) || [s, s])[1];
+    for (const r of rows) {
+      const tr = el('tr');
+      const td = (...n) => { const c = el('td'); c.append(...n); tr.appendChild(c); return c; };
+      td(document.createTextNode(r.serial_ar || ''));
+      td(document.createTextNode(r.subject || ''));
+      td(document.createTextNode(r.to_entity || ''));
+      const st = td(el('span', 'rs-state ' + (r.status === 'closed' ? 'done' : r.status === 'cancelled' ? 'void' : 'open'), label(r.status)));
+      if (r.overdue_days) st.appendChild(el('span', 'rs-state late', 'متأخّرٌ عن موعده: ' + r.overdue_days));
+      td(document.createTextNode(r.issued_ar || ''));
+      td(btn('افتحه', 'rs-btn', () => openCard(r.mail)));
+      body.appendChild(tr);
+    }
+    tb.appendChild(body);
+    w.appendChild(tb);
+    box.appendChild(w);
+    arabize(box);
+  }
+
+  // ---------- ⑧ الوارد ----------
+  async function loadIncoming() {
+    const [inb, mine] = await Promise.all([
+      M.rpc('v2_mail_inbox', { p_school: M.state.school, p_status: null, p_days: 90 }, 'سجلّ الوارد'),
+      M.rpc('v2_mail_my_tasks', { p_school: M.state.school }, 'ما عليّ من الوارد'),
+    ]);
+    ui.mine = mine.data || [];
+    const mb = $('iMine');
+    mb.textContent = '';
+    if (mine.error) mb.appendChild(el('div', 'notice err', errText(mine.error)));
+    else if (!ui.mine.length) mb.appendChild(el('p', 'rs-meta', 'لا بندَ واردٍ موجَّهٌ إليك.'));
+    for (const x of ui.mine) {
+      const f = el('div', 'rs-file' + (x.is_late ? ' rs-late' : ''));
+      f.append(el('h5', null, 'وارد ' + (x.serial_no || '') + ' · ' + (x.subject_ar || '')), el('p', null, x.text_ar || ''), el('p', 'rs-meta', [x.due_h, x.is_late ? 'متأخّر' : null].filter(Boolean).join(' · ')));
+      const r = el('div', 'rs-row');
+      r.appendChild(btn('أتممتُه', 'rs-btn', () => followupForm(x)));
+      f.appendChild(r);
+      mb.appendChild(f);
+    }
+    arabize(mb);
+    const box = $('iBody');
+    box.textContent = '';
+    if (inb.error) { box.appendChild(el('div', 'notice err', errText(inb.error))); return; }
+    const rows = inb.data || [];
+    if (!rows.length) { box.appendChild(el('p', 'rs-meta', 'لا واردَ في التسعين يومًا الماضية.')); return; }
+    const w = el('div', 'rs-tablewrap');
+    const tb = el('table', 'rs-table');
+    const hr = el('tr');
+    for (const h of ['الرقم', 'الموضوع', 'من', 'ورد', 'الحال', 'البنود', '']) hr.appendChild(el('th', null, h));
+    const th = el('thead'); th.appendChild(hr); tb.appendChild(th);
+    const body = el('tbody');
+    for (const m of rows) {
+      const tr = el('tr');
+      const td = (...n) => { const c = el('td'); c.append(...n); tr.appendChild(c); return c; };
+      td(document.createTextNode([m.serial_no, m.ref_no].filter(Boolean).join(' · ')));
+      td(document.createTextNode(m.subject_ar || ''));
+      td(document.createTextNode(m.from_entity || ''));
+      td(document.createTextNode(m.received_h || ''));
+      td(document.createTextNode(m.status_ar || ''));
+      const it = td(document.createTextNode(m.items_n + ' · مفتوح ' + m.open_items));
+      if (m.late_items > 0) it.appendChild(el('span', 'rs-state late', 'متأخّر ' + m.late_items));
+      td(btn('افتحه', 'rs-btn', () => openIncoming(m.mail_id)));
+      body.appendChild(tr);
+    }
+    tb.appendChild(body);
+    w.appendChild(tb);
+    box.appendChild(w);
+    arabize(box);
+  }
+
+  // بطاقةُ الوارد: ولكلّ موجَّهٍ إليه متابعتُه — فلا تُعرض في البطاقة إلّا متابعاتُك (من v2_mail_my_tasks)
+  async function openIncoming(id) {
+    const { data, error } = await M.rpc('v2_mail_card', { p_mail: id }, 'بطاقة الوارد');
+    if (error) { flash('bad', errText(error)); return; }
+    const c = data || {};
+    const m = c.mail || {};
+    const mineIds = new Set(ui.mine.map((x) => x.followup_id));
+    const n = el('div');
+    const lg = el('div', 'rs-lgd');
+    for (const [k, v] of [['الرقم', [m.serial_no, m.ref_no].filter(Boolean).join(' · ')], ['من', m.from], ['ورد', m.received_h], ['تاريخُه', m.doc_date_h], ['السرّيّة', m.secrecy]]) if (v) lg.append(el('i', 'k', k + ':'), el('i', null, String(v)));
+    n.appendChild(lg);
+    if (m.body) n.appendChild(el('p', 'rs-msg', m.body));
+    for (const a of c.attachments || []) n.appendChild(el('p', 'rs-meta', '📎 ' + (a.name || '')));
+    for (const i of c.items || []) {
+      const f = el('div', 'rs-file');
+      f.append(el('h5', null, (i.ord ? i.ord + ' · ' : '') + (i.text || '')), el('p', 'rs-meta', [i.starts_h, i.ends_h].filter(Boolean).join(' — ')));
+      for (const fu of (i.followups || []).filter((x) => mineIds.has(x.id))) {
+        f.appendChild(el('p', null, 'متابعتُك' + (fu.due_h ? ' · حتى ' + fu.due_h : '') + (fu.late ? ' · متأخّرة' : '')));
+        const r = el('div', 'rs-row');
+        r.appendChild(btn('أتممتُه', 'rs-btn', () => { const x = ui.mine.find((y) => y.followup_id === fu.id); const mm = document.querySelector('.rs-modal:not([hidden])'); if (mm) mm.hidden = true; setTimeout(() => followupForm(x || { followup_id: fu.id, text_ar: i.text }), 0); }));
+        f.appendChild(r);
+      }
+      n.appendChild(f);
+    }
+    // الإقرارُ بالاطّلاع: «أقرُّ» و«أمتنع» متساويان بحدّ — والامتناعُ بسببٍ مكتوب
+    V.form({
+      title: m.subject || 'وارد',
+      fields: [{ key: 'c', type: 'node', node: n }, { key: 'refuse', type: 'textarea', label: 'سببُ الامتناع — إن امتنعت', rows: 2 }],
+      ok: 'أقرُّ بالاطّلاع',
+      pair: true,
+      onOk: async () => {
+        const { error: e } = await M.rpc('v2_mail_ack', { p_mail: m.id, p_signed: true, p_refuse_reason: null }, 'الإقرار بالاطّلاع');
+        if (e) return e;
+        flash('ok', 'أُثبت إقرارُك بالاطّلاع على الوارد' + (m.serial_no ? ' رقم ' + m.serial_no : ''));
+        return null;
+      },
+      extra: [{ text: 'أمتنع', cls: 'rs-btn', onClick: async (v) => {
+        const { error: e } = await M.rpc('v2_mail_ack', { p_mail: m.id, p_signed: false, p_refuse_reason: v.refuse }, 'الامتناع عن الإقرار');
+        if (e) return e;
+        flash('ok', 'أُثبت امتناعُك بسببه');
+        return null;
+      } }],
+    });
+  }
+
+  function followupForm(x) {
+    V.form({
+      title: 'إتمامُ بند وارد', what: x.text_ar || '',
+      fields: [{ key: 'note', type: 'textarea', label: 'ما تمّ', rows: 3 }, { key: 'ev', label: 'الشاهد (اختياريّ)' }],
+      ok: 'أتممتُه',
+      onOk: async (v) => {
+        const { error } = await M.rpc('v2_mail_followup_done', { p_followup: x.followup_id, p_note: v.note, p_evidence: v.ev }, 'إتمام بند وارد');
+        if (error) return error;
+        flash('ok', 'أُقفل البند: ' + (x.text_ar || ''));
+        loadIncoming();
+        return null;
+      },
+    });
+  }
+
+  M.start({ screen: 'barid', onChange: () => refresh() });
+})();

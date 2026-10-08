@@ -18,11 +18,13 @@
     // صندوقُه بحسابه — والمعاينةُ من منسوبٍ لا تفتحه، فالصندوقُ لصاحبه وحدَه
     $('inboxCard').hidden = !!ui.preview;
     if (!ui.preview) V.inbox($('inbox'), $('inboxTitle'));
-    const [o, tl, sc] = await Promise.all([
+    const [o, tl, sc, pl] = await Promise.all([
       M.rpc('v2_opps_open_for', { p_student: ui.sid }, 'درجة السلوك والفرص'),
       M.rpc('v2_student_timeline', { p_student: ui.sid, p_as: 'student' }, 'سجلّي'),
       M.rpc('v2_my_score', { p_student: ui.sid, p_term: null }, 'درجة سلوكي'),
+      M.rpc('v2_plan_of', { p_student: ui.sid }, 'خطّة تعديل سلوكي'),
     ]);
+    renderPlans(pl);
     ui.data = o.error ? null : (o.data || {});
     // ① درجةُ سلوكي من v2_my_score كما ترجع
     V.scoreBox($('score'), sc);
@@ -31,6 +33,24 @@
     renderOpen(o.error);
     renderEvid(o.error);
     renderRecs(tl);
+  }
+
+  // خطّتي كما ترجع: السلوكُ المستهدف وحالُها وإجراءاتُها — ولا تُعرض إن لم تُكتب له خطّة
+  function renderPlans(r) {
+    const box = $('plans');
+    box.textContent = '';
+    const list = (r && r.data) || [];
+    $('planCard').hidden = !r.error && !list.length;
+    if (r.error) { box.appendChild(el('div', 'notice err', errText(r.error))); return; }
+    for (const p of list) {
+      const f = el('div', 'rs-file');
+      f.appendChild(el('h5', null, (p.target || '—') + (p.state_ar ? ' — ' + p.state_ar : '')));
+      f.appendChild(el('p', null, [p.starts ? 'من ' + p.starts : null, p.ends ? 'إلى ' + p.ends : null].filter(Boolean).join(' · ')));
+      const st = (Array.isArray(p.steps_list) ? p.steps_list : String(p.steps_list || p.steps || '').split('\n')).filter((x) => String(x).trim());
+      if (st.length) { const ul = el('ul', 'rs-acts'); for (const x of st) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }
+      box.appendChild(f);
+    }
+    arabize(box);
   }
 
   const errBox = (box, e) => { box.textContent = ''; box.appendChild(el('div', 'notice err', errText(e))); };

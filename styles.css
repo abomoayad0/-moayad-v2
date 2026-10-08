@@ -636,3 +636,10 @@
   @media (max-width: 699px) { table.rs-open tr.wait { border-inline-start: 4px solid var(--info-c); } table.rs-open tr.wait td:first-child { box-shadow: none; } }
   .rs-prev { border-inline-start: 4px solid var(--grey); }
   .rs-withdrawn { border-inline-start: 4px solid var(--grey); }
+
+/* بريدُ المدرسة: البندُ المختار · ما يُقفله · والمتأخّرُ بالتحذيريّ لا بالأحمر */
+  .rs-file.rs-sel { cursor: pointer; }
+  .rs-file.rs-sel.on { border-color: var(--school-accent); box-shadow: inset 0 0 0 1.5px var(--school-accent); }
+  .rs-need { display: inline-block; margin-top: 6px; font-size: 14px; line-height: 23px; font-weight: 700; color: var(--info-c); }
+  .rs-state.late { color: var(--navy); background: var(--warn-bg); border: 1px solid var(--sand); margin-inline-start: 8px; }
+  .rs-file.rs-late { border-inline-start: 4px solid var(--sand); }
