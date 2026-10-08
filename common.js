@@ -95,6 +95,28 @@
   function store(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* لا شيء */ } }
   function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 
+  // ---------- الهويّةُ البصريّة: تُقرأ ولا تُكتب ----------
+  // v2_brand_tokens() و v2_branding(school) ⇒ متغيّراتُ CSS على الجذر. وتُحفظ آخرُ قراءةٍ في الجهاز
+  // لتُطبَّق من أوّل رسم، ثمّ تُقرأ من جديد عند الإقلاع وعند تبديل المدرسة — فالدليلُ يُحدَّث من اللوحة لا من الكود.
+  function setBrand(b) {
+    if (!b) return;
+    const r = document.documentElement.style;
+    for (const c of b.colors || []) if (c.key && c.value) r.setProperty('--' + c.key.replace(/\./g, '-'), c.value);
+    const f = (b.fonts || []).find((x) => x.key === 'font.ar.regular');
+    // اسمُ الأسرة كما في الجسر بلا لاحقة الوزن («… Regular»)
+    if (f && f.value) r.setProperty('--font-ar', '"' + f.value.replace(/\s+(Regular|Bold)$/i, '') + '"');
+    if (b.primary_color) r.setProperty('--school-primary', b.primary_color);
+    if (b.accent_color) r.setProperty('--school-accent', b.accent_color);
+  }
+  try { const c = JSON.parse(load('moayad.brand') || 'null'); if (c) { setBrand(c.tokens); setBrand(c.school); } } catch (e) { /* لا شيء */ }
+  async function loadBrand(school) {
+    const t = await rpc('v2_brand_tokens', undefined, 'رموز الهويّة');
+    const b = school ? await rpc('v2_branding', { p_school: school }, 'هويّة المدرسة') : { data: null };
+    if (t.data) setBrand(t.data);
+    if (b.data) setBrand(b.data);
+    if (t.data) store('moayad.brand', JSON.stringify({ tokens: t.data, school: b.data || null }));
+  }
+
   function localToday() {
     // تاريخ الجهاز بصيغة YYYY-MM-DD — يُرسل كما هو للقاعدة
     return new Date().toLocaleDateString('en-CA');
@@ -174,9 +196,49 @@
     return r.role_ar + (r.school ? ' — ' + r.school : '') + ' · ' + r.source;
   }
 
+  // الرأسُ الثابت بأقسامه الثلاثة: البدايةُ مبدّلُ المدرسة · الوسطُ عنوانُ الشاشة · النهايةُ الحساب (تكليفُ الشاشات ② §٤)
+  function layoutHeader() {
+    const h = document.querySelector('header.top');
+    if (!h || h.dataset.laid) return h;
+    h.dataset.laid = '1';
+    const h1 = h.querySelector('h1');
+    const who = $('who');
+    const acts = h.querySelector('.hdr-acts');
+    const s = el('div', 'hz-s');
+    const m = el('div', 'hz-m');
+    const e = el('div', 'hz-e');
+    if (h1) { h1.textContent = h1.textContent.replace(/^مؤيّد\s*·\s*/, ''); m.appendChild(h1); }
+    const acct = el('button', 'hbtn acct');
+    acct.id = 'acctBtn';
+    acct.type = 'button';
+    acct.setAttribute('aria-haspopup', 'true');
+    acct.setAttribute('aria-expanded', 'false');
+    const pop = el('div', 'acct-pop');
+    pop.id = 'acctPop';
+    pop.hidden = true;
+    if (who) pop.appendChild(who);
+    if (acts) pop.appendChild(acts);
+    acct.addEventListener('click', () => { pop.hidden = !pop.hidden; acct.setAttribute('aria-expanded', String(!pop.hidden)); });
+    document.addEventListener('pointerdown', (ev) => { if (!pop.hidden && !pop.contains(ev.target) && !acct.contains(ev.target)) { pop.hidden = true; acct.setAttribute('aria-expanded', 'false'); } });
+    e.append(acct, pop);
+    h.textContent = '';
+    h.append(s, m, e);
+    h.classList.add('hdr3');
+    // ارتفاعُ الرأس لما يلتصق تحته
+    const fit = () => document.documentElement.style.setProperty('--hdr-h', h.offsetHeight + 'px');
+    if (window.ResizeObserver) new ResizeObserver(fit).observe(h);
+    fit();
+    return h;
+  }
+
   function renderHeader(me, onRole) {
+    layoutHeader();
     const who = $('who');
     who.textContent = '';
+    const hs = document.querySelector('.hz-s');
+    const oldSw = $('schoolSwitch'); if (oldSw) oldSw.remove();
+    const acct = $('acctBtn');
+    if (acct) acct.textContent = me ? '👤 ' + (me.name || me.full_name || 'حسابي') : '👤';
     if (!me) { $('testMode').hidden = true; return; }
     who.append(el('span', 'name', me.name || me.full_name || ''));
 
@@ -232,8 +294,12 @@
         const r = roles.find((x) => x.school_id === sid && cur && x.role_key === cur.role_key) || roles.find((x) => x.school_id === sid);
         if (r && r.is_current !== true) onRole(r);
       });
-      sb2.append(el('span', 'role-l', 'المدرسة:'), ssel);
-      who.appendChild(sb2);
+      sb2.appendChild(ssel);
+      (hs || who).appendChild(sb2);
+    } else if (hs && cur && cur.school) {
+      const sb2 = el('div', 'schoolbox one', cur.school);
+      sb2.id = 'schoolSwitch';
+      hs.appendChild(sb2);
     }
 
     const tm = (me.schools || []).filter((x) => x.test_mode);
@@ -281,10 +347,10 @@
       tg.setAttribute('aria-label', 'الشاشات');
       tg.setAttribute('aria-controls', 'screens');
       tg.addEventListener('click', () => { nav.hidden = !nav.hidden; tg.setAttribute('aria-expanded', String(!nav.hidden)); });
-      const acts = document.querySelector('.hdr-acts');
+      const acts = document.querySelector('.hz-s') || document.querySelector('.hdr-acts');
       if (acts) acts.prepend(tg);
       // يُطوى بلمسةٍ خارجه
-      document.addEventListener('click', (e) => { if (!nav.hidden && !nav.contains(e.target) && e.target !== tg) { nav.hidden = true; tg.setAttribute('aria-expanded', 'false'); } });
+      document.addEventListener('pointerdown', (e) => { if (!nav.hidden && !nav.contains(e.target) && e.target !== tg) { nav.hidden = true; tg.setAttribute('aria-expanded', 'false'); } });
     }
     tg.hidden = list.length === 0;
     for (const g of GROUPS) {
@@ -334,6 +400,7 @@
       state.school = $('school').value;
       store('moayad.school', state.school);
       renderActing(state.school);
+      loadBrand(state.school);
       onChange('school');
     });
     $('date').addEventListener('change', () => {
@@ -385,6 +452,7 @@
       if (!state.date) { $('date').value = localToday(); state.date = $('date').value; }
       $('dayView').hidden = false;
       renderActing(state.school);
+      loadBrand(state.school);
       await onChange(why);
     }
 
@@ -397,8 +465,23 @@
     })();
   }
 
+  // القوائمُ على الهاتف بطاقاتٌ لا جدولٌ يُمرَّر أفقيًّا: كلُّ خليّةٍ تحمل عنوانَ عمودها (data-label) فيعرضه CSS
+  function labelTables(root) {
+    for (const t of (root.querySelectorAll ? root.querySelectorAll('table.rs-table') : [])) {
+      const hs = [...t.querySelectorAll('thead th, tr:first-child > th')].map((x) => x.textContent.trim());
+      if (!hs.length) continue;
+      for (const tr of t.querySelectorAll('tbody tr, tr')) {
+        [...tr.children].forEach((c, i) => { if (c.tagName === 'TD' && !c.dataset.label && hs[i]) c.dataset.label = hs[i]; });
+      }
+    }
+  }
+  if (window.MutationObserver) {
+    new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) { const t = n.closest && n.closest('table.rs-table'); labelTables(t ? t.parentNode || n : n); } })
+      .observe(document.documentElement, { childList: true, subtree: true });
+  }
+
   window.Moayad = {
     sb, rpc, logError, $, state, SCREENS, DAY_KIND_AR, toast, errText, ltr, el, showLoadErr, renderDates, lacks,
-    loadMe, defaultRole, screensFor, renderHeader, renderActing, renderNav, actAs, gate, signOut, start,
+    loadMe, defaultRole, screensFor, renderHeader, loadBrand, setBrand, renderActing, renderNav, actAs, gate, signOut, start,
   };
 })();

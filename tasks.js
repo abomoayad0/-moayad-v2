@@ -45,7 +45,7 @@
         <textarea id="tskSkipReason" rows="3"></textarea>
         <div class="dlg-acts">
           <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
-          <button value="ok" type="submit" class="btn-danger" id="tskSkipOk" disabled>أسقطها</button>
+          <button value="ok" type="submit" class="btn-danger" id="tskSkipOk">أسقطها</button>
         </div>
       </form>`;
     document.body.appendChild(s);
@@ -72,7 +72,6 @@
     window.addEventListener('message', (e) => {
       if (e.origin === location.origin && e.data && e.data.moayad === 'form-changed') formChanged = true;
     });
-    $('tskSkipReason').addEventListener('input', () => { $('tskSkipOk').disabled = $('tskSkipReason').value.trim() === ''; });
     const g = document.createElement('dialog');
     g.id = 'dlgDelegate';
     g.innerHTML = `
@@ -86,16 +85,14 @@
         <textarea id="dlgNote" rows="3"></textarea>
         <div class="dlg-acts">
           <button value="cancel" type="submit" class="btn-ghost">تراجع</button>
-          <button value="ok" type="submit" class="btn-accept" id="dlgOk" disabled>حوّلها</button>
+          <button value="ok" type="submit" class="btn-accept" id="dlgOk">حوّلها</button>
         </div>
       </form>`;
     document.body.appendChild(g);
-    const upd = () => { $('dlgOk').disabled = !$('dlgPerson').value || $('dlgNote').value.trim() === ''; };
-    $('dlgNote').addEventListener('input', upd);
+    // لا يُعطَّل «حوّلها» بحساب الشاشة: يُضغط، والجسرُ يردّ بنصّه إن نقص شيء
     $('dlgPerson').addEventListener('change', () => {
       const o = $('dlgPerson').selectedOptions[0];
       $('dlgRoles').textContent = o && o.dataset.roles ? 'تكاليفه: ' + o.dataset.roles : '';
-      upd();
     });
   }
 
@@ -190,10 +187,14 @@
       (t.task_id ? '&task=' + encodeURIComponent(t.task_id) : '');
   }
 
-  // ---------- بابُ الإثبات العامّ: يرسم حقولَه من v2_task_card ويُقفل بـ v2_task_evidence ----------
-  // لا حسابَ هنا: الحقولُ وعناوينُها والنموذجُ والتوقيعُ والامتناعُ كلُّها من البطاقة — والجسرُ وحدَه يُقفل
-  async function evidenceDoor(taskId, studentId, onChanged) {
+  // ---------- بابُ الإثبات العامّ: يرسم من v2_task_card ويُقفل بـ v2_task_evidence (تكليفُ الشاشات ② — الجزءُ الثالث) ----------
+  // لا حسابَ هنا: الحقولُ وعناوينُها والنموذجُ والتوقيعُ والنفيُ المعروضُ والمانعُ كلُّها من البطاقة — والجسرُ وحدَه يُقفل.
+  // opts.doors[kind](task) ⇒ زرٌّ ينقل المهمّةَ إلى بابها الخاصّ (الاتّصال · الخطّة · الإحالة · الحصر · نقل الفصل)
+  // opts.note ⇒ رسالةُ الجسر بعد النجاح، تُعرض في مكانها أعلى البطاقة المعادة قراءتُها
+  const SPECIAL = ['notify_guardian', 'plan', 'committee', 'follow_up', 'move_class'];
+  async function evidenceDoor(taskId, studentId, onChanged, opts) {
     const V = window.MoayadView;
+    opts = opts || {};
     const { data: c, error } = await M.rpc('v2_task_card', { p_task: taskId }, 'بطاقة المهمّة');
     if (error) { V.flash('bad', errText(error)); return; }
     const t = c.task || {};
@@ -201,22 +202,64 @@
     const need = ev.needs || {};
     const lb = ev.labels || {};
     const fl = c.filled || {};
+    const again = (note) => setTimeout(() => evidenceDoor(taskId, studentId, onChanged, Object.assign({}, opts, { note })), 0);
     const head = el('div');
+    if (opts.note) head.appendChild(el('div', 'rs-done-note', opts.note));
     head.appendChild(el('p', 'rs-meta', [t.problem_ar, t.degree_ar, t.step_ar ? 'الإجراء ' + t.step_ar : null, t.occurrence_ar ? 'الرصدة ' + t.occurrence_ar : null].filter(Boolean).join(' · ')));
+    // المصدر ظاهرًا: نصُّ الدليل أم اجتهادُ المدرسة (origin كما يرجع)
+    if (t.origin) head.appendChild(el('span', 'rs-tag' + (t.origin !== 'الدليل' ? ' own' : ''), t.origin));
     if (ev.label_ar) head.appendChild(el('p', null, ev.label_ar + (ev.hint_ar ? ' — ' + ev.hint_ar : '')));
-    // ليس هذا بابَها ⇒ اسمُ بابها كما يرجع، ولا حقول
-    if (c.door !== 'بابُ الإثبات') {
-      head.appendChild(el('div', 'rs-note', c.door || ''));
-      V.form({ title: t.text_ar || '', fields: [{ key: 'h', type: 'node', node: head }], ok: false, cancel: 'فهمت' });
+    if (c.door && c.door !== 'بابُ الإثبات') head.appendChild(el('div', 'rs-door', c.door));
+    const only = (extraNodes, ok, onOk) => V.form({ title: t.text_ar || '', fields: [{ key: 'h', type: 'node', node: head }].concat(extraNodes || []), ok: ok || false, onOk, cancel: 'إغلاق' });
+    // ① بابٌ خاصّ ⇒ لا حقول · زرٌّ ينقله إلى بابه
+    const go = opts.doors && opts.doors[t.kind];
+    if (SPECIAL.includes(t.kind) && t.status === 'open') {
+      if (go) only([], 'انتقل إلى بابه', () => { setTimeout(() => go(t), 0); return null; });
+      else only();
       return;
     }
+    // ② أُقفلت ⇒ من أقفلها وكيف، ولا حقول
+    if (c.settled_ar) { head.appendChild(el('div', 'rs-settled', c.settled_ar)); only(); return; }
+    const anyNeed = Object.keys(need).some((k) => need[k]);
+    if (!anyNeed && !c.proposal) { only(); return; } // يقع آليًّا — لا يُثبَت باليد
     const fields = [{ key: 'h', type: 'node', node: head }];
+    // ④ النفيُ المعروض: بطاقةٌ مستقلّة · حقلٌ مملوءٌ لا مفروض · ولا يُرسل من تلقاء نفسه ولا يُؤشَّر مسبقًا
+    const pr = c.proposal;
+    if (pr) {
+      const nc = el('div', 'rs-neg');
+      nc.appendChild(el('h5', null, pr.word_ar || ''));
+      const ta = el('textarea');
+      ta.rows = 3;
+      ta.id = 'negText';
+      ta.value = pr.text_ar || '';
+      ta.setAttribute('aria-label', pr.word_ar || '');
+      nc.appendChild(ta);
+      if (pr.how_ar) nc.appendChild(el('p', 'rs-meta', pr.how_ar));
+      if (pr.ask_ar) nc.appendChild(el('p', 'rs-ask', pr.ask_ar));
+      const nerr = el('div', 'flash bad');
+      nerr.hidden = true;
+      const nb = V.btn('أُقرُّ النفي', 'rs-btn');
+      nb.addEventListener('click', () => V.send(nb, async () => {
+        nerr.hidden = true;
+        const { error: e } = await M.rpc('v2_task_skip', { p_task: taskId, p_reason: ta.value.trim() || null }, 'إقرار النفي');
+        if (e) { nerr.textContent = errText(e); nerr.hidden = false; return; }
+        onChanged();
+        again(null); // تُعاد قراءةُ البطاقة: settled_ar يقول من نفاه ومتى
+      }));
+      const r = el('div', 'rs-row');
+      r.appendChild(nb);
+      nc.append(nerr, r);
+      fields.push({ key: 'neg', type: 'node', node: nc });
+    }
+    // ⑤ موجبٌ ظاهر ⇒ تنبيهٌ معلوماتيّ · ولا نفي
+    if (c.grounds_ar) fields.push({ key: 'grounds', type: 'node', node: el('div', 'rs-info', c.grounds_ar) });
+    // ⑥ حقلٌ لكلّ needs بعنوانه
     if (need.date) fields.push({ key: 'on', type: 'date', label: lb.date || '', value: fl.ev_on });
     if (need.text) fields.push({ key: 'text', type: 'textarea', label: lb.text || '', value: fl.ev_text });
     if (need.file) fields.push({ key: 'file', label: lb.file || '', value: fl.ev_file });
     if (need.ref) fields.push({ key: 'ref', label: lb.ref || '', value: fl.ev_ref });
     if (need.people) fields.push({ key: 'people', label: lb.people || '', value: fl.ev_people });
-    // النموذجُ إن طلبته المهمّة: بطاقتُه كما ترجع، وزرُّ «افتح النموذج» حتى يُعتمد — و«أثبت» معطَّلٌ قبل ready
+    // ⑦ النموذج: بطاقتُه كما ترجع — و«أثبت» لا يُفعَّل قبل form.ready (نصُّ التكليف)
     const f = c.form;
     const formWait = !!(need.form && f && !f.ready);
     if (need.form && f) {
@@ -226,21 +269,23 @@
       if (f.why_ar) fc.appendChild(el('p', null, f.why_ar));
       fc.appendChild(el('p', f.ready ? 'rs-state-done' : 'rs-state-open', f.ready ? 'اعتُمد النموذج' : (f.entry ? 'لم يُعتمد بعد' : 'لم يُفتح بعد')));
       if (!f.ready) {
-        fc.appendChild(window.MoayadView.btn('افتح النموذج', 'rs-btn soft', () => {
+        fc.appendChild(V.btn('افتح النموذج', 'rs-btn', () => {
           ensureDialogs();
           const src = 'form.html?form=' + f.form_no + '&student=' + encodeURIComponent(studentId) + (t.record ? '&ref=' + encodeURIComponent(t.record) : '') + '&task=' + encodeURIComponent(taskId);
           $('formDlgTitle').textContent = 'النموذج ' + f.form_no + (f.title_ar ? ': ' + f.title_ar : '');
           $('formFrame').src = src + '&embed=1';
           // بعد إغلاق النموذج تُقرأ البطاقةُ من جديد — فإن اعتُمد تفعّل «أثبت»
-          $('formDlg').addEventListener('close', () => { evidenceDoor(taskId, studentId, onChanged); onChanged(); }, { once: true });
+          $('formDlg').addEventListener('close', () => { evidenceDoor(taskId, studentId, onChanged, opts); onChanged(); }, { once: true });
           $('formDlg').showModal();
         }));
       }
       fields.push({ key: 'form', type: 'node', node: fc });
     }
-    // التوقيع: زرّان لا زرّ — «وقّع» و«امتنع» من أوّل وهلة، والامتناعُ بسببٍ مكتوبٍ يُتمّ الخطوة
-    const rf = c.refusal;
-    if (need.signature && rf) fields.push({ key: 'refuse', type: 'textarea', label: 'سببُ الامتناع — إن امتنع', rows: 2, hint: rf.note_ar || '' });
+    // ⑧ التوقيع: «وقّع» و«امتنع» متساويان ظاهران بحدٍّ لا ممتلئ — والامتناعُ بسببٍ مكتوبٍ يُتمّ الخطوة
+    const rf = need.signature ? c.refusal : null;
+    if (rf) fields.push({ key: 'refuse', type: 'textarea', label: 'سببُ الامتناع — إن امتنع', rows: 2 });
+    // ③ المانعُ الآن: شريطٌ معلوماتيٌّ فوق الأفعال مباشرةً — والزرُّ يبقى، فالضغطُ يأتي بنصّ الجسر
+    if (c.blocked_ar) fields.push({ key: 'blocked', type: 'node', node: el('div', 'rs-info', c.blocked_ar) });
     const send = async (v, signed, refuse) => {
       const { data, error: e } = await M.rpc('v2_task_evidence', {
         p_task: taskId, p_on: v.on || null, p_text: v.text || null, p_file: v.file || null, p_ref: v.ref || null,
@@ -248,17 +293,19 @@
       }, 'إثبات تنفيذ المهمّة');
       if (e) return e;
       if (!data || data.ok !== true) return 'لم يُقفل الجسرُ المهمّة';
-      V.flash('ok', data.note || '');
       onChanged();
+      again(data.note || ''); // رسالةُ الجسر في مكانها · والبطاقةُ تُعاد قراءتُها
       return null;
     };
     V.form({
       title: t.text_ar || '', what: c.signer_ar ? 'التوقيع: ' + c.signer_ar : '',
       fields,
-      ok: need.signature ? (lb.sign || '') : 'أثبت',
+      ok: rf ? (lb.sign || '') : 'أثبت',
       okDisabled: formWait,
+      pair: !!rf,
+      pairNote: rf ? (rf.note_ar || '') : '',
       onOk: (v) => send(v, need.signature ? true : null, null),
-      extra: need.signature && rf ? [{ text: rf.label_ar || '', cls: 'rs-btn ghost', onClick: (v) => send(v, false, v.refuse) }] : [],
+      extra: rf ? [{ text: rf.label_ar || '', cls: 'rs-btn', onClick: (v) => send(v, false, v.refuse) }] : [],
     });
   }
 
@@ -283,7 +330,6 @@
     ensureDialogs();
     $('tskSkipText').textContent = t.text_ar;
     $('tskSkipReason').value = '';
-    $('tskSkipOk').disabled = true;
     if (await ask($('tskSkipDlg')) !== 'ok') return;
     const { error } = await M.rpc(BRIDGE[kind].skip, { p_task: t.task_id, p_reason: $('tskSkipReason').value.trim() }, 'إسقاط مهمّة');
     if (error) { toast('لم تُسقَط المهمّة:\n' + errText(error)); return; }
@@ -297,7 +343,6 @@
     ensureDialogs();
     $('dlgText').textContent = t.text_ar;
     $('dlgNote').value = '';
-    $('dlgOk').disabled = true;
     $('dlgRoles').textContent = '';
     const sel = $('dlgPerson');
     sel.innerHTML = '';
@@ -320,7 +365,7 @@
     }
     if (await ask($('dlgDelegate')) !== 'ok') return;
     const { data, error } = await M.rpc(BRIDGE[kind].delegate,
-      { p_task: t.task_id, p_person: sel.value, p_note: $('dlgNote').value.trim() }, 'تحويل مهمّة');
+      { p_task: t.task_id, p_person: sel.value || null, p_note: $('dlgNote').value.trim() || null }, 'تحويل مهمّة');
     if (error) { toast('لم تُحوَّل المهمّة:\n' + errText(error)); return; }
     toast('حُوّلت المهمّة' + (data && data.to ? ' إلى ' + data.to : '') + '.', true);
     await onChanged();

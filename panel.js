@@ -256,10 +256,9 @@
     $('sWhat').textContent = (c.label || c.key) + ' · ' + (s.role_ar || '') + ' — السعة الآن ' + s.count;
     $('sCount').value = s.count;
     $('sReason').value = '';
-    $('sOk').disabled = true;
     if (await ask($('seatDlg')) !== 'ok') return;
     const { error } = await M.rpc('v2_committee_seat_count', {
-      p_school: ui.school, p_committee: c.key, p_seat_role: s.role, p_count: Number($('sCount').value), p_reason: $('sReason').value.trim(),
+      p_school: ui.school, p_committee: c.key, p_seat_role: s.role, p_count: Number($('sCount').value), p_reason: $('sReason').value.trim() || null,
     }, 'تعديل سعة مقعد');
     if (error) { toast('لم تُعدَّل السعة:\n' + errText(error)); return; }
     toast('عُدّلت السعة.', true);
@@ -1290,7 +1289,6 @@
     action_log: (b) => window.MoayadMarja.actionLogTool(b),
   };
 
-  $('sReason').addEventListener('input', () => { $('sOk').disabled = $('sReason').value.trim() === ''; });
   $('toast').addEventListener('click', () => { $('toast').hidden = true; });
   $('logout').addEventListener('click', M.signOut);
 

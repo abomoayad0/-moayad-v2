@@ -245,7 +245,7 @@
         { key: 'ord', type: 'number', label: 'ترتيبُها (اختياري)', value: r ? r.ord : null },
       ],
       ok: 'احفظ',
-      extra: r ? [{ text: 'أزِلها من الخطّة', onClick: async () => {
+      extra: r ? [{ text: 'أزِلها من الخطّة', cls: 'rs-btn irrev', onClick: async () => {
         const { error } = await M.rpc('v2_plan_remove', { p_school: school(), p_plan: r.id }, 'إزالة من الخطّة');
         if (error) return error;
         flash('ok', 'أُزيلت ' + r.subject + ' من الخطّة');
@@ -296,7 +296,7 @@
         { key: 'main', type: 'pick', label: 'هي', items: [['yes', 'رئيسة'], ['no', 'ثانويّة']], value: s && !s.main ? 'no' : 'yes' },
       ],
       ok: 'احفظ',
-      extra: s ? [{ text: 'احذف التخصّص', onClick: async () => {
+      extra: s ? [{ text: 'احذف التخصّص', cls: 'rs-btn irrev', onClick: async () => {
         const { data, error } = await M.rpc('v2_teacher_subject', { p_school: school(), p_person: t.person_id, p_subject: s.subject, p_main: null, p_remove: true }, 'حذف تخصّص');
         if (error) return error;
         flash('ok', ((data && data.mode) || 'حُذفت') + ': ' + s.subject + ' — ' + t.person);

@@ -19,6 +19,32 @@
     if (fn) b.addEventListener('click', fn);
     return b;
   };
+  // أثناء الإرسال وحدَه: الزرُّ يحفظ عرضَه، ونصُّه «جارٍ…» مع دوّارة، ولا ضغطةَ ثانية (تكليفُ الشاشات ② §٥)
+  function busyOn(b) {
+    if (!b || b.dataset.busy) return;
+    b.dataset.busy = '1';
+    b.dataset.text = b.textContent;
+    b.style.width = b.offsetWidth ? b.offsetWidth + 'px' : '';
+    b.textContent = '';
+    b.append(el('span', 'rs-spin'), document.createTextNode('جارٍ…'));
+    b.setAttribute('aria-busy', 'true');
+    b.disabled = true;
+  }
+  function busyOff(b) {
+    if (!b || !b.dataset.busy) return;
+    b.textContent = b.dataset.text || '';
+    delete b.dataset.busy;
+    b.style.width = '';
+    b.removeAttribute('aria-busy');
+    b.disabled = false;
+  }
+  // يُغلّف فعلًا يُرسل: busy ثمّ fn ثمّ يعود الزرّ — ويرجع ما رجع من fn
+  async function send(b, fn) {
+    if (b && b.dataset.busy) return undefined;
+    busyOn(b);
+    try { return await fn(); } finally { busyOff(b); }
+  }
+
   // فعلٌ لم يُبنَ في المحرّك: زرٌّ معطَّلٌ ومعه سببُه
   const notBuilt = (text) => {
     const w = el('span', 'rs-off-act');
@@ -245,10 +271,14 @@
         : f.type === 'number' ? () => (inp.value === '' ? null : Number(inp.value))
         : () => { const v = inp.value.trim(); return v === '' ? null : v; };
     }
-    const row = el('div', 'rs-row');
-    const ok = btn(o.ok || 'تأكيد', 'rs-btn');
+    // شريطُ الأفعال: الأوّلُ في البداية والثاني يليه، والذي لا يُرجَع في النهاية البعيدة — وملتصقٌ بأسفل اللوح على الهاتف
+    const row = el('div', 'rs-row rs-actbar');
+    const ok = btn(o.ok || 'تأكيد', o.okCls || (o.pair ? 'rs-btn' : 'rs-btn pri'));
     const no = btn(o.cancel || 'تراجع', 'rs-btn ghost', () => { formBox.hidden = true; });
-    if (o.ok !== false) row.appendChild(ok);
+    // زرّا التوقيع: متساويان · ظاهران معًا · كلاهما بحدٍّ لا ممتلئ — ونصُّ الامتناع تحتهما كما هو
+    const pair = o.pair ? el('div', 'rs-pair') : null;
+    if (pair) { if (o.ok !== false) pair.appendChild(ok); row.appendChild(pair); if (o.pairNote) row.appendChild(el('p', 'rs-meta rs-pairnote', o.pairNote)); }
+    else if (o.ok !== false) row.appendChild(ok);
     row.appendChild(no);
     sh.appendChild(row);
     const api = { values: () => { const r = {}; for (const k in get) r[k] = get[k](); return r; }, ok };
@@ -257,20 +287,23 @@
     // كلُّ زرٍّ في اللوح يرجع خطأَ القاعدة أو null — فإن رجع خطأٌ بقي اللوحُ ونصُّه في أعلاه
     const run = async (b, fn) => {
       if (formBox.busy) return;
-      formBox.busy = true; b.disabled = true;
+      formBox.busy = true; busyOn(b);
       let e = null;
-      try { e = await fn(api.values()); } finally { formBox.busy = false; b.disabled = b === ok && !!o.okDisabled; }
+      try { e = await fn(api.values()); } finally { formBox.busy = false; busyOff(b); b.disabled = b === ok && !!o.okDisabled; }
       if (e) { err.textContent = typeof e === 'string' ? e : M.errText(e); err.hidden = false; arabize(err); err.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
       formBox.hidden = true;
     };
     ok.addEventListener('click', () => run(ok, o.onOk));
     // أزرارٌ أخرى (كالحذف) — { text, cls, onClick(values) }
     // والأزرارُ الأخرى بجوار التأكيد قبل «تراجع» — فـ«وقّع» و«امتنع» يُريان معًا
-    for (const x of o.extra || []) {
-      const b = btn(x.text, x.cls || 'rs-btn ghost');
+    o.extra = o.extra || [];
+    o.extra.forEach((x, i) => {
+      const b = btn(x.text, x.cls || 'rs-btn');
       b.addEventListener('click', () => run(b, x.onClick));
-      row.insertBefore(b, no);
-    }
+      if (pair && i === 0) pair.appendChild(b);
+      else if (/\birrev\b/.test(b.className)) row.appendChild(b); // لا يُرجَع ⇒ آخرَ الشريط
+      else row.insertBefore(b, no);
+    });
     sync();
     arabize(sh);
     formBox.hidden = false;
@@ -429,5 +462,5 @@
     return f;
   }
 
-  window.MoayadView = { ar, arabize, btn, notBuilt, offCard, renderRole, flash, seen, tap, recordAdvice, scoreBox, pick, sheet, events, chooser, form, verdictCard, committeeTask };
+  window.MoayadView = { ar, arabize, btn, busyOn, busyOff, send, notBuilt, offCard, renderRole, flash, seen, tap, recordAdvice, scoreBox, pick, sheet, events, chooser, form, verdictCard, committeeTask };
 })();
