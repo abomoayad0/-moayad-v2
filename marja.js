@@ -5,6 +5,7 @@
 // ④ «قوالب رسائل ولي الأمر»: v2_message_template · v2_message_template_save
 // والقوائمُ والبنكُ بـ p_all: الموقوفُ يظهر موسومًا ويُعاد تفعيلُه
 // ⑤ «حصر السلوكيات»: v2_census_sweep — يعيد ما انقضت مدّتُه
+// ⑥ «سجل الأفعال»: v2_action_log — ما وقع، يُصفّى بالطالب وبالفعل
 // لا حسابَ هنا: النصوصُ والأيقوناتُ والترتيبُ من القاعدة، والقاعدةُ تحرس من يضبط.
 (function () {
   'use strict';
@@ -209,5 +210,55 @@
     }));
   }
 
-  window.MoayadMarja = { censusItemsTool, bankTool, adviceTool, templateTool, censusSweepTool };
+  // ================= ⑥ سجلُّ الأفعال =================
+  // ما وقع من الأفعال الحسّاسة كما قيّدته جسورُها (v2_action_log) — منفصلٌ عن لوحة الأخطاء.
+  // يُصفّى بالطالب من القاعدة (p_student)، وبالفعل على ما رجع من الصفحة (لا معاملَ للفعل في الجسر).
+  const LIMITS = [['100', 'آخرُ ١٠٠'], ['500', 'آخرُ ٥٠٠']];
+  async function actionLogTool(box) {
+    box.textContent = '';
+    const st = { student: null, action: 'all', limit: '100', rows: [] };
+    const who = el('div');
+    const lim = el('div', 'rs-pick');
+    const acts = el('div', 'rs-pick');
+    const list = el('div');
+    box.append(el('div', 'rs-label', 'الطالب'), who, el('div', 'rs-label', 'الفعل'), acts, lim, list);
+    const draw = () => {
+      const kinds = [['all', 'الكلّ']];
+      for (const x of st.rows) if (!kinds.some((k) => k[0] === x.action)) kinds.push([x.action, x.action_ar || x.action]);
+      if (!kinds.some((k) => k[0] === st.action)) st.action = 'all';
+      pick(acts, kinds, st.action, (k) => { st.action = k; draw(); });
+      list.textContent = '';
+      const rows = st.rows.filter((x) => st.action === 'all' || x.action === st.action);
+      list.appendChild(el('p', 'rs-meta', rows.length + ' فعلًا' + (st.student ? '' : ' في المدرسة')));
+      if (!rows.length) list.appendChild(el('p', 'rs-empty', 'لا أفعالَ مقيَّدة.'));
+      const ul = el('ul', 'rs-acts');
+      for (const x of rows) {
+        const li = el('li');
+        const body = el('span');
+        body.style.flex = '1';
+        body.appendChild(el('b', null, x.action_ar || x.action));
+        const det = x.detail && typeof x.detail === 'object' ? Object.values(x.detail).filter((v) => v != null && v !== '').join(' · ') : '';
+        body.appendChild(el('div', 'rs-meta', [x.student, det, (x.by || '—') + (x.role ? ' · ' + x.role : ''), x.is_test ? 'تجربة' : null].filter(Boolean).join(' — ')));
+        li.append(el('i', 'rs-tick ok', '✓'), body, el('small', 'rs-who', String(x.at || '').slice(0, 16).replace('T', ' ')));
+        ul.appendChild(li);
+      }
+      list.appendChild(ul);
+      arabize(list); arabize(acts);
+    };
+    const load = async () => {
+      list.textContent = '';
+      list.appendChild(el('p', 'rs-meta', 'جارٍ الجلب…'));
+      const { data, error } = await M.rpc('v2_action_log', { p_school: school(), p_student: st.student, p_limit: Number(st.limit) }, 'سجل الأفعال');
+      if (error) { list.textContent = ''; errBox(list, error); return; }
+      st.rows = data || [];
+      draw();
+    };
+    pick(lim, LIMITS, st.limit, (v) => { st.limit = v; load(); });
+    const sb = await M.rpc('v2_students_board', { p_school: school(), p_grade: null, p_section: null, p_q: null }, 'كشف الطلّاب');
+    if (sb.error) errBox(who, sb.error);
+    else V.chooser(who, [['', 'كلّ الطلّاب', '']].concat((sb.data || []).map((x) => [x.student, x.display || x.name, x.student_no || ''])), '', (v) => { st.student = v || null; load(); });
+    load();
+  }
+
+  window.MoayadMarja = { censusItemsTool, bankTool, adviceTool, templateTool, censusSweepTool, actionLogTool };
 })();

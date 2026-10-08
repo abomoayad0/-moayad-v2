@@ -1,7 +1,7 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 66e66873b3403cc2dc1c0176fa2d331b
+-- ── grants · md5 7ec2c991b450a26b338a33f260999672
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 
@@ -270,6 +270,8 @@ REVOKE ALL ON FUNCTION v2.is_test_school(p_school uuid) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.ladder_auto(p_record uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.ladder_auto(p_record uuid) TO authenticated;
+REVOKE ALL ON FUNCTION v2.log_action(p_school uuid, p_student uuid, p_action text, p_action_ar text, p_ref_table text, p_ref_id uuid, p_detail jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.log_action(p_school uuid, p_student uuid, p_action text, p_action_ar text, p_ref_table text, p_ref_id uuid, p_detail jsonb) TO authenticated;
 REVOKE ALL ON FUNCTION v2.merit_path_allows(p_path text, p_write boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.merit_path_allows(p_path text, p_write boolean) TO authenticated;
 REVOKE ALL ON FUNCTION v2.my_grant() FROM PUBLIC;
@@ -346,6 +348,9 @@ GRANT EXECUTE ON FUNCTION public.v2_accounts_board(p_school uuid) TO service_rol
 REVOKE ALL ON FUNCTION public.v2_act_as(p_role text, p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_act_as(p_role text, p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_act_as(p_role text, p_school uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_action_log(p_school uuid, p_student uuid, p_limit integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_action_log(p_school uuid, p_student uuid, p_limit integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_action_log(p_school uuid, p_student uuid, p_limit integer) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_advice_for(p_problem integer, p_occurrence smallint, p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_advice_for(p_problem integer, p_occurrence smallint, p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_advice_for(p_problem integer, p_occurrence smallint, p_school uuid) TO service_role;

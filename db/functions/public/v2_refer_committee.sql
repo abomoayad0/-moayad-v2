@@ -1,5 +1,5 @@
 -- public.v2_refer_committee(p_record uuid, p_task uuid, p_why text, p_ask text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 8021bef349bc7e1c9ea41cb855bce658
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 62cabad2eb542ee92aa39385a1d155b1
 CREATE OR REPLACE FUNCTION public.v2_refer_committee(p_record uuid, p_task uuid, p_why text, p_ask text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -42,11 +42,20 @@ begin
      where id=p_task and status<>'done';
   end if;
 
+  perform v2.log_action(r.school_id,r.student_id,'refer_committee',
+    'أُحيل الملفُّ إلى اللجنة','behavior_records',r.id,
+    jsonb_build_object('why',btrim(p_why)));
   return jsonb_build_object('ok',true,'event',nid,
     'file', jsonb_build_object(
       'student',(select v2.fn_display_name(s.full_name) from v2.students s where s.id=r.student_id),
       'problem', rtrim(btrim(r.ptext),'.'),
       'occurrences_ar', v2.ord_ar(r.occurrence_no),
+      'latest_ar', (select v2.ord_ar(max(x.occurrence_no)) from v2.behavior_records x
+          where x.student_id=r.student_id and x.problem_id=r.problem_id
+            and x.status<>'voided'),
+      'total_ar', (select v2.ar_num(count(*)) from v2.behavior_records x
+          where x.student_id=r.student_id and x.problem_id=r.problem_id
+            and x.status<>'voided'),
       'deducted_ar',(select v2.ar_num(coalesce(-sum(points),0)) from v2.behavior_ledger l
                       where l.student_id=r.student_id and l.kind='deduction'),
       'census', case when cen.id is null then 'لم يُكتب' else 'مرفقٌ معها' end,

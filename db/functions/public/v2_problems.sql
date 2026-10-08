@@ -1,5 +1,5 @@
 -- public.v2_problems(p_school uuid, p_degree smallint)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 7376cb3ccb03e693004726f30716c65f
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 7f8bafbecd6b6c8cdf84e09c45096c56
 CREATE OR REPLACE FUNCTION public.v2_problems(p_school uuid, p_degree smallint)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -13,7 +13,7 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object(
       'id',cp.id,'text',cp.text_ar,
       'degree',cp.degree_no,'degree_ar',v2.degree_ar(cp.degree_no),
-      'page_ar',cp.source_page,
+      'page_ar', translate(coalesce(cp.source_page,''),'0123456789','٠١٢٣٤٥٦٧٨٩'),
       'once_per_day',cp.once_per_day,'repeat_key',cp.repeat_key,
       'advice_n',(select count(*) from v2.conduct_advice a
                    where a.problem_id=cp.id and a.active

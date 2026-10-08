@@ -68,9 +68,9 @@
     if (!r.editable && r.locked_why) s.appendChild(el('div', 'detail red', r.locked_why));
     if (r.source_ar) s.appendChild(el('div', 'meta', 'السند: ' + r.source_ar));
     if (r.note_ar) s.appendChild(el('div', 'meta', r.note_ar));
-    if (!r.editable && REF_TOOLS[r.key]) {
-      // مرجعٌ مقفل: يُقرأ من جسره ولا زرَّ تعديلٍ عليه البتّة
-      s.appendChild(toggle('اعرض', REF_TOOLS[r.key]));
+    if (!r.editable && (REF_TOOLS[r.key] || OWN_TOOLS[r.key])) {
+      // مرجعٌ أو سجلٌّ مقفل: يُقرأ من جسره ولا زرَّ تعديلٍ عليه البتّة
+      s.appendChild(toggle('اعرض', REF_TOOLS[r.key] || OWN_TOOLS[r.key]));
     } else if (r.editable && (r.own_bridge || OWN_TOOLS[r.key])) {
       // الباب الحسّاس له جسره الخاصّ بحرّاسه — لا يُعدَّل من التعديل العامّ
       s.appendChild(el('div', 'meta nocan', 'يُدار من جسره الخاصّ' + (r.bridge_ar ? ': ' + r.bridge_ar : '') + ' — لا من التعديل العامّ.'));
@@ -1286,6 +1286,8 @@
     conduct_advice: (b) => window.MoayadMarja.adviceTool(b),
     message_templates: (b) => window.MoayadMarja.templateTool(b),
     behavior_census: (b) => window.MoayadMarja.censusSweepTool(b),
+    // سجلُّ الأفعال — للقراءة، ومنفصلٌ عن لوحة الأخطاء
+    action_log: (b) => window.MoayadMarja.actionLogTool(b),
   };
 
   $('sReason').addEventListener('input', () => { $('sOk').disabled = $('sReason').value.trim() === ''; });

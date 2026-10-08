@@ -1,5 +1,5 @@
 -- public.v2_record_behavior(p_student uuid, p_problem integer, p_place text, p_note text, p_period smallint, p_victim uuid, p_injury boolean, p_damage boolean, p_seizure boolean, p_seizure_legal boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 34e18c75633040567c4afa71b9fe27bd
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 73987a96224df1a4df8b8cc68188c814
 CREATE OR REPLACE FUNCTION public.v2_record_behavior(p_student uuid, p_problem integer, p_place text DEFAULT NULL::text, p_note text DEFAULT NULL::text, p_period smallint DEFAULT NULL::smallint, p_victim uuid DEFAULT NULL::uuid, p_injury boolean DEFAULT false, p_damage boolean DEFAULT false, p_seizure boolean DEFAULT false, p_seizure_legal boolean DEFAULT false)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -56,6 +56,8 @@ begin
   end if;
 
   auto := v2.ladder_auto(rid);
+  perform v2.log_action(sc,p_student,'record_behavior','رُصدت مخالفة',
+    'behavior_records',rid, jsonb_build_object('problem',ptxt));
   return jsonb_build_object(
     'ok',true,'record',rid,'problem',ptxt,'auto',auto,
     'advice',(select advice_ar from v2.behavior_records where id=rid),

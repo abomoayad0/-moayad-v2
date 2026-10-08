@@ -43,6 +43,10 @@ CREATE POLICY academic_years_tenant ON v2.academic_years AS PERMISSIVE FOR ALL T
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 
+-- ── action_log · md5 e488af5979e7f7b5efc5facc8505567f
+CREATE POLICY al_read ON v2.action_log AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
 -- ── app_users · md5 f2cd24157b99eaa9a0993324be344709
 CREATE POLICY app_users_own ON v2.app_users AS PERMISSIVE FOR SELECT TO authenticated
     USING ((tenant_id = v2.current_tenant()));

@@ -1,5 +1,5 @@
 -- public.v2_plan_final(p_plan uuid, p_confirm text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 9e3604c04570c26b9b0215885c83cd47
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c4aae17e9102ebde4ab9f0cb67825ec2
 CREATE OR REPLACE FUNCTION public.v2_plan_final(p_plan uuid, p_confirm text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -39,6 +39,9 @@ begin
       'السلوكُ المستهدف: '||cur.target_behavior,
       'behavior_plans',p_plan,'all',coalesce(cur.is_test,false));
 
+  perform v2.log_action(cur.school_id,cur.student_id,'plan_final',
+    'اعتُمدت خطّةُ تعديل السلوك','behavior_plans',p_plan,
+    jsonb_build_object('target',cur.target_behavior));
   return jsonb_build_object('ok',true,
     'note','اعتُمدت الخطّةُ — ومن اليوم يُقاس أثرُها: فإن رُصد بعدها لم يتعدّل، وإن لم يُرصد تعدّل');
 end $function$

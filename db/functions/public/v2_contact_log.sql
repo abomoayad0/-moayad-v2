@@ -1,5 +1,5 @@
 -- public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone, p_right_number text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 31a82efd54264aa33858da0ee9b7105c
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 553180c8862f12cc5beea6507e53f1e5
 CREATE OR REPLACE FUNCTION public.v2_contact_log(p_student uuid, p_task uuid, p_channel text, p_outcome text, p_summary text, p_guardian_say text, p_at time without time zone, p_right_number text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -75,6 +75,8 @@ begin
     closed := found;
   end if;
 
+  perform v2.log_action(sc,p_student,'contact_log','أُثبت اتّصالٌ بوليّ الأمر',
+    'guardian_contacts',nid, jsonb_build_object('channel',p_channel,'outcome',p_outcome));
   return jsonb_build_object('ok',true,'contact',nid,'attempt',n,
     'attempt_ar',v2.ar_num(n),'closed',closed,
     'note', case when closed then 'أُثبت الإشعارُ وأُقفلت المهمّة'

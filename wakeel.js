@@ -714,7 +714,8 @@
     const f = d.file || {};
     const box = el('div');
     const lg = el('div', 'rs-lgd');
-    for (const [k, v] of [['الطالب', f.student], ['السلوك', f.problem], ['الرصدات', f.occurrences_ar], ['المحسوم', f.deducted_ar], ['حصرُ السلوكيّات', f.census], ['دراسةُ الحالة', f.case]]) {
+    // الرصدةُ المحالُ بها، وآخرُ الرصدات، ومجموعُها — فتعرف اللجنةُ ما وقع بعد الإحالة
+    for (const [k, v] of [['الطالب', f.student], ['السلوك', f.problem], ['أُحيل بالرصدة', f.occurrences_ar], ['آخرُ الرصدات', f.latest_ar], ['مجموعُها', f.total_ar], ['المحسوم', f.deducted_ar], ['حصرُ السلوكيّات', f.census], ['دراسةُ الحالة', f.case]]) {
       lg.append(el('i', 'k', k + ':'), el('i', null, v == null ? '—' : String(v)));
     }
     box.appendChild(lg);
