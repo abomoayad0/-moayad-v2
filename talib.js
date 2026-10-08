@@ -15,12 +15,15 @@
   const ui = { sid: null, preview: true, data: null };
 
   async function load() {
-    const [o, tl] = await Promise.all([
+    const [o, tl, sc] = await Promise.all([
       M.rpc('v2_opps_open_for', { p_student: ui.sid }, 'درجة السلوك والفرص'),
       M.rpc('v2_student_timeline', { p_student: ui.sid, p_as: 'student' }, 'سجلّي'),
+      M.rpc('v2_my_score', { p_student: ui.sid, p_term: null }, 'درجة سلوكي'),
     ]);
     ui.data = o.error ? null : (o.data || {});
-    renderScore(o.error);
+    // ① درجةُ سلوكي من v2_my_score كما ترجع
+    V.scoreBox($('score'), sc);
+    if (!o.error && ui.data.purpose) $('score').appendChild(el('div', 'rs-note', ui.data.purpose));
     renderMine(o.error);
     renderOpen(o.error);
     renderEvid(o.error);
@@ -28,19 +31,6 @@
   }
 
   const errBox = (box, e) => { box.textContent = ''; box.appendChild(el('div', 'notice err', errText(e))); };
-
-  // ① الدرجةُ من القاعدة كما ترجع — ولا تُحسب هنا
-  function renderScore(e) {
-    const box = $('score');
-    if (e) { errBox(box, e); return; }
-    box.textContent = '';
-    const s = ui.data.score || {};
-    box.appendChild(el('div', 'rs-pick'));
-    box.firstChild.append(el('span', 'k', 'الإيجابيُّ ' + s.positive + ' من ٨٠'), el('span', 'k', 'المتميّزُ ' + s.merit + ' من ٢٠'), el('span', 'k', 'المجموعُ ' + s.total + ' من ١٠٠'));
-    box.appendChild(el('p', 'rs-meta', Number(s.deducted) ? 'حُسم ' + s.deducted + ' — ويمكنك تعويضُها' : 'لم يُحسم شيء'));
-    if (ui.data.purpose) box.appendChild(el('div', 'rs-note', ui.data.purpose));
-    arabize(box);
-  }
 
   // ④ ما سجّلتُ فيه — وحالُ كلٍّ كما في القاعدة
   function renderMine(e) {
@@ -196,7 +186,16 @@
     if (!me) {
       const { data: g } = await M.rpc('v2_guardian_me', undefined, 'حساب وليّ الأمر');
       if (g) { location.replace('walee.html'); return; }
-      M.gate('حساباتُ الطلاب مغلقة، ولا جسرَ في القاعدة يعرّف الطالبَ بحسابه بعد — فتُفتح صفحتُك حين يُبنى.');
+      // الطالبُ بحسابه: لا جسرَ يرجع رقمَه بعد — فتُفتح صفحتُه برابطٍ فيه رقمُه (?student=)، والقاعدةُ تتحقّق أنّه هو
+      if (!sid) { M.gate('صفحتُك تُفتح برابطها — ولا جسرَ في القاعدة يعرّف الطالبَ بحسابه بعد.'); return; }
+      const chk = await M.rpc('v2_my_score', { p_student: sid, p_term: null }, 'درجة سلوكي');
+      if (chk.error) { M.gate(errText(chk.error)); return; }
+      ui.sid = sid;
+      ui.preview = false;
+      $('roleText').textContent = 'صفحتي';
+      $('sView').hidden = false;
+      renderOff();
+      await load();
       return;
     }
     // منسوبٌ: معاينةٌ للقراءة وحدها، بطالبٍ يُسمّى في الرابط

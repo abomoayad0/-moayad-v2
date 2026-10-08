@@ -77,6 +77,31 @@
     node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(e); } });
   }
 
+  // درجةُ السلوك من v2_my_score كما ترجع: line_ar سطرًا بارزًا، و what_ar بجمله الأربع تحته، والتفصيلُ بأسبابه مطويًّا
+  function scoreBox(box, r) {
+    box.textContent = '';
+    if (r.error) { box.appendChild(el('div', 'notice err', M.errText(r.error))); return; }
+    const d = r.data || {};
+    box.appendChild(el('p', 'rs-score', d.line_ar || ''));
+    const w = d.what_ar || {};
+    const ul = el('ul', 'rs-acts');
+    for (const k of ['deducted', 'restored', 'merit', 'ceiling']) if (w[k]) ul.appendChild(el('li', null, w[k]));
+    box.appendChild(ul);
+    const rows = d.rows || {};
+    const all = [['deductions', 'ما حُسم'], ['compensations', 'ما عُوّض'], ['merits', 'ما اكتُسب']];
+    if (all.some(([k]) => (rows[k] || []).length)) {
+      const det = el('details', 'rs-dt');
+      det.appendChild(el('summary', null, 'التفصيلُ بأسبابه' + (d.term_ar ? ' — ' + d.term_ar : '')));
+      const body = el('div', 'rs-dtb');
+      for (const [k, t] of all) {
+        for (const x of rows[k] || []) body.appendChild(el('div', null, t + ' ' + x.points + ' · ' + (x.on || '') + (x.why ? ' — ' + x.why : '')));
+      }
+      det.appendChild(body);
+      box.appendChild(det);
+    }
+    arabize(box);
+  }
+
   // نصيحةُ الرصدة تحت حدثها في السجلّ: advice كما يرجع مع الحدث، وإلا فمن v2_record_advice برقم الرصدة (record_id)
   function recordAdvice(e, label) {
     const box = el('div', 'rs-advice');
@@ -404,5 +429,5 @@
     return f;
   }
 
-  window.MoayadView = { ar, arabize, btn, notBuilt, offCard, renderRole, flash, seen, tap, recordAdvice, pick, sheet, events, chooser, form, verdictCard, committeeTask };
+  window.MoayadView = { ar, arabize, btn, notBuilt, offCard, renderRole, flash, seen, tap, recordAdvice, scoreBox, pick, sheet, events, chooser, form, verdictCard, committeeTask };
 })();

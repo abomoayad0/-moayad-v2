@@ -499,3 +499,4 @@
   .navtg { font-size: 18px; line-height: 1; }
   .schoolbox { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
   .schoolbox.want select { outline: 2px solid var(--danger); }
+  .rs-score { font-size: 16px; font-weight: 700; color: var(--ink); margin: 4px 0 6px; }

@@ -28,12 +28,13 @@
     const k = ui.kid;
     if (!k) return;
     // بطاقةُ الابن من جسور البوّابة وحدها: v2_guardian_child — لا بطاقةُ المنسوبين (v2_student_card)
-    const [child, opp, tl, pend, plans] = await Promise.all([
+    const [child, opp, tl, pend, plans, sc] = await Promise.all([
       M.rpc('v2_guardian_child', { p_student: k.student_id }, 'بطاقة الابن'),
       M.rpc('v2_opps_open_for', { p_student: k.student_id }, 'درجة السلوك'),
       M.rpc('v2_student_timeline', { p_student: k.student_id, p_as: 'guardian' }, 'سجلّ الابن'),
       M.rpc('v2_guardian_pending', { p_student: k.student_id }, 'الدعوات المنتظرة'),
       M.rpc('v2_plan_of', { p_student: k.student_id }, 'خطّة تعديل السلوك'),
+      M.rpc('v2_my_score', { p_student: k.student_id, p_term: null }, 'درجة السلوك'),
     ]);
     const st = (child.data && child.data.student) || k;
     $('kidName').textContent = st.name || k.name || '';
@@ -50,25 +51,14 @@
       if (a['تنبيه']) att.appendChild(el('div', 'rs-note', a['تنبيه']));
     }
     arabize($('kidCard'));
-    renderScore(opp);
+    // درجةُ ابنه من v2_my_score: ما حُسم · وما عُوّض · وما اكتُسب
+    V.scoreBox($('score'), sc);
+    if (!opp.error && opp.data && opp.data.purpose) $('score').appendChild(el('div', 'rs-note', opp.data.purpose));
     renderTimeline(tl);
     renderInvites(pend);
     renderPlans(plans);
     renderMerit(opp);
     renderForms();
-  }
-
-  // ① الدرجةُ من القاعدة كما ترجع — ولا تُحسب هنا
-  function renderScore(r) {
-    const box = $('score');
-    box.textContent = '';
-    if (r.error) { box.appendChild(el('div', 'notice err', 'تعذّر جلبُ درجة السلوك: ' + errText(r.error))); return; }
-    const s = (r.data && r.data.score) || {};
-    const chips = el('div', 'rs-pick');
-    chips.append(el('span', 'k', 'الإيجابيُّ ' + s.positive + ' من ٨٠'), el('span', 'k', 'المتميّزُ ' + s.merit + ' من ٢٠'), el('span', 'k', 'المجموعُ ' + s.total + ' من ١٠٠'));
-    box.appendChild(chips);
-    if (r.data && r.data.purpose) box.appendChild(el('div', 'rs-note', r.data.purpose));
-    arabize(box);
   }
 
   // ② ③ من السجلّ بصفة وليّ الأمر
@@ -257,6 +247,19 @@
     d.addEventListener('toggle', () => { if (d.open) markRead(f); });
     c.appendChild(d);
     if (f.reply) c.appendChild(el('p', null, 'ردُّك: ' + f.reply));
+    // ملاحظتُه على النموذج — يكتبها هو (v2_guardian_form_note)
+    c.appendChild(btn('أضف ملاحظتك', 'rs-btn ghost', () => V.form({
+      title: 'ملاحظتُك على النموذج', what: f.title_ar || '',
+      fields: [{ key: 'note', type: 'textarea', label: 'ملاحظتُك', rows: 3 }],
+      ok: 'أرسلها',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_guardian_form_note', { p_inbox: f.inbox_id, p_note: v.note }, 'ملاحظة وليّ الأمر');
+        if (error) return error;
+        flash('ok', (data && data.note) || 'وصلت ملاحظتُك إلى المدرسة');
+        loadForms();
+        return null;
+      },
+    })));
 
     // التوقيع: «أقرّ» ضغطةٌ واحدة، والامتناعُ بسببٍ في لوح
     if (f.needs_sign) {
