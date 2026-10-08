@@ -58,6 +58,9 @@
     ui.staff = null; ui.students = null;
     $('dutyCard').hidden = !ui.can.lajna;
     $('minCard').hidden = !ui.can.lajna;
+    // صندوقُ العضو: ما وُجّه إلى شخصه من محاضر اللجنة (١٢) — سرًّا
+    $('inboxCard').hidden = !ui.can.lajna;
+    if (ui.can.lajna) V.inbox($('inbox'), $('inboxTitle'));
     $('gradeCard').hidden = !ui.can.merit;
     $('oppCard').hidden = !ui.can.merit;
     renderOff();

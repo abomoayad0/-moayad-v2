@@ -21,12 +21,12 @@
     --ok-bg: color-mix(in srgb, var(--primary) 12%, var(--card));
     --info: var(--info-c);
     --info-bg: color-mix(in srgb, var(--info-c) 10%, var(--card));
-    --sysfail: #b3261e;      /* لا رمزَ للأحمر في v2_brand_tokens — يُستعمل لـ«لم يخرج…» وحدَه */
-    --bg: #f6f7f8;
-    --card: #ffffff;
+    --sysfail: var(--color-alert-1, #9e2b20);   /* color.alert.1 — «اجتهاد — ليس من دليل الهوية البصرية» · لـ«لم يخرج…» وحدَه */
+    --bg: var(--color-surface-1, #f4f6f7);
+    --card: var(--color-surface-2, #ffffff);
     --text: var(--navy);
-    --muted: #5d6c75;
-    --line: #e3e8ea;
+    --muted: var(--color-text-muted, #4a6b7c);
+    --line: var(--color-border-1, #dfe4e6);
     --soft: #f0f4f3;
     --chip: #eef2f4;
     --font-ar: "IBM Plex Sans Arabic";

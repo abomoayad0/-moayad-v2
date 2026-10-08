@@ -26,6 +26,9 @@
     V.renderRole();
     ui.caseId = null; ui.card = null;
     $('caseCard').hidden = true; $('tlCard').hidden = true;
+    // صندوقُه: نموذجُ الإحالة (٧) يصله سرًّا هنا وحدَه
+    $('inboxCard').hidden = false;
+    V.inbox($('inbox'), $('inboxTitle'));
     await loadBoard();
   }
 

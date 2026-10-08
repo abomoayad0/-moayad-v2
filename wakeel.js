@@ -108,7 +108,8 @@
     const th = el('thead'); th.appendChild(hr); tb.appendChild(th);
     const body = el('tbody');
     for (const r of rows) {
-      const tr = el('tr', r.waits_committee ? 'wait' : null);
+      const waits = r.waits_committee || r.waits_outgoing;
+      const tr = el('tr', waits ? 'wait' : null);
       const td = (...n) => { const c = el('td'); c.append(...n); tr.appendChild(c); return c; };
       const who = el('b', null, r.student_ar || '');
       const c1 = td(who);
@@ -118,7 +119,7 @@
       td(document.createTextNode(r.age_ar || ''));
       td(document.createTextNode(r.open_ar || ''));
       td(document.createTextNode((r.oldest_item_ar || '') + (r.oldest_owner_ar ? ' — عند ' + r.oldest_owner_ar : '')));
-      const st = td(el('span', 'rs-state ' + (r.waits_committee ? 'wait' : 'open'), r.state_ar || ''));
+      const st = td(el('span', 'rs-state ' + (waits ? 'wait' : 'open'), r.state_ar || ''));
       if (r.why_ar) st.appendChild(el('div', 'rs-why', r.why_ar));
       const acts = el('div', 'rs-row');
       acts.append(btn('افتح ملفَّه', 'rs-btn', () => openFromRow(r)),
@@ -147,13 +148,26 @@
   // ---------- بابُ الإلغاء: v2_record_void ----------
   // السببُ · ثمّ كلمةُ الحارس «أُلغي» بيد المستعمل (لا تُملأ ولا تُقترح) · ثمّ ما يقع بالإلغاء · والزرُّ بحدٍّ تحذيريّ في آخر الشريط
   // ولا يُخفى بحساب الشاشة: يُضغط، والجسرُ يقول من يملكه ومتى
-  function voidForm(r) {
+  async function voidForm(r) {
+    // موانعُ الإلغاء بمعرّفاتها (v2_void_blockers): تُعرض فوق الحقول، ولكلّ واقعةٍ زرٌّ يفتح بابَ إلغائها — والزرُّ الأصليّ يبقى، فالضغطُ يأتي بنصّ الجسر
+    const { data: vb } = await M.rpc('v2_void_blockers', { p_record: r.record }, 'موانع الإلغاء');
+    const head = el('div');
+    if (vb && vb.why_ar) head.appendChild(el('div', 'rs-info', vb.why_ar));
+    for (const b of (vb && vb.blockers) || []) {
+      const row = el('div', 'rs-file');
+      row.append(el('h5', null, b.label_ar || ''), el('p', null, [b.step_ar ? 'الإجراء ' + b.step_ar : null, b.state_ar].filter(Boolean).join(' · ')));
+      const go = el('div', 'rs-row');
+      go.appendChild(btn('افتح بابَ إلغائها', 'rs-btn', () => { const m = document.querySelector('.rs-modal:not([hidden])'); if (m) m.hidden = true; setTimeout(() => voidForm(Object.assign({}, r, { record: b.record, occurrence_ar: b.occurrence_ar, on_date: b.on_date })), 0); }));
+      row.appendChild(go);
+      head.appendChild(row);
+    }
     V.form({
       title: 'إلغاءُ الرصدة',
       what: [r.student_ar, r.problem_ar, r.occurrence_ar ? 'الرصدة ' + r.occurrence_ar : null, r.on_date].filter(Boolean).join(' · '),
       fields: [
+        { key: 'blk', type: 'node', node: head },
         { key: 'reason', type: 'textarea', label: 'سببُ الإلغاء *', rows: 3, hint: 'يبقى السببُ في الملفّ باسمك — ولا يُحذف الصفُّ الأصليّ' },
-        { key: 'confirm', label: 'اكتب «أُلغي» لتأكيده *' },
+        { key: 'confirm', label: 'اكتب «' + ((vb && vb.confirm_word) || 'أُلغي') + '» لتأكيده *' },
         { key: 'what', type: 'node', node: el('div', 'rs-info', 'وبالإلغاء: تُردُّ الدرجاتُ المحسومة · وتُسحب النماذجُ الخارجة · ويُعلَم وليُّ الأمر بالسحب') },
       ],
       ok: 'أُلغي الرصدة',

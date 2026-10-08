@@ -469,5 +469,47 @@
     return f;
   }
 
-  window.MoayadView = { ar, arabize, btn, busyOn, busyOff, send, notBuilt, offCard, renderRole, flash, seen, tap, recordAdvice, scoreBox, pick, sheet, events, chooser, form, verdictCard, committeeTask };
+  // صندوقُ النماذج (v2_my_form_inbox) — للموجّه والطالب وعضو اللجنة: ما وُجّه إلى صاحبه وحدَه
+  // who_ar عنوانُه · وكلُّ صفٍّ بعنوانه كما يرجع (والمسحوبُ «(مسحوب) … — والسببُ»)، وحقولُه تُفتح فتُعلَّم مقروءةً (v2_form_inbox_read)
+  // و note_ar تحته كما هو — ولا يُنقل عن سرّيٍّ شيءٌ إلى غير موضعه
+  async function inbox(box, title) {
+    box.textContent = '';
+    const { data, error } = await M.rpc('v2_my_form_inbox', undefined, 'صندوق النماذج');
+    if (error) { box.appendChild(el('div', 'notice err', M.errText(error))); return null; }
+    const d = data || {};
+    if (title) title.textContent = d.who_ar || '';
+    box.appendChild(el('p', 'rs-meta', [d.count != null ? String(d.count) : null, d.unread ? 'لم يُقرأ ' + d.unread : null].filter(Boolean).join(' · ')));
+    for (const x of d.rows || []) {
+      const f = el('div', 'rs-file' + (x.withdrawn ? ' rs-withdrawn' : ''));
+      const h = el('h5', null, x.title_ar || '');
+      if (x.is_new) h.appendChild(el('span', 'rs-state open', 'جديد'));
+      f.appendChild(h);
+      f.appendChild(el('p', null, [x.student_ar, x.class_ar, x.delivered_h].filter(Boolean).join(' · ')));
+      const tags = el('div');
+      if (x.to_kind_ar) tags.appendChild(el('span', 'rs-tag' + (x.is_secret ? ' own' : ''), x.to_kind_ar));
+      if (x.is_test) tags.appendChild(el('span', 'rs-tag', 'تجريبيّ'));
+      f.appendChild(tags);
+      const det = el('details', 'rs-dt');
+      det.appendChild(el('summary', null, 'اقرأ النموذج'));
+      const body = el('div', 'rs-dtb');
+      const kv = el('div', 'rs-lgd');
+      for (const k of x.fields_kv || []) kv.append(el('i', 'k', (k.label || k.key || '') + ':'), el('i', null, k.value == null ? '—' : String(k.value)));
+      body.appendChild(kv);
+      if ((x.signers || []).length) body.appendChild(el('p', 'rs-meta', 'يوقّعه: ' + x.signers.join(' · ') + ((x.signed || []).length ? ' — وقّع: ' + x.signed.join(' · ') : '')));
+      if (x.source) body.appendChild(el('p', 'rs-meta', x.source));
+      det.appendChild(body);
+      det.addEventListener('toggle', async () => {
+        if (!det.open || !x.is_new) return;
+        const r = await M.rpc('v2_form_inbox_read', { p_inbox: x.inbox }, 'قراءة نموذج');
+        if (!r.error) { x.is_new = false; const b = h.querySelector('.rs-state'); if (b) b.remove(); }
+      });
+      f.appendChild(det);
+      box.appendChild(f);
+    }
+    if (d.note_ar) box.appendChild(el('p', 'rs-note', d.note_ar));
+    arabize(box);
+    return d;
+  }
+
+  window.MoayadView = { ar, arabize, btn, inbox, busyOn, busyOff, send, notBuilt, offCard, renderRole, flash, seen, tap, recordAdvice, scoreBox, pick, sheet, events, chooser, form, verdictCard, committeeTask };
 })();
