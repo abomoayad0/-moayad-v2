@@ -1,5 +1,5 @@
 -- public.v2_outgoing_cancel(p_mail uuid, p_why text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 4e9e4cec22a439690795fceaf396dcc0
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2a5b4ea23e9ff0a515c3de34e5b63a4d
 CREATE OR REPLACE FUNCTION public.v2_outgoing_cancel(p_mail uuid, p_why text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -26,12 +26,20 @@ begin
   update v2.behavior_tasks set auto_note =
       'أُلغي الخطابُ الذي كان يحمله — والسببُ: '||btrim(p_why)||
       ' · فالبندُ يحتاج خطابًا آخر، ويعود في «ما ينتظر الصادر»'
-   where id in (select task_id from v2.outgoing_mail_tasks where mail_id = p_mail)
+   where id in (select source_id from v2.outgoing_links where mail_id = p_mail and source = 'behavior')
      and status <> 'done';
 
-  select count(*) into n from v2.outgoing_mail_tasks lt
-    join v2.behavior_tasks bt on bt.id = lt.task_id
+  update v2.absence_tasks set ev_text =
+      'أُلغي الخطابُ الذي كان يحمله — والسببُ: '||btrim(p_why)||' · فالبندُ يحتاج خطابًا آخر'
+   where id in (select source_id from v2.outgoing_links
+                 where mail_id = p_mail and source = 'absence')
+     and status <> 'done';
+
+  select count(*) into n from v2.outgoing_links lt
+    join v2.behavior_tasks bt on bt.id = lt.source_id and lt.source = 'behavior'
    where lt.mail_id = p_mail and bt.status <> 'done';
+
+  n := n + v2.outgoing_absence_open(p_mail);
 
   perform v2.log_action(m.school_id,null,'outgoing_cancel','أُلغي خطابٌ صادر',
     'outgoing_mail',p_mail, jsonb_build_object('why',btrim(p_why),'freed',n));

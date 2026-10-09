@@ -1,5 +1,5 @@
 -- public.v2_meeting_card(p_meeting uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 b0d02d5ed1fd0f6b85825ecd61741d45
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 3fca22ef943f8c5749048d447976edc7
 CREATE OR REPLACE FUNCTION public.v2_meeting_card(p_meeting uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -29,7 +29,7 @@ begin
         'seat',a.seat_role,'seat_ar',v2.seat_ar(a.seat_role),
         'as',a.invited_as,'vote_right',a.can_vote,
         'no_vote_reason', case when not a.can_vote
-          then 'يشارك في المناقشة ولا يصوّت على قرارات اللجنة — ص١٩' end,
+          then 'يشارك في المناقشة ولا يصوّت على قرارات اللجنة — '||v2.cite_page('committee.meetings')||'' end,
         'state',a.state,'excuse',a.excuse_ar)
         order by a.invited_as, a.seat_role)
       from v2.meeting_attendance a left join v2.people pe on pe.id=a.person_id

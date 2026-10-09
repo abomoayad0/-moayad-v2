@@ -1,5 +1,5 @@
 -- public.v2_outgoing_register(p_school uuid, p_days integer, p_status text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 36f3212fe20c932fe3d42fd4e99bd65e
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 028a65c5da4b67f3ec03b95a8d22be2e
 CREATE OR REPLACE FUNCTION public.v2_outgoing_register(p_school uuid DEFAULT NULL::uuid, p_days integer DEFAULT 365, p_status text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -23,6 +23,7 @@ begin
            'kind', m.kind,
            'secrecy', m.secrecy,
            'status', m.status,
+           'state_ar', v2.outgoing_state_ar(m.status, m.needs_reply, m.cancel_reason),
            'issued_ar', case when m.issued_on_g is null then null
                              else coalesce(m.issued_on_h, v2.fn_to_hijri(m.issued_on_g))||' هـ' end,
            'sent_on', m.sent_on,
@@ -39,11 +40,8 @@ begin
      and m.created_at >= now() - make_interval(days => greatest(coalesce(p_days,365),1));
 
   n := jsonb_array_length(rows);
-  return jsonb_build_object(
-    'rows', rows,
-    'count', n,
-    'summary_ar', case when n = 0
-      then 'لا صادرَ في هذي المدّة'
+  return jsonb_build_object('rows', rows, 'count', n,
+    'summary_ar', case when n = 0 then 'لا صادرَ في هذي المدّة'
       else 'في السجلّ '||v2.ar_count(n,'خطابٌ واحد','خطابان','خطابات','خطابًا') end,
     'note_ar', 'الخطابُ السرّيُّ يظهر في السجلّ برقمه وجهته ولا يظهر عنوانُه — '||
                'ويُقرأ كاملًا من المدير والوكيل وحدَهما');

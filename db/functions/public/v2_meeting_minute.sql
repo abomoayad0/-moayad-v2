@@ -1,5 +1,5 @@
 -- public.v2_meeting_minute(p_meeting uuid, p_ended time without time zone)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 a96d1fbb455ed48f52d62a7079c47474
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 865c3d534a7369c0fde22775ec09ca42
 CREATE OR REPLACE FUNCTION public.v2_meeting_minute(p_meeting uuid, p_ended time without time zone)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -12,7 +12,7 @@ begin
   if mt is null then raise exception 'الاجتماعُ غيرُ موجود'; end if;
   seat := v2.my_seat(mt.school_id,mt.committee_key);
   if seat is distinct from 'rapporteur' then
-    raise exception 'المحضرُ يكتبه مقرّرُ اللجنة — ص١٩';
+    raise exception '%', 'المحضرُ يكتبه مقرّرُ اللجنة — '||v2.cite_page('committee.meetings')||'';
   end if;
   select count(*) into open_items from v2.meeting_items
    where meeting_id=p_meeting and outcome='قيد النظر';

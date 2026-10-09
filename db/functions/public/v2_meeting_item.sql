@@ -1,5 +1,5 @@
 -- public.v2_meeting_item(p_meeting uuid, p_kind text, p_title text, p_student uuid, p_record uuid, p_opp uuid, p_duty uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 52ffc7daa35663dc90060bdb1c2037d1
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 31638a3772353b54a95588bf60258e18
 CREATE OR REPLACE FUNCTION public.v2_meeting_item(p_meeting uuid, p_kind text, p_title text, p_student uuid, p_record uuid, p_opp uuid, p_duty uuid DEFAULT NULL::uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -14,7 +14,7 @@ begin
     raise exception 'لا يُضاف بندٌ إلى اجتماعٍ %', mt.status; end if;
   seat := v2.my_seat(mt.school_id,mt.committee_key);
   if seat not in ('chair','rapporteur') then
-    raise exception 'إضافةُ البنود للرئيس أو المقرّر — ص١٩'; end if;
+    raise exception '%', 'إضافةُ البنود للرئيس أو المقرّر — '||v2.cite_page('committee.meetings')||''; end if;
   if btrim(coalesce(p_title,''))='' then raise exception 'لا بندَ بلا عنوان'; end if;
 
   if p_student is not null then

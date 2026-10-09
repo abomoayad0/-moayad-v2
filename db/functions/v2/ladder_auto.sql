@@ -1,5 +1,5 @@
 -- v2.ladder_auto(p_record uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 19b472d410e460f2911d40ea00e805bd
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2a348b9756a5f85d9def591a1cfd6bd1
 CREATE OR REPLACE FUNCTION v2.ladder_auto(p_record uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -214,6 +214,78 @@ begin
             'text','لم يخرج خطابُ الدعوة — '||coalesce(v_issue->>'why',''));
         end if;
       end if;
+
+    -- ══ إشعارُ وليّ الأمر: يتمّ بالإخراج والتسليم ══
+    elsif t.kind = 'notify_guardian' then
+      v_form := v2.form_for_kind('notify_guardian', r.school_id);
+      if v_form is null then
+        update v2.behavior_tasks set
+          auto_note='لم يخرج إشعارُ وليّ الأمر — لم يُضبط نموذجُه في لوحة التحكّم · والمهمّةُ باقية'
+         where id=t.id;
+        did := did || jsonb_build_object('kind','notify_guardian',
+          'text','لم يخرج الإشعارُ — لم يُضبط نموذجُه');
+      else
+        v_issue := v2.fn_form_issue(v_form, r.student_id, r.id, t.id,
+                     jsonb_build_object('on_date', current_date), r.recorded_by);
+        if (v_issue->>'ok')::boolean then
+          update v2.behavior_tasks set status='done', done_at=now(), done_by=r.recorded_by,
+            ev_on=current_date, ev_ref=(v_issue->>'entry'),
+            auto_note='خرج إشعارُ وليّ الأمر ('||
+                      (select title_ar from v2.official_forms where form_no=v_form)||
+                      ') وسُلّم إلى بوّابته'
+           where id=t.id;
+          did := did || jsonb_build_object('kind','notify_guardian','entry',v_issue->>'entry',
+            'delivered',v_issue->>'delivered','text','خرج الإشعارُ وسُلّم لوليّ الأمر');
+        else
+          update v2.behavior_tasks set ev_ref=(v_issue->>'entry'),
+            auto_note='لم يخرج الإشعارُ بعد — '||coalesce(v_issue->>'why','')||
+                      ' · والمهمّةُ باقيةٌ حتى يخرج ويُسلَّم'
+           where id=t.id;
+          did := did || jsonb_build_object('kind','notify_guardian','status',v_issue->>'status',
+            'text','لم يخرج الإشعارُ — '||coalesce(v_issue->>'why',''));
+        end if;
+      end if;
+
+    -- ══ أربعةٌ يخرج ورقُها ولا يتمُّ بندُها بالإخراج ══
+    elsif t.kind in ('pledge','committee','minutes','plan') then
+      v_form := v2.form_for_kind(t.kind, r.school_id);
+      if v_form is null then
+        update v2.behavior_tasks set
+          auto_note='لم يخرج ورقُ هذا البند — لم يُضبط نموذجُه في لوحة التحكّم · والمهمّةُ باقية'
+         where id=t.id;
+        did := did || jsonb_build_object('kind',t.kind,'text','لم يخرج الورقُ — لم يُضبط نموذجُه');
+      else
+        v_issue := v2.fn_form_issue(v_form, r.student_id, r.id, t.id,
+                     jsonb_build_object('on_date', current_date), r.recorded_by);
+        if (v_issue->>'ok')::boolean then
+          update v2.behavior_tasks set ev_on=current_date, ev_ref=(v_issue->>'entry'),
+            auto_note='خرج '||(select title_ar from v2.official_forms where form_no=v_form)||' — '||
+              case t.kind
+                when 'pledge'    then 'وبقي توقيعُ الطالب ووليّ أمره عليه'
+                when 'committee' then 'وسُلّم إلى لجنة التوجيه الطلابيّ — وتمامُه بقرارها'
+                when 'minutes'   then 'وبقي أن يكتبه مقرّرُ اللجنة'
+                else 'وبقي استكمالُ الخطّة وإثباتُها' end
+           where id=t.id;
+          did := did || jsonb_build_object('kind',t.kind,'entry',v_issue->>'entry',
+            'delivered',v_issue->>'delivered','text','خرج الورقُ — والبندُ باقٍ حتى يتمّ');
+        else
+          update v2.behavior_tasks set ev_ref=(v_issue->>'entry'),
+            auto_note='لم يخرج ورقُ هذا البند بعد — '||coalesce(v_issue->>'why','')||
+                      ' · والمهمّةُ باقية'
+           where id=t.id;
+          did := did || jsonb_build_object('kind',t.kind,'status',v_issue->>'status',
+            'text','لم يخرج الورقُ — '||coalesce(v_issue->>'why',''));
+        end if;
+      end if;
+
+    -- ══ حارسٌ يصرخ بما لا يعرفه المحرّكُ وله نموذج ══
+    elsif v2.form_for_kind(t.kind, r.school_id) is not null then
+      update v2.behavior_tasks set
+        auto_note='نوعُ هذا البند («'||t.kind||'») له نموذجٌ مضبوطٌ ولا فرعَ في محرّك السلّم '||
+                  'يُخرجه — وهذا نقصٌ في النظام لا في الدليل'
+       where id=t.id;
+      did := did || jsonb_build_object('kind',t.kind,'gap',true,
+        'text','له نموذجٌ ولا فرعَ يُخرجه — نقصٌ في النظام لا في الدليل');
     end if;
   end loop;
   return did;

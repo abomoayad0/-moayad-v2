@@ -7,7 +7,8 @@ CREATE TRIGGER mark_test BEFORE INSERT ON v2.absence_cases FOR EACH ROW EXECUTE 
 -- ── absence_excuse_claims · md5 0497286ec8b04bf89306f38565b09b41
 CREATE TRIGGER mark_test BEFORE INSERT ON v2.absence_excuse_claims FOR EACH ROW EXECUTE FUNCTION v2.trg_mark_test();
 
--- ── absence_tasks · md5 2403ea308af6820ad567e7f887c6f953
+-- ── absence_tasks · md5 93c178521f118ccb3904afeb2e1baf29
+CREATE TRIGGER t_absence_task_auto AFTER INSERT ON v2.absence_tasks FOR EACH ROW EXECUTE FUNCTION v2.trg_absence_task_auto();
 CREATE TRIGGER task_evidence BEFORE INSERT ON v2.absence_tasks FOR EACH ROW EXECUTE FUNCTION v2.trg_abs_task_evidence();
 
 -- ── assignments · md5 480e8730f5c32601879cfb7b6851b91f

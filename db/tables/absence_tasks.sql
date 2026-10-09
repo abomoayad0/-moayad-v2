@@ -1,6 +1,6 @@
 -- v2.absence_tasks
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 37e72a71b0d57622d42034ba479b0da9
+-- md5 b0a6e53557cbf842c09b1304c96c9017
 
 CREATE TABLE v2.absence_tasks (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -28,9 +28,11 @@ CREATE TABLE v2.absence_tasks (
     delegated_by uuid,
     delegated_at timestamp with time zone,
     delegate_note text,
+    is_standing boolean DEFAULT false NOT NULL,
     CONSTRAINT absence_tasks_pkey PRIMARY KEY (id),
     CONSTRAINT absence_tasks_status_check CHECK ((status = ANY (ARRAY['open'::text, 'done'::text, 'skipped'::text, 'refused'::text]))),
     CONSTRAINT att_task_skip_reason CHECK (((status <> 'skipped'::text) OR (btrim(COALESCE(skip_reason, ''::text)) <> ''::text)))
 );
 CREATE INDEX atsk_case_idx ON v2.absence_tasks USING btree (case_id);
 ALTER TABLE v2.absence_tasks ENABLE ROW LEVEL SECURITY;
+COMMENT ON COLUMN v2.absence_tasks.is_standing IS 'حالٌ مستمرّةٌ لا فعلٌ يُؤشَّر — تُعرض ولا تُطالَب · وتبقى status=open فلا تُدَّعى مُقفلة';

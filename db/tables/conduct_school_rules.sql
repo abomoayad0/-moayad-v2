@@ -1,6 +1,6 @@
 -- v2.conduct_school_rules
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 e758c1d7caccecef7488a99d7e6a70c2
+-- md5 aca8f4df9e81041fcd231987dd06b5ec
 
 CREATE TABLE v2.conduct_school_rules (
     school_id uuid NOT NULL,
@@ -10,6 +10,7 @@ CREATE TABLE v2.conduct_school_rules (
     set_by uuid,
     set_at timestamp with time zone DEFAULT now() NOT NULL,
     absence_truth text DEFAULT 'system'::text NOT NULL,
+    outgoing_reply_days smallint DEFAULT 10 NOT NULL,
     CONSTRAINT conduct_school_rules_pkey PRIMARY KEY (school_id),
     CONSTRAINT conduct_school_rules_absence_truth_check CHECK ((absence_truth = ANY (ARRAY['system'::text, 'noor'::text]))),
     CONSTRAINT conduct_school_rules_summon_after_workdays_check CHECK (((summon_after_workdays >= 1) AND (summon_after_workdays <= 10))),
@@ -21,3 +22,4 @@ COMMENT ON COLUMN v2.conduct_school_rules.teaching_mode IS 'نمطُ التعل�
 COMMENT ON COLUMN v2.conduct_school_rules.summon_after_workdays IS 'موعدُ دعوة وليّ الأمر بعد كم يومِ عملٍ — قرارُ مفرح: ثالثُ أيّام العمل';
 COMMENT ON COLUMN v2.conduct_school_rules.summon_time IS 'ساعةُ المقابلة — ولا يُعتمد خطابُ الدعوة قبل ضبطها';
 COMMENT ON COLUMN v2.conduct_school_rules.absence_truth IS 'مصدرُ الحقيقة في الغياب: system = سجلُّنا هو الأصل · noor = نورٌ هو الأصل · وقرارُ مفرح: system';
+COMMENT ON COLUMN v2.conduct_school_rules.outgoing_reply_days IS 'أيّامُ العمل التي يُنتظر فيها جوابُ الجهة على الصادر — أصلٌ يُملأ به الحقلُ وللوكيل تعديلُه · والإقفالُ بيده لا يُقيَّده الموعد';

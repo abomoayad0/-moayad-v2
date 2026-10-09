@@ -1,5 +1,5 @@
 -- public.v2_meeting_invite(p_meeting uuid, p_kind text, p_person uuid, p_student uuid, p_guardian uuid, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 9dd62130867e4791103944093775bf2d
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 06d0c03fe6269464bf7b81283072a4ec
 CREATE OR REPLACE FUNCTION public.v2_meeting_invite(p_meeting uuid, p_kind text, p_person uuid, p_student uuid, p_guardian uuid, p_note text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -14,7 +14,7 @@ begin
     raise exception 'لا يُستدعى أحدٌ إلى اجتماعٍ %', mt.status; end if;
   seat := v2.my_seat(mt.school_id,mt.committee_key);
   if seat is distinct from 'chair' then
-    raise exception 'استدعاءُ غير الأعضاء لرئيس اللجنة — ص١٩'; end if;
+    raise exception '%', 'استدعاءُ غير الأعضاء لرئيس اللجنة — '||v2.cite_page('committee.meetings')||''; end if;
   if coalesce(p_kind,'منسوب') not in ('منسوب','طالب','وليّ أمر') then
     raise exception 'المستدعى: منسوبٌ أو طالبٌ أو وليُّ أمر'; end if;
   if p_kind='طالب' then perform v2.assert_my_student(p_student,'استدعاء طالب للجنة'); end if;
@@ -26,6 +26,6 @@ begin
       nullif(btrim(coalesce(p_note,'')),''))
   on conflict do nothing;
   return jsonb_build_object('ok',true,
-    'note','يشارك في المناقشة ولا يصوّت على قرارات اللجنة — ص١٩');
+    'note','يشارك في المناقشة ولا يصوّت على قرارات اللجنة — '||v2.cite_page('committee.meetings')||'');
 end $function$
 ;

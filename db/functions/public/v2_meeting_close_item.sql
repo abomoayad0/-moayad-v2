@@ -1,5 +1,5 @@
 -- public.v2_meeting_close_item(p_item uuid, p_body text, p_decision text, p_recommend text, p_owner uuid, p_due date)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 d5c768aa77da071efde1b1b1c8e34b8d
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 047c41e1566fcd351b4e0537f40a0772
 CREATE OR REPLACE FUNCTION public.v2_meeting_close_item(p_item uuid, p_body text, p_decision text, p_recommend text, p_owner uuid, p_due date)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -23,7 +23,7 @@ begin
 
   seat := v2.my_seat(mt.school_id,mt.committee_key);
   if seat is distinct from 'rapporteur' then
-    raise exception 'المحضرُ يكتبه مقرّرُ اللجنة — ص١٩'; end if;
+    raise exception '%', 'المحضرُ يكتبه مقرّرُ اللجنة — '||v2.cite_page('committee.meetings')||''; end if;
   if btrim(coalesce(p_body,''))='' or btrim(coalesce(p_decision,''))='' then
     raise exception 'لا يُقفل بندٌ بلا مناقشةٍ وقرارٍ مكتوبين'; end if;
 

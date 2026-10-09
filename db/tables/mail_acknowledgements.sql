@@ -1,6 +1,6 @@
 -- v2.mail_acknowledgements
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 07fbd9c2e5a0cf77a2f4b3e0221c4241
+-- md5 870872ed623e0f767db647d1efdadab7
 
 CREATE TABLE v2.mail_acknowledgements (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -16,6 +16,7 @@ CREATE TABLE v2.mail_acknowledgements (
     refused boolean DEFAULT false NOT NULL,
     refuse_reason text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    attachment_ref text,
     CONSTRAINT mail_acknowledgements_pkey PRIMARY KEY (id),
     CONSTRAINT ack_refuse CHECK (((NOT refused) OR (btrim(COALESCE(refuse_reason, ''::text)) <> ''::text))),
     CONSTRAINT ack_signed CHECK (((NOT signed) OR (signed_at IS NOT NULL))),
@@ -25,3 +26,4 @@ CREATE TABLE v2.mail_acknowledgements (
 CREATE INDEX ma_mail_idx ON v2.mail_acknowledgements USING btree (mail_id);
 ALTER TABLE v2.mail_acknowledgements ENABLE ROW LEVEL SECURITY;
 COMMENT ON TABLE v2.mail_acknowledgements IS 'الإقرار بالاطلاع والتوقيع. سند: الدليل التنظيمي ORG-1442-OFF — من مهام مدير المدرسة إطلاع جميع منسوبي المدرسة على اللوائح والأنظمة والتعاميم ومناقشتها «وأخذ توقيعاتهم بذلك». ومن لم يُقرّ يظهر باسمه ولا يُطوى.';
+COMMENT ON COLUMN v2.mail_acknowledgements.attachment_ref IS 'مرفقُ الإقرار بالاطّلاع — والتوقيعُ يلزمه مرفق · والامتناعُ يلزمه سببٌ ويُتمّ الخطوة';

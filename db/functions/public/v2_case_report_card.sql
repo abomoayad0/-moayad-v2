@@ -1,5 +1,5 @@
 -- public.v2_case_report_card(p_student uuid, p_problem integer)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 05e7c788ae70f07220f6dce6798ba46d
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 f2b2d5474ad255021803da8ce4075740
 CREATE OR REPLACE FUNCTION public.v2_case_report_card(p_student uuid, p_problem integer)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -22,6 +22,6 @@ begin
   left join v2.people pe on pe.id=rp.issued_by
   where c.student_id=p_student and c.problem_id=p_problem
   order by rp.issued_on desc limit 1;
-  return coalesce(r, jsonb_build_object('note','لم يُرفع تقريرُ دراسة الحالة بعد — واللجنةُ تبحث على أساسه · ص٢٠'));
+  return coalesce(r, jsonb_build_object('note','لم يُرفع تقريرُ دراسة الحالة بعد — واللجنةُ تبحث على أساسه · '||v2.cite_page('conduct.case_study')||''));
 end $function$
 ;

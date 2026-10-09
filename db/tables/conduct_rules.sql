@@ -1,6 +1,6 @@
 -- v2.conduct_rules
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 d75a83e071d371ce57c3795efb193ce4
+-- md5 a584d4ace62b49a5bfa7268c1a236ef1
 
 CREATE TABLE v2.conduct_rules (
     key text NOT NULL,
@@ -11,6 +11,7 @@ CREATE TABLE v2.conduct_rules (
     article_no smallint NOT NULL,
     source_doc text NOT NULL,
     source_page text NOT NULL,
+    clause_no smallint,
     CONSTRAINT conduct_rules_pkey PRIMARY KEY (key)
 );
 ALTER TABLE v2.conduct_rules ENABLE ROW LEVEL SECURITY;

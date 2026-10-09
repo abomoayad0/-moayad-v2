@@ -1,13 +1,13 @@
 -- public.v2_outgoing_pending(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 60f49eead06aecd0ac5de0188ba91f01
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 b08ab56c521cda43104903dd123dc0b0
 CREATE OR REPLACE FUNCTION public.v2_outgoing_pending(p_school uuid DEFAULT NULL::uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
  SET search_path TO 'v2', 'public'
 AS $function$
-declare sc uuid; v_draft jsonb; v_signed jsonb; v_await jsonb; v_tasks jsonb;
-        n1 integer; n2 integer; n3 integer; n4 integer;
+declare sc uuid; v_draft jsonb; v_signed jsonb; v_await jsonb; v_tasks jsonb; v_abs jsonb;
+        n1 integer; n2 integer; n3 integer; n4 integer; n5 integer;
 begin
   perform v2.assert_role(array['principal','deputy','deputy_students',
       'admin_assistant','admin_assistant_students'],'ما ينتظر الصادر');
@@ -50,9 +50,28 @@ begin
      and bt.kind in ('edu_report','edu_decision')
      and bt.status not in ('done','skipped')
      and r.status <> 'voided'
-     and not exists (select 1 from v2.outgoing_mail_tasks lt
+     and not exists (select 1 from v2.outgoing_links lt
                       join v2.outgoing_mail om on om.id = lt.mail_id
-                     where lt.task_id = bt.id and om.status <> 'cancelled');
+                     where lt.source = 'behavior' and lt.source_id = bt.id and om.status <> 'cancelled');
+
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'task', ab.id, 'kind', ab.kind, 'text', ab.text_ar, 'owner', ab.owner_role,
+           'case', c.id, 'student', st.full_name,
+           'days', c.days_count, 'excused', c.excused,
+           'need_ar','ترفعه المدرسةُ بخطابٍ صادرٍ ويُقفل بخروجه')
+         order by c.triggered_on), '[]'::jsonb) into v_abs
+    from v2.absence_tasks ab
+    join v2.absence_cases c on c.id = ab.case_id
+    join v2.students st on st.id = c.student_id
+   where c.school_id = sc
+     and ab.kind = 'external_report'
+     and ab.status not in ('done','skipped')
+     and not coalesce(c.escalation_halted,false)
+     and not exists (select 1 from v2.outgoing_links lt
+                      join v2.outgoing_mail om on om.id = lt.mail_id
+                     where lt.source = 'absence' and lt.source_id = ab.id
+                       and om.status <> 'cancelled');
+  n5 := jsonb_array_length(v_abs);
 
   n1 := jsonb_array_length(v_draft);
   n2 := jsonb_array_length(v_signed);
@@ -64,13 +83,17 @@ begin
     'signed_not_sent', v_signed,
     'awaiting_reply', v_await,
     'tasks_without_letter', v_tasks,
-    'counts', jsonb_build_object('drafts',n1,'signed',n2,'awaiting',n3,'tasks',n4),
+    'absence_without_letter', v_abs,
+    'counts', jsonb_build_object('drafts',n1,'signed',n2,'awaiting',n3,'tasks',n4,'absence',n5),
     'summary_ar',
-      case when n1+n2+n3+n4 = 0 then 'لا شيءَ ينتظر الصادرَ الآن'
+      case when n1+n2+n3+n4+n5 = 0 then 'لا شيءَ ينتظر الصادرَ الآن'
       else btrim(concat_ws(' · ',
         case when n4 > 0 then v2.ar_count(n4,'بندٌ واحدٌ من السلّم ينتظر خطابًا',
                'بندان من السلّم ينتظران خطابًا','بنودٍ من السلّم تنتظر خطابًا',
                'بندًا من السلّم ينتظر خطابًا') end,
+        case when n5 > 0 then v2.ar_count(n5,'بندٌ واحدٌ من المواظبة ينتظر خطابًا',
+               'بندان من المواظبة ينتظران خطابًا','بنودٍ من المواظبة تنتظر خطابًا',
+               'بندًا من المواظبة ينتظر خطابًا') end,
         case when n1 > 0 then v2.ar_count(n1,'مسوّدةٌ واحدةٌ تنتظر توقيعَ المدير',
                'مسوّدتان تنتظران توقيعَ المدير','مسوّداتٍ تنتظر توقيعَ المدير',
                'مسوّدةً تنتظر توقيعَ المدير') end,

@@ -1,5 +1,5 @@
 -- public.v2_outgoing_send(p_mail uuid, p_channel text, p_ref text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 11230bf16ee1970fd4ee670a46da4c09
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 9b76e8d932984a1960c78b6e596bfec7
 CREATE OR REPLACE FUNCTION public.v2_outgoing_send(p_mail uuid, p_channel text, p_ref text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -26,8 +26,8 @@ begin
       sent_channel=p_channel, sent_ref=nullif(btrim(p_ref),'')
    where id = p_mail;
 
-  for t in select bt.* from v2.outgoing_mail_tasks lt
-            join v2.behavior_tasks bt on bt.id = lt.task_id
+  for t in select bt.* from v2.outgoing_links lt
+            join v2.behavior_tasks bt on bt.id = lt.source_id and lt.source = 'behavior'
            where lt.mail_id = p_mail and lt.on_event = 'sent' and bt.status <> 'done' loop
     update v2.behavior_tasks set status='done', done_at=now(), done_by=v2.current_person(),
         ev_on=current_date, ev_ref='الصادر '||v2.ar_num(m.serial_no),
@@ -38,7 +38,10 @@ begin
     n := n + 1;
   end loop;
 
-  select count(*) into w from v2.outgoing_mail_tasks where mail_id = p_mail and on_event='replied';
+  n := n + v2.outgoing_absence_close(p_mail, 'sent',
+        'رُفع بالصادر رقم '||v2.ar_num(m.serial_no)||' إلى '||m.to_entity||' · '||p_channel);
+
+  select count(*) into w from v2.outgoing_links where mail_id = p_mail and on_event='replied';
 
   perform v2.log_action(m.school_id,null,'outgoing_send','خرج خطابٌ صادر',
     'outgoing_mail',p_mail, jsonb_build_object('serial',m.serial_no,'channel',p_channel,'closed',n));

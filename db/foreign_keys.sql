@@ -709,6 +709,10 @@ ALTER TABLE v2.outgoing_attachments
 ALTER TABLE v2.outgoing_attachments
     ADD CONSTRAINT outgoing_attachments_mail_id_fkey FOREIGN KEY (mail_id) REFERENCES v2.outgoing_mail(id) ON DELETE CASCADE;
 
+-- ── outgoing_links · md5 d3b88602300df163c53bf38e03692718
+ALTER TABLE v2.outgoing_links
+    ADD CONSTRAINT outgoing_links_mail_id_fkey FOREIGN KEY (mail_id) REFERENCES v2.outgoing_mail(id) ON DELETE CASCADE;
+
 -- ── outgoing_mail · md5 6b13a9f3a5753665752cc84ba87010c7
 ALTER TABLE v2.outgoing_mail
     ADD CONSTRAINT outgoing_mail_prepared_by_fkey FOREIGN KEY (prepared_by) REFERENCES v2.people(id);
@@ -908,6 +912,10 @@ ALTER TABLE v2.task_kind_forms
     ADD CONSTRAINT task_kind_forms_form_no_fkey FOREIGN KEY (form_no) REFERENCES v2.official_forms(form_no);
 ALTER TABLE v2.task_kind_forms
     ADD CONSTRAINT task_kind_forms_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+
+-- ── task_role_map · md5 3c22b4a88e9e9d7bd1985bb939d64801
+ALTER TABLE v2.task_role_map
+    ADD CONSTRAINT task_role_map_committee_key_fkey FOREIGN KEY (committee_key) REFERENCES v2.committees(key);
 
 -- ── teacher_subjects · md5 0c4db25fd62525499b4a61e5be22326b
 ALTER TABLE v2.teacher_subjects

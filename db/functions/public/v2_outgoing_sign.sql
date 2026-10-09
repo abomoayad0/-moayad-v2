@@ -1,5 +1,5 @@
 -- public.v2_outgoing_sign(p_mail uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c5033e5af7d6273bd8d9499628a9ce6b
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 47de2c0641938dd1dd761739132dba05
 CREATE OR REPLACE FUNCTION public.v2_outgoing_sign(p_mail uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -13,7 +13,8 @@ begin
   if m.id is null then raise exception 'الخطابُ غيرُ موجود'; end if;
   perform v2.assert_my_school(m.school_id,'توقيع الصادر');
   if m.status <> 'draft' then
-    raise exception 'لا يُوقَّع إلّا ما كان مسوّدةً — وحالُ هذا: %', m.status;
+    raise exception 'لا يُوقَّع إلّا ما كان مسوّدةً — وحالُ هذا: %',
+      v2.outgoing_state_ar(m.status, m.needs_reply, m.cancel_reason);
   end if;
 
   n := v2.next_outgoing_serial(m.school_id, m.year_id);

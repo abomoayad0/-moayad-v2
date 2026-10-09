@@ -1,5 +1,5 @@
 -- public.v2_opp_open(p_school uuid, p_merit integer, p_kind text, p_title text, p_when text, p_capacity smallint, p_held_by uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 6b0a732f1f184e371d49d202f4dced34
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 291ab0872c4ef220781860ba31fd3215
 CREATE OR REPLACE FUNCTION public.v2_opp_open(p_school uuid, p_merit integer, p_kind text, p_title text, p_when text, p_capacity smallint, p_held_by uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare seat text; nid uuid; m record;
 begin
   seat := v2.my_seat(p_school,'guidance');
   if seat is null and (v2.my_grant() is null or v2.my_grant() not in ('owner','admin')) then
-    raise exception 'فتحُ فرص التعويض للجنة التوجيه الطلابيّ — ص١٢ بند ١٠'; end if;
+    raise exception '%', 'فتحُ فرص التعويض للجنة التوجيه الطلابيّ — '||v2.cite_of('conduct.compensation_by_committee')||''; end if;
   select * into m from v2.conduct_merits where id=p_merit;
   if m.id is null then raise exception 'ممارسةٌ غيرُ معروفة'; end if;
   if btrim(coalesce(p_when,''))='' then raise exception 'لا فرصةَ بلا موعدٍ ومكان'; end if;

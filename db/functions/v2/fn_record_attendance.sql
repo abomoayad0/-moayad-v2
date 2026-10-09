@@ -1,5 +1,5 @@
 -- v2.fn_record_attendance(p_student uuid, p_date date, p_state text, p_term smallint, p_minutes_late smallint, p_note text, p_by uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 5a9ec843e9d54ec9e5ad1e11e5d02b2a
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 5b0cec389a52cce387d42db2afe03322
 CREATE OR REPLACE FUNCTION v2.fn_record_attendance(p_student uuid, p_date date, p_state text, p_term smallint DEFAULT 1, p_minutes_late smallint DEFAULT NULL::smallint, p_note text DEFAULT NULL::text, p_by uuid DEFAULT NULL::uuid)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -8,6 +8,7 @@ AS $function$
 declare
   v_school uuid; v_year uuid; v_id uuid; v_open numeric; v_kind text;
   v_ex boolean; v_days int; v_lad record; it record; v_case uuid; v_consec boolean;
+  v_cite_total text; v_cite_deduct text;
 begin
   select e.school_id, e.year_id into v_school, v_year
   from v2.enrolments e where e.student_id=p_student and e.status='active'
@@ -31,11 +32,18 @@ begin
         recorded_by=excluded.recorded_by, note=excluded.note
   returning id into v_id;
 
+  -- 🔑 الاستشهادُ من جدول القواعد: مصدرٌ واحدٌ لا نسخةٌ في الكود
+  select 'م'||article_no||' · '||source_doc||' '||source_page
+    into v_cite_total from v2.conduct_rules where key='attendance.total';
+  select 'م'||article_no||' · '||source_doc||' '||source_page
+    into v_cite_deduct from v2.conduct_rules where key='attendance.deduct_per_day';
+
   if not exists (select 1 from v2.attendance_ledger where student_id=p_student and year_id=v_year and kind='opening') then
     select value_num into v_open from v2.conduct_rules where key='attendance.total';
     insert into v2.attendance_ledger(school_id,year_id,student_id,kind,points,reason)
     values (v_school,v_year,p_student,'opening',v_open,
-      'تخصيص (100) درجة للمواظبة خلال العام الدراسي — م31 بند 2 · CONDUCT-1447-OFF ص47');
+      'تخصيص ('||v2.ar_num(v_open)||') درجةً للمواظبة خلال العام الدراسيّ — '||
+      coalesce(v_cite_total,'م31'));
   end if;
 
   if p_state <> 'absent' then return v_id; end if;
@@ -46,7 +54,8 @@ begin
        where l.student_id=p_student and l.year_id=v_year and l.kind='deduction' and l.on_date=p_date) then
     insert into v2.attendance_ledger(school_id,year_id,student_id,kind,points,on_date,reason,by_person)
     values (v_school,v_year,p_student,'deduction',-1,p_date,
-      'حسم درجة عن يوم غياب بدون عذر ('||p_date||') — م31 · CONDUCT-1447-OFF ص47', p_by);
+      'حُسمت درجةٌ واحدةٌ عن يوم غيابٍ بغير عذر ('||v2.fn_to_hijri(p_date)||' هـ) — '||
+      coalesce(v_cite_deduct,'م31'), p_by);
   end if;
 
   v_days := v2.fn_absence_days(p_student, v_year, v_ex);

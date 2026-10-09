@@ -1,5 +1,5 @@
 -- v2.g_meeting_flow()
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 80eeaf6f0104dbac23b6699f079f825f
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 3833b997670c21a4189d392013707a82
 CREATE OR REPLACE FUNCTION v2.g_meeting_flow()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -14,7 +14,7 @@ begin
      and school_id = new.school_id and ended_on is null limit 1;
 
   if new.called_by is not null and chair is not null and new.called_by <> chair then
-    raise exception 'الدعوةُ لاجتماع اللجنة من رئيسها وحدَه — الدليل التنظيمي ص١٩'; end if;
+    raise exception '%', 'الدعوةُ لاجتماع اللجنة من رئيسها وحدَه — الدليل التنظيمي '||v2.cite_page('committee.meetings')||''; end if;
   if new.minutes_by is not null and rap is not null and new.minutes_by <> rap then
     raise exception 'المحضرُ يكتبه مقرّرُ اللجنة'; end if;
   if new.approved_by is not null and chair is not null and new.approved_by <> chair then

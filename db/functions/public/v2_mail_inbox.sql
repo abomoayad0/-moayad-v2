@@ -1,15 +1,20 @@
 -- public.v2_mail_inbox(p_school uuid, p_status text, p_days integer)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 3e0b5905d69a2b67712610c6819fd746
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 d590d94af177c87deff4fc5b1a186403
 CREATE OR REPLACE FUNCTION public.v2_mail_inbox(p_school uuid, p_status text DEFAULT NULL::text, p_days integer DEFAULT 90)
  RETURNS TABLE(mail_id uuid, serial_no integer, ref_no text, subject_ar text, from_entity text, received_h text, received_g date, secrecy text, status text, status_ar text, items_n integer, open_items integer, late_items integer, attachments_n integer)
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
  SET search_path TO 'v2', 'public'
 AS $function$
+declare v_may boolean;
 begin
   perform v2.assert_my_school(p_school,'قراءة سجل الوارد');
+  v_may := v2.may_read_secret_mail();
   return query
-   select m.id, m.serial_no, m.ref_no, m.subject_ar, m.from_entity,
+   select m.id, m.serial_no, m.ref_no,
+     case when m.secrecy = 'عادي' or v_may then m.subject_ar
+          else 'خطابٌ '||m.secrecy||' — لا يُعرض عنوانُه هنا' end,
+     m.from_entity,
      m.received_on_h||' هـ', m.received_on_g, m.secrecy, m.status,
      case m.status when 'new' then 'جديد' when 'directed' then 'موجَّه'
           when 'in_progress' then 'قيد التنفيذ' when 'closed' then 'مغلق' else m.status end,

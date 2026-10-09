@@ -1,5 +1,5 @@
 -- public.v2_outgoing_close(p_mail uuid, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 61e10806840c5561f6e1b57dc3fdc474
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 4a84b2bb4720e5a050f2956b3fcd290d
 CREATE OR REPLACE FUNCTION public.v2_outgoing_close(p_mail uuid, p_note text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -15,16 +15,18 @@ begin
   if m.id is null then raise exception 'الخطابُ غيرُ موجود'; end if;
   perform v2.assert_my_school(m.school_id,'إقفال الصادر');
   if m.status not in ('sent','replied') then
-    raise exception 'لا يُقفل إلّا ما خرج — وحالُه: %', m.status;
+    raise exception 'لا يُقفل إلّا ما خرج — وحالُه: %',
+      v2.outgoing_state_ar(m.status, m.needs_reply, m.cancel_reason);
   end if;
   if m.needs_reply and m.reply_on is null then
     raise exception 'هذا الخطابُ ينتظر جوابَ الجهة ولم يُسجَّل جوابُه — '
       'فسجّل الجوابَ أوّلًا، أو ارفع انتظارَ الجواب عنه بقرارٍ مكتوب';
   end if;
 
-  select count(*) into v_open from v2.outgoing_mail_tasks lt
-    join v2.behavior_tasks bt on bt.id = lt.task_id
+  select count(*) into v_open from v2.outgoing_links lt
+    join v2.behavior_tasks bt on bt.id = lt.source_id and lt.source = 'behavior'
    where lt.mail_id = p_mail and bt.status <> 'done';
+  v_open := v_open + v2.outgoing_absence_open(p_mail);
   if v_open > 0 then
     raise exception 'لا يُقفل وفيه % لم تُقفل — فأقفلها أو احملها على خطابٍ آخر',
       v2.ar_count(v_open,'بندٌ واحد','بندان','بنود','بندًا');

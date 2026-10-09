@@ -1,6 +1,6 @@
 -- v2.behavior_tasks
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 7f837e4d626ec80402ea592483490d13
+-- md5 fe33f7f4f682cf41c858d76a8a4861bd
 
 CREATE TABLE v2.behavior_tasks (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -34,6 +34,7 @@ CREATE TABLE v2.behavior_tasks (
     delegated_at timestamp with time zone,
     delegate_note text,
     auto_note text,
+    is_standing boolean DEFAULT false NOT NULL,
     CONSTRAINT behavior_tasks_pkey PRIMARY KEY (id),
     CONSTRAINT behavior_tasks_response_level_check CHECK ((response_level = ANY (ARRAY['استجاب'::text, 'استجاب جزئياً'::text, 'لم يستجب'::text, 'لم يُقيَّم بعد'::text]))),
     CONSTRAINT behavior_tasks_status_check CHECK ((status = ANY (ARRAY['open'::text, 'done'::text, 'skipped'::text, 'refused'::text, 'auto'::text]))),
@@ -45,3 +46,4 @@ ALTER TABLE v2.behavior_tasks ENABLE ROW LEVEL SECURITY;
 COMMENT ON TABLE v2.behavior_tasks IS 'المهام المولَّدة آلياً من بنود الإجراء عند الرصد. لا تُحذف؛ تُغلق أو تُتجاوز بسبب مكتوب.';
 COMMENT ON COLUMN v2.behavior_tasks.response_level IS 'مدى الاستجابة — عمود منصوص في نموذج رصد المعلم لمشكلة سلوكية CONDUCT-1447-OFF ص61. وهو حكم المعلم على أثر الإجراء ولا يُستنتج آلياً.';
 COMMENT ON COLUMN v2.behavior_tasks.owner_person IS 'من كُلّف بالمهمة بعينه. فارغ = المسؤول بصفته. والوكيل يحوّلها لمن يراه بسبب مكتوب، ويبقى الأصل محفوظًا.';
+COMMENT ON COLUMN v2.behavior_tasks.is_standing IS 'حالٌ مستمرّةٌ تُعرض ولا تُطالَب — نظيرُ is_standing في absence_tasks · ومعها status=auto تاريخيًّا';

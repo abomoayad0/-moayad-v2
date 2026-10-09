@@ -1,5 +1,5 @@
 -- v2.fn_open_counsel_case(p_record uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 a88f4d48d2fa55a70eedd2eb5ef14059
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 27337675875567fb9a3b40b5284fb820
 CREATE OR REPLACE FUNCTION v2.fn_open_counsel_case(p_record uuid)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -21,7 +21,7 @@ begin
       ref_table,ref_id,visible_to,is_test)
   values (r.school_id,'case_study',current_date,r.student_id,
       'أُحيل الملفُّ إلى الموجّه الطلابيّ لدراسة حالته',
-      'الإجراءُ الثالث — قواعد السلوك والمواظبة ص٢٠',
+      'الإجراءُ الثالث — '||v2.cite_of('conduct.case_study'),
       'counsel_cases',cid,'counselor_only',coalesce(r.is_test,false));
   return cid;
 end $function$

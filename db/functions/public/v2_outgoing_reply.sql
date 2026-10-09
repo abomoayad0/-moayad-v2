@@ -1,5 +1,5 @@
 -- public.v2_outgoing_reply(p_mail uuid, p_on date, p_ref text, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 5dd353ff142efb4d55e7f2570d55c4f3
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 cb93dd78506dba1343e77f3926eca559
 CREATE OR REPLACE FUNCTION public.v2_outgoing_reply(p_mail uuid, p_on date DEFAULT NULL::date, p_ref text DEFAULT NULL::text, p_note text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -15,7 +15,8 @@ begin
   if m.id is null then raise exception 'الخطابُ غيرُ موجود'; end if;
   perform v2.assert_my_school(m.school_id,'تسجيل جواب الجهة');
   if m.status not in ('sent','replied') then
-    raise exception 'لا يُسجَّل جوابٌ على خطابٍ لم يخرج — وحالُه: %', m.status;
+    raise exception 'لا يُسجَّل جوابٌ على خطابٍ لم يخرج — وحالُه: %',
+      v2.outgoing_state_ar(m.status, m.needs_reply, m.cancel_reason);
   end if;
   if coalesce(btrim(p_note),'') = '' and coalesce(btrim(p_ref),'') = '' then
     raise exception 'الجوابُ يلزمه مرجعُه أو خلاصتُه مكتوبةً — فلا يُسجَّل جوابٌ بلا بيان';
@@ -27,8 +28,8 @@ begin
       reply_note = nullif(btrim(p_note),'')
    where id = p_mail;
 
-  for t in select bt.* from v2.outgoing_mail_tasks lt
-            join v2.behavior_tasks bt on bt.id = lt.task_id
+  for t in select bt.* from v2.outgoing_links lt
+            join v2.behavior_tasks bt on bt.id = lt.source_id and lt.source = 'behavior'
            where lt.mail_id = p_mail and lt.on_event = 'replied' and bt.status <> 'done' loop
     update v2.behavior_tasks set status='done', done_at=now(), done_by=v2.current_person(),
         ev_on = coalesce(p_on, current_date),
@@ -40,6 +41,9 @@ begin
     closed := closed || jsonb_build_object('task',t.id,'text',t.text_ar);
     n := n + 1;
   end loop;
+
+  n := n + v2.outgoing_absence_close(p_mail, 'replied',
+        'وصل جوابُ '||m.to_entity||' على الصادر رقم '||v2.ar_num(m.serial_no));
 
   perform v2.log_action(m.school_id,null,'outgoing_reply','وصل جوابُ جهةٍ على صادر',
     'outgoing_mail',p_mail, jsonb_build_object('serial',m.serial_no,'closed',n));

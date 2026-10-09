@@ -1,5 +1,5 @@
 -- public.v2_meeting_call(p_school uuid, p_committee text, p_kind text, p_held_on date, p_started time without time zone, p_place text, p_agenda text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 1f87311b19823ae194284973f24e6644
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 76a2fce5799bfd7e8ee7ff749bb4ee7f
 CREATE OR REPLACE FUNCTION public.v2_meeting_call(p_school uuid, p_committee text, p_kind text, p_held_on date, p_started time without time zone, p_place text, p_agenda text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -12,7 +12,7 @@ begin
   me := v2.current_person();
   seat := v2.my_seat(p_school,p_committee);
   if seat is distinct from 'chair' then
-    raise exception 'الدعوةُ لاجتماع اللجنة من رئيسها وحدَه — الدليل التنظيميّ ص١٩'; end if;
+    raise exception '%', 'الدعوةُ لاجتماع اللجنة من رئيسها وحدَه — الدليل التنظيميّ '||v2.cite_page('committee.meetings')||''; end if;
   if coalesce(p_kind,'شهري') not in ('شهري','طارئ') then
     raise exception 'الاجتماعُ شهريٌّ أو طارئ'; end if;
   if p_held_on < current_date then
