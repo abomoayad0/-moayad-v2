@@ -3,7 +3,8 @@
 // ② رأيٌ مطلوبٌ منك: لم يُبنَ في المحرّك
 // ③ كُلّفتَ بحصر سلوكيّات طالب: v2_my_census ⇒ v2_census_file بالقوائم (v2_census_list) — سلبيٌّ واحدٌ على الأقلّ والمسبّباتُ إلزاميّة
 // ④ ما عليّ من اللجان: v2_my_committee_tasks ⇒ v2_committee_task_done
-// ويومي: v2_my_now · v2_my_sections · v2_my_duties · v2_mail_my_tasks — للقراءة كما ترجع
+// ويومي: v2_my_now · v2_my_sections · v2_my_duties · v2_mail_my_tasks (⇒ v2_mail_followup_close) — للقراءة كما ترجع
+// وبحثُ الطلّاب: v2_students_find — للمعلّم في فصوله (scoped · note_ar) ولا مُرشِّحَ صفٍّ ولا فصل
 // ترى هذا الجزءَ وحدَه: لا ملفَّ طالبٍ ولا دراسةَ حالة.
 (function () {
   'use strict';
@@ -17,7 +18,46 @@
     showLoadErr('');
     V.renderRole();
     renderOff();
-    await Promise.all([loadMine(), loadDelegated(), loadCensus(), loadCommittee()]);
+    await Promise.all([loadMine(), loadDelegated(), loadCensus(), loadCommittee(), findNote()]);
+  }
+
+  // ---------- بحثُ الطلّاب: v2_students_find — للمعلّم في فصوله (scoped) ----------
+  // نداءٌ بلا نصٍّ عند الفتح يأتي بـnote_ar وsections_n: فإن كان المعلّمُ مقصورًا ظهر النصُّ فوق البحث،
+  // وإن لم يُسنَد إليه فصلٌ ظهر summary_ar وnote_ar نصًّا ظاهرًا — لا قائمةً فارغةً يُظنّ فراغُها خللًا
+  const findArgs = (q) => ({ p_text: q, p_in_grade: null, p_in_section: null, p_max: 30, p_of_school: M.state.school });
+  function setNote(d) {
+    const n = $('qNote');
+    const show = d && d.scoped === true;
+    n.hidden = !show;
+    n.textContent = show ? (d.sections_n === 0 ? [d.summary_ar, d.note_ar].filter(Boolean).join('\n') : (d.note_ar || '')) : '';
+    n.style.whiteSpace = 'pre-line';
+  }
+  async function findNote() {
+    const { data, error } = await M.rpc('v2_students_find', findArgs(null), 'بحث الطلّاب');
+    if (error) { $('qSum').textContent = ''; $('qList').textContent = ''; $('qList').appendChild(el('div', 'notice err', errText(error))); return; }
+    setNote(data);
+  }
+  let findSeq = 0; let findT = null;
+  $('qFind').addEventListener('input', () => { clearTimeout(findT); findT = setTimeout(find, 250); });
+  async function find() {
+    const q = $('qFind').value.trim();
+    const list = $('qList');
+    const seq = ++findSeq;
+    if (q.length < 2) { list.textContent = ''; $('qSum').textContent = ''; return; }
+    const { data, error } = await M.rpc('v2_students_find', findArgs(q), 'البحث عن طالب');
+    if (seq !== findSeq) return;
+    list.textContent = '';
+    if (error) { $('qSum').textContent = ''; list.appendChild(el('div', 'notice err', errText(error))); return; }
+    const d = data || {};
+    setNote(d);
+    $('qSum').textContent = d.summary_ar || '';
+    // للقراءة: الاسمُ وفصلُه ورقمُه — ولا ملفَّ طالبٍ في هذي الشاشة
+    for (const x of d.rows || []) {
+      const r = el('div', 'rs-item');
+      r.append(el('b', null, x.name || x.full_name || ''), el('small', null, [x.grade != null ? 'الصفّ ' + x.grade + (x.section ? ' / ' + x.section : '') : null, x.student_no].filter(Boolean).join(' · ')));
+      list.appendChild(r);
+    }
+    V.arabize($('findCard'));
   }
 
   // ---------- يومي: كلٌّ من جسره كما يرجع — ولا حسابَ هنا ----------
@@ -42,7 +82,40 @@
     list($('now'), now, 'لا حصّةَ عليك الآن.', (x) => ['الحصّة ' + x.period_no + ' · ' + (x.section_label || ''), [x.subject_ar, x.room_ar, x.students_n != null ? x.students_n + ' طالبًا' : null].filter(Boolean).join(' · '), hm(x.starts_at) + ' — ' + hm(x.ends_at) + (x.state ? ' · ' + x.state : ''), false]);
     list($('sections'), sec, 'لا حصصَ لك اليوم.', (x) => ['الحصّة ' + x.period_no + ' · ' + (x.class_ar || ''), [x.subject_ar, 'رُصد ' + x.recorded_n + ' من ' + x.students_n].filter(Boolean).join(' · '), hm(x.starts_at) + ' — ' + hm(x.ends_at) + (x.state ? ' · ' + x.state : ''), x.is_done]);
     list($('duties'), dut, 'لا مناوبةَ لك.', (x) => [(x.weekday_ar || '') + ' · ' + (x.zone_ar || ''), [x.segment, x.kind].filter(Boolean).join(' · '), '', false]);
-    list($('mail'), mail, 'لا شيءَ عليك من الوارد.', (x) => ['وارد ' + (x.serial_no || '') + ' · ' + (x.subject_ar || ''), x.text_ar || '', (x.due_h || '') + (x.is_late ? ' · متأخّر' : ''), false]);
+    loadMail(mail);
+  }
+
+  // ما عليّ من الوارد: متابعاتُك من v2_mail_my_tasks وحدَه — فسجلُّ الوارد المدرسيُّ مُقفلٌ على المعلّم ولا يُنادى من هنا
+  // ولكلّ بندٍ «أتممتُه» (v2_mail_followup_close) · وبطاقةُ الوارد لا تُفتح من هنا: الجسرُ لا يرجع رقمَ الوارد
+  function loadMail(r) {
+    const box = $('mail');
+    box.textContent = '';
+    if (r.error) { box.appendChild(el('div', 'notice err', errText(r.error))); return; }
+    const rows = r.data || [];
+    if (!rows.length) { box.appendChild(el('p', 'rs-meta', 'لا شيءَ عليك من الوارد.')); return; }
+    for (const x of rows) {
+      const f = el('div', 'rs-file' + (x.is_late ? ' rs-late' : ''));
+      f.append(el('h5', null, 'وارد ' + (x.serial_no || '') + ' · ' + (x.subject_ar || '')), el('p', null, x.text_ar || ''),
+        el('p', 'rs-meta', [x.due_h, x.is_late ? 'متأخّر' : null, x.status === 'done' ? 'أُتمّ' : null].filter(Boolean).join(' · ')));
+      if (x.status !== 'done') { const rr = el('div', 'rs-row'); rr.appendChild(V.btn('أتممتُه', 'rs-btn', () => followupForm(x))); f.appendChild(rr); }
+      box.appendChild(f);
+    }
+    V.arabize(box);
+  }
+  function followupForm(x) {
+    V.form({
+      title: 'إتمامُ بند وارد', what: x.text_ar || '',
+      fields: [{ key: 'note', type: 'textarea', label: 'ما تمّ', rows: 3 }, { key: 'ev', label: 'الشاهد (اختياريّ)' }],
+      ok: 'أتممتُه',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_mail_followup_close', { p_followup: x.followup_id, p_note: v.note, p_evidence: v.ev }, 'إقفال متابعة الوارد');
+        if (error) return error;
+        if (!data || data.ok !== true) return 'لم يُقفلها الجسر';
+        V.flash('ok', data.note_ar || '');
+        loadMine();
+        return null;
+      },
+    });
   }
 
   async function loadDelegated() {

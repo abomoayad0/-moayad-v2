@@ -15,7 +15,8 @@
   };
 
   // الشاشات المبنية، وما يفتح كلّاً منها من مفاتيح can
-  const MAIL_ROLES = ['principal', 'deputy', 'deputy_students', 'admin_assistant', 'admin_assistant_students'];
+  // ومعهم الموجّهُ الطلابيّ: يقرأ سجلَّ الوارد (تكليف ⑦) — والمعلّمُ لا: ما يخصّه في «ما عليّ»
+  const MAIL_ROLES = ['principal', 'deputy', 'deputy_students', 'deputy_school', 'deputy_school_students', 'admin_assistant', 'admin_assistant_students', 'counselor'];
   const currentRole = (me) => { const r = ((me && me.roles) || []).find((x) => x.is_current === true); return r ? r.role_key : null; };
   const SCREENS = [
     // الاصطفافُ والوصولُ والانصرافُ شاشةٌ واحدة بثلاثة أبواب — وrasd.html يُحوَّل إليها

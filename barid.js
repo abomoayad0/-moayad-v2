@@ -475,7 +475,16 @@
   // بطاقةُ الوارد: ولكلّ موجَّهٍ إليه متابعتُه — فلا تُعرض في البطاقة إلّا متابعاتُك (من v2_mail_my_tasks)
   async function openIncoming(id) {
     const { data, error } = await M.rpc('v2_mail_card', { p_mail: id }, 'بطاقة الوارد');
-    if (error) { flash('bad', errText(error)); return; }
+    // الرفضُ يُعرض بنصّه — ومعه زرٌّ إلى «ما عليّ» حيث ما وُجِّه إليك باسمك: الرفضُ يدلّ على الطريق لا يُغلقه
+    if (error) {
+      const n = el('div');
+      n.appendChild(el('div', 'notice err', errText(error)));
+      const r = el('div', 'rs-row');
+      r.appendChild(btn('اذهب إلى ما ينتظرني', 'rs-btn pri', () => { location.href = 'mukallaf.html'; }));
+      n.appendChild(r);
+      V.form({ title: 'بطاقةُ الوارد', fields: [{ key: 'e', type: 'node', node: n }], ok: false, cancel: 'أغلق' });
+      return;
+    }
     const c = data || {};
     const m = c.mail || {};
     const n = el('div');
@@ -483,7 +492,18 @@
     for (const [k, v] of [['الرقم', [m.serial_no, m.ref_no].filter(Boolean).join(' · ')], ['من', m.from], ['ورد', m.received_h], ['تاريخُه', m.doc_date_h], ['السرّيّة', m.secrecy]]) if (v) lg.append(el('i', 'k', k + ':'), el('i', null, String(v)));
     n.appendChild(lg);
     if (m.body) n.appendChild(el('p', 'rs-msg', m.body));
-    for (const a of c.attachments || []) n.appendChild(el('p', 'rs-meta', '📎 ' + (a.name || '')));
+    // المرفقات: { name · kind · ref · url · confirmed } — url ما يُفتح، وref مرجعُ الملفّ، وconfirmed: أُقرّ أم استُخرج آليًّا
+    if ((c.attachments || []).length) n.appendChild(el('div', 'rs-label', 'المرفقات'));
+    for (const a of c.attachments || []) {
+      const p = el('p');
+      p.appendChild(document.createTextNode('📎 '));
+      if (a.url) { const l = el('a', null, a.name || a.url); l.href = a.url; l.target = '_blank'; l.rel = 'noopener'; p.appendChild(l); }
+      else p.appendChild(document.createTextNode(a.name || a.ref || ''));
+      if (a.ref && (a.url || a.name)) { const r = M.ltr(a.ref); r.dataset.raw = '1'; const sm = el('small', 'rs-meta', ' · '); sm.appendChild(r); p.appendChild(sm); }
+      const st = a.confirmed === false ? 'استُخرج آليًّا — لم يُقرّ' : (a.confirmed === true ? 'مُقرّ' : null);
+      if (st) p.appendChild(el('small', 'rs-meta', ' · ' + st));
+      n.appendChild(p);
+    }
     for (const i of c.items || []) {
       const f = el('div', 'rs-file');
       f.append(el('h5', null, (i.ord ? i.ord + ' · ' : '') + (i.text || '')), el('p', 'rs-meta', [i.starts_h, i.ends_h].filter(Boolean).join(' — ')));

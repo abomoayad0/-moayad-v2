@@ -11,7 +11,8 @@
   const ar = (v) => String(v == null ? '' : v).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
   function arabize(node) {
     const w = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
-    for (let t = w.nextNode(); t; t = w.nextNode()) t.nodeValue = ar(t.nodeValue);
+    // [data-raw]: مرجعٌ تقنيٌّ (كمسار الملفّ) يُعرض كما رجع — لا تُبدَّل أرقامُه
+    for (let t = w.nextNode(); t; t = w.nextNode()) if (!(t.parentElement && t.parentElement.closest('[data-raw]'))) t.nodeValue = ar(t.nodeValue);
   }
   const btn = (text, cls, fn) => {
     const b = el('button', cls, text);

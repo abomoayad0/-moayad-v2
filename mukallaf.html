@@ -37,6 +37,15 @@
   <div class="flash" id="flash" hidden></div>
   <div class="notice err" id="loadErr" hidden></div>
 
+  <!-- بحثُ الطلّاب (v2_students_find): للمعلّم في فصوله وحدَها — scoped · note_ar كما يرجع · ولا مُرشِّحَ صفٍّ ولا فصل -->
+  <section class="rs-card" id="findCard">
+    <label for="qFind">ابحث عن طالب</label>
+    <p class="rs-info" id="qNote" hidden></p>
+    <input id="qFind" type="search" placeholder="الاسم أو رقم الطالب" autocomplete="off">
+    <p class="rs-meta" id="qSum"></p>
+    <div class="rs-list" id="qList"></div>
+  </section>
+
   <!-- يومي: الآن · حصصي · مناوبتي · ما عليّ من الوارد — v2_my_now · v2_my_sections · v2_my_duties · v2_mail_my_tasks -->
   <section class="rs-card">
     <h3>الآن</h3>
