@@ -134,7 +134,7 @@
     arabize(box);
   }
 
-  // ---------- البحثُ في المدرسة كلِّها · وآخرُ من عملتَ عليهم ----------
+  // ---------- البحثُ في المدرسة كلِّها (v2_students_find) · وآخرُ من عملتَ عليهم ----------
   // بعد حرفين · والنتيجةُ ومعها summary_ar كما يرجع (و«… عُرض منهم ٦٠ — فضيّق البحث» إن كان more)
   // واللمسةُ تفتح الطالبَ في بطاقة الرصد مباشرةً — فلا يُمرّ على أحدٍ للوصول إلى واحد
   let findSeq = 0; let findT = null;
@@ -144,15 +144,15 @@
     const list = $('qAllList');
     const seq = ++findSeq;
     if (q.length < 2) { list.textContent = ''; $('qAllSum').textContent = ''; return; }
-    const { data, error } = await M.rpc('v2_students_board', { p_school: M.state.school, p_grade: null, p_section: null, p_q: q, p_limit: 30 }, 'البحث عن طالب');
+    const { data, error } = await M.rpc('v2_students_find', { p_text: q, p_in_grade: null, p_in_section: null, p_max: 30, p_of_school: M.state.school }, 'البحث عن طالب');
     if (seq !== findSeq) return;
     list.textContent = '';
     if (error) { $('qAllSum').textContent = ''; list.appendChild(el('div', 'notice err', errText(error))); return; }
     const d = data || {};
     $('qAllSum').textContent = d.summary_ar || '';
     for (const x of d.rows || []) {
-      const b = btn('', 'rs-item', () => pickStudent({ student: x.student, name: x.display || x.name, grade: x.grade, section: x.section, student_no: x.student_no }));
-      b.append(el('b', null, x.display || x.name || ''), el('small', null, [x.grade != null ? 'الصفّ ' + x.grade + (x.section ? ' / ' + x.section : '') : null, x.student_no].filter(Boolean).join(' · ')));
+      const b = btn('', 'rs-item', () => pickStudent({ student: x.student, name: x.name || x.full_name, grade: x.grade, section: x.section, student_no: x.student_no }));
+      b.append(el('b', null, x.name || x.full_name || ''), el('small', null, [x.grade != null ? 'الصفّ ' + x.grade + (x.section ? ' / ' + x.section : '') : null, x.student_no].filter(Boolean).join(' · ')));
       list.appendChild(b);
     }
     arabize($('findCard'));

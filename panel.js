@@ -642,12 +642,11 @@
     const { data, error } = await M.rpc('v2_students_board', {
       p_school: ui.school, p_grade: base.stuGrade === '' ? null : Number(base.stuGrade),
       p_section: base.stuSection || null, p_q: base.stuQ || null,
-      // p_limit صريحًا: للباب توأمان بالوسائط الأربعة نفسِها، والخامسُ يعيّن ذا الكائن (rows · total · more · summary_ar)
-      p_limit: 500,
     }, 'كشف الطلّاب');
     if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
-    const rows = (data && data.rows) || [];
-    box.appendChild(el('div', 'meta', (data && data.summary_ar) || ''));
+    // الكشفُ بحقوله كلِّها (الهويّةُ والجنسيّةُ والبوّابة…) مصفوفةً — وهو ما يحتاجه تعديلُ الطالب هنا
+    const rows = data || [];
+    box.appendChild(el('div', 'meta', rows.length + ' طالبًا مقيَّدًا'));
     for (const st of rows) {
       const row = el('div', 'ev');
       const top = el('div', 'row1');

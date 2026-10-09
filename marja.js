@@ -256,9 +256,9 @@
       draw();
     };
     pick(lim, LIMITS, st.limit, (v) => { st.limit = v; load(); });
-    const sb = await M.rpc('v2_students_board', { p_school: school(), p_grade: null, p_section: null, p_q: null, p_limit: 500 }, 'كشف الطلّاب');
+    const sb = await M.rpc('v2_students_board', { p_school: school(), p_grade: null, p_section: null, p_q: null }, 'كشف الطلّاب');
     if (sb.error) errBox(who, sb.error);
-    else V.chooser(who, [['', 'كلّ الطلّاب', '']].concat(((sb.data && sb.data.rows) || []).map((x) => [x.student, x.display || x.name, x.student_no || ''])), '', (v) => { st.student = v || null; load(); });
+    else V.chooser(who, [['', 'كلّ الطلّاب', '']].concat((sb.data || []).map((x) => [x.student, x.display || x.name, x.student_no || ''])), '', (v) => { st.student = v || null; load(); });
     load();
   }
 
