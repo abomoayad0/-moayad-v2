@@ -1,5 +1,5 @@
 -- public.v2_day_mark(p_student uuid, p_state text, p_date date, p_minutes_late smallint, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 376413c72d9649a570770d8857c8bccc
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 ea89aeea23ef65955db872ed83d4ef59
 CREATE OR REPLACE FUNCTION public.v2_day_mark(p_student uuid, p_state text, p_date date DEFAULT CURRENT_DATE, p_minutes_late smallint DEFAULT NULL::smallint, p_note text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -29,8 +29,14 @@ begin
   end if;
 
   tm := v2.term_of_strict(sc, p_date);
+  if coalesce((v2.day_status(sc, p_date)->>'teachable')::boolean, false) = false then
+    raise exception '%', coalesce(v2.day_status(sc, p_date)->>'why_ar',
+                                  'هذا اليومُ لا يُرصد فيه')||
+      coalesce(' · وأوّلُ يومِ دراسةٍ '||(v2.day_status(sc, p_date)->>'next_study_ar'), '');
+  end if;
   if tm is null then
-    raise exception 'اليومُ غيرُ معروفٍ في تقويم مدرستك — فلا يُعرف فصلُه الدراسيّ';
+    raise exception '%', 'لا يُعرف الفصلُ الدراسيُّ لهذا اليوم — '||
+      coalesce(v2.day_status(sc, p_date)->>'why_ar', 'راجع مسارَ التقويم للمدرسة');
   end if;
 
   v_id := v2.fn_record_attendance(p_student, p_date, p_state, tm,

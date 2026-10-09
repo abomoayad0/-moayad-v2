@@ -1,6 +1,6 @@
 -- v2.phrase_bank
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 504d33c4cc05c399e836200f3553f864
+-- md5 458d6d163b029cb5f88a942b27bf4849
 
 CREATE TABLE v2.phrase_bank (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -10,6 +10,8 @@ CREATE TABLE v2.phrase_bank (
     text_ar text NOT NULL,
     ord smallint DEFAULT 0 NOT NULL,
     active boolean DEFAULT true NOT NULL,
+    source_ar text,
+    added_by uuid,
     CONSTRAINT phrase_bank_pkey PRIMARY KEY (id)
 );
 CREATE INDEX ix_pb ON v2.phrase_bank USING btree (bank_key, problem_id);

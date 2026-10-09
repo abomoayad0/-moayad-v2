@@ -763,6 +763,10 @@ ALTER TABLE v2.phrase_bank
 ALTER TABLE v2.phrase_bank
     ADD CONSTRAINT phrase_bank_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 
+-- ── phrase_use · md5 7fefaeaf5bfba8ecaec2a7a2741dbb7e
+ALTER TABLE v2.phrase_use
+    ADD CONSTRAINT phrase_use_phrase_id_fkey FOREIGN KEY (phrase_id) REFERENCES v2.phrase_bank(id);
+
 -- ── practice_overrides · md5 477dc0c0d593447cb8115bb3b76de878
 ALTER TABLE v2.practice_overrides
     ADD CONSTRAINT practice_overrides_code_fkey FOREIGN KEY (code) REFERENCES v2.class_practices(code);

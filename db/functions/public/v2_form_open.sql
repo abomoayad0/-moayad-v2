@@ -1,15 +1,18 @@
 -- public.v2_form_open(p_form smallint, p_student uuid, p_ref uuid, p_task uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 574abf8db8d7c002890db1218a401d72
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 4d3b52a02f599a6da29e54db2ec75a10
 CREATE OR REPLACE FUNCTION public.v2_form_open(p_form smallint, p_student uuid DEFAULT NULL::uuid, p_ref uuid DEFAULT NULL::uuid, p_task uuid DEFAULT NULL::uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'v2', 'public'
 AS $function$
-declare doc jsonb; e record; st text; m text; d text; h text; c text;
+declare doc jsonb; e record; st text; m text; d text; h text; c text; v_prob int;
 begin
   if p_student is not null then perform v2.assert_my_student(p_student,'فتح نموذج'); end if;
   doc := case when p_student is null then '{}'::jsonb else v2.fn_form(p_form,p_student,p_ref) end;
+  if p_ref is not null then
+    select problem_id into v_prob from v2.behavior_records where id = p_ref;
+  end if;
 
   select * into e from v2.form_entries fe
    where fe.form_no=p_form and fe.status<>'void'
@@ -32,8 +35,28 @@ begin
        'admin_assistant','admin_assistant_students','subject_teacher','sped_teacher','gifted_teacher'),
    'schema', coalesce((select jsonb_agg(jsonb_build_object('key',s.key,'label',s.label_ar,
        'input',s.input,'options',to_jsonb(s.options),'required',s.required,'hint',s.hint_ar,
-       'filled_by_ar',s.filled_by_ar,'derived_from',s.derived_from) order by s.ord)
-     from v2.form_schema s where s.form_no=p_form),'[]'::jsonb),
+       'filled_by_ar',s.filled_by_ar,'derived_from',s.derived_from,
+       'source', case when fs.by_hand then 'by_hand'
+                      when fs.compute_kind is not null and fs.bank_key is not null then 'both'
+                      when fs.compute_kind is not null then 'computed'
+                      when fs.bank_key is not null then 'library'
+                      else 'none' end,
+       'source_ar', case when fs.by_hand then 'بيدك وحدَك'
+                         when fs.compute_kind is not null and fs.bank_key is not null
+                           then 'يحسبه النظامُ ومعه مكتبة'
+                         when fs.compute_kind is not null then 'يحسبه النظام'
+                         when fs.bank_key is not null then 'مكتبة'
+                         else null end,
+       'bank_key', fs.bank_key,
+       'phrases_n', case when fs.bank_key is null then 0 else
+           (select count(*) from v2.phrase_bank b
+             where b.active and b.bank_key = fs.bank_key
+               and (b.school_id is null or b.school_id = v2.acting_school())
+               and (b.problem_id is null or b.problem_id = v_prob)) end,
+       'source_note_ar', fs.note_ar) order by s.ord)
+     from v2.form_schema s
+     left join v2.form_field_source fs on fs.form_no=s.form_no and fs.field_key=s.key
+     where s.form_no=p_form),'[]'::jsonb),
    'row_schema', coalesce((select jsonb_agg(jsonb_build_object('key',r.key,'label',r.label_ar,
        'input',r.input,'options',to_jsonb(r.options)) order by r.ord)
      from v2.form_row_schema r where r.form_no=p_form),'[]'::jsonb),

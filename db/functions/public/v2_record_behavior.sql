@@ -1,5 +1,5 @@
 -- public.v2_record_behavior(p_student uuid, p_problem integer, p_place text, p_note text, p_period smallint, p_victim uuid, p_injury boolean, p_damage boolean, p_seizure boolean, p_seizure_legal boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 902cae6b5066a28f1d39afcc19288122
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 9d26467f492e4d959b3e72c414a1fb2b
 CREATE OR REPLACE FUNCTION public.v2_record_behavior(p_student uuid, p_problem integer, p_place text DEFAULT NULL::text, p_note text DEFAULT NULL::text, p_period smallint DEFAULT NULL::smallint, p_victim uuid DEFAULT NULL::uuid, p_injury boolean DEFAULT false, p_damage boolean DEFAULT false, p_seizure boolean DEFAULT false, p_seizure_legal boolean DEFAULT false)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -21,9 +21,15 @@ begin
    where e.student_id=p_student and e.status='active' limit 1;
 
   tm := v2.term_of_strict(sc, current_date);
+  if coalesce((v2.day_status(sc, current_date)->>'teachable')::boolean, false) = false then
+    raise exception '%', coalesce(v2.day_status(sc, current_date)->>'why_ar',
+                                  'هذا اليومُ لا يُرصد فيه')||
+      coalesce(' · وأوّلُ يومِ دراسةٍ '||(v2.day_status(sc, current_date)->>'next_study_ar'), '')||
+      '';
+  end if;
   if tm is null then
-    raise exception 'اليومُ غيرُ معروفٍ في تقويم مدرستك — فلا يُعرف فصلُه الدراسيّ. '
-      'أسّس التقويمَ من لوحة التحكّم، أو راجع مسارَ التقويم للمدرسة';
+    raise exception '%', 'لا يُعرف الفصلُ الدراسيُّ لهذا اليوم — '||
+      coalesce(v2.day_status(sc, current_date)->>'why_ar', 'راجع مسارَ التقويم للمدرسة');
   end if;
 
   rid := v2.fn_record_behavior(p_student,p_problem,tm,p_period,p_place,p_note,
