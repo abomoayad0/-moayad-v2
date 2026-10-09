@@ -1,5 +1,5 @@
 -- v2.fn_record_attendance(p_student uuid, p_date date, p_state text, p_term smallint, p_minutes_late smallint, p_note text, p_by uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 5b0cec389a52cce387d42db2afe03322
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 8d6a8782792763b10d4d851c825e476d
 CREATE OR REPLACE FUNCTION v2.fn_record_attendance(p_student uuid, p_date date, p_state text, p_term smallint DEFAULT 1, p_minutes_late smallint DEFAULT NULL::smallint, p_note text DEFAULT NULL::text, p_by uuid DEFAULT NULL::uuid)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -48,6 +48,12 @@ begin
 
   if p_state <> 'absent' then return v_id; end if;
   v_ex := v2.fn_is_excused(p_student, p_date);
+
+  -- 🔑 واجبُ اليوم: إخطارُ وليّ الأمر بغياب ابنه في يومه (م35) — مستقلٌّ عن السلّم
+  perform v2.fn_notify_absence_day(p_student, p_date, p_by);
+  -- 🔑 وإنذارُ قرب حدّ الحرمان — قبل بلوغه بأيّامٍ تُضبط من اللوحة
+  perform v2.fn_denial_warn(p_student);
+
 
   if not v_ex and not exists (
       select 1 from v2.attendance_ledger l

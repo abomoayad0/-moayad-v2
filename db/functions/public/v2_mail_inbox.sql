@@ -1,5 +1,5 @@
 -- public.v2_mail_inbox(p_school uuid, p_status text, p_days integer)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 d590d94af177c87deff4fc5b1a186403
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e7395a14edfd145c29a28fe2753b696f
 CREATE OR REPLACE FUNCTION public.v2_mail_inbox(p_school uuid, p_status text DEFAULT NULL::text, p_days integer DEFAULT 90)
  RETURNS TABLE(mail_id uuid, serial_no integer, ref_no text, subject_ar text, from_entity text, received_h text, received_g date, secrecy text, status text, status_ar text, items_n integer, open_items integer, late_items integer, attachments_n integer)
  LANGUAGE plpgsql
@@ -9,6 +9,9 @@ AS $function$
 declare v_may boolean;
 begin
   perform v2.assert_my_school(p_school,'قراءة سجل الوارد');
+  perform v2.assert_role(array['principal','deputy','deputy_students','deputy_school',
+      'deputy_school_students','admin_assistant','admin_assistant_students','counselor'],
+      'قراءةَ سجلّ الوارد المدرسيّ');
   v_may := v2.may_read_secret_mail();
   return query
    select m.id, m.serial_no, m.ref_no,

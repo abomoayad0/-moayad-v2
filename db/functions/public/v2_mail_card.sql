@@ -1,28 +1,53 @@
 -- public.v2_mail_card(p_mail uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 0238aae3e8a56aa159e1510da9103d1c
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c615ab76384d2695aaba3c47abe8cf48
 CREATE OR REPLACE FUNCTION public.v2_mail_card(p_mail uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
  SET search_path TO 'v2', 'public'
 AS $function$
-declare sc uuid; v_sec text; v_me uuid;
+declare sc uuid; v_sec text; v_me uuid; v_admin boolean := true;
 begin
   select school_id, secrecy into sc, v_sec from v2.incoming_mail where id=p_mail;
   if sc is null then raise exception 'الواردُ غيرُ موجود'; end if;
   perform v2.assert_my_school(sc,'قراءة بطاقة الوارد');
+
+  v_me := v2.current_person();
+
+  begin
+    perform v2.assert_role(array['principal','deputy','deputy_students','deputy_school',
+        'deputy_school_students','admin_assistant','admin_assistant_students','counselor'],
+        'قراءةَ بطاقة الوارد');
+  exception when others then v_admin := false;
+  end;
+
+  if not v_admin then
+    if v_me is null or (not exists (
+         select 1 from v2.mail_items i
+          where i.mail_id = p_mail and (
+            exists (select 1 from v2.mail_targets t   where t.item_id=i.id and t.person_id = v_me)
+         or exists (select 1 from v2.mail_followups f where f.item_id=i.id and f.person_id = v_me)))
+       and not exists (
+         select 1 from v2.mail_acknowledgements ak where ak.mail_id=p_mail and ak.person_id = v_me))
+    then
+      raise exception 'هذا الواردُ لم يُوجَّه إليك — ولا تُقرأ بطاقتُه إلّا لإدارة المدرسة أو لمن وُجِّه إليه. وما يصلك باسمك تجده في «ما ينتظرني».';
+    end if;
+  end if;
+
   if v_sec <> 'عادي' and not v2.may_read_secret_mail() then
     raise exception 'هذا واردٌ % — ولا يُقرأ إلّا من مدير المدرسة أو وكيلها · '
       'والسرّيّةُ من أحكام المواظبة والسلوك العامّة (م35 بند 5)', v_sec;
   end if;
-  v_me := v2.current_person();
+
   return (select jsonb_build_object(
     'ok', true,
     'mail', jsonb_build_object('id',m.id,'serial_no',m.serial_no,'ref_no',m.ref_no,
       'subject',m.subject_ar,'from',m.from_entity,'body',m.body_ar,
       'received_h', m.received_on_h||' هـ', 'doc_date_h', m.doc_date_h,
       'secrecy', m.secrecy, 'status', m.status, 'source', m.source),
-    'attachments', coalesce((select jsonb_agg(jsonb_build_object('name',a.file_name,'path',a.storage_path))
+    'attachments', coalesce((select jsonb_agg(jsonb_build_object(
+         'name', a.name_ar, 'kind', a.kind, 'ref', a.file_ref,
+         'url', a.url, 'confirmed', a.confirmed))
        from v2.mail_attachments a where a.mail_id=m.id),'[]'::jsonb),
     'items', coalesce((select jsonb_agg(jsonb_build_object(
         'id', i.id, 'ord', i.ord, 'text', i.text_ar, 'kind', i.kind, 'approved', i.approved,

@@ -1,5 +1,5 @@
 -- v2.fn_apply_absence(p_student uuid, p_date date, p_term smallint, p_by uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 bc42da2a01d16e16a4f3176335283945
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 eb08e9635d8bfa7396bdb04c07b8fc44
 CREATE OR REPLACE FUNCTION v2.fn_apply_absence(p_student uuid, p_date date, p_term smallint, p_by uuid DEFAULT NULL::uuid)
  RETURNS void
  LANGUAGE plpgsql
@@ -20,6 +20,7 @@ begin
   end if;
 
   v_ex := v2.fn_is_excused(p_student,p_date);
+  perform v2.fn_notify_absence_day(p_student, p_date, p_by);
   if not v_ex and not exists (select 1 from v2.attendance_ledger l
       where l.student_id=p_student and l.year_id=v_year and l.kind='deduction' and l.on_date=p_date) then
     insert into v2.attendance_ledger(school_id,year_id,student_id,kind,points,on_date,reason,by_person)

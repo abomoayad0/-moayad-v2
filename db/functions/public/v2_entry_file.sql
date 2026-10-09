@@ -1,5 +1,5 @@
 -- public.v2_entry_file(p_entry uuid, p_what text, p_evidence_path text, p_evidence_desc text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 8c3de8a45a04c5c6a4afc28d665957a5
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 be99bcd986116bbd916f04c16951e904
 CREATE OR REPLACE FUNCTION public.v2_entry_file(p_entry uuid, p_what text, p_evidence_path text, p_evidence_desc text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -14,9 +14,9 @@ begin
 
   who := v2.caller_kind(x.student_id);
   if who not in ('student','guardian') then
-    -- 🔑 ص١٦ بند ٦: الطالبُ يقدّم الشواهدَ لوكيل شؤون الطلبة — فله أن يرفعها نيابةً
+    -- الاستشهادُ يُقرأ من v2.citations (conduct.evidence_submission) لا من نصٍّ هنا
     perform v2.assert_role(array['deputy_students','deputy','principal'],
-      'ملءَ نموذج مشاركة الطالب نيابةً عنه');
+      'ملءَ نموذج مشاركة الطالب نيابةً عنه — '||v2.cite_of('conduct.evidence_submission'));
     perform v2.assert_my_student(x.student_id,'نموذج المشاركة');
     who := 'نيابةً — وكيل شؤون الطلبة';
   else

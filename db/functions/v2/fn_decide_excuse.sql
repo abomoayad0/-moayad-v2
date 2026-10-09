@@ -1,5 +1,5 @@
 -- v2.fn_decide_excuse(p_claim uuid, p_accept boolean, p_by uuid, p_note text, p_principal_ext boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 dde50d4d1c7d29b52b3fe0f5aca8f6be
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 637d1e1e879b05e92bae2c449c26341c
 CREATE OR REPLACE FUNCTION v2.fn_decide_excuse(p_claim uuid, p_accept boolean, p_by uuid DEFAULT NULL::uuid, p_note text DEFAULT NULL::text, p_principal_ext boolean DEFAULT false)
  RETURNS TABLE("أيام_الغياب" integer, "درجات_رُدّت" integer, "حالات_أُوقف_تصعيدها" integer)
  LANGUAGE plpgsql
@@ -32,7 +32,7 @@ begin
                    and l.year_id=v_year and l.kind='restore' and l.on_date=d) then
         insert into v2.attendance_ledger(school_id,year_id,student_id,kind,points,on_date,reason,by_person)
         values (v_school,v_year,c.student_id,'restore',1,d,
-          'ردّ درجة بعد قبول العذر عن يوم ('||d||') — عدم التأثير على درجة المواظبة في حال تقديم عذر مقبول · م35 بند 7. واليوم يبقى غياباً في السجل والعدّ تراكمي.', p_by);
+          'ردّ درجة بعد قبول العذر عن يوم ('||d||') — ' || v2.cite('excuse.no_effect') || '. واليوم يبقى غياباً في السجل والعدّ تراكمي.', p_by);
         n_back := n_back + 1;
       end if;
     end loop;

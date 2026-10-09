@@ -1,5 +1,5 @@
 -- v2.attendance_result(p_student uuid, p_date date)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 fc45d1af43929a9e3d91c5568e56d3c4
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e897ac340b23b71b6e5da9b668a2e45b
 CREATE OR REPLACE FUNCTION v2.attendance_result(p_student uuid, p_date date)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -7,6 +7,7 @@ CREATE OR REPLACE FUNCTION v2.attendance_result(p_student uuid, p_date date)
  SET search_path TO 'v2', 'public'
 AS $function$
 declare a record; v_year uuid; v_bal numeric; v_ded numeric; v_ex boolean;
+        v_grade smallint; v_gv jsonb;
         v_case record; v_tasks jsonb; v_reg record;
         v_year_days int; v_abs int; v_pct numeric; v_limit int; v_total numeric; v_dpct numeric;
         v_denied boolean;
@@ -18,6 +19,8 @@ begin
   select coalesce(-sum(points),0) into v_ded from v2.attendance_ledger
    where student_id=p_student and year_id=v_year and kind='deduction';
   v_ex := case when a.state='absent' then v2.fn_is_excused(p_student, p_date) else null end;
+  select e.grade into v_grade from v2.enrolments e
+   where e.student_id=p_student and e.status='active' order by e.created_at desc limit 1;
 
   select c.*, l.days, l.excused, l.article_no, l.source_page
     into v_case
@@ -56,8 +59,10 @@ begin
     'excused_ar', case when a.state <> 'absent' then null
                        when v_ex then 'غيابٌ بعذرٍ مقبولٍ مسجَّل — ولا حسمَ عليه'
                        else 'غيابٌ بغير عذرٍ — وحُسمت عنه درجةٌ واحدة' end,
-    'balance', v_bal,
-    'balance_ar', 'درجةُ المواظبة '||v2.ar_num(v_bal)||' من '||v2.ar_num(v_total),
+    'balance', case when (v2.grade_view('attendance', v_bal, v_grade, v_total)->>'qualitative')::boolean
+                       then null else v_bal end,
+    'balance_ar', (v2.grade_view('attendance', v_bal, v_grade, v_total)->>'show_ar'),
+    'grade_view', v2.grade_view('attendance', v_bal, v_grade, v_total),
     'deducted_total', v_ded,
     'absent_unexcused_days', v_abs,
     'year_study_days', v_year_days,
@@ -69,7 +74,7 @@ begin
       when v_limit is null then null
       when coalesce(v_denied,false) or coalesce(v_abs,0) >= v_limit then
         'تجاوز حدَّ الحرمان — '||v2.ar_num(coalesce(v_abs,0))||' من '||v2.ar_num(v_limit)||' · '||
-        'والحرمانُ قرارٌ لم يُبنَ بابُه بعد، فيُرفع للمدير خارجَ النظام'
+        'ولا يصدر قرارُ الحرمان إلّا من المدير بعد إنذارِ وليّ الأمر وعرضِ الحالة على لجنة التوجيه'
       when coalesce(v_abs,0) >= ceil(v_limit * 0.7) then
         'يقترب من حدّ الحرمان — '||v2.ar_num(coalesce(v_abs,0))||' من '||v2.ar_num(v_limit)
       else null end,
