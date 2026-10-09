@@ -472,7 +472,10 @@
   // صندوقُ النماذج (v2_my_form_inbox) — للموجّه والطالب وعضو اللجنة: ما وُجّه إلى صاحبه وحدَه
   // who_ar عنوانُه · وكلُّ صفٍّ بعنوانه كما يرجع (والمسحوبُ «(مسحوب) … — والسببُ»)، وحقولُه تُفتح فتُعلَّم مقروءةً (v2_form_inbox_read)
   // و note_ar تحته كما هو — ولا يُنقل عن سرّيٍّ شيءٌ إلى غير موضعه
-  async function inbox(box, title) {
+  // opts.signAs: ألفاظُ صفة الموقِّع في هذا الصندوق (الطالبُ في صفحته) — فإن كانت بين موقّعي النموذج ولم يوقّع بعد
+  // ظهر «وقّع» و«امتنع» متساويين بحدّ، والامتناعُ بسببٍ مكتوب (v2_form_sign) — ونصُّ الجسر في مكانه بعده
+  async function inbox(box, title, opts) {
+    opts = opts || {};
     box.textContent = '';
     const { data, error } = await M.rpc('v2_my_form_inbox', undefined, 'صندوق النماذج');
     if (error) { box.appendChild(el('div', 'notice err', M.errText(error))); return null; }
@@ -497,6 +500,24 @@
       body.appendChild(kv);
       if ((x.signers || []).length) body.appendChild(el('p', 'rs-meta', 'يوقّعه: ' + x.signers.join(' · ') + ((x.signed || []).length ? ' — وقّع: ' + x.signed.join(' · ') : '')));
       if (x.source) body.appendChild(el('p', 'rs-meta', x.source));
+      const me = (opts.signAs || []).find((a) => (x.signers || []).includes(a));
+      if (me && !x.withdrawn && !(x.signed || []).includes(me)) {
+        const res = el('div');
+        const ta = el('textarea'); ta.rows = 2; ta.placeholder = 'سببُ الامتناع — إن امتنعت'; ta.setAttribute('aria-label', 'سببُ الامتناع');
+        const pr = el('div', 'rs-pair');
+        const go = (signed, b) => send(b, async () => {
+          const { data, error } = await M.rpc('v2_form_sign', { p_entry: x.entry, p_signer: me, p_signed: signed, p_refuse_reason: signed ? null : (ta.value.trim() || null) }, signed ? 'التوقيع على النموذج' : 'الامتناع عن التوقيع');
+          res.textContent = '';
+          if (error) { res.appendChild(el('div', 'flash bad', M.errText(error))); return; }
+          res.appendChild(el('div', 'rs-done-note', (data && data.note_ar) || ''));
+          arabize(res);
+          setTimeout(() => inbox(box, title, opts), 1500);
+        });
+        const sb = btn('وقّع', 'rs-btn', () => go(true, sb));
+        const rb = btn('امتنع', 'rs-btn', () => go(false, rb));
+        pr.append(sb, rb);
+        body.append(pr, ta, el('p', 'rs-meta', 'الامتناعُ عن التوقيع يُتمّ الخطوةَ بسببٍ مكتوب'), res);
+      }
       det.appendChild(body);
       det.addEventListener('toggle', async () => {
         if (!det.open || !x.is_new) return;

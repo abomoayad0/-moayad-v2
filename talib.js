@@ -17,7 +17,7 @@
   async function load() {
     // صندوقُه بحسابه — والمعاينةُ من منسوبٍ لا تفتحه، فالصندوقُ لصاحبه وحدَه
     $('inboxCard').hidden = !!ui.preview;
-    if (!ui.preview) V.inbox($('inbox'), $('inboxTitle'));
+    if (!ui.preview) V.inbox($('inbox'), $('inboxTitle'), { signAs: ['الطالب', 'الطالب/الطالبة'] });
     const [o, tl, sc, pl] = await Promise.all([
       M.rpc('v2_opps_open_for', { p_student: ui.sid }, 'درجة السلوك والفرص'),
       M.rpc('v2_student_timeline', { p_student: ui.sid, p_as: 'student' }, 'سجلّي'),

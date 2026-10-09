@@ -1,7 +1,8 @@
 // مؤيّد · بريدُ المدرسة (تكليفُ الشاشات ③) — الصادرُ والوارد
 // الصادر: v2_outgoing_pending · v2_outgoing_register · v2_outgoing_one · v2_outgoing_create · v2_outgoing_sign
 //         v2_outgoing_send · v2_outgoing_reply · v2_outgoing_close · v2_outgoing_cancel · v2_outgoing_attach
-// الوارد: v2_mail_inbox · v2_mail_card · v2_mail_my_tasks · v2_mail_ack · v2_mail_followup_done
+//         v2_outgoing_edit · v2_outgoing_enums (القوائمُ بألفاظها من القاعدة)
+// الوارد: v2_mail_inbox · v2_mail_card · v2_mail_my_tasks · v2_mail_register · v2_mail_direct · v2_mail_acknowledge · v2_mail_followup_close
 // 🔑 الصادرُ ليس دفترَ أرقام بل بابٌ يُقفل ما أوجبه الدليل — فصدرُه البنودُ التي تنتظر خطابًا،
 //    والفرقُ بين «يُقفل بالخروج» و«لا يُقفل إلّا بالجواب» يُعرض في القائمة والإنشاء والبطاقة.
 // وكلُّ بابٍ كاتبٍ يرجع ببطاقة الخطاب كاملةً ومعها note_ar — فتُعرض كما رجعت ولا يُعاد النداء. ولا حذفَ في هذا الباب.
@@ -13,13 +14,19 @@
   const { $, el, errText, showLoadErr } = M;
   const { arabize, btn, flash, pick } = V;
 
-  // ما يقبله الجسرُ كما في التكليف — والقاعدةُ ترفض غيره
-  const KINDS = [['letter', 'خطاب'], ['report', 'تقريرٌ أو محضر'], ['decision', 'قرار'], ['referral', 'إحالة'], ['circular', 'تعميم'], ['reply', 'ردٌّ على وارد']];
-  const SECRECY = [['عادي', 'عادي'], ['سري', 'سري'], ['سري للغاية', 'سري للغاية']];
-  const CHANNELS = [['نظام رسمي', 'نظام رسمي'], ['بريد', 'بريد'], ['يد', 'يد'], ['ورق', 'ورق']];
+  // القوائمُ بألفاظها من v2_outgoing_enums — لا تُنسخ في الشاشة، فإن زيدت قناةٌ عُرفت
+  let KINDS = []; let SECRECY = []; let CHANNELS = []; let STATUS = [['', 'الكلّ']]; let REPLY_DAYS = null;
+  async function loadEnums() {
+    if (KINDS.length) return;
+    const { data } = await M.rpc('v2_outgoing_enums', undefined, 'قوائم الصادر');
+    const d = data || {};
+    const pairs = (xs) => (xs || []).map((x) => [x.v, x.ar]);
+    KINDS = pairs(d.kind); SECRECY = pairs(d.secrecy); CHANNELS = pairs(d.channel);
+    STATUS = [['', 'الكلّ']].concat(pairs(d.status));
+    REPLY_DAYS = d.reply_days_default == null ? null : d.reply_days_default;
+  }
   const ATTACH = [['link', 'رابط'], ['barcode', 'باركود'], ['file', 'ملفّ (مرجعه)'], ['form', 'نموذج']];
   // السجلُّ يرجع الحالَ بمفتاحه بلا state_ar — فهذي ألفاظُ بطاقة الخطاب نفسِها (v2.outgoing_card) مختصرة
-  const STATUS = [['', 'الكلّ'], ['draft', 'مسوّدة'], ['signed', 'مُوقَّع'], ['sent', 'خرج'], ['replied', 'وصل جوابُه'], ['closed', 'مُقفل'], ['cancelled', 'ملغى']];
   const DAYS = [[30, '٣٠ يومًا'], [90, '٩٠ يومًا'], [365, 'سنة']];
 
   const ui = { tab: 'pend', pend: null, picked: new Set(), rStatus: '', rDays: 365, mine: [] };
@@ -41,6 +48,7 @@
     if (!M.state.school) return;
     showLoadErr('');
     V.renderRole();
+    await loadEnums();
     renderTabs();
     show();
   }
@@ -55,7 +63,8 @@
     const d = ui.pend = data || {};
     $('pSum').textContent = d.summary_ar || '';
     $('pNote').textContent = d.note_ar || '';
-    const tw = d.tasks_without_letter || [];
+    // بنودُ السلّم من السلوك والمواظبة معًا — وكلٌّ يُحمل على الخطاب برقمه (p_tasks)
+    const tw = (d.tasks_without_letter || []).concat((d.absence_without_letter || []).map((x) => Object.assign({}, x, { owner: [x.owner, x.days != null ? 'غيابُه ' + x.days + (x.excused != null ? ' · بعذر ' + x.excused : '') : null].filter(Boolean).join(' · ') })));
     for (const k of [...ui.picked]) if (!tw.some((x) => x.task === k)) ui.picked.delete(k);
     // ١ · بنودُ السلّم التي تنتظر خطابًا — أبرزُها، ومنها يبدأ كلُّ شيء · واختيارٌ متعدّد: خطابٌ واحدٌ يحمل بنودًا
     if (tw.length) {
@@ -144,20 +153,32 @@
       tb.appendChild(c);
     }
     V.form({
-      title: pre.reply_to ? 'ردٌّ على وارد' : 'إنشاءُ خطابٍ صادر',
+      title: pre.mail ? 'تعديلُ المسوّدة' : pre.reply_to ? 'ردٌّ على وارد' : 'إنشاءُ خطابٍ صادر',
       fields: [
         { key: 'h', type: 'node', node: tb },
         { key: 'subject', label: 'الموضوع', value: pre.subject || null },
         { key: 'to', label: 'الجهة', value: pre.to || null },
-        { key: 'kind', type: 'pick', label: 'النوع', items: KINDS, value: pre.reply_to ? 'reply' : (tasks && tasks.length ? 'report' : 'letter') },
-        { key: 'secrecy', type: 'pick', label: 'السرّيّة', items: SECRECY, value: 'عادي' },
-        { key: 'body', type: 'textarea', label: 'النصّ', rows: 4 },
-        { key: 'needs', type: 'pick', label: 'ينتظر جوابًا؟', items: [['yes', 'نعم'], ['no', 'لا']], value: 'no' },
+        { key: 'kind', type: 'pick', label: 'النوع', items: KINDS, value: pre.kind || (pre.reply_to ? 'reply' : (tasks && tasks.length ? 'report' : 'letter')) },
+        { key: 'secrecy', type: 'pick', label: 'السرّيّة', items: SECRECY, value: pre.secrecy || 'عادي' },
+        { key: 'body', type: 'textarea', label: 'النصّ', rows: 4, value: pre.body || null },
+        { key: 'needs', type: 'pick', label: 'ينتظر جوابًا؟', items: [['yes', 'نعم'], ['no', 'لا']], value: pre.needs_reply ? 'yes' : 'no' },
         // مدّةُ متابعة الجواب لا أصلَ لها في اللوحة بعد — تُكتب باليد (ينتظر كلمةَ مفرح)
-        { key: 'due', type: 'date', label: 'موعدُ المراجعة', hint: 'يُكتب إن كان ينتظر جوابًا' },
+        { key: 'due', type: 'date', label: 'موعدُ المراجعة', value: pre.due || null, hint: REPLY_DAYS != null ? 'إن تُرك حُسب من أصل اللوحة: ' + REPLY_DAYS + ' أيّامِ عمل — ولك تعديلُه' : 'يُكتب إن كان ينتظر جوابًا' },
       ],
-      ok: 'أنشئ المسوّدة',
+      ok: pre.mail ? 'احفظ التعديل' : 'أنشئ المسوّدة',
       onOk: async (v) => {
+        // تعديلُ مسوّدةٍ قائمة (v2_outgoing_edit) — والبنودُ المحمولةُ عليها باقيةٌ كما هي
+        if (pre.mail) {
+          const { data, error } = await M.rpc('v2_outgoing_edit', {
+            p_mail: pre.mail, p_subject: v.subject, p_to_entity: v.to, p_body: v.body, p_kind: v.kind || 'letter', p_secrecy: v.secrecy || 'عادي',
+            p_needs_reply: v.needs === 'yes', p_reply_due: v.due,
+          }, 'تعديل مسوّدة الصادر');
+          if (error) return error;
+          if (!data || data.ok !== true) return 'لم يُعدّلها الجسر';
+          setTimeout(() => showCard(data, data.note_ar), 0);
+          reloadView();
+          return null;
+        }
         const { data, error } = await M.rpc('v2_outgoing_create', {
           p_subject: v.subject, p_to_entity: v.to, p_body: v.body, p_kind: v.kind || 'letter', p_secrecy: v.secrecy || 'عادي',
           p_needs_reply: v.needs === 'yes', p_reply_due: v.due, p_reply_to_mail: pre.reply_to ? pre.reply_to.mail : null,
@@ -188,15 +209,16 @@
     if (c.overdue_ar) n.appendChild(el('span', 'rs-state late', c.overdue_ar));
     const lg = el('div', 'rs-lgd');
     for (const [k, v] of [['الموضوع', c.subject], ['الجهة', c.to_entity], ['النوع', c.kind_ar], ['السرّيّة', c.secrecy], ['التاريخ', c.issued_ar], ['أعدّه', c.prepared_by], ['وقّعه', c.signed_by],
-      ['خرج', [c.sent_on, c.sent_channel, c.sent_ref].filter(Boolean).join(' · ')], ['موعدُ المراجعة', c.reply_due_on], ['الجواب', [c.reply_on, c.reply_ref, c.reply_note].filter(Boolean).join(' · ')], ['الإقفال', c.close_note]]) {
+      ['خرج', [c.sent_on, c.sent_channel, c.sent_ref].filter(Boolean).join(' · ')], ['موعدُ المراجعة', c.reply_due_ar || c.reply_due_on], ['الجواب', [c.reply_on, c.reply_ref, c.reply_note].filter(Boolean).join(' · ')], ['الإقفال', c.close_note]]) {
       if (v) lg.append(el('i', 'k', k + ':'), el('i', null, String(v)));
     }
     n.appendChild(lg);
     if (c.body) n.appendChild(el('p', 'rs-msg', c.body));
-    if ((c.tasks || []).length) {
+    const allTasks = (c.tasks || []).concat(c.absence_tasks || []);
+    if (allTasks.length) {
       n.appendChild(el('div', 'rs-label', 'البنودُ التي يحملها'));
       const ul = el('ul', 'rs-acts');
-      for (const t of c.tasks) {
+      for (const t of allTasks) {
         const li = el('li');
         const b = el('span');
         b.append(el('span', null, t.text || ''), el('div', 'rs-need', t.closes_on_ar || ''));
@@ -225,7 +247,8 @@
     const st = c.status;
     const attach = { text: 'أرفِق', cls: 'rs-btn', onClick: () => { setTimeout(() => attachForm(c), 0); return null; } };
     const cancel = { text: 'ألغِ', cls: 'rs-btn irrev', onClick: () => { setTimeout(() => cancelForm(c), 0); return null; } };
-    if (st === 'draft') { ok = 'اعرضه للتوقيع'; onOk = () => act('v2_outgoing_sign', { p_mail: c.mail }, 'توقيع الصادر', true); extra.push(attach, cancel); }
+    const edit = { text: 'عدّل', cls: 'rs-btn', onClick: () => { setTimeout(() => createForm([], { mail: c.mail, subject: c.subject, to: c.to_entity, body: c.body, kind: c.kind, secrecy: c.secrecy, needs_reply: c.needs_reply, due: c.reply_due_on }), 0); return null; } };
+    if (st === 'draft') { ok = 'اعرضه للتوقيع'; onOk = () => act('v2_outgoing_sign', { p_mail: c.mail }, 'توقيع الصادر', true); extra.push(attach, edit, cancel); }
     else if (st === 'signed') { ok = 'أخرِجه'; onOk = () => { setTimeout(() => sendForm(c), 0); return null; }; extra.push(attach, cancel); }
     else if (st === 'sent') {
       if (c.needs_reply) { ok = 'سجّل الجواب'; onOk = () => { setTimeout(() => replyForm(c), 0); return null; }; }
@@ -378,14 +401,13 @@
     for (const h of ['الرقم', 'الموضوع', 'الجهة', 'الحال', 'التاريخ', '']) hr.appendChild(el('th', null, h));
     const th = el('thead'); th.appendChild(hr); tb.appendChild(th);
     const body = el('tbody');
-    const label = (s) => (STATUS.find((x) => x[0] === s) || [s, s])[1];
     for (const r of rows) {
       const tr = el('tr');
       const td = (...n) => { const c = el('td'); c.append(...n); tr.appendChild(c); return c; };
       td(document.createTextNode(r.serial_ar || ''));
       td(document.createTextNode(r.subject || ''));
       td(document.createTextNode(r.to_entity || ''));
-      const st = td(el('span', 'rs-state ' + (r.status === 'closed' ? 'done' : r.status === 'cancelled' ? 'void' : 'open'), label(r.status)));
+      const st = td(el('span', 'rs-state ' + (r.status === 'closed' ? 'done' : r.status === 'cancelled' ? 'void' : 'open'), r.state_ar || r.status));
       if (r.overdue_days) st.appendChild(el('span', 'rs-state late', 'متأخّرٌ عن موعده: ' + r.overdue_days));
       td(document.createTextNode(r.issued_ar || ''));
       td(btn('افتحه', 'rs-btn', () => openCard(r.mail)));
@@ -419,6 +441,9 @@
     arabize(mb);
     const box = $('iBody');
     box.textContent = '';
+    const reg = el('div', 'rs-row');
+    reg.appendChild(btn('سجّل واردًا', 'rs-btn', registerForm));
+    box.appendChild(reg);
     if (inb.error) { box.appendChild(el('div', 'notice err', errText(inb.error))); return; }
     const rows = inb.data || [];
     if (!rows.length) { box.appendChild(el('p', 'rs-meta', 'لا واردَ في التسعين يومًا الماضية.')); return; }
@@ -453,7 +478,6 @@
     if (error) { flash('bad', errText(error)); return; }
     const c = data || {};
     const m = c.mail || {};
-    const mineIds = new Set(ui.mine.map((x) => x.followup_id));
     const n = el('div');
     const lg = el('div', 'rs-lgd');
     for (const [k, v] of [['الرقم', [m.serial_no, m.ref_no].filter(Boolean).join(' · ')], ['من', m.from], ['ورد', m.received_h], ['تاريخُه', m.doc_date_h], ['السرّيّة', m.secrecy]]) if (v) lg.append(el('i', 'k', k + ':'), el('i', null, String(v)));
@@ -463,7 +487,8 @@
     for (const i of c.items || []) {
       const f = el('div', 'rs-file');
       f.append(el('h5', null, (i.ord ? i.ord + ' · ' : '') + (i.text || '')), el('p', 'rs-meta', [i.starts_h, i.ends_h].filter(Boolean).join(' — ')));
-      for (const fu of (i.followups || []).filter((x) => mineIds.has(x.id))) {
+      // ولكلّ موجَّهٍ إليه متابعتُه — mine كما يرجع من الجسر
+      for (const fu of (i.followups || []).filter((x) => x.mine === true)) {
         f.appendChild(el('p', null, 'متابعتُك' + (fu.due_h ? ' · حتى ' + fu.due_h : '') + (fu.late ? ' · متأخّرة' : '')));
         const r = el('div', 'rs-row');
         r.appendChild(btn('أتممتُه', 'rs-btn', () => { const x = ui.mine.find((y) => y.followup_id === fu.id); const mm = document.querySelector('.rs-modal:not([hidden])'); if (mm) mm.hidden = true; setTimeout(() => followupForm(x || { followup_id: fu.id, text_ar: i.text }), 0); }));
@@ -471,24 +496,84 @@
       }
       n.appendChild(f);
     }
+    // توجيهُ الوارد ببنودٍ إلى أشخاص (v2_mail_direct) — ومن ليس له يردّه الجسر
+    const dirBtn = el('div', 'rs-row');
+    dirBtn.appendChild(btn('وجّهه ببند', 'rs-btn', () => { const mm = document.querySelector('.rs-modal:not([hidden])'); if (mm) mm.hidden = true; setTimeout(() => directForm(m), 0); }));
     // الإقرارُ بالاطّلاع: «أقرُّ» و«أمتنع» متساويان بحدّ — والامتناعُ بسببٍ مكتوب
     V.form({
       title: m.subject || 'وارد',
-      fields: [{ key: 'c', type: 'node', node: n }, { key: 'refuse', type: 'textarea', label: 'سببُ الامتناع — إن امتنعت', rows: 2 }],
+      fields: [{ key: 'c', type: 'node', node: n }, { key: 'dir', type: 'node', node: dirBtn },
+        { key: 'att', label: 'المرفق — يلزم التوقيعَ' }, { key: 'refuse', type: 'textarea', label: 'سببُ الامتناع — إن امتنعت', rows: 2 }],
       ok: 'أقرُّ بالاطّلاع',
       pair: true,
-      onOk: async () => {
-        const { error: e } = await M.rpc('v2_mail_ack', { p_mail: m.id, p_signed: true, p_refuse_reason: null }, 'الإقرار بالاطّلاع');
+      pairNote: 'التوقيعُ يلزمه مرفق · والامتناعُ بسببٍ مكتوبٍ يُتمّ الخطوة',
+      onOk: async (v) => {
+        const { data: r, error: e } = await M.rpc('v2_mail_acknowledge', { p_mail: m.id, p_signed: true, p_refuse_reason: null, p_attachment_name: v.att }, 'الإقرار بالاطّلاع');
         if (e) return e;
-        flash('ok', 'أُثبت إقرارُك بالاطّلاع على الوارد' + (m.serial_no ? ' رقم ' + m.serial_no : ''));
+        if (!r || r.ok !== true) return 'لم يُثبته الجسر';
+        flash('ok', r.note_ar || '');
         return null;
       },
       extra: [{ text: 'أمتنع', cls: 'rs-btn', onClick: async (v) => {
-        const { error: e } = await M.rpc('v2_mail_ack', { p_mail: m.id, p_signed: false, p_refuse_reason: v.refuse }, 'الامتناع عن الإقرار');
+        const { data: r, error: e } = await M.rpc('v2_mail_acknowledge', { p_mail: m.id, p_signed: false, p_refuse_reason: v.refuse, p_attachment_name: null }, 'الامتناع عن الإقرار');
         if (e) return e;
-        flash('ok', 'أُثبت امتناعُك بسببه');
+        if (!r || r.ok !== true) return 'لم يُثبته الجسر';
+        flash('ok', r.note_ar || '');
         return null;
       } }],
+    });
+  }
+
+  // تسجيلُ وارد (v2_mail_register) — ثمّ توجيهُه
+  function registerForm() {
+    V.form({
+      title: 'تسجيلُ وارد',
+      fields: [
+        { key: 'from', label: 'الجهةُ الواردُ منها' },
+        { key: 'subject', label: 'الموضوع' },
+        { key: 'body', type: 'textarea', label: 'النصّ', rows: 3 },
+        { key: 'ref', label: 'رقمُه عند الجهة' },
+        { key: 'recv', type: 'date', label: 'تاريخُ الورود', value: M.state.date },
+        { key: 'doc', type: 'date', label: 'تاريخُ الخطاب' },
+        { key: 'secrecy', type: 'pick', label: 'السرّيّة', items: SECRECY, value: 'عادي' },
+        { key: 'source', label: 'المصدر' },
+      ],
+      ok: 'سجّله',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_mail_register', { p_from_entity: v.from, p_subject: v.subject, p_body: v.body, p_ref_no: v.ref, p_received_on: v.recv, p_doc_date: v.doc, p_secrecy: v.secrecy || 'عادي', p_source: v.source }, 'تسجيل وارد');
+        if (error) return error;
+        if (!data || data.ok !== true) return 'لم يُسجّله الجسر';
+        flash('ok', data.note_ar || '');
+        loadIncoming();
+        return null;
+      },
+    });
+  }
+
+  let staffCache = null;
+  async function directForm(m) {
+    if (!staffCache) {
+      const { data } = await M.rpc('v2_staff_list', { p_school: M.state.school }, 'قائمة المنسوبين');
+      staffCache = (data || []).map((p) => [p.person_id, p.name_ar, p.post_ar || '']);
+    }
+    V.form({
+      title: 'توجيهُ الوارد', what: m.subject || '',
+      fields: [
+        { key: 'text', type: 'textarea', label: 'نصُّ البند', rows: 2 },
+        { key: 'kind', type: 'pick', label: 'نوعُه', items: [['تكليف', 'تكليف'], ['إبلاغ بالعلم', 'إبلاغ بالعلم']], value: 'تكليف' },
+        { key: 'person', type: 'choose', label: 'إلى', items: staffCache },
+        { key: 'due', type: 'date', label: 'حتى (اختياريّ)' },
+      ],
+      ok: 'وجّهه',
+      onOk: async (v) => {
+        const items = [{ text: v.text, kind: v.kind, targets: [{ kind: 'person', person: v.person, due_on: v.due }] }];
+        const { data, error } = await M.rpc('v2_mail_direct', { p_mail: m.id, p_items: items }, 'توجيه الوارد');
+        if (error) return error;
+        if (!data || data.ok !== true) return 'لم يُوجّهه الجسر';
+        flash('ok', data.note_ar || '');
+        loadIncoming();
+        return null;
+      },
     });
   }
 
@@ -498,9 +583,10 @@
       fields: [{ key: 'note', type: 'textarea', label: 'ما تمّ', rows: 3 }, { key: 'ev', label: 'الشاهد (اختياريّ)' }],
       ok: 'أتممتُه',
       onOk: async (v) => {
-        const { error } = await M.rpc('v2_mail_followup_done', { p_followup: x.followup_id, p_note: v.note, p_evidence: v.ev }, 'إتمام بند وارد');
+        const { data, error } = await M.rpc('v2_mail_followup_close', { p_followup: x.followup_id, p_note: v.note, p_evidence: v.ev }, 'إقفال متابعة الوارد');
         if (error) return error;
-        flash('ok', 'أُقفل البند: ' + (x.text_ar || ''));
+        if (!data || data.ok !== true) return 'لم يُقفلها الجسر';
+        flash('ok', data.note_ar || '');
         loadIncoming();
         return null;
       },

@@ -15,6 +15,8 @@
   };
 
   // الشاشات المبنية، وما يفتح كلّاً منها من مفاتيح can
+  const MAIL_ROLES = ['principal', 'deputy', 'deputy_students', 'admin_assistant', 'admin_assistant_students'];
+  const currentRole = (me) => { const r = ((me && me.roles) || []).find((x) => x.is_current === true); return r ? r.role_key : null; };
   const SCREENS = [
     // الاصطفافُ والوصولُ والانصرافُ شاشةٌ واحدة بثلاثة أبواب — وrasd.html يُحوَّل إليها
     { key: 'wusul', group: 'اليوم', title: 'الوصول والاصطفاف والانصراف', desc: 'الاصطفاف فصلًا فصلًا · الوصول المتأخّر بقراره · تأخّر الانصراف',
@@ -47,9 +49,10 @@
     // شاشةُ المكلَّف (viewK) — «ما عليّ» لكلّ منسوب (mukallaf)، وآخرًا كي لا يُفتح عليها إلا من لا شاشةَ له غيرها
     { key: 'mukallaf', group: 'ما عليّ', title: 'ما عليّ', desc: 'إثباتُ مشاركة طالب · ما عليّ من اللجان',
       href: 'mukallaf.html', allow: (c) => !!c.mukallaf },
-    // بريدُ المدرسة: الصادرُ والوارد (تكليفُ الشاشات ③) — لا مفتاحَ له في can بعد، فيُفتح بمفتاح wakeel_full (الوكيلُ والمدير) والجسورُ تحرس
+    // بريدُ المدرسة: الصادرُ والوارد (تكليفُ الشاشات ③) — لا مفتاحَ له في can بعد، فيُفتح بالتكليف (الصفةِ النافذة)
+    // للصفات التي تقبلها جسورُ الصادر نفسُها: المديرُ والوكيلُ ووكيلُ شؤون الطلاب والمساعدان الإداريّان — والجسورُ تحرس كلَّ فعل
     { key: 'barid', group: 'الإدارة', title: 'بريد المدرسة', desc: 'ما ينتظر الصادر · السجلّ · الوارد',
-      href: 'barid.html', allow: (c) => !!c.wakeel_full },
+      href: 'barid.html', allow: (c, me) => !!c.wakeel_full || MAIL_ROLES.includes(currentRole(me)) },
     // والقاعدةُ تحرس الدخول إلى اللوحة
     { key: 'panel', group: 'الإدارة', title: 'لوحة التحكّم', desc: 'أبواب الإعداد — المقفلُ بسببه وسنده',
       href: 'panel.html', allow: (c) => !!c.manage_settings },
@@ -190,7 +193,7 @@
   }
 
   function screensFor(me) {
-    return me && me.can ? SCREENS.filter((x) => x.allow(me.can)) : [];
+    return me && me.can ? SCREENS.filter((x) => x.allow(me.can, me)) : [];
   }
 
   // ---------- الرأس: الاسم والصفة ومبدّلها ----------
@@ -424,7 +427,7 @@
       renderHeader(me, onRole);
       renderNav(me, screen && screen.key);
       if (!me) { gate('حسابك غير مسند إلى منسوب في مؤيّد. اطلب من مالك النظام إسنادك.'); return; }
-      if (!screen || !screen.allow(me.can || {})) {
+      if (!screen || !screen.allow(me.can || {}, me)) {
         // الصفة الجديدة لا تملك هذه الشاشة: إلى أول شاشة تملكها، وإلا فلا شيء
         const first = screensFor(me)[0];
         if (why === 'role' && first) { location.replace(first.href); return; }
