@@ -95,6 +95,82 @@
     return c.type === 'number' && !isNaN(Number(v)) ? Number(v) : v;
   }
 
+  // ---------- منبعُ الحقل (تكليفُ الشاشات ⑤) ----------
+  // كما يرجع في schema: source · source_ar · bank_key · phrases_n · source_note_ar — فلا نداءَ ثانٍ لرسم الزرّ
+  // «اختر من المكتبة» إن كان phrases_n > 0 · «املأ من النظام» إن كان فيه computed · و«بيدك وحدَك» بلا زرٍّ ولا اقتراح
+  // والاختيارُ يُدرج ولا يُقفل: الحقلُ يبقى قابلًا للتعديل، وتُجمع العباراتُ بفواصل
+  function insertText(c, text) {
+    const cur = c.value.trim();
+    c.value = cur ? cur + (c.tagName === 'TEXTAREA' ? '\n' : '، ') + text : text;
+    c.dispatchEvent(new Event('input'));
+  }
+  function sourceTools(f, c, td) {
+    if (!f.source || f.source === 'none') return;
+    if (f.source === 'by_hand') { td.appendChild(el('div', 'hint byhand', f.source_ar || '')); return; }
+    // ما كُتب باليد في حقلٍ له مكتبة: «أضِفْها إلى مكتبة المدرسة؟» — فإن قبل نمت المكتبةُ من عمله
+    if (f.bank_key) {
+      let typed = false;
+      const offer = el('div', 'srcoffer noprint');
+      offer.hidden = true;
+      td.appendChild(offer);
+      c.addEventListener('input', (e) => { if (e.isTrusted) typed = true; });
+      c.addEventListener('blur', () => {
+        if (!typed || !c.value.trim()) return;
+        typed = false;
+        offer.textContent = '';
+        const b = V.btn('أضِفْها إلى مكتبة المدرسة؟', 'rs-btn ghost', () => V.send(b, async () => {
+          const { data, error } = await M.rpc('v2_phrase_add', { p_form: P.form, p_field: f.key, p_text: c.value.trim() }, 'إضافة عبارة إلى المكتبة');
+          offer.textContent = '';
+          offer.appendChild(el('div', error ? 'flash bad' : 'rs-done-note', error ? errText(error) : ((data && data.note_ar) || '')));
+        }));
+        offer.appendChild(b);
+        offer.hidden = false;
+      });
+    }
+    const computed = /computed|both/.test(f.source);
+    const lib = Number(f.phrases_n || 0) > 0;
+    if (!computed && !lib) return;
+    const row = el('div', 'srcrow noprint');
+    if (lib) row.appendChild(V.btn('اختر من المكتبة', 'rs-btn', () => library(f, c, 'lib')));
+    if (computed) row.appendChild(V.btn('املأ من النظام', 'rs-btn', () => library(f, c, 'computed')));
+    row.appendChild(el('span', 'srctag', f.source_ar || ''));
+    td.appendChild(row);
+  }
+
+  // الشِيتُ بالعبارات: ما يحسبه النظامُ بسببه، ثمّ العباراتُ بترتيبها كما جاءت ومع كلٍّ why — واللمسةُ تُدرج وتُعَدّ (v2_phrase_use)
+  async function library(f, c, mode) {
+    const { data, error } = await M.rpc('v2_phrases_for', { p_form: P.form, p_field: f.key, p_record: P.ref, p_task: P.task }, 'عبارات الحقل');
+    if (error) { fail(errText(error)); return; }
+    const d = data || {};
+    const box = el('div');
+    if (d.summary_ar) box.appendChild(el('p', 'rs-meta', d.summary_ar));
+    if (d.how_ar) box.appendChild(el('p', 'rs-meta', d.how_ar));
+    const note = el('div');
+    box.appendChild(note);
+    const item = (text, why, onPick) => {
+      const it = el('button', 'rs-item phr');
+      it.type = 'button';
+      it.append(el('span', null, text), el('small', null, why || ''));
+      V.tap(it, () => { insertText(c, text); it.classList.add('on'); onPick && onPick(); });
+      return it;
+    };
+    const comp = d.computed || [];
+    if (comp.length && mode === 'computed') { box.appendChild(el('div', 'rs-label', 'يحسبه النظام')); for (const x of comp) box.appendChild(item(x.text, x.why)); }
+    const ph = d.phrases || [];
+    if (ph.length) {
+      box.appendChild(el('div', 'rs-label', 'المكتبة'));
+      for (const x of ph) {
+        box.appendChild(item(x.text, [x.why, x.source].filter(Boolean).join(' · '), async () => {
+          const { data: u } = await M.rpc('v2_phrase_use', { p_phrase: x.id, p_form: P.form, p_field: f.key }, 'استعمال عبارة');
+          note.textContent = (u && u.note_ar) || '';
+        }));
+      }
+    }
+    if (comp.length && mode !== 'computed') { box.appendChild(el('div', 'rs-label', 'يحسبه النظام')); for (const x of comp) box.appendChild(item(x.text, x.why)); }
+    V.arabize(box);
+    V.form({ title: d.label_ar || f.label || '', what: d.source_ar || f.source_ar || '', fields: [{ key: 'b', type: 'node', node: box }], ok: false, cancel: 'تمّ' });
+  }
+
   // ---------- العرض ----------
   function render() {
     const d = ui.doc;
@@ -146,8 +222,10 @@
         else if (f.hint) td.appendChild(el('div', 'hint', f.hint));
         td.classList.add('auto');
       } else {
-        td.appendChild(control(f, data[f.key], ro, 'f_'));
+        const c = control(f, data[f.key], ro, 'f_');
+        td.appendChild(c);
         if (f.hint && !ro) td.appendChild(el('div', 'hint', f.hint));
+        if (!ro) sourceTools(f, c, td);
       }
       tr.append(th, td);
       t.appendChild(tr);

@@ -643,3 +643,29 @@
   .rs-need { display: inline-block; margin-top: 6px; font-size: 14px; line-height: 23px; font-weight: 700; color: var(--info-c); }
   .rs-state.late { color: var(--navy); background: var(--warn-bg); border: 1px solid var(--sand); margin-inline-start: 8px; }
   .rs-file.rs-late { border-inline-start: 4px solid var(--sand); }
+
+/* ─── النافذةُ (الشِيت) — مكوِّنٌ واحدٌ لكلّ نوافذ النظام (تكليفُ الشاشات ⑤) ───
+   هامشٌ ١٦ من الجانبين ومن safe-area · ارتفاعٌ أقصاه 90dvh · الجسمُ وحدَه يُمرَّر ومعه overscroll-behavior:contain
+   والرأسُ والذيلُ ثابتان · وقفلُ الصفحة خلفها وحصرُ التركيز وEsc في views.js */
+  .rs-modal { padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); align-items: flex-end; overscroll-behavior: contain; }
+  @media (min-width: 700px) { .rs-modal { align-items: center; } }
+  .rs-modal > .sheet { border-radius: 16px; max-height: 90vh; max-height: 90dvh; overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+    padding: 16px; padding-bottom: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+  .rs-modal > .sheet.sh { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+  .sh-head { flex: none; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 16px 8px; border-bottom: 1px solid var(--line); }
+  .sh-head h3 { margin: 0; }
+  .sh-head .rs-meta { margin: 4px 0 0; }
+  .sh-head .sh-x { flex: none; min-width: 44px; padding: 0; font-size: 18px; }
+  .sh-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 12px 16px 16px; }
+  .sh-foot { flex: none; border-top: 1px solid var(--line); padding: 12px 16px; background: var(--card); }
+  .sh-foot .rs-actbar { margin: 0; }
+  .rs-modal > .sheet.sh .rs-actbar { position: static; margin: 0; padding: 0; border: 0; }
+
+/* منبعُ حقل النموذج: «اختر من المكتبة» · «املأ من النظام» · «بيدك وحدَك» — والعبارةُ في الشِيت بسببها */
+  .srcrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+  .srctag { font-size: 13px; line-height: 20px; color: var(--muted); }
+  .hint.byhand { font-weight: 700; color: var(--muted); }
+  .srcoffer { margin-top: 8px; }
+  .rs-item.phr { flex-direction: column; align-items: flex-start; text-align: start; gap: 2px; padding: 10px 12px; }
+  .rs-item.phr small { font-size: 13px; line-height: 20px; }
+  .rs-item.phr.on { border-color: var(--school-accent); box-shadow: inset 0 0 0 1.5px var(--school-accent); background: var(--card); color: var(--text); }

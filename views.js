@@ -224,10 +224,23 @@
       document.body.appendChild(formBox);
       formBox.addEventListener('click', (e) => { if (e.target === formBox && !formBox.busy) formBox.hidden = true; });
     }
-    const sh = formBox.firstChild;
-    sh.textContent = '';
-    sh.appendChild(el('h3', null, o.title));
-    if (o.what) sh.appendChild(el('p', 'rs-meta', o.what));
+    const outer = formBox.firstChild;
+    outer.textContent = '';
+    outer.classList.add('sh');
+    // الرأسُ ثابت (العنوانُ وزرُّ الإغلاق) · والجسمُ وحدَه يُمرَّر · والذيلُ ثابتٌ فيه الأزرار
+    const head = el('div', 'sh-head');
+    const ht = el('div');
+    const h3 = el('h3', null, o.title);
+    h3.id = 'shTitle';
+    ht.appendChild(h3);
+    if (o.what) ht.appendChild(el('p', 'rs-meta', o.what));
+    const x = btn('✕', 'rs-btn ghost sh-x', () => { if (!formBox.busy) formBox.hidden = true; });
+    x.setAttribute('aria-label', 'إغلاق');
+    head.append(ht, x);
+    const sh = el('div', 'sh-body');
+    const foot = el('div', 'sh-foot');
+    outer.append(head, sh, foot);
+    outer.setAttribute('aria-labelledby', 'shTitle');
     const err = el('div', 'flash bad');
     err.hidden = true;
     sh.appendChild(err);
@@ -282,7 +295,7 @@
     row.appendChild(no);
     // الفعلُ الذي لا يُرجَع في النهاية البعيدة (يسارًا) — لا يُلامس غيرَه
     if (!pair && o.ok !== false && /\birrev\b/.test(ok.className)) row.appendChild(ok);
-    sh.appendChild(row);
+    foot.appendChild(row);
     const api = { values: () => { const r = {}; for (const k in get) r[k] = get[k](); return r; }, ok };
     // زرُّ التأكيد معطَّلٌ حتى يقول الجسرُ إنّه جاهز (كالنموذج قبل اعتماده) — okDisabled
     if (o.okDisabled) ok.disabled = true;
@@ -312,7 +325,7 @@
       else row.insertBefore(b, no);
     });
     sync();
-    arabize(sh);
+    arabize(outer);
     formBox.hidden = false;
     sh.scrollTop = 0;
     // لا تركيزَ آليًّا على اللمس: لوحةُ المفاتيح تغطّي اللوحَ وتبتلع اللمسةَ الأولى
@@ -468,6 +481,62 @@
     arabize(f);
     return f;
   }
+
+  // ---------- النافذةُ (الشِيت): سلوكٌ واحدٌ لكلّ نافذةٍ في النظام (تكليفُ الشاشات ⑤) ----------
+  // تُراقَب كلُّ ‎.rs-modal (بـ hidden) وكلُّ <dialog> (بـ open): فعند الفتح يُقفل تمريرُ الصفحة خلفها
+  // (position:fixed على الجسم — وهو ما يلزم iOS) ويُحفظ موضعُها، ويُحصر التركيزُ فيها، ويُغلقها Esc ولمسُ الغلاف؛
+  // وعند الإغلاق يعود موضعُ الصفحة والتركيزُ إلى الزرّ الذي فتحها.
+  const openMods = [];
+  let savedY = 0;
+  const isOpen = (m) => (m.tagName === 'DIALOG' ? m.open : !m.hidden);
+  const focusables = (m) => [...m.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((n) => !n.disabled && n.offsetParent !== null);
+  function lockPage() {
+    savedY = window.scrollY || 0;
+    const b = document.body.style;
+    b.position = 'fixed'; b.top = -savedY + 'px'; b.left = '0'; b.right = '0'; b.width = '100%';
+  }
+  function unlockPage() {
+    const b = document.body.style;
+    b.position = ''; b.top = ''; b.left = ''; b.right = ''; b.width = '';
+    window.scrollTo(0, savedY);
+  }
+  function modalChanged(m) {
+    const i = openMods.findIndex((x) => x.m === m);
+    if (isOpen(m) && i < 0) {
+      if (!openMods.length) lockPage();
+      openMods.push({ m, from: document.activeElement });
+      // التركيزُ إلى أوّل ما يُركَّز فيه — إلّا على اللمس: لوحةُ المفاتيح تغطّي النافذة
+      if (!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) {
+        setTimeout(() => { if (isOpen(m) && !m.contains(document.activeElement)) { const f = focusables(m)[0]; if (f) f.focus(); } }, 0);
+      }
+    } else if (!isOpen(m) && i >= 0) {
+      const [{ from }] = openMods.splice(i, 1);
+      if (!openMods.length) unlockPage();
+      if (from && from.focus && document.contains(from)) { try { from.focus({ preventScroll: true }); } catch (e) { /* لا شيء */ } }
+    }
+  }
+  if (window.MutationObserver) {
+    new MutationObserver((ms) => {
+      for (const r of ms) {
+        if (r.type === 'attributes' && r.target.matches && r.target.matches('.rs-modal, dialog')) modalChanged(r.target);
+        if (r.type === 'childList') for (const n of r.addedNodes) if (n.nodeType === 1 && n.matches && n.matches('.rs-modal:not([hidden]), dialog[open]')) modalChanged(n);
+      }
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['hidden', 'open'], subtree: true, childList: true });
+  }
+  document.addEventListener('keydown', (e) => {
+    const top = openMods.length ? openMods[openMods.length - 1].m : null;
+    if (!top || !isOpen(top)) return;
+    if (e.key === 'Escape' && top.tagName !== 'DIALOG') {
+      if (formBox && top === formBox && formBox.busy) return;
+      e.preventDefault(); top.hidden = true;
+    } else if (e.key === 'Tab') {
+      const f = focusables(top);
+      if (!f.length) return;
+      const first = f[0]; const last = f[f.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !top.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (document.activeElement === last || !top.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+    }
+  });
 
   // صندوقُ النماذج (v2_my_form_inbox) — للموجّه والطالب وعضو اللجنة: ما وُجّه إلى صاحبه وحدَه
   // who_ar عنوانُه · وكلُّ صفٍّ بعنوانه كما يرجع (والمسحوبُ «(مسحوب) … — والسببُ»)، وحقولُه تُفتح فتُعلَّم مقروءةً (v2_form_inbox_read)

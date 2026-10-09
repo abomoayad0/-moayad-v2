@@ -45,6 +45,16 @@
 
   <div class="notice err" id="loadErr" hidden></div>
 
+  <!-- البحثُ في المدرسة كلِّها — لا يشترط صفًّا ولا فصلًا (v2_students_board بـ p_limit) · وآخرُ من عملتَ عليهم (v2_recent_students) -->
+  <section class="rs-card" id="findCard">
+    <label for="qAll">ابحث عن طالب</label>
+    <input id="qAll" type="search" placeholder="الاسم أو رقم الطالب أو الهويّة" autocomplete="off">
+    <p class="rs-meta" id="qAllSum"></p>
+    <div class="rs-list" id="qAllList"></div>
+    <div class="rs-label" id="recentTitle"></div>
+    <div class="rs-pick" id="recent"></div>
+  </section>
+
   <!-- صدرُ الشاشة: ما بقي فيه بندٌ مفتوح (v2_open_records) — الأقدمُ أوّلًا كما يرجع، ولا أحمرَ ولا مدّة -->
   <section class="rs-card" id="openCard" hidden>
     <h3>ما بقي فيه بندٌ مفتوح</h3>

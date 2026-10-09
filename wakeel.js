@@ -80,6 +80,7 @@
     $('evCard').hidden = !ui.full;
     if (ui.full) loadEvidence();
     loadOpen();
+    loadRecent();
   }
 
   // ---------- صدرُ الشاشة: v2_open_records ----------
@@ -133,13 +134,59 @@
     arabize(box);
   }
 
+  // ---------- البحثُ في المدرسة كلِّها · وآخرُ من عملتَ عليهم ----------
+  // بعد حرفين · والنتيجةُ ومعها summary_ar كما يرجع (و«… عُرض منهم ٦٠ — فضيّق البحث» إن كان more)
+  // واللمسةُ تفتح الطالبَ في بطاقة الرصد مباشرةً — فلا يُمرّ على أحدٍ للوصول إلى واحد
+  let findSeq = 0; let findT = null;
+  $('qAll').addEventListener('input', () => { clearTimeout(findT); findT = setTimeout(find, 250); });
+  async function find() {
+    const q = $('qAll').value.trim();
+    const list = $('qAllList');
+    const seq = ++findSeq;
+    if (q.length < 2) { list.textContent = ''; $('qAllSum').textContent = ''; return; }
+    const { data, error } = await M.rpc('v2_students_board', { p_school: M.state.school, p_grade: null, p_section: null, p_q: q, p_limit: 30 }, 'البحث عن طالب');
+    if (seq !== findSeq) return;
+    list.textContent = '';
+    if (error) { $('qAllSum').textContent = ''; list.appendChild(el('div', 'notice err', errText(error))); return; }
+    const d = data || {};
+    $('qAllSum').textContent = d.summary_ar || '';
+    for (const x of d.rows || []) {
+      const b = btn('', 'rs-item', () => pickStudent({ student: x.student, name: x.display || x.name, grade: x.grade, section: x.section, student_no: x.student_no }));
+      b.append(el('b', null, x.display || x.name || ''), el('small', null, [x.grade != null ? 'الصفّ ' + x.grade + (x.section ? ' / ' + x.section : '') : null, x.student_no].filter(Boolean).join(' · ')));
+      list.appendChild(b);
+    }
+    arabize($('findCard'));
+  }
+  async function loadRecent() {
+    const { data, error } = await M.rpc('v2_recent_students', { p_limit: 8 }, 'آخرُ من عملتَ عليهم');
+    const box = $('recent');
+    box.textContent = '';
+    $('recentTitle').textContent = error ? errText(error) : ((data && data.summary_ar) || '');
+    if (error) return;
+    for (const x of (data && data.rows) || []) {
+      const s = el('span', null, x.name || '');
+      s.setAttribute('role', 'button'); s.tabIndex = 0;
+      s.title = [x.last_ar, x.when_ar].filter(Boolean).join(' · ');
+      V.tap(s, () => pickStudent({ student: x.student, name: x.name, grade: x.grade, section: x.section }));
+      box.appendChild(s);
+    }
+    arabize(box);
+  }
+  // من البحث أو الشريط إلى بطاقة الرصد: الطالبُ مختار، والسلوكُ هو الخطوةُ التالية
+  function pickStudent(x) {
+    $('qAll').value = ''; $('qAllList').textContent = ''; $('qAllSum').textContent = '';
+    openFromRow({ student: x.student, student_ar: x.name, grade: x.grade, section: x.section, student_no: x.student_no }, null, true);
+    setTimeout(() => $('recCard').scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+  }
+
   // من صفّ القائمة إلى ملفّ الطالب: فصلُه من قائمة اليوم إن كان فيها، وإلا فبرقمه واسمه كما رجعا
-  function openFromRow(r, prob) {
-    const row = (ui.rows || []).find((x) => x.student_id === r.student) || { student_id: r.student, display_name: r.student_ar, full_name: r.student_ar };
+  function openFromRow(r, prob, noScroll) {
+    const row = (ui.rows || []).find((x) => x.student_id === r.student) || { student_id: r.student, display_name: r.student_ar, full_name: r.student_ar, grade: r.grade, section: r.section, student_no: r.student_no };
     const c = ui.classes.find((x) => x.grade === row.grade && x.section === row.section);
     if (c) { ui.cls = c; renderClasses(); $('qStu').disabled = false; }
     openStudent(row).then(() => {
       if (c) renderStudents();
+      if (noScroll) return;
       const go = () => { const t = prob && [...document.querySelectorAll('#files .rs-card h3')].find((h) => h.textContent.replace(/\.\s*$/, '') === String(prob).replace(/\.\s*$/, '')); (t ? t.closest('.rs-card') : $('files')).scrollIntoView({ behavior: 'smooth', block: 'start' }); };
       setTimeout(go, 600);
     });
@@ -361,6 +408,7 @@
     // بعد كلّ رصدة: تُعاد قراءةُ البطاقة والمهامّ من القاعدة — فرقمُ الرصدة والإجراءُ كما صارا فيها
     loadStudentCards();
     loadOpen();
+    loadRecent();
     const { data: fresh } = await M.rpc('v2_conduct_list', { p_student: stu.student_id, p_mode: null, p_target: 'general' }, 'قائمة المخالفات');
     if (ui.stu !== stu) return;
     if (fresh) { ui.problems = fresh; ui.prob = ui.problems.find((x) => x.id === p.id) || null; }
