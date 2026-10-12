@@ -1,5 +1,5 @@
 -- v2.audit_sweep()
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 252e40a28b144fb0974d846ac66f569e
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 4f2e14e3f2e8e8df99433eab78fa58d9
 CREATE OR REPLACE FUNCTION v2.audit_sweep()
  RETURNS TABLE(check_key text, object_ar text, detail_ar text, severity text)
  LANGUAGE sql
@@ -32,5 +32,6 @@ AS $function$
   union all select 'health_no_counselor', hn.obj, hn.why_ar, hn.severity from v2.audit_health_no_counselor() hn
   union all select 'health_case_due_review', hr.obj, hr.why_ar, hr.severity from v2.audit_health_case_due_review() hr
   union all select 'number_without_words', nw.fn, nw.why_ar, nw.severity from v2.audit_number_without_words() nw
+  union all select 'assign_without_letter', al.obj, al.why_ar, al.severity from v2.audit_assign_without_letter() al
 $function$
 ;

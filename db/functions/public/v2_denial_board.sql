@@ -1,5 +1,5 @@
 -- public.v2_denial_board(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 31a86bcd1132e51636a2759cd91b6b96
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 a7fcc3cdfd11efa4f47b672de866cb64
 CREATE OR REPLACE FUNCTION public.v2_denial_board(p_school uuid DEFAULT NULL::uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -18,6 +18,7 @@ begin
     select jsonb_build_object(
       'student', s.id, 'name', v2.fn_display_name(q."الطالب"),
       'grade', q."الصف", 'section', q."الفصل",
+      'class_ar', v2.class_ar(e.grade, e.section),
       'days', q."غياب_بلا_عذر",
       'limit', v2.denial_limit(q."أيام_دراسة_مقررة"),
       'year_days', q."أيام_دراسة_مقررة",

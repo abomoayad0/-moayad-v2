@@ -152,7 +152,7 @@
     $('qAllSum').textContent = d.summary_ar || '';
     for (const x of d.rows || []) {
       const b = btn('', 'rs-item', () => pickStudent({ student: x.student, name: x.name || x.full_name, grade: x.grade, section: x.section, student_no: x.student_no }));
-      b.append(el('b', null, x.name || x.full_name || ''), el('small', null, [x.grade != null ? 'الصفّ ' + x.grade + (x.section ? ' / ' + x.section : '') : null, x.student_no].filter(Boolean).join(' · ')));
+      b.append(el('b', null, x.name || x.full_name || ''), el('small', null, [x.class_ar, x.student_no, x.guardians_ar].filter(Boolean).join(' · ')));
       list.appendChild(b);
     }
     arabize($('findCard'));

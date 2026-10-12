@@ -1,5 +1,5 @@
 -- public.v2_card_open(p_student uuid, p_date date)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 aed4f6c8dcaf9809c4308393bbb024d5
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 7d6d113e7e08a3274d87aefdb3456b3f
 CREATE OR REPLACE FUNCTION public.v2_card_open(p_student uuid, p_date date DEFAULT CURRENT_DATE)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -33,7 +33,7 @@ begin
     'session', sid,
     'student', jsonb_build_object('id',p_student,'name_ar',nm,
         'grade_ar', v2.grade_ar(grd), 'section', sect,
-        'class_ar', v2.grade_ar(grd) || ' — ' || sect),
+        'class_ar', v2.class_ar(grd, sect)),
     'blocked_why', b,
     'window', w,
     'can_write', (coalesce((w->>'can_write')::boolean,false) and b is null),
@@ -110,21 +110,7 @@ begin
       from v2.card_events ce
       where ce.student_id=p_student and ce.undone_at is null
         and ce.kind='practice' and ce.on_date >= p_date - v_days),'[]'::jsonb),
-    'practices', coalesce((select jsonb_agg(jsonb_build_object(
-        'code',cp.code,'title_ar',cp.title_ar,'polarity',cp.polarity,
-        'points', v2.practice_weight(sc, cp.code),
-        'points_ar', case when v2.practice_weight(sc, cp.code) = 0 then 'بلا وزن'
-            else v2.ar_num(v2.practice_weight(sc, cp.code)) end,
-        'scope',cp.scope,'zone',cp.zone,'grade_impact',cp.kind,
-        'once_per_day',cp.once_per_day,
-        'threshold_count',cp.threshold_count,'threshold_days',cp.threshold_days,
-        'threshold_ar', v2.threshold_ar(cp.threshold_count, cp.threshold_days),
-        'done_today', exists (select 1 from v2.card_events ce
-            where ce.student_id=p_student and ce.on_date=p_date
-              and ce.kind='practice' and ce.code=cp.code and ce.undone_at is null))
-        order by cp.polarity desc, cp.ord)
-      from v2.class_practices cp
-      where cp.active and (cp.school_id is null or cp.school_id=sc)),'[]'::jsonb),
+    'practices', v2.card_practices(sc, p_student, p_date),
     'practices_note_ar','الممارساتُ — إيجابيُّها وسالبُها — منفصلةٌ تمامًا عن دليل السلوك ولا تؤثّر فيه',
     'practice_balance', public.v2_practice_balance_of(p_student),
     'work', public.v2_work_of_student(p_student),

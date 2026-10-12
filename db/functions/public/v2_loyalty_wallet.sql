@@ -1,5 +1,5 @@
 -- public.v2_loyalty_wallet(p_student uuid, p_limit integer)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 7333f7bf267e41fdbac85226cc503c3f
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 d5737c7b6372e05bbc6a08166c4ff99d
 CREATE OR REPLACE FUNCTION public.v2_loyalty_wallet(p_student uuid, p_limit integer DEFAULT 20)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -22,10 +22,12 @@ begin
     'balance', bal,
     'balance_ar', v2.ar_balance(bal),
     'earned', v_earn, 'deducted', v_ded, 'spent', v_spend,
-    'totals_ar', concat_ws(' · ',
-      'كسبَ '||v2.ar_count0(v_earn,'لا شيء','نقطةً واحدة','نقطتين','نقاط','نقطة'),
-      'وخُصمت منه '||v2.ar_count0(v_ded,'لا شيء','نقطةٌ واحدة','نقطتان','نقاط','نقطة'),
-      'وصرفَ '||v2.ar_count0(v_spend,'لا شيء','نقطةً واحدة','نقطتين','نقاط','نقطة')),
+    'totals_ar', case when v_earn = 0 and v_ded = 0 and v_spend = 0
+      then 'لا حركةَ في محفظته بعد'
+      else btrim(concat_ws(' · ',
+        case when v_earn > 0 then 'كسبَ '||v2.ar_count(v_earn,'نقطةً واحدة','نقطتين','نقاط','نقطة') end,
+        case when v_ded  > 0 then 'وخُصمت منه '||v2.ar_count(v_ded,'نقطةٌ واحدة','نقطتان','نقاط','نقطة') end,
+        case when v_spend> 0 then 'وصرفَ '||v2.ar_count(v_spend,'نقطةً واحدة','نقطتين','نقاط','نقطة') end)) end,
     'moves', coalesce((
        select jsonb_agg(jsonb_build_object(
            'id', m.id, 'kind', m.kind, 'points', m.points,

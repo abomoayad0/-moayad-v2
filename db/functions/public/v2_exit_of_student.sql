@@ -1,5 +1,5 @@
 -- public.v2_exit_of_student(p_student uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 652f7be37938456da835e52dc0ede830
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 7cf0afe1ab99ae7696e91adb1c6295c9
 CREATE OR REPLACE FUNCTION public.v2_exit_of_student(p_student uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -37,7 +37,7 @@ begin
         where x.student_id=p_student and x.back_at is null),
     'rows', coalesce((select jsonb_agg(jsonb_build_object(
         'exit',x.id,'on_date',x.on_date,'on_ar',v2.fn_to_hijri(x.on_date),
-        'period',x.period_no,
+        'period',x.period_no,'period_ar',v2.period_ar(x.period_no),
         'to_ar',x.to_where_ar,'note_ar',x.note_ar,
         'minutes', case when x.back_at is null then null
                    else greatest(0,(extract(epoch from (x.back_at - x.out_at))/60)::int) end,

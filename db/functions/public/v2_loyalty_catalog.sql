@@ -1,5 +1,5 @@
 -- public.v2_loyalty_catalog()
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2c2b0c72ec6f64efad40701ae072146b
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 ed4f54ea3f6587aac66a92c92e551d22
 CREATE OR REPLACE FUNCTION public.v2_loyalty_catalog()
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -14,10 +14,15 @@ begin
     'sources', coalesce((
       select jsonb_agg(jsonb_build_object(
           'code', x.code, 'title_ar', x.title_ar, 'kind', x.kind, 'points', x.points,
+          'points_ar', case when x.kind='earn'
+              then 'تُضيف '||v2.ar_count(x.points,'نقطةً واحدة','نقطتين','نقاط','نقطة')
+              else 'تُنقص '||v2.ar_count(x.points,'نقطةً واحدة','نقطتين','نقاط','نقطة') end,
           'week_cap', coalesce(x.week_cap, v2.rule_n(sc,'loyalty_week_cap_default')),
+          'week_cap_ar', 'سقفُها الأسبوعيُّ '||v2.ar_count(
+              coalesce(x.week_cap, v2.rule_n(sc,'loyalty_week_cap_default')),
+              'نقطةٌ واحدة','نقطتان','نقاط','نقطة'),
           'needs_note', x.needs_note or (x.kind='deduct' and v2.rule_n(sc,'loyalty_deduct_needs_note')=1),
           'who_ar', (select string_agg(coalesce(v2.role_ar(r), r), ' · ') from unnest(x.who_may) r),
-          -- 🔑 من يُمنح آليًّا لا يُعرض له زرّ · ومن لا محرّكَ له لا يُعرض أصلًا
           'auto_kind', x.auto_kind,
           'auto_ar', case x.auto_kind
               when 'engine'  then 'تُمنح آليًّا — ولا تُطلب بيد'
@@ -35,7 +40,12 @@ begin
     'rewards', coalesce((
       select jsonb_agg(jsonb_build_object(
           'code', y.code, 'title_ar', y.title_ar, 'price', y.price,
-          'needs_principal', y.needs_principal, 'stock', y.stock,
+          'price_ar', 'بـ'||v2.ar_count(y.price,'نقطةٍ واحدة','نقطتين','نقاط','نقطة'),
+          'needs_principal', y.needs_principal,
+          'needs_principal_ar', case when y.needs_principal then 'تلزمها موافقةُ المدير' end,
+          'stock', y.stock,
+          'stock_ar', case when y.stock is null then 'بلا حدٍّ للعدد'
+              else 'المتاحُ منها '||v2.ar_count(y.stock,'واحدةٌ','اثنتان','قطع','قطعة') end,
           'who_ar', (select string_agg(coalesce(v2.role_ar(r), r), ' · ') from unnest(y.who_may_spend) r),
           'can_i', v2.loyalty_can(y.who_may_spend)
                    and (not y.needs_principal or v2.loyalty_can(array['principal'])),
@@ -52,6 +62,11 @@ begin
       'max_per_act',    v2.rule_n(sc,'loyalty_max_per_act'),
       'week_cap',       v2.rule_n(sc,'loyalty_week_cap_default'),
       'undo_minutes',   v2.rule_n(sc,'loyalty_undo_minutes'),
-      'spend_needs_balance', v2.rule_n(sc,'loyalty_spend_needs_balance') = 1));
+      'spend_needs_balance', v2.rule_n(sc,'loyalty_spend_needs_balance') = 1),
+    'rules_ar', concat_ws(' · ',
+      case when v2.rule_n(sc,'loyalty_allow_negative') = 1
+           then 'يُسمح برصيدٍ تحت الصفر' else 'ولا يهبط الرصيدُ تحت الصفر' end,
+      'وأكبرُ ما يُمنح في الحركة '||v2.ar_count(v2.rule_n(sc,'loyalty_max_per_act'),'نقطةٌ واحدة','نقطتان','نقاط','نقطة'),
+      'ومهلةُ التراجع '||v2.ar_count(v2.rule_n(sc,'loyalty_undo_minutes'),'دقيقةٌ واحدة','دقيقتان','دقائق','دقيقة')));
 end $function$
 ;

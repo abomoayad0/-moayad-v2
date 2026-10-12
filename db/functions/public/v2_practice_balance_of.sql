@@ -1,5 +1,5 @@
 -- public.v2_practice_balance_of(p_student uuid, p_term smallint)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 0b648e48d81b80e6aa2e623bd93f0b2f
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 3429b71433af819920978675c6d2cbe8
 CREATE OR REPLACE FUNCTION public.v2_practice_balance_of(p_student uuid, p_term smallint DEFAULT NULL::smallint)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -35,19 +35,21 @@ begin
         else 'رصيدُه '||v2.ar_num(v_bal)||' — وهو تحت الصفر' end,
     'earned', v_pos, 'deducted', v_neg,
     'count_positive', n_pos, 'count_negative', n_neg,
-    'counts_ar', concat_ws(' · ',
-      'رُصدت له '||v2.ar_count(n_pos,'إيجابيّةٌ واحدة','إيجابيّتان','إيجابيّات','إيجابيّة'),
-      'و'||v2.ar_count(n_neg,'سالبةٌ واحدة','سالبتان','سالبات','سالبة')),
+    'counts_ar', case when n_pos = 0 and n_neg = 0 then 'لم يُرصد له شيءٌ هذا الفصل'
+      else concat_ws(' · ',
+        v2.ar_count0(n_pos,'لم تُرصد له إيجابيّة',
+            'رُصدت له إيجابيّةٌ واحدة','رُصدت له إيجابيّتان',
+            'رُصدت له إيجابيّات','رُصدت له إيجابيّة'),
+        v2.ar_count0(n_neg,'ولا سالبة',
+            'وسالبةٌ واحدة','وسالبتان','وسالبات','وسالبة')) end,
     'negative_weighed', v2.rule_n(sc,'practice_negative_weighed') = 1,
     'spend_ar','ورصيدُ الممارسات مستقلٌّ تمامًا عن دليل السلوك ولا يمسُّه · ومصرفُه في درجة المادّة لم يُبنَ بعد، فهو مرآةٌ لا درجة',
     'rows', coalesce((
       select jsonb_agg(jsonb_build_object(
-          'record', r.id,
-          'code', r.code,
-          'title_ar', c.title_ar,
-          'polarity', c.polarity,
+          'record', r.id, 'code', r.code,
+          'title_ar', c.title_ar, 'polarity', c.polarity,
           'on_ar', v2.fn_to_hijri(r.on_date),
-          'period_no', r.period_no,
+          'period_no', r.period_no, 'period_ar', v2.period_ar(r.period_no),
           'subject_ar', r.subject_ar,
           'points', r.points,
           'counted', (select pp.points from v2.practice_points pp where pp.record_id = r.id),

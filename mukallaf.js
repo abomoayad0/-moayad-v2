@@ -3,7 +3,7 @@
 // ② رأيٌ مطلوبٌ منك: لم يُبنَ في المحرّك
 // ③ كُلّفتَ بحصر سلوكيّات طالب: v2_my_census ⇒ v2_census_file بالقوائم (v2_census_list) — سلبيٌّ واحدٌ على الأقلّ والمسبّباتُ إلزاميّة
 // ④ ما عليّ من اللجان: v2_my_committee_tasks ⇒ v2_committee_task_done
-// ويومي: v2_my_now · v2_my_sections · v2_my_duties · v2_mail_my_tasks (⇒ v2_mail_followup_close) — للقراءة كما ترجع
+// ويومي: v2_my_now_board · v2_my_sections · v2_my_duties · v2_mail_my_tasks (⇒ v2_mail_followup_close) — للقراءة كما ترجع
 // وبحثُ الطلّاب: v2_students_find — للمعلّم في فصوله (scoped · note_ar) ولا مُرشِّحَ صفٍّ ولا فصل
 // ترى هذا الجزءَ وحدَه: لا ملفَّ طالبٍ ولا دراسةَ حالة.
 (function () {
@@ -54,7 +54,7 @@
     // للقراءة: الاسمُ وفصلُه ورقمُه — ولا ملفَّ طالبٍ في هذي الشاشة
     for (const x of d.rows || []) {
       const r = el('div', 'rs-item');
-      r.append(el('b', null, x.name || x.full_name || ''), el('small', null, [x.grade != null ? 'الصفّ ' + x.grade + (x.section ? ' / ' + x.section : '') : null, x.student_no].filter(Boolean).join(' · ')));
+      r.append(el('b', null, x.name || x.full_name || ''), el('small', null, [x.class_ar, x.student_no, x.guardians_ar].filter(Boolean).join(' · ')));
       list.appendChild(r);
     }
     V.arabize($('findCard'));
@@ -74,12 +74,13 @@
   };
   async function loadMine() {
     const [now, sec, dut, mail] = await Promise.all([
-      M.rpc('v2_my_now', { p_school: M.state.school }, 'الآن'),
+      M.rpc('v2_my_now_board', { p_school: M.state.school }, 'الآن'),
       M.rpc('v2_my_sections', { p_date: M.state.date || null }, 'حصصي اليوم'),
       M.rpc('v2_my_duties', { p_school: M.state.school }, 'مناوبتي'),
       M.rpc('v2_mail_my_tasks', { p_school: M.state.school }, 'ما عليّ من الوارد'),
     ]);
-    list($('now'), now, 'لا حصّةَ عليك الآن.', (x) => ['الحصّة ' + x.period_no + ' · ' + (x.section_label || ''), [x.subject_ar, x.room_ar, x.students_n != null ? x.students_n + ' طالبًا' : null].filter(Boolean).join(' · '), hm(x.starts_at) + ' — ' + hm(x.ends_at) + (x.state ? ' · ' + x.state : ''), false]);
+    // الآن من v2_my_now_board — الحصّةُ ووقتُها وعددُها بألفاظ الباب
+    list($('now'), { data: (now.data && now.data.rows) || [], error: now.error }, 'لا حصّةَ عليك الآن.', (x) => [[x.period_ar, x.section_label].filter(Boolean).join(' · '), [x.subject_ar, x.students_ar].filter(Boolean).join(' · '), [x.time_ar, x.state].filter(Boolean).join(' · '), false]);
     list($('sections'), sec, 'لا حصصَ لك اليوم.', (x) => ['الحصّة ' + x.period_no + ' · ' + (x.class_ar || ''), [x.subject_ar, 'رُصد ' + x.recorded_n + ' من ' + x.students_n].filter(Boolean).join(' · '), hm(x.starts_at) + ' — ' + hm(x.ends_at) + (x.state ? ' · ' + x.state : ''), x.is_done]);
     list($('duties'), dut, 'لا مناوبةَ لك.', (x) => [(x.weekday_ar || '') + ' · ' + (x.zone_ar || ''), [x.segment, x.kind].filter(Boolean).join(' · '), '', false]);
     loadMail(mail);

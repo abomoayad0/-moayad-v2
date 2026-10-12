@@ -1,5 +1,5 @@
 -- public.v2_students_find(p_text text, p_in_grade smallint, p_in_section text, p_max integer, p_of_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 9e1b179c8ae6dffa831d711d3b3c6b95
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c6f6250363176631cfb6ede6d9d06062
 CREATE OR REPLACE FUNCTION public.v2_students_find(p_text text DEFAULT NULL::text, p_in_grade smallint DEFAULT NULL::smallint, p_in_section text DEFAULT NULL::text, p_max integer DEFAULT 60, p_of_school uuid DEFAULT NULL::uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -12,7 +12,6 @@ begin
   if sc is null then raise exception 'لم تُعرف مدرستُك — فاختر صفتَك أوّلًا'; end if;
   perform v2.assert_my_school(sc,'بحثَ الطلّاب');
 
-  -- 🔑 إدارةُ المدرسة تبحث في المدرسة كلِّها · والمعلّمُ في طلّابه هو
   begin
     perform v2.assert_role(array['principal','deputy','deputy_students','deputy_academic',
         'deputy_school','deputy_school_students','admin_assistant','admin_assistant_students',
@@ -48,7 +47,10 @@ begin
     select jsonb_build_object('student',s.id,'student_no',s.student_no,
              'name',v2.fn_display_name(s.full_name),'full_name',s.full_name,
              'grade',e.grade,'section',e.section,'stage',e.stage,
-             'guardians',(select count(*) from v2.guardians g where g.student_id=s.id)) x
+             'class_ar', v2.class_ar(e.grade, e.section),
+             'guardians',(select count(*) from v2.guardians g where g.student_id=s.id),
+             'guardians_ar', v2.ar_count0((select count(*) from v2.guardians g where g.student_id=s.id),
+                 'لا وليَّ أمرٍ مسجَّل','وليُّ أمرٍ واحد','وليّا أمر','أولياءُ أمور','وليَّ أمر')) x
       from v2.students s
       join v2.enrolments e on e.student_id=s.id and e.school_id=sc and e.status='active'
      where (p_in_grade is null or e.grade=p_in_grade)

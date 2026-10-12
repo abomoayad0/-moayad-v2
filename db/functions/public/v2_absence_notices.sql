@@ -1,5 +1,5 @@
 -- public.v2_absence_notices(p_school uuid, p_date date)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 36c3ca63c94e4659c01883de8f50d583
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 3e558781e1871359576e1219204793c7
 CREATE OR REPLACE FUNCTION public.v2_absence_notices(p_school uuid DEFAULT NULL::uuid, p_date date DEFAULT CURRENT_DATE)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -18,6 +18,7 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object(
            'student', s.id, 'name', v2.fn_display_name(s.full_name),
            'grade', e.grade, 'section', e.section,
+           'class_ar', v2.class_ar(e.grade, e.section),
            'excused', nt.excused,
            'excuse_due_ar', case when nt.excuse_due is null then null
                                  else v2.fn_to_hijri(nt.excuse_due)||' هـ' end,
@@ -31,6 +32,7 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object(
            'student', s.id, 'name', v2.fn_display_name(s.full_name),
            'grade', e.grade, 'section', e.section,
+           'class_ar', v2.class_ar(e.grade, e.section),
            'why_ar', case when not exists (select 1 from v2.guardians g where g.student_id=s.id)
                           then 'لا وليَّ أمرٍ مسجَّلٌ له — فلا موضعَ للإخطار'
                           else 'غائبٌ ولم يُخطَر وليُّ أمره بعد' end)
@@ -60,6 +62,5 @@ begin
                       from v2.conduct_rules where key='attendance.daily_notify'),
     'note_ar','الإخطارُ واجبٌ يوميٌّ على إدارة المدرسة (م35) لا بندٌ في السلّم — '||
               'والسلّمُ يبدأ من اليوم الثالث، والإخطارُ من أوّل يوم');
-
 end $function$
 ;

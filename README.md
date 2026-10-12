@@ -437,6 +437,12 @@
      - **الولاء:** `points_ar` · `week_left_ar` · `period_ar` · `price_ar` · `totals_ar` · `loyalty_ar` في جواب الرصد. والآليُّ والمحجوبُ لا أزرارَ لهما.
      - **قسمُ «رصيدُ الممارسات»** (`practice_balance`): `balance_ar` · `counts_ar` · `counted_ar`، و`spend_ar` كما جاء (مرآةٌ لا درجة).
      - **وفي «المواظبة»:** `count_ar`/`left_ar` · `days_ar` · `tasks_ar` · `open_tasks_ar`، والصفُّ لا يُعرض رقمًا.
+   - **(١٢/١٠ ليلًا) الصفُّ والحصّةُ بأسمائهما:**
+     - «الآن» من `v2_my_now_board` (`period_ar` · `time_ar` · `students_ar`)، في الحصّة و«ما عليّ».
+     - صفوفُ الخروج بـ`period_ar`.
+     - المكافآتُ بـ`price_ar` و`stock_ar`، ومعها `rules_ar` المحفظة.
+     - الممارساتُ بـ`points_ar` و`once_ar`.
+     - والبحثُ في «ما عليّ» وشاشة الوكيل بـ`class_ar` و`guardians_ar`.
    - **التبويباتُ العشرةُ بترتيبها في صفّين**، والمغلقُ يُعرض بقفلٍ ويُفتح على سببه:
      - **اللائحة:** `v2_conduct_list` ⇒ `v2_record_behavior`.
      - **سجلّه:** ما رُصد اليومَ، وأدوارُه، وأعمالُه، وخروجُه، و«اكتب ملاحظة» (`v2_card_act` بـ`note`).

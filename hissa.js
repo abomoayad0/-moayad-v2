@@ -1,5 +1,5 @@
 // مؤيّد · الحصّة (تكليفُ الباني ④) — شاشةٌ واحدةٌ بثلاث طبقات: جلسةُ الحصّة ← شبكةُ الفصل ← بطاقةُ الطالب
-// ① الجلسة: v2_my_now · v2_my_sessions (غيرُ ثابت: ينادي الإقفالَ الآليّ — فيُنادى عند الفتح وبعد كلّ فعلٍ وحدَه، ولا يُخزَّن)
+// ① الجلسة: v2_my_now_board (period_ar · time_ar · students_ar) · v2_my_sessions (غيرُ ثابت: ينادي الإقفالَ الآليّ — فيُنادى عند الفتح وبعد كلّ فعلٍ وحدَه، ولا يُخزَّن)
 //    v2_session_open · v2_session_attendance · v2_session_lesson · v2_session_close — والجلسةُ من الجدول، وbasis_ar كما جاء
 //    وما ينتظرني: v2_card_my_steps ⇒ v2_card_step_do · ومن خرج الآن: v2_exit_now ⇒ v2_exit_back
 // ② الشبكة: v2_loyalty_of_section (الطلّابُ بالترتيب الذي جاء — ولا ترتيبَ من الشاشة) · v2_roles_of_section · v2_exit_now · v2_work_board
@@ -41,13 +41,13 @@
 
   // ---------- ① الآن ----------
   async function loadNow() {
-    const { data, error } = await M.rpc('v2_my_now', { p_school: M.state.school }, 'الآن');
+    const { data, error } = await M.rpc('v2_my_now_board', { p_school: M.state.school }, 'الآن');
     const box = $('now');
     if (error) { err(box, error); return; }
     box.textContent = '';
     const rows = arr(data);
     if (!rows.length) { box.appendChild(el('p', 'rs-meta', 'لا حصّةَ عليك الآن.')); return; }
-    for (const x of rows) box.appendChild(el('p', null, ['الحصّة ' + x.period_no, x.section_label, x.subject_ar, x.room_ar, hm(x.starts_at) + ' — ' + hm(x.ends_at), x.state].filter(Boolean).join(' · ')));
+    for (const x of rows) box.appendChild(el('p', null, [x.period_ar, x.section_label, x.subject_ar, x.time_ar, x.students_ar, x.state].filter(Boolean).join(' · ')));
     arabize(box);
   }
 
@@ -472,7 +472,7 @@
       const t = q.value.trim();
       for (const p of all.filter((x) => !t || (x.title_ar || '').includes(t))) {
         const b = btn('', 'rs-item', () => practiceForm(p));
-        b.append(el('b', null, p.title_ar || ''), el('small', null, [p.points_ar, p.done_today ? 'رُصدت اليومَ' : null, p.threshold_ar].filter(Boolean).join(' · ')));
+        b.append(el('b', null, p.title_ar || ''), el('small', null, [p.points_ar, p.done_today ? 'رُصدت اليومَ' : null, p.threshold_ar, p.once_ar].filter(Boolean).join(' · ')));
         list.appendChild(b);
       }
       arabize(list);
@@ -530,7 +530,7 @@
     if (e.warn_ar) box.appendChild(el('p', 'rs-need', e.warn_ar));
     if (e.note_ar) box.appendChild(el('p', 'rs-meta', e.note_ar));
     for (const x of arr(e)) {
-      const p = el('p', null, [x.on_ar, x.period != null ? 'الحصّة ' + x.period : null, x.to_ar, x.minutes_ar, x.by_ar].filter(Boolean).join(' · '));
+      const p = el('p', null, [x.on_ar, x.period_ar, x.to_ar, x.minutes_ar, x.by_ar].filter(Boolean).join(' · '));
       if (!x.returned) p.appendChild(btn('عاد', 'rs-btn', () => act('v2_exit_back', { p_exit: x.exit, p_note: null }, 'عودة الطالب', reloadCard)));
       box.appendChild(p);
     }
@@ -578,12 +578,11 @@
     if (cat.error) box.appendChild(el('div', 'notice err', errText(cat.error)));
     else {
       const rw = arr((cat.data || {}).rewards).filter((x) => x.can_i === true);
-      const aff = arr(((wal && wal.data) || {}).can_afford);
       if (rw.length) box.appendChild(el('div', 'rs-label', 'اصرف له'));
+      if ((cat.data || {}).rules_ar) box.appendChild(el('p', 'rs-meta', cat.data.rules_ar));
       for (const x of rw) {
         const b = btn('', 'rs-item', () => spendForm(x));
-        const a = aff.find((y) => y.code === x.code);
-        b.append(el('b', null, [x.title_ar, a && a.price_ar].filter(Boolean).join(' · ')), el('small', null, [x.note_ar].filter(Boolean).join(' · ')));
+        b.append(el('b', null, [x.title_ar, x.price_ar].filter(Boolean).join(' · ')), el('small', null, [x.stock_ar, x.needs_principal_ar, x.note_ar].filter(Boolean).join(' · ')));
         box.appendChild(b);
       }
     }

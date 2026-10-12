@@ -1,7 +1,7 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 867e9063a7ddf5aa33f205cb5d08eb83
+-- ── grants · md5 2a88057e87a58450d9ed56a45a419610
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 GRANT SELECT ON TABLE v2.absence_notices TO authenticated;
@@ -61,6 +61,8 @@ REVOKE ALL ON FUNCTION v2.assert_student_or_kin(p_student uuid, p_what text) FRO
 GRANT EXECUTE ON FUNCTION v2.assert_student_or_kin(p_student uuid, p_what text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.assess_tool_of(p_school uuid, p_in text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.assess_tool_of(p_school uuid, p_in text) TO authenticated;
+REVOKE ALL ON FUNCTION v2.assign_issuer_post() FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.attachment_allows(p_path text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.attachment_allows(p_path text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.attachment_guardian_ok(p_path text) FROM PUBLIC;
@@ -69,6 +71,8 @@ REVOKE ALL ON FUNCTION v2.attendance_result(p_student uuid, p_date date) FROM PU
 
 REVOKE ALL ON FUNCTION v2.audit_assess_report_due() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.audit_assess_report_due() TO authenticated;
+REVOKE ALL ON FUNCTION v2.audit_assign_without_letter() FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.audit_card_step_late() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.audit_card_step_late() TO authenticated;
 REVOKE ALL ON FUNCTION v2.audit_card_unlinked() FROM PUBLIC;
@@ -151,6 +155,8 @@ REVOKE ALL ON FUNCTION v2.card_glance(p_school uuid, p_student uuid, p_date date
 
 REVOKE ALL ON FUNCTION v2.card_loyalty(p_school uuid, p_student uuid, p_date date) FROM PUBLIC;
 
+REVOKE ALL ON FUNCTION v2.card_practices(p_school uuid, p_student uuid, p_date date) FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.card_undo_state(p_event uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.card_undo_state(p_event uuid) TO authenticated;
 REVOKE ALL ON FUNCTION v2.card_window(p_school uuid, p_person uuid, p_date date) FROM PUBLIC;
@@ -161,6 +167,8 @@ REVOKE ALL ON FUNCTION v2.cite_of(p_key text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.cite_of(p_key text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.cite_page(p_key text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.cite_page(p_key text) TO authenticated;
+REVOKE ALL ON FUNCTION v2.class_ar(p_grade smallint, p_section text) FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.committee_rule(p_school uuid, p_committee text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.committee_rule(p_school uuid, p_committee text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.conduct_mode_ar(p_mode text) FROM PUBLIC;
@@ -1270,6 +1278,9 @@ GRANT EXECUTE ON FUNCTION public.v2_my_loyalty() TO service_role;
 REVOKE ALL ON FUNCTION public.v2_my_now(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_my_now(p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_my_now(p_school uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_my_now_board(p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_my_now_board(p_school uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_my_now_board(p_school uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_my_obligations(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_my_obligations(p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_my_obligations(p_school uuid) TO service_role;

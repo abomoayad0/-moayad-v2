@@ -61,5 +61,6 @@
 | `48_session_card_fixes.sql` | تصحيحُ ④: `v2_session_lesson_options` · `v2_work_kinds` · `v2_card_open` (`class_ar` · `silent_ar` · `health_from`) — بالمعلّم | ✅ ٥ من ٥ |
 | `49_number_words.sql` | «كلُّ عددٍ معه نصُّه»: `glance` · `threshold_ar` · `week_left_ar` · `practices_note_ar` · `v2_loyalty_of_section` · `v2_exit_of_student` · `v2_exit_now` · `rules_ar` — بالمعلّم | ✅ المفاتيحُ حاضرة · ⚠️ نصّان معيبان |
 | `50_words_principal_deputy.sql` | الألفاظُ من الباب (المحفظة · البطاقة · رصيدُ الممارسات · لوحةُ الحرمان · الموقوف · حالاتُ الغياب) · والمديرُ بتكليفه يقف ويرفع على حالةٍ حقيقيّة · والوكيلُ التعليميّ يُردّ | ✅ ١٣ من ١٣ · ⚠️ ثلاثةُ نصوصٍ معيبة |
+| `51_class_names_words.sql` | الصفُّ باسمه (`class_ar` · `guardians_ar`) · `v2_my_now_board` · النصوصُ الثلاثةُ المصلَحة · ألفاظُ فهرس الولاء — بالمعلّم والمساعد | ✅ ٧ من ٧ |
 
 يُشغَّل الملفُّ دفعةً واحدةً كما هو، فيرجع جدولًا واحدًا.
