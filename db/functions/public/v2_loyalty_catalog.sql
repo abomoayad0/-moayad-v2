@@ -1,5 +1,5 @@
 -- public.v2_loyalty_catalog()
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 621bc1953be22ff24d6074c9fb9ed20c
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2c2b0c72ec6f64efad40701ae072146b
 CREATE OR REPLACE FUNCTION public.v2_loyalty_catalog()
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -17,7 +17,14 @@ begin
           'week_cap', coalesce(x.week_cap, v2.rule_n(sc,'loyalty_week_cap_default')),
           'needs_note', x.needs_note or (x.kind='deduct' and v2.rule_n(sc,'loyalty_deduct_needs_note')=1),
           'who_ar', (select string_agg(coalesce(v2.role_ar(r), r), ' · ') from unnest(x.who_may) r),
-          'can_i', v2.loyalty_can(x.who_may),
+          -- 🔑 من يُمنح آليًّا لا يُعرض له زرّ · ومن لا محرّكَ له لا يُعرض أصلًا
+          'auto_kind', x.auto_kind,
+          'auto_ar', case x.auto_kind
+              when 'engine'  then 'تُمنح آليًّا — ولا تُطلب بيد'
+              when 'blocked' then 'لا محرّكَ لها ولا تُمنح بيد'
+              else 'تُمنح بيدِ من يملكها' end,
+          'auto_note_ar', x.auto_note_ar,
+          'can_i', x.auto_kind = 'manual' and v2.loyalty_can(x.who_may),
           'is_school', x.school_id is not null,
           'note_ar', x.note_ar) order by x.ord, x.title_ar)
       from (
@@ -39,6 +46,7 @@ begin
          where active and (school_id = sc or school_id is null)
          order by code, (school_id is null)
       ) y), '[]'::jsonb),
+    'engines_ar','المصادرُ الآليّة: الممارسةُ الإيجابيّةُ تُمنح في لحظة الرصد · والأسبوعُ التامُّ يُمنح بنداء v2_loyalty_week_run بعد انقضاء الأسبوع',
     'rules', jsonb_build_object(
       'allow_negative', v2.rule_n(sc,'loyalty_allow_negative') = 1,
       'max_per_act',    v2.rule_n(sc,'loyalty_max_per_act'),

@@ -1,5 +1,5 @@
 -- public.v2_loyalty_record(p_student uuid, p_source text, p_note text, p_period smallint)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 cdecdb8592d27a69ec475955fed5b02f
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 1178c21cf5fa4078d851a41fdcfded3c
 CREATE OR REPLACE FUNCTION public.v2_loyalty_record(p_student uuid, p_source text, p_note text DEFAULT NULL::text, p_period smallint DEFAULT NULL::smallint)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -18,6 +18,15 @@ begin
   s := v2.loyalty_source(sc, p_source);
   if s.id is null then
     raise exception 'لا مصدرَ لنقاط الولاء بالرمز «%» — أو أنّه مُغلقٌ في لوحة التحكّم', p_source;
+  end if;
+
+  if s.auto_kind = 'engine' then
+    raise exception '«%» تُمنح آليًّا ولا تُطلب بيد — %', s.title_ar,
+      coalesce(s.auto_note_ar,'محرّكُها يمنحها في موضعها');
+  end if;
+  if s.auto_kind = 'blocked' then
+    raise exception '«%» لا تُمنح — %', s.title_ar,
+      coalesce(s.auto_note_ar,'لا محرّكَ لها بعد');
   end if;
 
   perform v2.assert_role(s.who_may, format('حركةَ «%s»', s.title_ar));
@@ -75,6 +84,8 @@ begin
     'balance', bal,
     'balance_ar', v2.ar_count(bal, 'نقطةٌ واحدة', 'نقطتان', 'نقاط', 'نقطة'),
     'week_left', cap - (used + s.points),
+    'week_left_ar', 'بقي من سقفه هذا الأسبوع '||
+        v2.ar_count(cap - (used + s.points),'نقطةٌ واحدة','نقطتان','نقاط','نقطة'),
     'linked_session', sess is not null,
     'said_ar', case when s.kind = 'earn'
                     then format('أُضيفت %s لـ«%s» — ورصيدُه الآن %s',

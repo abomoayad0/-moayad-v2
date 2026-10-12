@@ -1,5 +1,5 @@
 -- public.v2_absence_cases_of_student(p_student uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 6026fcb35b528be29589046c6f1208c8
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 edca4853f64538f4d794e060852bc414
 CREATE OR REPLACE FUNCTION public.v2_absence_cases_of_student(p_student uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -21,6 +21,9 @@ begin
       select jsonb_agg(jsonb_build_object(
           'case', ac.id,
           'days', ac.days_count, 'excused', ac.excused, 'consecutive', ac.consecutive,
+          'days_ar', 'غيابُه '||v2.ar_count(ac.days_count,'يومٌ واحد','يومان','أيّام','يومًا')||
+                     case when ac.excused then ' بعذر' else ' بغير عذر' end||
+                     case when ac.consecutive then ' متّصلة' else '' end,
           'triggered_ar', v2.fn_to_hijri(ac.triggered_on),
           'status', ac.status,
           'halted', ac.escalation_halted,
@@ -29,7 +32,13 @@ begin
           'can_resume', ac.escalation_halted,
           'open_tasks', (select count(*) from v2.absence_tasks t
                           where t.case_id = ac.id and t.status = 'open'),
-          'all_tasks', (select count(*) from v2.absence_tasks t where t.case_id = ac.id))
+          'all_tasks', (select count(*) from v2.absence_tasks t where t.case_id = ac.id),
+          'tasks_ar', v2.ar_count0((select count(*) from v2.absence_tasks t
+                          where t.case_id = ac.id and t.status = 'open'),
+                          'لا مهمّةَ مفتوحة','مهمّةٌ مفتوحةٌ واحدة','مهمّتان مفتوحتان',
+                          'مهامَّ مفتوحة','مهمّةً مفتوحة')
+                       ||' من '||v2.ar_count((select count(*) from v2.absence_tasks t
+                          where t.case_id = ac.id),'مهمّةٍ واحدة','مهمّتين','مهامّ','مهمّة'))
         order by ac.triggered_on desc)
       from v2.absence_cases ac
       where ac.student_id = p_student and (sc is null or ac.school_id = sc)), '[]'::jsonb),

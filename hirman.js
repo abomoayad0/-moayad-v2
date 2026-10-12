@@ -22,7 +22,8 @@
     await Promise.all([loadNotices(), loadDenial(), loadHalted()]);
   }
 
-  const cls = (x) => (x.grade != null ? 'الصفّ ' + x.grade + (x.section ? ' / ' + x.section : '') : '');
+  // الصفُّ باسمه من الباب (class_ar) لا برقمه — وما لم يرجعه البابُ لا يُعرض رقمًا (ثغرةٌ في التقرير)
+  const cls = (x) => x.class_ar || '';
   const fail = (box, sum, error) => { sum.textContent = ''; box.textContent = ''; box.appendChild(el('div', 'notice err', errText(error))); };
 
   // ---------- ① إخطاراتُ الغياب ----------
@@ -74,7 +75,7 @@
     for (const x of d.rows || []) {
       const f = el('div', 'rs-file');
       f.append(el('h5', null, (x.name || '') + (cls(x) ? ' — ' + cls(x) : '')),
-        el('p', 'rs-meta', 'غيابُه بغير عذر ' + x.days + ' · والحدُّ ' + x.limit + ' من ' + x.year_days + ' يومًا دراسيًّا'));
+        el('p', 'rs-meta', [x.count_ar, x.left_ar].filter(Boolean).join(' ')));
       const tags = el('p');
       tags.append(el('span', 'rs-tag', x.crossed ? 'تجاوز الحدّ' : 'لم يبلغ الحدّ'), el('span', 'rs-tag', x.warned ? 'أُنذر وليُّه' + (x.warned_on_ar ? ' في ' + x.warned_on_ar : '') : 'لم يُنذَر وليُّه'));
       if (x.decided) tags.appendChild(el('span', 'rs-tag own', 'صدر القرار' + (x.decided_on_ar ? ' في ' + x.decided_on_ar : '')));
@@ -178,7 +179,7 @@
       for (const c of d.rows || []) {
         const f = el('div', 'rs-file');
         f.append(el('h5', null, 'بدأت ' + (c.triggered_ar || '')),
-          el('p', 'rs-meta', ['أيّامُها ' + c.days, c.consecutive ? 'متّصلة' : null, c.excused ? 'بعذر' : null, 'بنودُها ' + c.all_tasks + ' · المفتوحُ ' + c.open_tasks].filter(Boolean).join(' · ')));
+          el('p', 'rs-meta', [c.days_ar, c.excused ? 'بعذر' : null, c.tasks_ar].filter(Boolean).join(' · ')));
         if (c.halted) f.appendChild(el('span', 'rs-tag own', 'موقوفٌ تصعيدُها'));
         if (c.halt_reason) f.appendChild(el('div', 'rs-info', c.halt_reason));
         const r = el('div', 'rs-row');
@@ -237,7 +238,7 @@
     for (const x of d.rows || []) {
       const f = el('div', 'rs-file');
       f.append(el('h5', null, x.student || ''),
-        el('p', 'rs-meta', [x.triggered_ar ? 'بدأت ' + x.triggered_ar : null, 'أيّامُها ' + x.days, x.excused ? 'بعذر' : null, 'بنودٌ مفتوحة ' + x.open_tasks].filter(Boolean).join(' · ')));
+        el('p', 'rs-meta', [x.triggered_ar ? 'بدأت ' + x.triggered_ar : null, x.days_ar, x.excused ? 'بعذر' : null, x.open_tasks_ar].filter(Boolean).join(' · ')));
       if (x.why_ar) f.appendChild(el('div', 'rs-info', x.why_ar));
       if (x.counsel_case === false) f.appendChild(el('div', 'rs-need', 'ولا حالةَ له عند الموجّه الطلابيّ — فأحِله إليه، فالوقفُ حمايةٌ لا إهمال'));
       const r = el('div', 'rs-row');

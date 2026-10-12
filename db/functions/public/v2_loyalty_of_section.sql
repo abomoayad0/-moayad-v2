@@ -1,5 +1,5 @@
 -- public.v2_loyalty_of_section(p_section uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 b3616e0c7d0b5c26e58fe0a2e7c45cc7
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 3113a02ed5c442da31d561abb2f2c643
 CREATE OR REPLACE FUNCTION public.v2_loyalty_of_section(p_section uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -14,8 +14,7 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object(
           'student_id', t.id, 'name', v2.fn_display_name(t.full_name),
           'balance', v2.loyalty_balance(sc, t.id),
-          'balance_ar', 'رصيدُه '||v2.ar_count(v2.loyalty_balance(sc, t.id),
-              'نقطةٌ واحدة','نقطتان','نقاط','نقطة'))
+          'balance_ar', v2.ar_balance(v2.loyalty_balance(sc, t.id)))
         order by v2.fn_display_name(t.full_name)), '[]'::jsonb) into r
     from v2.students t
     join v2.enrolments e on e.student_id = t.id and e.ended_on is null

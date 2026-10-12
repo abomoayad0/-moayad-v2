@@ -1,7 +1,7 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 1751fba999e87ba5a7347415f52339f1
+-- ── grants · md5 867e9063a7ddf5aa33f205cb5d08eb83
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 GRANT SELECT ON TABLE v2.absence_notices TO authenticated;
@@ -16,6 +16,7 @@ GRANT SELECT ON TABLE v2.loyalty_ledger TO authenticated;
 GRANT SELECT ON TABLE v2.loyalty_rewards TO authenticated;
 GRANT SELECT ON TABLE v2.loyalty_sources TO authenticated;
 GRANT SELECT ON TABLE v2.phrase_use TO authenticated;
+GRANT SELECT ON TABLE v2.practice_weights TO authenticated;
 GRANT SELECT ON TABLE v2.qualitative_bands TO authenticated;
 GRANT SELECT ON TABLE v2.task_role_map TO authenticated;
 GRANT SELECT ON TABLE v2.work_kinds TO authenticated;
@@ -30,9 +31,15 @@ REVOKE ALL ON FUNCTION v2.acting_posts(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.acting_posts(p_school uuid) TO authenticated;
 REVOKE ALL ON FUNCTION v2.acting_school() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.acting_school() TO authenticated;
+REVOKE ALL ON FUNCTION v2.ar_balance(n numeric) FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.ar_bare(p_in text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.ar_bare(p_in text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.ar_count(n numeric, p_one text, p_two text, p_few text, p_many text) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION v2.ar_count0(n numeric, p_zero text, p_one text, p_two text, p_few text, p_many text) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION v2.ar_left(n numeric) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.ar_num(n numeric) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.ar_num(n numeric) TO authenticated;
@@ -140,6 +147,10 @@ REVOKE ALL ON FUNCTION v2.card_due_refresh(p_student uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.card_due_refresh(p_student uuid) TO authenticated;
 REVOKE ALL ON FUNCTION v2.card_gate(p_student uuid, p_what text, p_needs_window boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.card_gate(p_student uuid, p_what text, p_needs_window boolean) TO authenticated;
+REVOKE ALL ON FUNCTION v2.card_glance(p_school uuid, p_student uuid, p_date date) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION v2.card_loyalty(p_school uuid, p_student uuid, p_date date) FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.card_undo_state(p_event uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.card_undo_state(p_event uuid) TO authenticated;
 REVOKE ALL ON FUNCTION v2.card_window(p_school uuid, p_person uuid, p_date date) FROM PUBLIC;
@@ -450,6 +461,8 @@ REVOKE ALL ON FUNCTION v2.leads_school(p_extra text[]) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.log_action(p_school uuid, p_student uuid, p_action text, p_action_ar text, p_ref_table text, p_ref_id uuid, p_detail jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.log_action(p_school uuid, p_student uuid, p_action text, p_action_ar text, p_ref_table text, p_ref_id uuid, p_detail jsonb) TO authenticated;
+REVOKE ALL ON FUNCTION v2.loyalty_auto(p_school uuid, p_student uuid, p_source text, p_by uuid, p_reason text, p_period smallint, p_on_date date) FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.loyalty_balance(p_school uuid, p_student uuid) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.loyalty_can(p_who text[]) FROM PUBLIC;
@@ -504,6 +517,8 @@ REVOKE ALL ON FUNCTION v2.page_ar(p text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.page_ar(p text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.pairing_of(p_school uuid, p_grade smallint, p_subject text) FROM PUBLIC;
 
+REVOKE ALL ON FUNCTION v2.period_ar(n smallint) FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.period_truth(p_school uuid, p_section uuid, p_period smallint, p_date date) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.plain_ar(t text) FROM PUBLIC;
@@ -513,6 +528,12 @@ REVOKE ALL ON FUNCTION v2.plan_guard(p_plan uuid, p_what text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION v2.plan_reviewers(p_school uuid, p_subject text) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.plan_sections(p_plan uuid) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION v2.practice_day_used(p_school uuid, p_student uuid, p_date date) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION v2.practice_threshold_said(p_student uuid, p_code text) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION v2.practice_weight(p_school uuid, p_code text) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.quorum_of(p_school uuid, p_committee text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.quorum_of(p_school uuid, p_committee text) TO authenticated;
@@ -573,6 +594,8 @@ GRANT EXECUTE ON FUNCTION v2.teaching_staff(p_school uuid) TO authenticated;
 REVOKE ALL ON FUNCTION v2.term_of_strict(p_school uuid, p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.term_of_strict(p_school uuid, p_date date) TO authenticated;
 REVOKE ALL ON FUNCTION v2.term_split_ensure(p_grade smallint, p_subject text) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION v2.threshold_ar(p_count smallint, p_days smallint) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.time_ar(t time without time zone) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.time_ar(t time without time zone) TO authenticated;
@@ -1133,6 +1156,9 @@ GRANT EXECUTE ON FUNCTION public.v2_loyalty_undo(p_id uuid, p_reason text) TO se
 REVOKE ALL ON FUNCTION public.v2_loyalty_wallet(p_student uuid, p_limit integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_loyalty_wallet(p_student uuid, p_limit integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_loyalty_wallet(p_student uuid, p_limit integer) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_loyalty_week_run(p_school uuid, p_week_start date) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_loyalty_week_run(p_school uuid, p_week_start date) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_loyalty_week_run(p_school uuid, p_week_start date) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_mail_ack(p_mail uuid, p_signed boolean, p_refuse_reason text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_mail_ack(p_mail uuid, p_signed boolean, p_refuse_reason text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_mail_ack(p_mail uuid, p_signed boolean, p_refuse_reason text) TO service_role;
@@ -1441,6 +1467,9 @@ GRANT EXECUTE ON FUNCTION public.v2_portal_toggle(p_kind text, p_id uuid, p_open
 REVOKE ALL ON FUNCTION public.v2_posts_list() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_posts_list() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_posts_list() TO service_role;
+REVOKE ALL ON FUNCTION public.v2_practice_balance_of(p_student uuid, p_term smallint) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_practice_balance_of(p_student uuid, p_term smallint) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_practice_balance_of(p_student uuid, p_term smallint) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_practice_save(p_school uuid, p_code text, p_title text, p_points numeric, p_polarity text, p_scope text, p_kind text, p_zone text, p_once_per_day boolean, p_threshold_count smallint, p_threshold_days smallint, p_escalate_to integer, p_escalate_note text, p_note text, p_ord smallint) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_practice_save(p_school uuid, p_code text, p_title text, p_points numeric, p_polarity text, p_scope text, p_kind text, p_zone text, p_once_per_day boolean, p_threshold_count smallint, p_threshold_days smallint, p_escalate_to integer, p_escalate_note text, p_note text, p_ord smallint) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_practice_save(p_school uuid, p_code text, p_title text, p_points numeric, p_polarity text, p_scope text, p_kind text, p_zone text, p_once_per_day boolean, p_threshold_count smallint, p_threshold_days smallint, p_escalate_to integer, p_escalate_note text, p_note text, p_ord smallint) TO service_role;
@@ -1450,6 +1479,12 @@ GRANT EXECUTE ON FUNCTION public.v2_practice_scopes(p_school uuid) TO service_ro
 REVOKE ALL ON FUNCTION public.v2_practice_state(p_school uuid, p_code text, p_state text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_practice_state(p_school uuid, p_code text, p_state text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_practice_state(p_school uuid, p_code text, p_state text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_practice_weight_save(p_code text, p_points numeric, p_day_cap numeric, p_active boolean, p_note text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_practice_weight_save(p_code text, p_points numeric, p_day_cap numeric, p_active boolean, p_note text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_practice_weight_save(p_code text, p_points numeric, p_day_cap numeric, p_active boolean, p_note text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_practice_weights() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_practice_weights() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_practice_weights() TO service_role;
 REVOKE ALL ON FUNCTION public.v2_practices(p_school uuid, p_scope text, p_polarity text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_practices(p_school uuid, p_scope text, p_polarity text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_practices(p_school uuid, p_scope text, p_polarity text) TO service_role;

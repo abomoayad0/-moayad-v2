@@ -1,5 +1,5 @@
 -- public.v2_denial_board(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 cb40f2740f52e6f55a539b6974c8e55a
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 31a86bcd1132e51636a2759cd91b6b96
 CREATE OR REPLACE FUNCTION public.v2_denial_board(p_school uuid DEFAULT NULL::uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -21,12 +21,22 @@ begin
       'days', q."غياب_بلا_عذر",
       'limit', v2.denial_limit(q."أيام_دراسة_مقررة"),
       'year_days', q."أيام_دراسة_مقررة",
+      'count_ar', 'غيابُه بغير عذرٍ '||
+          v2.ar_count0(q."غياب_بلا_عذر",'لا شيء','يومٌ واحد','يومان','أيّام','يومًا')||
+          ' · والحدُّ '||v2.ar_num(v2.denial_limit(q."أيام_دراسة_مقررة"))||
+          ' من أصل '||v2.ar_count(q."أيام_دراسة_مقررة",'يومٍ دراسيٍّ واحد','يومين دراسيّين','أيّامٍ دراسيّة','يومًا دراسيًّا'),
       'crossed', q."غياب_بلا_عذر" >= v2.denial_limit(q."أيام_دراسة_مقررة"),
+      'left_ar', case when q."غياب_بلا_عذر" < v2.denial_limit(q."أيام_دراسة_مقررة")
+          then 'وبقي له '||v2.ar_count(
+              v2.denial_limit(q."أيام_دراسة_مقررة") - q."غياب_بلا_عذر",
+              'يومٌ واحد','يومان','أيّام','يومًا')||' قبل الحدّ'
+          else 'وتجاوز الحدَّ بـ'||v2.ar_count(
+              q."غياب_بلا_عذر" - v2.denial_limit(q."أيام_دراسة_مقررة") + 1,
+              'يومٍ واحد','يومين','أيّام','يومًا') end,
       'warned', exists (select 1 from v2.denial_actions d where d.student_id=s.id
                          and d.year_id=v_year and d.kind='warning'),
       'warned_on_ar', (select v2.fn_to_hijri(d.on_date) from v2.denial_actions d
                         where d.student_id=s.id and d.year_id=v_year and d.kind='warning' limit 1),
-      -- 🔑 رقمُ القرار النافذِ نفسُه، كي يُطرَق بابُ الإلغاء
       'decision', (select d.id from v2.denial_actions d
                     where d.student_id=s.id and d.year_id=v_year and d.kind='decision'
                       and not exists (select 1 from v2.denial_actions c
@@ -41,7 +51,6 @@ begin
                           and d.year_id=v_year and d.kind='decision'
                           and not exists (select 1 from v2.denial_actions c
                                            where c.kind='cancel' and c.committee_entry=d.id)),
-      -- 🔑 والقراراتُ الملغاةُ بأسبابها — لا تُحذف بل تُقرأ مشطوبةً
       'cancelled', coalesce((
           select jsonb_agg(jsonb_build_object(
               'decision', d.id,

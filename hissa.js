@@ -6,6 +6,7 @@
 // ③ البطاقة: v2_card_open بابٌ واحد — التبويباتُ العشرةُ بترتيبها في صفّين، والمغلقُ مغلقٌ بسببه ولا يُخفى
 //    ممارسات/إيجابيات: v2_card_act (practice) · ملاحظة: v2_card_act (note) · تصحيح: v2_card_undo · اللائحة: v2_conduct_list ⇒ v2_record_behavior
 //    واجب: v2_work_set · v2_work_void · خروج: v2_exit_out · v2_exit_back · دور: v2_role_assign · v2_role_end
+//    رصيدُ الممارسات: practice_balance (مرآةٌ لا درجة) · ونقاطُ الولاء الآليّةُ لا أزرارَ لها (can_grant يحمل اليدويَّ وحده)
 //    صحّته: v2_card_health للقراءة وحدها (health_from) · الدرسُ من v2_session_lesson_options · وأنواعُ العمل من v2_work_kinds · نقاطُ الولاء: v2_loyalty_catalog · v2_loyalty_wallet · v2_loyalty_record · v2_loyalty_spend · v2_loyalty_undo
 // ولا رقمَ في الشاشة: كلُّ مهلةٍ وسقفٍ وعتبةٍ من الباب · وكلُّ رفضٍ بنصّه · ولا زرَّ يُعطَّل بحساب
 (function () {
@@ -352,7 +353,7 @@
     box.appendChild(el('div', 'rs-label', 'ما رُصد اليومَ'));
     const today = arr(c.today);
     if (!today.length) box.appendChild(el('p', 'rs-meta', 'لا شيءَ اليومَ.'));
-    for (const x of today) box.appendChild(el('p', null, (x.title_ar || '') + ' · ' + [x.period != null ? 'الحصّة ' + x.period : null, x.by_ar].filter(Boolean).join(' · ')));
+    for (const x of today) box.appendChild(el('p', null, [x.title_ar, x.period_ar, x.by_ar].filter(Boolean).join(' · ')));
     box.appendChild(el('div', 'rs-label', 'أدوارُه الآن'));
     const rn = arr(c.roles_now);
     if (!rn.length) box.appendChild(el('p', 'rs-meta', 'لا دورَ له الآن.'));
@@ -471,7 +472,7 @@
       const t = q.value.trim();
       for (const p of all.filter((x) => !t || (x.title_ar || '').includes(t))) {
         const b = btn('', 'rs-item', () => practiceForm(p));
-        b.append(el('b', null, p.title_ar || ''), el('small', null, [p.done_today ? 'رُصدت اليومَ' : null, p.threshold_ar].filter(Boolean).join(' · ')));
+        b.append(el('b', null, p.title_ar || ''), el('small', null, [p.points_ar, p.done_today ? 'رُصدت اليومَ' : null, p.threshold_ar].filter(Boolean).join(' · ')));
         list.appendChild(b);
       }
       arabize(list);
@@ -490,7 +491,7 @@
       onOk: async (v) => {
         const { data, error } = await M.rpc('v2_card_act', Object.assign(studentArgs(), { p_kind: 'practice', p_code: p.code, p_note: v.n || null, p_place: null, p_payload: {} }), 'رصد ممارسة');
         if (error) return error;
-        flash('ok', [data && data.summary_ar, data && data.note_ar].filter(Boolean).join(' — ')); reloadCard(); return null;
+        flash('ok', [data && data.summary_ar, data && data.note_ar, data && data.loyalty_ar].filter(Boolean).join(' — ')); reloadCard(); return null;
       },
     });
   }
@@ -563,10 +564,11 @@
     const box = $('loyalty'); box.textContent = '';
     const L = ui.card.loyalty || {};
     box.appendChild(el('p', 'rs-sum', L.balance_ar || ''));
+    renderPracticeBalance();
     const grant = arr(L.can_grant);
     for (const s of grant) {
       const b = btn('', 'rs-item', () => grantForm(s));
-      b.append(el('b', null, (s.kind === 'deduct' ? '− ' : '+ ') + (s.title_ar || '') + ' · ' + s.points), el('small', null, [s.week_left_ar, s.needs_note ? 'بسببٍ مكتوب' : null].filter(Boolean).join(' · ')));
+      b.append(el('b', null, [s.title_ar, s.points_ar].filter(Boolean).join(' · ')), el('small', null, [s.week_left_ar, s.needs_note ? 'بسببٍ مكتوب' : null].filter(Boolean).join(' · ')));
       box.appendChild(b);
     }
     const [cat, wal] = await Promise.all([
@@ -576,19 +578,22 @@
     if (cat.error) box.appendChild(el('div', 'notice err', errText(cat.error)));
     else {
       const rw = arr((cat.data || {}).rewards).filter((x) => x.can_i === true);
+      const aff = arr(((wal && wal.data) || {}).can_afford);
       if (rw.length) box.appendChild(el('div', 'rs-label', 'اصرف له'));
       for (const x of rw) {
         const b = btn('', 'rs-item', () => spendForm(x));
-        b.append(el('b', null, (x.title_ar || '') + ' · ' + x.price), el('small', null, [x.stock != null ? 'المتاح ' + x.stock : null, x.note_ar].filter(Boolean).join(' · ')));
+        const a = aff.find((y) => y.code === x.code);
+        b.append(el('b', null, [x.title_ar, a && a.price_ar].filter(Boolean).join(' · ')), el('small', null, [x.note_ar].filter(Boolean).join(' · ')));
         box.appendChild(b);
       }
     }
     if (wal.error) box.appendChild(el('div', 'notice err', errText(wal.error)));
     else {
+      if ((wal.data || {}).totals_ar) box.appendChild(el('p', 'rs-meta', wal.data.totals_ar));
       const moves = arr((wal.data || {}).moves);
       if (moves.length) box.appendChild(el('div', 'rs-label', 'حركاتُه'));
       for (const m of moves) {
-        const p = el('p', null, [m.title_ar, m.points, m.on_ar, m.by_ar, m.reason_ar].filter((v) => v != null && v !== '').join(' · '));
+        const p = el('p', null, [m.title_ar, m.points_ar, m.period_ar, m.on_ar, m.by_ar, m.reason_ar].filter(Boolean).join(' · '));
         if (m.can_undo) p.appendChild(btn('اسحبها', 'rs-btn', () => V.form({
           title: 'سحبُ حركة', what: m.title_ar || '',
           fields: [{ key: 'r', type: 'textarea', label: 'السبب', rows: 2 }],
@@ -602,6 +607,17 @@
         box.appendChild(p);
       }
     }
+    arabize(box);
+  }
+  // رصيدُ الممارسات (practice_balance) — مرآةٌ لا درجة: spend_ar كما جاء، ولا يُسمّى الرصيدُ درجة
+  function renderPracticeBalance() {
+    const box = $('pbal'); box.textContent = '';
+    const P = ui.card.practice_balance;
+    if (!P) return;
+    box.appendChild(el('p', 'rs-sum', P.balance_ar || ''));
+    if (P.counts_ar) box.appendChild(el('p', 'rs-meta', P.counts_ar));
+    for (const r of arr(P)) box.appendChild(el('p', null, [r.title_ar, r.on_ar, r.counted_ar].filter(Boolean).join(' · ')));
+    if (P.spend_ar) box.appendChild(el('p', 'rs-meta', P.spend_ar));
     arabize(box);
   }
   function grantForm(s) {

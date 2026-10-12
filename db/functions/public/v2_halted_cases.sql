@@ -1,5 +1,5 @@
 -- public.v2_halted_cases(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 afc367108012fa0490470289e09bbcbe
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 87cef015edad8ed46f1b32845d151485
 CREATE OR REPLACE FUNCTION public.v2_halted_cases(p_school uuid DEFAULT NULL::uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -14,16 +14,22 @@ begin
     'الحالاتُ الموقوفُ تصعيدُها');
   select coalesce(jsonb_agg(jsonb_build_object(
            'case', ac.id,
-           'student_id', ac.student_id,                      -- 🔑 كي تُطرَق الإحالة
+           'student_id', ac.student_id,
            'student', v2.fn_display_name(s.full_name),
            'days', ac.days_count, 'excused', ac.excused,
+           'days_ar', 'غيابُه '||v2.ar_count(ac.days_count,'يومٌ واحد','يومان','أيّام','يومًا')||
+                      case when ac.excused then ' بعذر' else ' بغير عذر' end,
            'triggered_ar', coalesce(v2.fn_to_hijri(ac.triggered_on)||' هـ',''),
            'why_ar', ac.halt_reason,
            'counsel_case', exists (select 1 from v2.counsel_cases cc where cc.student_id=ac.student_id),
            'can_refer', not exists (select 1 from v2.counsel_cases cc
                                      where cc.student_id=ac.student_id and cc.closed_on is null),
            'open_tasks', (select count(*) from v2.absence_tasks t
-                           where t.case_id=ac.id and t.status='open'))
+                           where t.case_id=ac.id and t.status='open'),
+           'open_tasks_ar', v2.ar_count0((select count(*) from v2.absence_tasks t
+                           where t.case_id=ac.id and t.status='open'),
+                           'لا مهمّةَ مفتوحة','مهمّةٌ مفتوحةٌ واحدة','مهمّتان مفتوحتان',
+                           'مهامَّ مفتوحة','مهمّةً مفتوحة'))
          order by ac.triggered_on desc), '[]'::jsonb) into r
     from v2.absence_cases ac join v2.students s on s.id=ac.student_id
    where ac.school_id=sc and ac.escalation_halted;
