@@ -1,5 +1,5 @@
 -- public.v2_denial_board(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2d2fc13d533f1c9b089bba17d788ddbc
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 cb40f2740f52e6f55a539b6974c8e55a
 CREATE OR REPLACE FUNCTION public.v2_denial_board(p_school uuid DEFAULT NULL::uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -24,10 +24,36 @@ begin
       'crossed', q."غياب_بلا_عذر" >= v2.denial_limit(q."أيام_دراسة_مقررة"),
       'warned', exists (select 1 from v2.denial_actions d where d.student_id=s.id
                          and d.year_id=v_year and d.kind='warning'),
+      'warned_on_ar', (select v2.fn_to_hijri(d.on_date) from v2.denial_actions d
+                        where d.student_id=s.id and d.year_id=v_year and d.kind='warning' limit 1),
+      -- 🔑 رقمُ القرار النافذِ نفسُه، كي يُطرَق بابُ الإلغاء
+      'decision', (select d.id from v2.denial_actions d
+                    where d.student_id=s.id and d.year_id=v_year and d.kind='decision'
+                      and not exists (select 1 from v2.denial_actions c
+                                       where c.kind='cancel' and c.committee_entry=d.id)
+                    order by d.on_date desc limit 1),
+      'decided_on_ar', (select v2.fn_to_hijri(d.on_date) from v2.denial_actions d
+                    where d.student_id=s.id and d.year_id=v_year and d.kind='decision'
+                      and not exists (select 1 from v2.denial_actions c
+                                       where c.kind='cancel' and c.committee_entry=d.id)
+                    order by d.on_date desc limit 1),
       'decided', exists (select 1 from v2.denial_actions d where d.student_id=s.id
                           and d.year_id=v_year and d.kind='decision'
                           and not exists (select 1 from v2.denial_actions c
                                            where c.kind='cancel' and c.committee_entry=d.id)),
+      -- 🔑 والقراراتُ الملغاةُ بأسبابها — لا تُحذف بل تُقرأ مشطوبةً
+      'cancelled', coalesce((
+          select jsonb_agg(jsonb_build_object(
+              'decision', d.id,
+              'decided_on_ar', v2.fn_to_hijri(d.on_date),
+              'cancel', c.id,
+              'cancelled_on_ar', v2.fn_to_hijri(c.on_date),
+              'reason_ar', c.reason,
+              'by_ar', (select v2.fn_display_name(p.full_name) from v2.people p where p.id=c.by_person))
+            order by c.on_date desc)
+          from v2.denial_actions d
+          join v2.denial_actions c on c.kind='cancel' and c.committee_entry=d.id
+          where d.student_id=s.id and d.year_id=v_year and d.kind='decision'), '[]'::jsonb),
       'need_ar', case
         when q."غياب_بلا_عذر" < v2.denial_limit(q."أيام_دراسة_مقررة")
           then 'يقترب من الحدّ — والمتابعةُ أولى من القرار'
@@ -53,6 +79,7 @@ begin
 
   return jsonb_build_object('rows', r, 'count', jsonb_array_length(r),
     'counts', jsonb_build_object('crossed',coalesce(n_cross,0),'near',coalesce(n_near,0)),
+    'order_ar','مرتَّبةٌ بأيّام الغياب — وترتيبُها بالإجراء معلَّقٌ عند مفرح',
     'summary_ar', case when jsonb_array_length(r)=0 then 'لا طالبَ قريبًا من حدّ الحرمان'
       else btrim(concat_ws(' · ',
         case when coalesce(n_cross,0) > 0 then v2.ar_count(n_cross,'طالبٌ تجاوز الحدّ',

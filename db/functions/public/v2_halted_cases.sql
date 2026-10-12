@@ -1,5 +1,5 @@
 -- public.v2_halted_cases(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 d3554221109b8a5307cc1f11b5864a14
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 afc367108012fa0490470289e09bbcbe
 CREATE OR REPLACE FUNCTION public.v2_halted_cases(p_school uuid DEFAULT NULL::uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -13,11 +13,15 @@ begin
   perform v2.assert_role(array['principal','deputy','deputy_students','counselor'],
     'الحالاتُ الموقوفُ تصعيدُها');
   select coalesce(jsonb_agg(jsonb_build_object(
-           'case', ac.id, 'student', v2.fn_display_name(s.full_name),
+           'case', ac.id,
+           'student_id', ac.student_id,                      -- 🔑 كي تُطرَق الإحالة
+           'student', v2.fn_display_name(s.full_name),
            'days', ac.days_count, 'excused', ac.excused,
            'triggered_ar', coalesce(v2.fn_to_hijri(ac.triggered_on)||' هـ',''),
            'why_ar', ac.halt_reason,
            'counsel_case', exists (select 1 from v2.counsel_cases cc where cc.student_id=ac.student_id),
+           'can_refer', not exists (select 1 from v2.counsel_cases cc
+                                     where cc.student_id=ac.student_id and cc.closed_on is null),
            'open_tasks', (select count(*) from v2.absence_tasks t
                            where t.case_id=ac.id and t.status='open'))
          order by ac.triggered_on desc), '[]'::jsonb) into r

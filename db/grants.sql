@@ -1,7 +1,7 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 03ac634f28cb7119e266e047ee782633
+-- ── grants · md5 58af5b34376089f1f1ce50e232dfb69a
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 GRANT SELECT ON TABLE v2.absence_notices TO authenticated;
@@ -595,9 +595,15 @@ REVOKE ALL ON FUNCTION v2.workdays_after(p_school uuid, p_from date, p_n integer
 GRANT EXECUTE ON FUNCTION v2.workdays_after(p_school uuid, p_from date, p_n integer) TO authenticated;
 REVOKE ALL ON FUNCTION v2.wrap(p_fn text, p_sql text, p_params jsonb) FROM PUBLIC;
 
+REVOKE ALL ON FUNCTION public.v2_absence_cases_of_student(p_student uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_absence_cases_of_student(p_student uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_absence_cases_of_student(p_student uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_absence_notices(p_school uuid, p_date date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_absence_notices(p_school uuid, p_date date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_absence_notices(p_school uuid, p_date date) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_absence_refer_counselor(p_case uuid, p_note text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_absence_refer_counselor(p_case uuid, p_note text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_absence_refer_counselor(p_case uuid, p_note text) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_absence_task_delegate(p_task uuid, p_person uuid, p_note text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_absence_task_delegate(p_task uuid, p_person uuid, p_note text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_absence_task_delegate(p_task uuid, p_person uuid, p_note text) TO service_role;
@@ -916,6 +922,9 @@ GRANT EXECUTE ON FUNCTION public.v2_denial_cancel(p_decision uuid, p_reason text
 REVOKE ALL ON FUNCTION public.v2_denial_decide(p_student uuid, p_committee_entry uuid, p_note text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_denial_decide(p_student uuid, p_committee_entry uuid, p_note text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_denial_decide(p_student uuid, p_committee_entry uuid, p_note text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_denial_warn(p_student uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_denial_warn(p_student uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_denial_warn(p_student uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_draft_apply(p_draft uuid, p_confirm text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_draft_apply(p_draft uuid, p_confirm text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_draft_apply(p_draft uuid, p_confirm text) TO service_role;
@@ -994,6 +1003,9 @@ GRANT EXECUTE ON FUNCTION public.v2_exit_out(p_student uuid, p_to_where text, p_
 REVOKE ALL ON FUNCTION public.v2_form(p_form smallint, p_student uuid, p_ref uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_form(p_form smallint, p_student uuid, p_ref uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_form(p_form smallint, p_student uuid, p_ref uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_form_entries(p_form smallint, p_student uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_form_entries(p_form smallint, p_student uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_form_entries(p_form smallint, p_student uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_form_inbox_read(p_inbox uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_form_inbox_read(p_inbox uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_form_inbox_read(p_inbox uuid) TO service_role;

@@ -2,7 +2,9 @@
 // ① إخطاراتُ الغياب: v2_absence_notices — قراءةٌ محضة، ومن لم يُخطَر يُقال سببُه (why_ar) فلا يُظنّ خللًا
 // ② لوحةُ الحرمان: v2_denial_board — need_ar تحت كلّ صفّ: ما يبقى حتى يصحّ القرار، لا «يستحقّ»
 //    والقرار: v2_denial_decide (للمدير وحدَه) · ومحضرُ اللجنة يُختار من نموذج ١٢ للطالب (v2_form_open) لا يُكتب
-//    والإلغاء: v2_denial_cancel — بسببٍ مكتوب، صفٌّ ثالثٌ لا حذف
+//    والإلغاء: v2_denial_cancel — بسببٍ مكتوب، صفٌّ ثالثٌ لا حذف · ورقمُ القرار النافذ من اللوحة (decision) والملغاةُ مشطوبةً (cancelled)
+//    والإنذار: v2_denial_warn · والمحضرُ يُختار من v2_form_entries(12) · وحالاتُ غياب الطالب: v2_absence_cases_of_student ⇒ v2_halt_escalation · v2_resume_escalation
+//    والإحالةُ إلى الموجّه: v2_absence_refer_counselor (حيث can_refer)
 // ③ وقفُ التصعيد: v2_halted_cases · v2_resume_escalation — «الوقفُ حمايةٌ لا إهمال — ويبقى الإخطارُ والرعاية»
 // والترتيبُ كما يرجع من الباب، ولا درجةَ طالبٍ هنا، وكلُّ رفضٍ يُعرض بنصّه
 (function () {
@@ -67,19 +69,30 @@
     const d = data || {};
     sum.textContent = d.summary_ar || '';
     box.textContent = '';
-    // لا جدولَ فارغ: إن لم يكن صفٌّ فالملخّصُ وحدَه
+    // لا جدولَ فارغ: إن لم يكن صفٌّ فالملخّصُ وحدَه · والترتيبُ كما جاء ومعه order_ar
+    if ((d.rows || []).length && d.order_ar) box.appendChild(el('p', 'rs-meta', d.order_ar));
     for (const x of d.rows || []) {
       const f = el('div', 'rs-file');
       f.append(el('h5', null, (x.name || '') + (cls(x) ? ' — ' + cls(x) : '')),
         el('p', 'rs-meta', 'غيابُه بغير عذر ' + x.days + ' · والحدُّ ' + x.limit + ' من ' + x.year_days + ' يومًا دراسيًّا'));
       const tags = el('p');
-      tags.append(el('span', 'rs-tag', x.crossed ? 'تجاوز الحدّ' : 'لم يبلغ الحدّ'), el('span', 'rs-tag', x.warned ? 'أُنذر وليُّه' : 'لم يُنذَر وليُّه'));
-      if (x.decided) tags.appendChild(el('span', 'rs-tag own', 'صدر القرار'));
+      tags.append(el('span', 'rs-tag', x.crossed ? 'تجاوز الحدّ' : 'لم يبلغ الحدّ'), el('span', 'rs-tag', x.warned ? 'أُنذر وليُّه' + (x.warned_on_ar ? ' في ' + x.warned_on_ar : '') : 'لم يُنذَر وليُّه'));
+      if (x.decided) tags.appendChild(el('span', 'rs-tag own', 'صدر القرار' + (x.decided_on_ar ? ' في ' + x.decided_on_ar : '')));
       f.appendChild(tags);
       // روحُ اللوحة: ما يبقى حتى يصحّ القرار — كما جاء
       if (x.need_ar) f.appendChild(el('div', 'rs-info', x.need_ar));
+      // القراراتُ الملغاةُ مشطوبةً ومعها سببُها ومُلغيها — لا تُحذف
+      for (const c of x.cancelled || []) {
+        const p = el('p', 'rs-meta');
+        const q = el('span', null, 'قرارٌ في ' + (c.decided_on_ar || '')); q.style.textDecoration = 'line-through';
+        p.append(q, document.createTextNode(' — أُلغي في ' + (c.cancelled_on_ar || '') + (c.by_ar ? ' · ألغاه ' + c.by_ar : '') + (c.reason_ar ? ' · السبب: ' + c.reason_ar : '')));
+        f.appendChild(p);
+      }
       const r = el('div', 'rs-row');
+      if (!x.warned) r.appendChild(btn('أنذِره الآن', 'rs-btn', () => warn(x)));
       r.appendChild(btn('قرارُ الحرمان', 'rs-btn', () => decideForm(x)));
+      if (x.decision) r.appendChild(btn('ألغِ هذا القرار', 'rs-btn irrev', () => cancelForm(x, x.decision)));
+      r.appendChild(btn('حالاتُ غيابه', 'rs-btn ghost', () => casesSheet({ id: x.student, name: x.name })));
       f.appendChild(r);
       box.appendChild(f);
     }
@@ -90,16 +103,18 @@
   // القرار: محضرُ اللجنة يُختار من نموذج ١٢ للطالب (آخرُ محضرٍ غيرِ مسحوب كما يرجعه v2_form_open) — لا حقلًا يُكتب
   // ولا يُعطَّل الزرّ بحساب: إن نقص شرطٌ ردّه الجسرُ بنصّه
   async function decideForm(x) {
-    const { data: fo, error: fe } = await M.rpc('v2_form_open', { p_form: 12, p_student: x.student, p_ref: null, p_task: null }, 'محضر لجنة التوجيه');
+    const { data: fo, error: fe } = await M.rpc('v2_form_entries', { p_form: 12, p_student: x.student }, 'محاضر لجنة التوجيه');
     const items = []; let pre = null;
     const n = el('div');
+    const rows = (fo && fo.rows) || [];
     if (fe) n.appendChild(el('div', 'notice err', errText(fe)));
-    else if (fo && fo.entry && fo.entry.id) {
-      items.push([fo.entry.id, (fo.title_ar || 'محضر لجنة التوجيه') + ' — ' + (fo.entry.status === 'final' ? 'مُقفَل' : 'لم يُقفل بعد')]);
-      pre = fo.entry.id;
+    else if (rows.length) {
+      for (const e of rows) items.push([e.entry, [e.on_ar, e.final ? 'مُقفَل' : 'لم يُقفل بعد', e.linked_ar, e.by_ar].filter(Boolean).join(' · ')]);
+      if (rows.length === 1) pre = rows[0].entry;
+      if (fo.note_ar) n.appendChild(el('p', 'rs-meta', fo.note_ar));
     } else n.appendChild(el('p', 'rs-meta', 'لا محضرَ لجنة توجيهٍ (نموذج ١٢) لهذا الطالب'));
     const fields = [{ key: 'info', type: 'node', node: n }];
-    if (items.length) fields.push({ key: 'entry', type: 'pick', label: 'محضرُ لجنة التوجيه', items, value: pre });
+    if (items.length) fields.push({ key: 'entry', type: 'pick', label: (fo && fo.title_ar) || 'محضرُ لجنة التوجيه', items, value: pre });
     fields.push({ key: 'note', type: 'textarea', label: 'سببُ القرار — يبقى في السجلّ باسمك', rows: 3 });
     V.form({
       title: 'قرارُ الحرمان من الانتقال', what: (x.name || '') + (cls(x) ? ' — ' + cls(x) : ''),
@@ -144,6 +159,73 @@
     });
   }
 
+  // الإنذار: v2_denial_warn — يكتب رسالةَ وليّ الأمر في سجلّ الأحداث بنفسه، وإن سبق قال ذلك بنصّه
+  async function warn(x) {
+    const { data, error } = await M.rpc('v2_denial_warn', { p_student: x.student }, 'إنذار وليّ الأمر');
+    if (error) { flash('bad', errText(error)); return; }
+    flash('ok', (data && data.said_ar) || '');
+    loadDenial();
+  }
+
+  // حالاتُ غياب الطالب: v2_absence_cases_of_student — والوقفُ حيث can_halt، والرفعُ حيث can_resume
+  async function casesSheet(stu) {
+    const { data, error } = await M.rpc('v2_absence_cases_of_student', { p_student: stu.id }, 'حالات غياب الطالب');
+    const n = el('div');
+    if (error) n.appendChild(el('div', 'notice err', errText(error)));
+    else {
+      const d = data || {};
+      if (!(d.rows || []).length) n.appendChild(el('p', 'rs-meta', 'لا حالةَ غيابٍ له.'));
+      for (const c of d.rows || []) {
+        const f = el('div', 'rs-file');
+        f.append(el('h5', null, 'بدأت ' + (c.triggered_ar || '')),
+          el('p', 'rs-meta', ['أيّامُها ' + c.days, c.consecutive ? 'متّصلة' : null, c.excused ? 'بعذر' : null, 'بنودُها ' + c.all_tasks + ' · المفتوحُ ' + c.open_tasks].filter(Boolean).join(' · ')));
+        if (c.halted) f.appendChild(el('span', 'rs-tag own', 'موقوفٌ تصعيدُها'));
+        if (c.halt_reason) f.appendChild(el('div', 'rs-info', c.halt_reason));
+        const r = el('div', 'rs-row');
+        if (c.can_halt) r.appendChild(btn('أوقِف التصعيد', 'rs-btn', () => { closeSheet(); setTimeout(() => haltForm(stu, c), 0); }));
+        if (c.can_resume) r.appendChild(btn('ارفع الوقف', 'rs-btn', () => { closeSheet(); setTimeout(() => resumeForm({ case: c.case, student: stu.name }), 0); }));
+        f.appendChild(r);
+        if (c.can_halt) f.appendChild(el('p', 'rs-meta', 'الوقفُ حمايةٌ لا إهمال — ويبقى الإخطارُ والرعاية'));
+        n.appendChild(f);
+      }
+      if (d.note_ar) n.appendChild(el('p', 'rs-meta', d.note_ar));
+    }
+    V.form({ title: 'حالاتُ غياب الطالب', what: (data && data.student) || stu.name || '', fields: [{ key: 'c', type: 'node', node: n }], ok: false, cancel: 'أغلق' });
+  }
+  const closeSheet = () => { const m = document.querySelector('.rs-modal:not([hidden])'); if (m) m.hidden = true; };
+  function haltForm(stu, c) {
+    V.form({
+      title: 'وقفُ التصعيد', what: (stu.name || '') + ' · بدأت ' + (c.triggered_ar || ''),
+      fields: [{ key: 'why', type: 'textarea', label: 'سببُ الوقف — يبقى في السجلّ باسمك', rows: 3 },
+        { key: 'n', type: 'node', node: el('p', 'rs-meta', 'الوقفُ حمايةٌ لا إهمال — ويبقى الإخطارُ والرعاية') }],
+      ok: 'أوقِف التصعيد',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_halt_escalation', { p_case: c.case, p_reason: v.why }, 'وقف التصعيد');
+        if (error) return error;
+        if (!data || data.ok !== true) return 'لم يُثبته الجسر';
+        // ومن لا حالةَ له عند الموجّه: النصُّ كما جاء ومعه زرُّ الإحالة
+        flash('ok', data.note_ar || '', data.counsel_case === false ? [btn('أحِله إلى الموجّه', 'rs-btn', () => referForm({ case: c.case, student: stu.name }))] : []);
+        loadHalted();
+        return null;
+      },
+    });
+  }
+  // الإحالةُ إلى الموجّه: v2_absence_refer_counselor — وإن كانت له حالةٌ مفتوحةٌ قال ذلك بنصّه
+  function referForm(x) {
+    V.form({
+      title: 'إحالةٌ إلى الموجّه الطلابيّ', what: x.student || '',
+      fields: [{ key: 'n', type: 'textarea', label: 'سببُ الإحالة (اختياريّ)', rows: 2 }],
+      ok: 'أحِله',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_absence_refer_counselor', { p_case: x.case, p_note: v.n || null }, 'الإحالة إلى الموجّه');
+        if (error) return error;
+        flash('ok', (data && data.said_ar) || '');
+        loadHalted();
+        return null;
+      },
+    });
+  }
+
   // ---------- ③ وقفُ التصعيد ----------
   async function loadHalted() {
     const { data, error } = await M.rpc('v2_halted_cases', { p_school: M.state.school }, 'الحالات الموقوف تصعيدها');
@@ -159,6 +241,7 @@
       if (x.why_ar) f.appendChild(el('div', 'rs-info', x.why_ar));
       if (x.counsel_case === false) f.appendChild(el('div', 'rs-need', 'ولا حالةَ له عند الموجّه الطلابيّ — فأحِله إليه، فالوقفُ حمايةٌ لا إهمال'));
       const r = el('div', 'rs-row');
+      if (x.can_refer) r.appendChild(btn('أحِله إلى الموجّه', 'rs-btn pri', () => referForm(x)));
       r.appendChild(btn('ارفع الوقف', 'rs-btn', () => resumeForm(x)));
       f.append(r, el('p', 'rs-meta', 'الوقفُ حمايةٌ لا إهمال — ويبقى الإخطارُ والرعاية'));
       box.appendChild(f);
