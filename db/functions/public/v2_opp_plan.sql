@@ -1,5 +1,5 @@
 -- public.v2_opp_plan(p_opp uuid, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 6d510bdc98ae732961d3743b230f063e
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 f6aaaeb07ad3be54c20668381f852ceb
 CREATE OR REPLACE FUNCTION public.v2_opp_plan(p_opp uuid, p_note text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -11,7 +11,7 @@ begin
   select * into o from v2.merit_opportunities where id=p_opp;
   if o.id is null then raise exception 'الفرصةُ غيرُ موجودة'; end if;
   seat := v2.my_seat(o.school_id,'guidance');
-  if seat is null and (v2.my_grant() is null or v2.my_grant() not in ('owner','admin')) then
+  if seat is null and coalesce(v2.my_grant(),'') <> 'owner' then
     raise exception 'مخطّطُ الفرصة للجنة التوجيه'; end if;
   if o.state = 'مُقدَّرة' then
     raise exception 'اعتُمد مخطّطُ هذي الفرصة سلفًا — ولا يُعتمد مرّتين'; end if;

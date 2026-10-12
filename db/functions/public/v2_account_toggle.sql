@@ -1,5 +1,5 @@
 -- public.v2_account_toggle(p_person uuid, p_active boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 199b1d1f18ffb449778ccb42ebc3d024
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 a8b90a8b0caa05f368a9a72755d613c7
 CREATE OR REPLACE FUNCTION public.v2_account_toggle(p_person uuid, p_active boolean)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -24,6 +24,10 @@ begin
                             when 'operator' then 2 else 1 end;
   rank_them  := case theirs when 'owner' then 4 when 'admin' then 3
                             when 'operator' then 2 else 1 end;
+  -- 🔑 إدارةُ المدرسة بتكليفها تعلو منسوبيها ولو كانت منحتُها منحةَ مشغِّل
+  if v2.leads_school(array['deputy','deputy_students','deputy_school','deputy_school_students']) then
+    rank_me := greatest(rank_me, 3);
+  end if;
   -- 🔑 ولا يُمسّ من هو مثلُك أو أعلى
   if rank_them >= rank_me then
     raise exception 'لا تملك إيقافَ حسابٍ صلاحيّتُه (%) ومثلُها أو أعلى من صلاحيّتك', theirs; end if;

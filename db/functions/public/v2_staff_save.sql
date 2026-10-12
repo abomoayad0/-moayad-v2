@@ -1,5 +1,5 @@
 -- public.v2_staff_save(p_school uuid, p_person uuid, p_full_name text, p_national_id text, p_employee_no text, p_phone text, p_email text, p_major text, p_rank text, p_qualification text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 1797aabde123bd647283cf9bed5b7d63
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 38c2e263f16429ee3dd569c8c9e3baab
 CREATE OR REPLACE FUNCTION public.v2_staff_save(p_school uuid, p_person uuid, p_full_name text, p_national_id text, p_employee_no text, p_phone text, p_email text, p_major text, p_rank text, p_qualification text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -29,12 +29,12 @@ begin
       'note','ولا يعمل حتى يُسند له تكليف');
   end if;
 
-  -- من منسوبي مدرستك · أو بلا تكليفٍ في المجمّع
+  -- من منسوبي مدرستك · أو بلا تكليفٍ في المجمّع · أو كنتَ إدارةَ المدرسة بتكليفك
   if not exists (select 1 from v2.assignments a
                   where a.person_id=p_person and a.school_id=p_school and a.ended_on is null)
      and exists (select 1 from v2.assignments a
                   where a.person_id=p_person and a.ended_on is null)
-     and v2.my_grant() not in ('owner','admin') then
+     and not v2.leads_school(array['deputy','deputy_students','deputy_school','deputy_school_students']) then
     raise exception 'هذا المنسوب ليس من منسوبي مدرستك'; end if;
   if not exists (select 1 from v2.people where id=p_person and tenant_id=tn) then
     raise exception 'هذا المنسوب ليس من هذا المجمّع'; end if;

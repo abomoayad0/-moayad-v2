@@ -1,5 +1,5 @@
 -- v2.audit_sweep()
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 92791623bc067ed12c8a4dce637a031d
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 252e40a28b144fb0974d846ac66f569e
 CREATE OR REPLACE FUNCTION v2.audit_sweep()
  RETURNS TABLE(check_key text, object_ar text, detail_ar text, severity text)
  LANGUAGE sql
@@ -29,5 +29,8 @@ AS $function$
   union all select 'session_missing', sm.obj, sm.why_ar, sm.severity from v2.audit_session_missing() sm
   union all select 'session_incomplete', si.obj, si.why_ar, si.severity from v2.audit_session_incomplete() si
   union all select 'loyalty_unreachable', lu.obj, lu.why_ar, lu.severity from v2.audit_loyalty_unreachable() lu
+  union all select 'health_no_counselor', hn.obj, hn.why_ar, hn.severity from v2.audit_health_no_counselor() hn
+  union all select 'health_case_due_review', hr.obj, hr.why_ar, hr.severity from v2.audit_health_case_due_review() hr
+  union all select 'number_without_words', nw.fn, nw.why_ar, nw.severity from v2.audit_number_without_words() nw
 $function$
 ;

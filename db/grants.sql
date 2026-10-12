@@ -1,7 +1,7 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 0d9a967981523ee1830636463d6eaf3d
+-- ── grants · md5 1751fba999e87ba5a7347415f52339f1
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 GRANT SELECT ON TABLE v2.absence_notices TO authenticated;
@@ -9,6 +9,8 @@ GRANT SELECT ON TABLE v2.card_views TO authenticated;
 GRANT SELECT ON TABLE v2.citations TO authenticated;
 GRANT SELECT ON TABLE v2.denial_actions TO authenticated;
 GRANT SELECT ON TABLE v2.form_field_source TO authenticated;
+GRANT SELECT ON TABLE v2.health_cases TO authenticated;
+GRANT SELECT ON TABLE v2.health_kinds TO authenticated;
 GRANT SELECT ON TABLE v2.ladder_table_scope TO authenticated;
 GRANT SELECT ON TABLE v2.loyalty_ledger TO authenticated;
 GRANT SELECT ON TABLE v2.loyalty_rewards TO authenticated;
@@ -78,6 +80,10 @@ REVOKE ALL ON FUNCTION v2.audit_fields_without_source() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.audit_fields_without_source() TO authenticated;
 REVOKE ALL ON FUNCTION v2.audit_hardcoded_numbers() FROM PUBLIC;
 
+REVOKE ALL ON FUNCTION v2.audit_health_case_due_review() FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION v2.audit_health_no_counselor() FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.audit_kinds_vs_engine() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.audit_ladder_tables() FROM PUBLIC;
@@ -87,6 +93,8 @@ GRANT EXECUTE ON FUNCTION v2.audit_ladder_tables_unscoped() TO authenticated;
 REVOKE ALL ON FUNCTION v2.audit_late_referral_due() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.audit_late_referral_due() TO authenticated;
 REVOKE ALL ON FUNCTION v2.audit_loyalty_unreachable() FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION v2.audit_number_without_words() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.audit_open_doors() FROM PUBLIC;
 
@@ -418,6 +426,8 @@ REVOKE ALL ON FUNCTION v2.grade_view(p_domain text, p_points numeric, p_grade sm
 GRANT EXECUTE ON FUNCTION v2.grade_view(p_domain text, p_points numeric, p_grade smallint, p_total numeric) TO authenticated;
 REVOKE ALL ON FUNCTION v2.has_post(p_posts text[]) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.has_post(p_posts text[]) TO authenticated;
+REVOKE ALL ON FUNCTION v2.health_gate(p_school uuid, p_what text) FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.in_committee(p_school uuid, p_key text, p_person uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.in_committee(p_school uuid, p_key text, p_person uuid) TO authenticated;
 REVOKE ALL ON FUNCTION v2.is_absent_today(p_student uuid) FROM PUBLIC;
@@ -436,6 +446,8 @@ REVOKE ALL ON FUNCTION v2.late_referral_of(p_school uuid, p_student uuid, p_term
 GRANT EXECUTE ON FUNCTION v2.late_referral_of(p_school uuid, p_student uuid, p_term smallint) TO authenticated;
 REVOKE ALL ON FUNCTION v2.late_tally(p_school uuid, p_student uuid, p_term smallint) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.late_tally(p_school uuid, p_student uuid, p_term smallint) TO authenticated;
+REVOKE ALL ON FUNCTION v2.leads_school(p_extra text[]) FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.log_action(p_school uuid, p_student uuid, p_action text, p_action_ar text, p_ref_table text, p_ref_id uuid, p_detail jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.log_action(p_school uuid, p_student uuid, p_action text, p_action_ar text, p_ref_table text, p_ref_id uuid, p_detail jsonb) TO authenticated;
 REVOKE ALL ON FUNCTION v2.loyalty_balance(p_school uuid, p_student uuid) FROM PUBLIC;
@@ -1070,6 +1082,15 @@ GRANT EXECUTE ON FUNCTION public.v2_halt_escalation(p_case uuid, p_reason text) 
 REVOKE ALL ON FUNCTION public.v2_halted_cases(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_halted_cases(p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_halted_cases(p_school uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_health_case_end(p_case uuid, p_reason text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_health_case_end(p_case uuid, p_reason text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_health_case_end(p_case uuid, p_reason text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_health_case_save(p_student uuid, p_kind text, p_title text, p_hint text, p_severity text, p_until date, p_private text, p_case uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_health_case_save(p_student uuid, p_kind text, p_title text, p_hint text, p_severity text, p_until date, p_private text, p_case uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_health_case_save(p_student uuid, p_kind text, p_title text, p_hint text, p_severity text, p_until date, p_private text, p_case uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_health_of_student(p_student uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_health_of_student(p_student uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_health_of_student(p_student uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_journal(p_kind text, p_area text, p_state text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_journal(p_kind text, p_area text, p_state text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_journal(p_kind text, p_area text, p_state text) TO service_role;

@@ -1,5 +1,5 @@
 -- public.v2_card_open(p_student uuid, p_date date)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c0f69180865049e1e493d4d006b3783a
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2e22f5e1b5395581256093772a24d55c
 CREATE OR REPLACE FUNCTION public.v2_card_open(p_student uuid, p_date date DEFAULT CURRENT_DATE)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,8 @@ CREATE OR REPLACE FUNCTION public.v2_card_open(p_student uuid, p_date date DEFAU
 AS $function$
 declare sc uuid; yr uuid; me uuid := v2.current_person();
         w jsonb; b text; sid uuid; nm text; grd smallint; sect text;
-        v_dep int; r jsonb; v_last date; v_silent int;
+        v_dep int; r jsonb; v_last date; v_silent int; v_days int;
+        n_abs int; n_late int; n_per int; n_exit int;
 begin
   if me is null then raise exception 'لا بدّ من تسجيل الدخول'; end if;
   select e.school_id, e.year_id, e.grade, e.section into sc, yr, grd, sect
@@ -20,11 +21,20 @@ begin
   b := v2.card_blocked(p_student, p_date);
   w := v2.card_window(sc, me, p_date);
   v_dep := v2.rule_n(sc,'card_deputy_reveal');
+  v_days := (v2.rule_n(sc,'card_glance_days'))::int;
 
-  -- آخرُ إيجابيّةٍ له · وإن لم تكن فلا عدد
   select max(ce.on_date) into v_last from v2.card_events ce
    where ce.student_id=p_student and ce.polarity='positive' and ce.undone_at is null;
   v_silent := case when v_last is null then null else (p_date - v_last)::int end;
+
+  select count(*) into n_abs  from v2.attendance a
+   where a.student_id=p_student and a.state='absent' and a.on_date >= p_date - v_days;
+  select count(*) into n_late from v2.attendance a
+   where a.student_id=p_student and a.state='late' and a.on_date >= p_date - v_days;
+  select count(*) into n_per  from v2.period_attendance pa
+   where pa.student_id=p_student and pa.state='absent' and pa.on_date >= p_date - v_days;
+  select count(*) into n_exit from v2.class_exits x
+   where x.student_id=p_student and x.on_date >= p_date - v_days;
 
   insert into v2.card_sessions(school_id,student_id,person_id,on_date,period_no,
       slot_id,blocked_why,can_write,why_no_write,is_test)
@@ -61,7 +71,7 @@ begin
          ('scatter','العتبة',10)
        ) v(k,l,o)) z),
     'laiha_from', jsonb_build_object(
-       'why_ar','دليلُ السلوك محرّكُه قائمٌ ومكتمل — فالبطاقةُ تُحيل إليه ولا تنسخه',
+       'why_ar','دليلُ السلوك محرّكُه قائمٌ ومكتمل — فالبطاقةُ تُحيل إليه ولا تنسخه · والممارساتُ منفصلةٌ عنه تمامًا لا تؤثّر فيه',
        'read', jsonb_build_array('v2_problems','v2_conduct_list','v2_student_tasks'),
        'write', jsonb_build_array('v2_record_behavior'),
        'owner_ar','ملكيّةُ كلِّ بندٍ منصوصةٌ في الدليل — والمعلّمُ يملك ١٢ بندًا بالنصّ'),
@@ -87,7 +97,7 @@ begin
     'class_roles', public.v2_roles_catalog(sc),
     'roles_now', public.v2_roles_of_student(p_student),
     'loyalty_from', jsonb_build_object(
-       'why_ar','نقاطُ الولاء محفظةٌ للطالب وحدَه بدفترِ حركاتٍ مستقلّ — تُكسب وتُخصم وتُصرف، ولا تُخلط بدرجة السلوك ولا بفرص التعويض',
+       'why_ar','نقاطُ الولاء محفظةٌ للطالب وحدَه بدفترِ حركاتٍ مستقلّ — تُكسب وتُخصم وتُصرف، ولا تُخلط بدرجةٍ ولا بدليل السلوك',
        'read', jsonb_build_array('v2_loyalty_catalog','v2_loyalty_wallet','v2_loyalty_of_section','v2_my_loyalty'),
        'write', jsonb_build_array('v2_loyalty_record','v2_loyalty_spend','v2_loyalty_undo')),
     'loyalty', jsonb_build_object(
@@ -99,7 +109,11 @@ begin
               'code', x.code, 'title_ar', x.title_ar, 'kind', x.kind, 'points', x.points,
               'needs_note', x.needs_note or (x.kind='deduct' and v2.rule_n(sc,'loyalty_deduct_needs_note')=1),
               'week_left', coalesce(x.week_cap, v2.rule_n(sc,'loyalty_week_cap_default'))
-                           - v2.loyalty_week_used(sc, p_student, x.code, p_date))
+                           - v2.loyalty_week_used(sc, p_student, x.code, p_date),
+              'week_left_ar', 'بقي من سقفه هذا الأسبوع '||v2.ar_count(
+                  coalesce(x.week_cap, v2.rule_n(sc,'loyalty_week_cap_default'))
+                  - v2.loyalty_week_used(sc, p_student, x.code, p_date),
+                  'نقطةٌ واحدة','نقطتان','نقاط','نقطة'))
             order by x.kind desc, x.ord)
           from (select distinct on (code) * from v2.loyalty_sources
                  where active and (school_id = sc or school_id is null)
@@ -109,15 +123,22 @@ begin
         v2.rule_n(sc,'card_task_due_near'),
         v2.rule_n(sc,'card_task_due_mid'),
         v2.rule_n(sc,'card_task_due_far')),
+    -- 🔑 كلُّ عددٍ في اللمحة معه نصُّه · والمدّةُ قاعدةٌ لا رقمٌ مزروع
     'glance', jsonb_build_object(
-      'absent_days', (select count(*) from v2.attendance a
-         where a.student_id=p_student and a.state='absent' and a.on_date >= p_date-30),
-      'late_days', (select count(*) from v2.attendance a
-         where a.student_id=p_student and a.state='late' and a.on_date >= p_date-30),
-      'absent_periods', (select count(*) from v2.period_attendance pa
-         where pa.student_id=p_student and pa.state='absent' and pa.on_date >= p_date-30),
-      'exits_month', (select count(*) from v2.class_exits x
-         where x.student_id=p_student and x.on_date >= p_date-30),
+      'window_days', v_days,
+      'window_ar', 'في '||v2.ar_count(v_days,'يومٍ واحد','يومين','أيّام','يومًا')||' مضت',
+      'absent_days', n_abs,
+      'absent_ar', case when n_abs = 0 then 'لم يغب يومًا'
+          else 'غاب '||v2.ar_count(n_abs,'يومًا واحدًا','يومين','أيّام','يومًا') end,
+      'late_days', n_late,
+      'late_ar', case when n_late = 0 then 'ولا تأخّر'
+          else 'وتأخّر '||v2.ar_count(n_late,'يومًا واحدًا','يومين','أيّام','يومًا') end,
+      'absent_periods', n_per,
+      'absent_periods_ar', case when n_per = 0 then 'ولا غابَ عن حصّة'
+          else 'وغاب عن '||v2.ar_count(n_per,'حصّةٍ واحدة','حصّتين','حصص','حصّة') end,
+      'exits_month', n_exit,
+      'exits_ar', case when n_exit = 0 then 'ولا خرج من الفصل'
+          else 'وخرج من الفصل '||v2.ar_count(n_exit,'مرّةً واحدة','مرّتين','مرّات','مرّة') end,
       'silent_days', v_silent,
       'silent_ever', v_last is not null,
       'silent_ar', case when v_last is null then 'لم تُرصد له إيجابيّةٌ قطُّ منذ قيده'
@@ -135,27 +156,38 @@ begin
         and ce.kind='practice'),'[]'::jsonb),
     'correctable', coalesce((select jsonb_agg(jsonb_build_object(
         'event',ce.id,'title_ar',ce.title_ar,'on_date',ce.on_date,
-        'days_ago',(p_date - ce.on_date),'state', v2.card_undo_state(ce.id))
+        'days_ago',(p_date - ce.on_date),
+        'days_ago_ar', case when p_date = ce.on_date then 'اليومَ'
+            else 'قبل '||v2.ar_count((p_date - ce.on_date),'يومٍ واحد','يومين','أيّام','يومًا') end,
+        'state', v2.card_undo_state(ce.id))
         order by ce.created_at desc)
       from v2.card_events ce
       where ce.student_id=p_student and ce.undone_at is null
-        and ce.kind='practice' and ce.on_date >= p_date - 30),'[]'::jsonb),
+        and ce.kind='practice' and ce.on_date >= p_date - v_days),'[]'::jsonb),
     'practices', coalesce((select jsonb_agg(jsonb_build_object(
         'code',cp.code,'title_ar',cp.title_ar,'polarity',cp.polarity,'points',cp.points,
         'scope',cp.scope,'zone',cp.zone,'grade_impact',cp.kind,
         'once_per_day',cp.once_per_day,
         'threshold_count',cp.threshold_count,'threshold_days',cp.threshold_days,
+        'threshold_ar', case when cp.threshold_count is null then null
+            else 'عتبتُها '||v2.ar_count(cp.threshold_count,'مرّةً واحدة','مرّتين','مرّات','مرّة')
+                 ||' في '||v2.ar_count(coalesce(cp.threshold_days,0),'يومٍ واحد','يومين','أيّام','يومًا') end,
         'done_today', exists (select 1 from v2.card_events ce
             where ce.student_id=p_student and ce.on_date=p_date
               and ce.kind='practice' and ce.code=cp.code and ce.undone_at is null))
         order by cp.polarity desc, cp.ord)
       from v2.class_practices cp
       where cp.active and (cp.school_id is null or cp.school_id=sc)),'[]'::jsonb),
+    'practices_note_ar','الممارساتُ — إيجابيُّها وسالبُها — منفصلةٌ تمامًا عن دليل السلوك ولا تؤثّر فيه',
     'work', public.v2_work_of_student(p_student),
     'exits', public.v2_exit_of_student(p_student),
     'my_steps_here', coalesce((select jsonb_agg(jsonb_build_object(
         'step',ds.id,'title_ar',ds.title_ar,'due_on',ds.due_on,
-        'late',(ds.due_on < current_date)) order by ds.due_on)
+        'due_ar', v2.fn_to_hijri(ds.due_on),
+        'late',(ds.due_on < current_date),
+        'late_ar', case when ds.due_on < current_date
+            then 'تأخّرت '||v2.ar_count((current_date - ds.due_on),'يومًا واحدًا','يومين','أيّام','يومًا') end)
+        order by ds.due_on)
       from v2.card_due_steps ds
       where ds.student_id=p_student and ds.owner_person=me and ds.answered_at is null),'[]'::jsonb),
     'deputy_reveal', v_dep,

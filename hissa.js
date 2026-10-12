@@ -174,7 +174,8 @@
     if (!rows.length) { box.appendChild(el('p', 'rs-meta', 'لا طالبَ خارجَ فصله الآن.')); return; }
     for (const x of rows) {
       const f = el('div', 'rs-file' + (x.long ? ' rs-late' : ''));
-      f.append(el('h5', null, (x.student_ar || '') + ' · ' + (x.section_ar || '')), el('p', 'rs-meta', [x.to_ar, x.minutes != null ? 'منذ ' + x.minutes + ' دقيقة' : null, x.by_ar].filter(Boolean).join(' · ')));
+      f.append(el('h5', null, (x.student_ar || '') + ' · ' + (x.section_ar || '')), el('p', 'rs-meta', [x.to_ar, x.minutes_ar, x.by_ar].filter(Boolean).join(' · ')));
+      if (x.long_ar) f.appendChild(el('p', 'rs-need', x.long_ar));
       if (x.note_ar) f.appendChild(el('p', 'rs-meta', x.note_ar));
       const r = el('div', 'rs-row'); r.appendChild(btn('عاد', 'rs-btn', () => act('v2_exit_back', { p_exit: x.exit, p_note: null }, 'عودة الطالب', loadExitsNow))); f.appendChild(r);
       box.appendChild(f);
@@ -201,7 +202,7 @@
       for (const x of arr(loy.data)) {
         const t = btn('', 'hs-tile', () => openCard({ id: x.student_id, name: x.name }));
         t.appendChild(el('b', null, x.name || ''));
-        t.appendChild(el('small', null, 'رصيدُه ' + (x.balance != null ? x.balance : '—')));
+        if (x.balance_ar) t.appendChild(el('small', null, x.balance_ar));
         for (const r of rl.filter((y) => y.student === x.student_id)) t.appendChild(el('span', 'rs-tag', r.role_ar || ''));
         const o = ex.find((y) => y.student === x.student_id);
         if (o) t.appendChild(el('span', 'rs-tag own', 'خارج الفصل — ' + (o.to_ar || '')));
@@ -264,7 +265,8 @@
     if (c.note_ar) head.appendChild(el('div', 'rs-info', c.note_ar));
     else if (c.can_write && c.window) head.appendChild(el('p', 'rs-meta', 'نافذةُ الكتابة مفتوحة' + (c.window.closes ? ' حتى ' + c.window.closes : '') + (c.window.subject_ar ? ' · ' + c.window.subject_ar : '')));
     const gl = c.glance || {};
-    head.appendChild(el('p', 'rs-meta', ['غاب ' + gl.absent_days + ' يومًا', 'تأخّر ' + gl.late_days, 'غاب عن ' + gl.absent_periods + ' حصّة', 'خرج ' + gl.exits_month + ' مرّة'].join(' · ')));
+    // اللمحةُ جملٌ مصوغةٌ من الباب تُقرأ متّصلةً بترتيبها — ولا عددَ يُصاغ في الشاشة
+    head.appendChild(el('p', 'rs-meta', [gl.window_ar, gl.absent_ar, gl.late_ar, gl.absent_periods_ar, gl.exits_ar].filter(Boolean).join(' ')));
     // يمرّون بلا أن يُروا — silent_ar كما جاء، ولا عدَّ في الشاشة
     if (gl.silent_ar) {
       head.appendChild(el('div', 'rs-need', gl.silent_ar));
@@ -274,7 +276,7 @@
     if (mine.length) {
       head.appendChild(el('div', 'rs-label', 'ما ينتظرك في هذا الطالب'));
       for (const x of mine) {
-        const p = el('p', x.late ? 'rs-need' : null, (x.title_ar || '') + (x.due_on ? ' · ' + x.due_on : ''));
+        const p = el('p', x.late ? 'rs-need' : null, [x.title_ar, x.due_ar, x.late_ar].filter(Boolean).join(' · '));
         p.appendChild(btn('أنجزتُها', 'rs-btn', () => stepForm(Object.assign({ student_ar: ui.stu.name }, x), reloadCard)));
         head.appendChild(p);
       }
@@ -413,8 +415,7 @@
       const scopes = (k.scopes || []).map((x) => [x.code, x.label_ar + (x.code === 'student' ? ' — ' + (ui.stu.name || '') : '')]);
       const hint = el('div');
       for (const x of k.kinds || []) if (x.note_ar) hint.appendChild(el('p', 'rs-meta', x.label_ar + ': ' + x.note_ar));
-      const rl = [ru.due_max_days != null ? 'أبعدُ موعدٍ ' + ru.due_max_days + ' يومًا' : null, ru.max_open_per_section != null ? 'وأقصى ما يقوم في الفصل ' + ru.max_open_per_section : null].filter(Boolean).join(' · ');
-      if (rl) hint.appendChild(el('p', 'rs-meta', rl));
+      if (k.rules_ar) hint.appendChild(el('p', 'rs-meta', k.rules_ar));
       V.form({
         title: 'تكليفٌ بعمل', what: [ui.stu.name, s.subject].filter(Boolean).join(' · '),
         fields: [
@@ -441,7 +442,7 @@
     if (!rows.length) { box.appendChild(el('p', 'rs-meta', 'لا شيءَ يقبل التصحيح.')); return; }
     for (const x of rows) {
       const f = el('div', 'rs-file');
-      f.append(el('h5', null, x.title_ar || ''), el('p', 'rs-meta', String(x.on_date || '')));
+      f.append(el('h5', null, x.title_ar || ''), el('p', 'rs-meta', x.days_ago_ar || ''));
       const st = x.state || {};
       if (st.can_undo) { const r = el('div', 'rs-row'); r.appendChild(btn('تراجع', 'rs-btn', () => undoForm(x))); f.appendChild(r); if (st.law_ar) f.appendChild(el('p', 'rs-meta', st.law_ar)); }
       else f.appendChild(el('p', 'rs-meta', st.why_ar || ''));
@@ -470,12 +471,14 @@
       const t = q.value.trim();
       for (const p of all.filter((x) => !t || (x.title_ar || '').includes(t))) {
         const b = btn('', 'rs-item', () => practiceForm(p));
-        b.append(el('b', null, p.title_ar || ''), el('small', null, [p.done_today ? 'رُصدت اليومَ' : null, p.threshold_count ? 'عتبتُها ' + p.threshold_count + (p.threshold_days ? ' في ' + p.threshold_days + ' يومًا' : '') : null].filter(Boolean).join(' · ')));
+        b.append(el('b', null, p.title_ar || ''), el('small', null, [p.done_today ? 'رُصدت اليومَ' : null, p.threshold_ar].filter(Boolean).join(' · ')));
         list.appendChild(b);
       }
       arabize(list);
     };
     q.addEventListener('input', paint);
+    // الممارساتُ دفترٌ منفصلٌ عن دليل السلوك ومحفظة الولاء — والنصُّ من الباب
+    if (ui.card.practices_note_ar) box.appendChild(el('p', 'rs-meta', ui.card.practices_note_ar));
     box.append(q, list);
     paint();
   }
@@ -521,11 +524,12 @@
   // خروجٌ مؤقّت: الأماكنُ من exit_from.places · والعدُّ والحدُّ من الباب
   function exitsList(box) {
     const e = ui.card.exits || {};
-    const line = [e.today_count != null ? 'اليومَ ' + e.today_count + (e.today_max != null ? ' من ' + e.today_max : '') : null, e.month_count != null ? 'في الشهر ' + e.month_count + (e.month_warn != null ? ' (والتنبيهُ عند ' + e.month_warn + ')' : '') : null].filter(Boolean).join(' · ');
+    const line = [e.today_ar, e.month_ar].filter(Boolean).join(' ');
     if (line) box.appendChild(el('p', 'rs-meta', line));
+    if (e.warn_ar) box.appendChild(el('p', 'rs-need', e.warn_ar));
     if (e.note_ar) box.appendChild(el('p', 'rs-meta', e.note_ar));
     for (const x of arr(e)) {
-      const p = el('p', null, [x.on_date, x.period != null ? 'الحصّة ' + x.period : null, x.to_ar, x.minutes != null ? x.minutes + ' دقيقة' : null, x.by_ar, x.returned ? 'عاد' : 'لم يعد بعد'].filter(Boolean).join(' · '));
+      const p = el('p', null, [x.on_ar, x.period != null ? 'الحصّة ' + x.period : null, x.to_ar, x.minutes_ar, x.by_ar].filter(Boolean).join(' · '));
       if (!x.returned) p.appendChild(btn('عاد', 'rs-btn', () => act('v2_exit_back', { p_exit: x.exit, p_note: null }, 'عودة الطالب', reloadCard)));
       box.appendChild(p);
     }
@@ -550,7 +554,7 @@
   function tabThreshold(box) {
     const rows = arr(ui.card.practices).filter((p) => p.threshold_count);
     if (!rows.length) box.appendChild(el('p', 'rs-meta', 'لا ممارسةَ لها عتبة.'));
-    for (const p of rows) box.appendChild(el('p', null, (p.title_ar || '') + ' · عتبتُها ' + p.threshold_count + (p.threshold_days ? ' في ' + p.threshold_days + ' يومًا' : '')));
+    for (const p of rows) box.appendChild(el('p', null, [p.title_ar, p.threshold_ar].filter(Boolean).join(' · ')));
   }
 
   // ---------- نقاطُ الولاء ----------
@@ -558,11 +562,11 @@
   async function renderLoyalty() {
     const box = $('loyalty'); box.textContent = '';
     const L = ui.card.loyalty || {};
-    box.appendChild(el('p', 'rs-sum', 'رصيدُه: ' + (L.balance_ar || '')));
+    box.appendChild(el('p', 'rs-sum', L.balance_ar || ''));
     const grant = arr(L.can_grant);
     for (const s of grant) {
       const b = btn('', 'rs-item', () => grantForm(s));
-      b.append(el('b', null, (s.kind === 'deduct' ? '− ' : '+ ') + (s.title_ar || '') + ' · ' + s.points), el('small', null, 'يبقى هذا الأسبوع ' + s.week_left + (s.needs_note ? ' · بسببٍ مكتوب' : '')));
+      b.append(el('b', null, (s.kind === 'deduct' ? '− ' : '+ ') + (s.title_ar || '') + ' · ' + s.points), el('small', null, [s.week_left_ar, s.needs_note ? 'بسببٍ مكتوب' : null].filter(Boolean).join(' · ')));
       box.appendChild(b);
     }
     const [cat, wal] = await Promise.all([

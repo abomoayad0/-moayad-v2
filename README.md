@@ -426,6 +426,13 @@
      - «صحّته» تقرأ `health_from.why_ar` (قراءةٌ فقط).
      - «سمِّ الدرس» من `v2_session_lesson_options`: البنودُ مع `note_ar` و`plan_status_ar`، أو نصٌّ حرّ.
      - أنواعُ العمل ومداه وقواعدُه من `v2_work_kinds`.
+   - **«كلُّ عددٍ معه نصُّه» (١٢/١٠):** لا جملةَ عدٍّ تُصاغ في الشاشة.
+     - في البطاقة: اللمحةُ من `glance` (`window_ar` ثمّ `absent_ar` · `late_ar` · `absent_periods_ar` · `exits_ar`) تُقرأ متّصلة.
+     - ومعها `days_ago_ar` · `threshold_ar` · `due_ar`/`late_ar` · `week_left_ar`.
+     - وفي الشبكة `balance_ar`.
+     - والخروجُ من `today_ar` · `month_ar` · `warn_ar` · `minutes_ar` · `on_ar` · `long_ar`.
+     - وقاعدةُ العمل من `rules_ar`.
+     - و`practices_note_ar` في تبويبَي الممارسات: الممارساتُ منفصلةٌ عن دليل السلوك.
    - **التبويباتُ العشرةُ بترتيبها في صفّين**، والمغلقُ يُعرض بقفلٍ ويُفتح على سببه:
      - **اللائحة:** `v2_conduct_list` ⇒ `v2_record_behavior`.
      - **سجلّه:** ما رُصد اليومَ، وأدوارُه، وأعمالُه، وخروجُه، و«اكتب ملاحظة» (`v2_card_act` بـ`note`).

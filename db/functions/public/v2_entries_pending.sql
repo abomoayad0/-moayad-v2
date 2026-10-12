@@ -1,5 +1,5 @@
 -- public.v2_entries_pending(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 8c883637a92dec132052d7948fb1e810
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c4f3bfdae8bcf0a6368a4487d407f3ef
 CREATE OR REPLACE FUNCTION public.v2_entries_pending(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -27,7 +27,7 @@ begin
   where o.school_id=p_school
     and x.filed_at is not null and x.verdict is null
     and (o.held_by = me or x.delegated_to = me
-         or v2.my_grant() in ('owner','admin'));
+         or v2.leads_school(array['deputy','deputy_students','counselor']));
   return r;
 end $function$
 ;
