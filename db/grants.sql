@@ -1,7 +1,7 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 58af5b34376089f1f1ce50e232dfb69a
+-- ── grants · md5 0d9a967981523ee1830636463d6eaf3d
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 GRANT SELECT ON TABLE v2.absence_notices TO authenticated;
@@ -16,6 +16,7 @@ GRANT SELECT ON TABLE v2.loyalty_sources TO authenticated;
 GRANT SELECT ON TABLE v2.phrase_use TO authenticated;
 GRANT SELECT ON TABLE v2.qualitative_bands TO authenticated;
 GRANT SELECT ON TABLE v2.task_role_map TO authenticated;
+GRANT SELECT ON TABLE v2.work_kinds TO authenticated;
 
 REVOKE ALL ON FUNCTION v2.absence_task_auto(p_task uuid) FROM PUBLIC;
 
@@ -1581,6 +1582,9 @@ GRANT EXECUTE ON FUNCTION public.v2_session_close(p_session uuid, p_note text) T
 REVOKE ALL ON FUNCTION public.v2_session_lesson(p_session uuid, p_item uuid, p_text text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_session_lesson(p_session uuid, p_item uuid, p_text text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_session_lesson(p_session uuid, p_item uuid, p_text text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_session_lesson_options(p_session uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_session_lesson_options(p_session uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_session_lesson_options(p_session uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_session_open(p_period smallint, p_section uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_session_open(p_period smallint, p_section uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_session_open(p_period smallint, p_section uuid) TO service_role;
@@ -1791,6 +1795,9 @@ GRANT EXECUTE ON FUNCTION public.v2_weekday(p_date date) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_work_board(p_section uuid, p_subject text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_work_board(p_section uuid, p_subject text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_work_board(p_section uuid, p_subject text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_work_kinds() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_work_kinds() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_work_kinds() TO service_role;
 REVOKE ALL ON FUNCTION public.v2_work_of_student(p_student uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_work_of_student(p_student uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_work_of_student(p_student uuid) TO service_role;

@@ -6,7 +6,7 @@
 // ③ البطاقة: v2_card_open بابٌ واحد — التبويباتُ العشرةُ بترتيبها في صفّين، والمغلقُ مغلقٌ بسببه ولا يُخفى
 //    ممارسات/إيجابيات: v2_card_act (practice) · ملاحظة: v2_card_act (note) · تصحيح: v2_card_undo · اللائحة: v2_conduct_list ⇒ v2_record_behavior
 //    واجب: v2_work_set · v2_work_void · خروج: v2_exit_out · v2_exit_back · دور: v2_role_assign · v2_role_end
-//    صحّته: v2_card_health للقراءة وحدها · نقاطُ الولاء: v2_loyalty_catalog · v2_loyalty_wallet · v2_loyalty_record · v2_loyalty_spend · v2_loyalty_undo
+//    صحّته: v2_card_health للقراءة وحدها (health_from) · الدرسُ من v2_session_lesson_options · وأنواعُ العمل من v2_work_kinds · نقاطُ الولاء: v2_loyalty_catalog · v2_loyalty_wallet · v2_loyalty_record · v2_loyalty_spend · v2_loyalty_undo
 // ولا رقمَ في الشاشة: كلُّ مهلةٍ وسقفٍ وعتبةٍ من الباب · وكلُّ رفضٍ بنصّه · ولا زرَّ يُعطَّل بحساب
 (function () {
   'use strict';
@@ -92,14 +92,30 @@
   }
   const openSession = (s) => act('v2_session_open', { p_period: s.period, p_section: s.section }, 'فتح الحصّة', loadSessions);
   const attendance = (s) => act('v2_session_attendance', { p_session: s.session }, 'اعتماد الحضور', loadSessions);
-  // الدرسُ نصٌّ حرّ — فلا بابَ يرجع بنودَ توزيع المنهج لهذي الحصّة (ثغرةٌ في التقرير)
-  function lessonForm(s) {
+  // الدرس: بنودُ التوزيع من v2_session_lesson_options (والصفُّ يُستخرج من قسم الجلسة) — و note_ar يقول حالَ التوزيع كما جاء
+  //        فإن لم يكن توزيعٌ بقي النصُّ الحرّ · والبندُ يُرسل في p_item والنصُّ في p_text
+  async function lessonForm(s) {
+    const { data: o, error: oe } = await M.rpc('v2_session_lesson_options', { p_session: s.session }, 'بنود الدرس');
+    const n = el('div');
+    const rows = (o && o.rows) || [];
+    if (oe) n.appendChild(el('div', 'notice err', errText(oe)));
+    else {
+      const d = o || {};
+      n.appendChild(el('p', 'rs-meta', [d.grade_ar, d.subject_ar, d.plan_status_ar ? 'التوزيع: ' + d.plan_status_ar : null].filter(Boolean).join(' · ')));
+      if (d.note_ar) n.appendChild(el('div', 'rs-info', d.note_ar));
+    }
+    const items = rows.map((r) => [r.item, [r.week_no != null ? 'الأسبوع ' + r.week_no : null, r.title_ar, r.unit_ar, r.state_ar, r.page_from != null ? 'ص ' + r.page_from + (r.page_to != null ? '–' + r.page_to : '') : null].filter(Boolean).join(' · ')]);
+    const cur = rows.find((r) => r.is_current);
+    const fields = [{ key: 'info', type: 'node', node: n }];
+    if (items.length) fields.push({ key: 'item', type: 'pick', label: 'من التوزيع', items, value: cur ? cur.item : null });
+    // والنصُّ لا يُملأ مسبقًا إن كانت بنود: فالبابُ يقدّم النصَّ على البند، فلا يُرسل اسمٌ قديمٌ مع بندٍ مختار
+    fields.push({ key: 't', label: items.length ? 'أو اكتبه' : 'الدرس', value: items.length ? '' : (s.lesson_ar || '') });
     V.form({
       title: 'درسُ الحصّة', what: 'الحصّة ' + s.period + ' · ' + (s.section_ar || ''),
-      fields: [{ key: 't', label: 'الدرس', value: s.lesson_ar || '' }],
+      fields,
       ok: 'سمِّه',
       onOk: async (v) => {
-        const { data, error } = await M.rpc('v2_session_lesson', { p_session: s.session, p_item: null, p_text: v.t }, 'تسمية الدرس');
+        const { data, error } = await M.rpc('v2_session_lesson', { p_session: s.session, p_item: v.item || null, p_text: v.t || null }, 'تسمية الدرس');
         if (error) return error;
         flash('ok', (data && data.msg) || ''); loadSessions(); return null;
       },
@@ -237,19 +253,21 @@
     const { data, error } = await M.rpc('v2_card_open', { p_student: ui.stu.id, p_date: M.state.date || null }, 'بطاقة الطالب');
     const head = $('cardHead');
     $('cardName').textContent = ui.stu.name || '';
-    $('cardSub').textContent = ui.sec ? (ui.sec.label || '') : '';
+    $('cardSub').textContent = '';
     if (error) { err(head, error); $('tabs').textContent = ''; $('tabBody').textContent = ''; $('loyalty').textContent = ''; return; }
     const c = ui.card = data || {};
     if (c.student && c.student.name_ar) $('cardName').textContent = c.student.name_ar;
+    // الصفُّ باسمه من الباب (class_ar) — فتعمل البطاقةُ من أيّ مدخل
+    $('cardSub').textContent = (c.student && c.student.class_ar) || '';
     head.textContent = '';
     // نافذةُ الكتابة وسببُ المنع كما جاءا
     if (c.note_ar) head.appendChild(el('div', 'rs-info', c.note_ar));
     else if (c.can_write && c.window) head.appendChild(el('p', 'rs-meta', 'نافذةُ الكتابة مفتوحة' + (c.window.closes ? ' حتى ' + c.window.closes : '') + (c.window.subject_ar ? ' · ' + c.window.subject_ar : '')));
     const gl = c.glance || {};
     head.appendChild(el('p', 'rs-meta', ['غاب ' + gl.absent_days + ' يومًا', 'تأخّر ' + gl.late_days, 'غاب عن ' + gl.absent_periods + ' حصّة', 'خرج ' + gl.exits_month + ' مرّة'].join(' · ')));
-    // يمرّون بلا أن يُروا — والحدُّ من الباب
-    if (gl.silent_limit != null && gl.silent_days >= gl.silent_limit) {
-      head.appendChild(el('div', 'rs-need', 'مضى ' + gl.silent_days + ' يومًا بلا إيجابيّةٍ واحدة (والحدُّ ' + gl.silent_limit + ')'));
+    // يمرّون بلا أن يُروا — silent_ar كما جاء، ولا عدَّ في الشاشة
+    if (gl.silent_ar) {
+      head.appendChild(el('div', 'rs-need', gl.silent_ar));
       head.appendChild(el('p', 'rs-meta', 'يمرّون بلا أن يُروا — فالظلمُ أن تُرصد عليه وأن لا تراه أصلًا'));
     }
     const mine = arr(c.my_steps_here);
@@ -356,6 +374,9 @@
   }
   // صحّته: للقراءة وحدها — بإقرار الخصوصيّة، وتُطوى بعد الثواني التي يقولها الباب
   async function tabHealth(box) {
+    // health_from يقول إنّ التبويبَ قراءةٌ فقط (write: [])
+    const hf = ui.card.health_from || {};
+    if (hf.why_ar) box.appendChild(el('p', 'rs-meta', hf.why_ar));
     const { data, error } = await M.rpc('v2_card_health', { p_student: ui.stu.id, p_private_ack: false }, 'صحّته');
     if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
     const d = data || {};
@@ -377,23 +398,32 @@
     }));
     box.appendChild(r);
   }
-  // كلّفه بواجب: v2_work_set — النوعُ والمدى بقيم الباب (ولا بابَ يرجع ألفاظَها: ثغرةٌ في التقرير)
-  const KINDS = [['homework', 'واجب'], ['enrichment', 'إثراء'], ['activity', 'نشاط'], ['exam', 'اختبار']];
+  // كلّفه بواجب: v2_work_set — الأنواعُ والمدى وقواعدُ التسليم من v2_work_kinds لا من الشاشة
   function tabWork(box) {
     const wf = ui.card.work_from || {};
     if (wf.why_ar) box.appendChild(el('p', 'rs-meta', wf.why_ar));
     const wb = el('div'); renderWork(wb, { data: ui.card.work }, false); box.appendChild(wb);
     const r = el('div', 'rs-row');
-    r.appendChild(btn('كلّفه بعمل', 'rs-btn pri', () => {
+    r.appendChild(btn('كلّفه بعمل', 'rs-btn pri', async () => {
       const s = secOf();
+      const { data: wk, error: we } = await M.rpc('v2_work_kinds', {}, 'أنواع العمل');
+      if (we) { flash('bad', errText(we)); return; }
+      const k = wk || {}; const ru = k.rules || {};
+      const kinds = (k.kinds || []).map((x) => [x.code, x.label_ar]);
+      const scopes = (k.scopes || []).map((x) => [x.code, x.label_ar + (x.code === 'student' ? ' — ' + (ui.stu.name || '') : '')]);
+      const hint = el('div');
+      for (const x of k.kinds || []) if (x.note_ar) hint.appendChild(el('p', 'rs-meta', x.label_ar + ': ' + x.note_ar));
+      const rl = [ru.due_max_days != null ? 'أبعدُ موعدٍ ' + ru.due_max_days + ' يومًا' : null, ru.max_open_per_section != null ? 'وأقصى ما يقوم في الفصل ' + ru.max_open_per_section : null].filter(Boolean).join(' · ');
+      if (rl) hint.appendChild(el('p', 'rs-meta', rl));
       V.form({
         title: 'تكليفٌ بعمل', what: [ui.stu.name, s.subject].filter(Boolean).join(' · '),
         fields: [
-          { key: 'kind', type: 'pick', label: 'النوع', items: KINDS, value: 'homework' },
-          { key: 'scope', type: 'pick', label: 'لمن', items: [['student', 'لهذا الطالب وحدَه'], ['class', 'للفصل كلِّه']], value: 'student' },
+          { key: 'kind', type: 'pick', label: 'النوع', items: kinds, value: kinds.length ? kinds[0][0] : null },
+          { key: 'scope', type: 'pick', label: 'لمن', items: scopes, value: 'student' },
           { key: 'body', type: 'textarea', label: 'نصُّ العمل', rows: 3 },
           { key: 'page', label: 'الصفحة (اختياريّة)' },
           { key: 'due', type: 'date', label: 'موعدُ التسليم' },
+          { key: 'hint', type: 'node', node: hint },
         ],
         ok: 'كلّف',
         onOk: async (v) => {

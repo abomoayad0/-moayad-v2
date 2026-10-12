@@ -9,7 +9,7 @@
 | `tables/*.sql` — الأعمدة والمفاتيح والقيود والفهارس وتفعيل RLS والتعليقات | 211 جدولًا · 136 فهرسًا |
 | `views/*.sql` (`v_students` · `v_obligations`) | 2 |
 | `functions/v2/*.sql` | 289 دالّة |
-| `functions/public/*.sql` — الجسور `v2_*` | 403 |
+| `functions/public/*.sql` — الجسور `v2_*` | 405 |
 | `functions/comments.sql` | 159 تعليقًا |
 | `foreign_keys.sql` | 167 جدولًا لها مفاتيح خارجيّة |
 | `triggers.sql` | 46 زنادًا على 36 جدولًا |

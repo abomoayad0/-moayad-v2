@@ -1,5 +1,5 @@
 -- public.v2_work_of_student(p_student uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 dd466f54d2a52d716de701ceae056402
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 ff317026a79a74a61def45e4ec0583ee
 CREATE OR REPLACE FUNCTION public.v2_work_of_student(p_student uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -16,8 +16,7 @@ begin
   return coalesce((
     select jsonb_agg(jsonb_build_object(
         'id', w.id, 'kind', w.kind,
-        'kind_ar', case w.kind when 'homework' then 'واجب' when 'enrichment' then 'إثراء'
-                               when 'activity' then 'نشاط' else 'اختبار' end,
+        'kind_ar', coalesce((select k.label_ar from v2.work_kinds k where k.code = w.kind), w.kind),
         'subject', w.subject_ar, 'body', w.body_ar, 'page', w.page_ref,
         'for_him_alone', w.scope = 'student',
         'due_on', w.due_on, 'due_ar', v2.fn_to_hijri(w.due_on),

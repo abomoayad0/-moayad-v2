@@ -58,5 +58,6 @@
 | `45_denial_halt_notices.sql` | تكليف ⑧: `v2_denial_board` · `v2_denial_decide` · `v2_denial_cancel` · `v2_halted_cases` · `v2_halt_escalation` · `v2_resume_escalation` · `v2_absence_notices` — حرّاسُها بالموجّه والمساعد والمعلّم، ونصوصُ شروط القرار | ✅ ١٤ من ١٥ · ❌ خطوةٌ خطؤها في الفحص |
 | `46_session_card.sql` | تكليف ④: `v2_my_sessions` · `v2_loyalty_of_section` · `v2_card_open` (التبويبات ونافذةُ الكتابة) · `v2_card_act` · `v2_loyalty_catalog` · الشبكة · `v2_session_open` · `v2_card_health` — بالمعلّم والموجّه والمساعد | ✅ ١٣ · ❌ `health_view` مرفوض · ⚠️ خطوةٌ لا تُثبت حارسًا |
 | `47_denial_doors_appendix.sql` | ملحقُ ⑧: `v2_denial_warn` · `v2_absence_cases_of_student` · `v2_absence_refer_counselor` · `v2_form_entries` · ومفاتيحُ اللوحة والموقوف الجديدة — بالمساعد والموجّه والمعلّم | ✅ ١٢ من ١٢ |
+| `48_session_card_fixes.sql` | تصحيحُ ④: `v2_session_lesson_options` · `v2_work_kinds` · `v2_card_open` (`class_ar` · `silent_ar` · `health_from`) — بالمعلّم | ✅ ٥ من ٥ |
 
 يُشغَّل الملفُّ دفعةً واحدةً كما هو، فيرجع جدولًا واحدًا.

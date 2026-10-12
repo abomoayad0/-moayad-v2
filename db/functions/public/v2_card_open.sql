@@ -1,5 +1,5 @@
 -- public.v2_card_open(p_student uuid, p_date date)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e7a6551b1661fd0e31d611f981930388
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c0f69180865049e1e493d4d006b3783a
 CREATE OR REPLACE FUNCTION public.v2_card_open(p_student uuid, p_date date DEFAULT CURRENT_DATE)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_card_open(p_student uuid, p_date date DEFAU
 AS $function$
 declare sc uuid; yr uuid; me uuid := v2.current_person();
         w jsonb; b text; sid uuid; nm text; grd smallint; sect text;
-        v_dep int; r jsonb;
+        v_dep int; r jsonb; v_last date; v_silent int;
 begin
   if me is null then raise exception 'لا بدّ من تسجيل الدخول'; end if;
   select e.school_id, e.year_id, e.grade, e.section into sc, yr, grd, sect
@@ -21,6 +21,11 @@ begin
   w := v2.card_window(sc, me, p_date);
   v_dep := v2.rule_n(sc,'card_deputy_reveal');
 
+  -- آخرُ إيجابيّةٍ له · وإن لم تكن فلا عدد
+  select max(ce.on_date) into v_last from v2.card_events ce
+   where ce.student_id=p_student and ce.polarity='positive' and ce.undone_at is null;
+  v_silent := case when v_last is null then null else (p_date - v_last)::int end;
+
   insert into v2.card_sessions(school_id,student_id,person_id,on_date,period_no,
       slot_id,blocked_why,can_write,why_no_write,is_test)
   values (sc,p_student,me,p_date,(w->>'period_no')::smallint,
@@ -30,7 +35,9 @@ begin
 
   r := jsonb_build_object(
     'session', sid,
-    'student', jsonb_build_object('id',p_student,'name_ar',nm,'grade',grd,'section',sect),
+    'student', jsonb_build_object('id',p_student,'name_ar',nm,
+        'grade_ar', v2.grade_ar(grd), 'section', sect,
+        'class_ar', v2.grade_ar(grd) || ' — ' || sect),
     'blocked_why', b,
     'window', w,
     'can_write', (coalesce((w->>'can_write')::boolean,false) and b is null),
@@ -60,7 +67,7 @@ begin
        'owner_ar','ملكيّةُ كلِّ بندٍ منصوصةٌ في الدليل — والمعلّمُ يملك ١٢ بندًا بالنصّ'),
     'work_from', jsonb_build_object(
        'why_ar','الواجبُ ميدانٌ مستقلٌّ يصل شاشةَ الطالب',
-       'read', jsonb_build_array('v2_work_of_student','v2_work_board'),
+       'read', jsonb_build_array('v2_work_of_student','v2_work_board','v2_work_kinds'),
        'write', jsonb_build_array('v2_work_set','v2_work_void')),
     'exit_from', jsonb_build_object(
        'why_ar','الخروجُ ميدانٌ له جدولُه — ولا يُكتب في أحداث البطاقة',
@@ -69,6 +76,10 @@ begin
        'places', (select jsonb_agg(jsonb_build_object('key',k,'label_ar',v2.exit_where_ar(k)))
                    from (values ('restroom'),('counselor'),('deputy'),('principal'),
                                 ('health'),('admin'),('activity'),('other')) q(k))),
+    'health_from', jsonb_build_object(
+       'why_ar','الصحّةُ ميدانُ الموجّه الصحّيّ — تُقرأ على انفرادٍ ويُسجَّل الاطّلاع، ولا تُكتب من البطاقة',
+       'read', jsonb_build_array('v2_card_health'),
+       'write', jsonb_build_array()),
     'roles_from', jsonb_build_object(
        'why_ar','الأدوارُ ميدانٌ له جدولُه — والقائمةُ من لوحة التحكّم لا من الشِّفرة',
        'read', jsonb_build_array('v2_roles_catalog','v2_roles_of_section','v2_roles_of_student'),
@@ -107,9 +118,13 @@ begin
          where pa.student_id=p_student and pa.state='absent' and pa.on_date >= p_date-30),
       'exits_month', (select count(*) from v2.class_exits x
          where x.student_id=p_student and x.on_date >= p_date-30),
-      'silent_days', (select (p_date - coalesce(max(ce.on_date), p_date-999))::int
-         from v2.card_events ce where ce.student_id=p_student
-           and ce.polarity='positive' and ce.undone_at is null),
+      'silent_days', v_silent,
+      'silent_ever', v_last is not null,
+      'silent_ar', case when v_last is null then 'لم تُرصد له إيجابيّةٌ قطُّ منذ قيده'
+                        when v_silent >= v2.rule_n(sc,'card_silent_days')
+                          then 'مضى '||v2.ar_count(v_silent,'يومٌ واحد','يومان','أيّام','يومًا')||
+                               ' بلا إيجابيّةٍ واحدة — فانظر إليه'
+                        else null end,
       'silent_limit', v2.rule_n(sc,'card_silent_days')),
     'today', coalesce((select jsonb_agg(jsonb_build_object(
         'event',ce.id,'kind',ce.kind,'title_ar',ce.title_ar,'polarity',ce.polarity,

@@ -1,5 +1,5 @@
 -- public.v2_work_board(p_section uuid, p_subject text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 70603399fa381c9ed2a03d6047131b76
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 7b7ca38e5e69e15177edfe8966c2e438
 CREATE OR REPLACE FUNCTION public.v2_work_board(p_section uuid, p_subject text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -16,8 +16,7 @@ begin
   return coalesce((
     select jsonb_agg(jsonb_build_object(
         'id', w.id, 'kind', w.kind,
-        'kind_ar', case w.kind when 'homework' then 'واجب' when 'enrichment' then 'إثراء'
-                               when 'activity' then 'نشاط' else 'اختبار' end,
+        'kind_ar', coalesce((select k.label_ar from v2.work_kinds k where k.code = w.kind), w.kind),
         'subject', w.subject_ar, 'body', w.body_ar, 'page', w.page_ref,
         'scope_ar', case when w.scope = 'class' then 'الفصلُ كلُّه' else 'طالبٌ واحد' end,
         'student', w.student_id,
