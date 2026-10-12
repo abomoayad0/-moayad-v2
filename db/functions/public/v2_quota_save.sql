@@ -1,5 +1,5 @@
 -- public.v2_quota_save(p_school uuid, p_post text, p_min smallint, p_max smallint, p_standby_max smallint, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 86502cde43d54ed4679aacb7163f4a11
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 6be9cfce19564540f1e8140b8daad680
 CREATE OR REPLACE FUNCTION public.v2_quota_save(p_school uuid, p_post text, p_min smallint, p_max smallint, p_standby_max smallint, p_note text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_quota_save(p_school uuid, p_post text, p_mi
 AS $function$
 begin
   perform v2.assert_role(array['principal','deputy_academic','deputy'],'ضبطَ نصاب الحصص');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if not exists (select 1 from v2.posts where key=p_post) then
     raise exception 'وظيفةٌ غيرُ معروفة'; end if;
   if p_max is null or p_max < 1 then raise exception 'اكتب الحدَّ الأعلى للنصاب'; end if;

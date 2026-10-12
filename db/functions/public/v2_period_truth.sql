@@ -1,5 +1,5 @@
 -- public.v2_period_truth(p_school uuid, p_section uuid, p_period smallint, p_date date)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 bbd0dda1526cb024930a855b12d17bd4
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 831f86e62ffc97e3fd466519ef7ad199
 CREATE OR REPLACE FUNCTION public.v2_period_truth(p_school uuid, p_section uuid, p_period smallint, p_date date DEFAULT CURRENT_DATE)
  RETURNS jsonb
  LANGUAGE sql
@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION public.v2_period_truth(p_school uuid, p_section uuid,
  SET search_path TO 'v2', 'public'
 AS $function$
   select case when not v2.my_school(p_school)
-    then jsonb_build_object('ok',false,'why','ليست مدرستك')
+    then jsonb_build_object('ok',false,'why',v2.not_my_school_ar())
     else coalesce((select jsonb_build_object('ok',true,
         'person', x.person_id, 'person_ar', x.person_ar, 'subject_ar', x.subject_ar,
         'basis', x.basis,

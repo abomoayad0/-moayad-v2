@@ -1,5 +1,5 @@
 -- public.v2_practice_state(p_school uuid, p_code text, p_state text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 32d6e09b8d81dc8b2d23863e0ee9f9c3
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 d0d96fbb32200cac764b5efcf9eb2e50
 CREATE OR REPLACE FUNCTION public.v2_practice_state(p_school uuid, p_code text, p_state text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare cur record; o record; empty boolean;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy','deputy_academic'],
                          'ضبط ممارسات الصفّ');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if p_state not in ('أخفِ','أظهِر','أعدها للأصل') then
     raise exception 'الحال: «أخفِ» أو «أظهِر» أو «أعدها للأصل»'; end if;
   select * into cur from v2.class_practices where code=p_code;

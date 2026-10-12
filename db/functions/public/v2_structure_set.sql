@@ -1,5 +1,5 @@
 -- public.v2_structure_set(p_school uuid, p_code text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 71e800d56e6901f36eba261851dcc9f5
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e63033bdeaea0c9c7e819bb8b7f92f0d
 CREATE OR REPLACE FUNCTION public.v2_structure_set(p_school uuid, p_code text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -9,7 +9,7 @@ AS $function$
 declare n int; orphan text;
 begin
   perform v2.assert_role(array['principal'],'تغييرَ الهيكل التنظيميّ');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if not exists (select 1 from v2.structures where code=p_code) then
     raise exception 'هيكلٌ غيرُ معروفٍ في الدليل التنظيميّ'; end if;
 

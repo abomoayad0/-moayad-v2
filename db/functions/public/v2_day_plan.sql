@@ -1,5 +1,5 @@
 -- public.v2_day_plan(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 0f938878b8fc24ad2ece4a2c4bb5d7e3
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2e03731692f9238b2bad9d6a816f2cda
 CREATE OR REPLACE FUNCTION public.v2_day_plan(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_day_plan(p_school uuid)
 AS $function$
 declare r jsonb; d record; issues jsonb := '[]'::jsonb; prev time; it record; tot int;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select * into d from v2.day_settings where school_id=p_school;
   if d.school_id is null then
     raise exception 'لا توقيتاتِ يومٍ لمدرستك — أسّسها أوّلًا'; end if;

@@ -1,17 +1,20 @@
 -- grants.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── grants · md5 2a88057e87a58450d9ed56a45a419610
+-- ── grants · md5 a833afad17ee25a648d78b93f7e62d59
 GRANT USAGE ON SCHEMA v2 TO authenticated;
 
 GRANT SELECT ON TABLE v2.absence_notices TO authenticated;
+GRANT SELECT ON TABLE v2.badge_awards TO authenticated;
 GRANT SELECT ON TABLE v2.card_views TO authenticated;
 GRANT SELECT ON TABLE v2.citations TO authenticated;
 GRANT SELECT ON TABLE v2.denial_actions TO authenticated;
 GRANT SELECT ON TABLE v2.form_field_source TO authenticated;
+GRANT SELECT ON TABLE v2.guardian_relations TO authenticated;
 GRANT SELECT ON TABLE v2.health_cases TO authenticated;
 GRANT SELECT ON TABLE v2.health_kinds TO authenticated;
 GRANT SELECT ON TABLE v2.ladder_table_scope TO authenticated;
+GRANT SELECT ON TABLE v2.loyalty_badges TO authenticated;
 GRANT SELECT ON TABLE v2.loyalty_ledger TO authenticated;
 GRANT SELECT ON TABLE v2.loyalty_rewards TO authenticated;
 GRANT SELECT ON TABLE v2.loyalty_sources TO authenticated;
@@ -72,6 +75,8 @@ REVOKE ALL ON FUNCTION v2.attendance_result(p_student uuid, p_date date) FROM PU
 REVOKE ALL ON FUNCTION v2.audit_assess_report_due() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.audit_assess_report_due() TO authenticated;
 REVOKE ALL ON FUNCTION v2.audit_assign_without_letter() FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION v2.audit_badge_ready_not_given() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.audit_card_step_late() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.audit_card_step_late() TO authenticated;
@@ -137,10 +142,18 @@ REVOKE ALL ON FUNCTION v2.audit_unused_tables() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.audit_work_unseen() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.audit_work_unseen() TO authenticated;
+REVOKE ALL ON FUNCTION v2.badge_earned(p_school uuid, p_student uuid, p_code text) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION v2.badge_of(p_school uuid, p_code text) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION v2.badge_rule_ar(p_school uuid, b v2.loyalty_badges) FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.behavior_score(p_student uuid, p_year uuid, p_term smallint) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.brand_path_allows(p_path text, p_write boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.brand_path_allows(p_path text, p_write boolean) TO authenticated;
+REVOKE ALL ON FUNCTION v2.caller_is_server() FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.caller_kind(p_student uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.caller_kind(p_student uuid) TO authenticated;
 REVOKE ALL ON FUNCTION v2.can_do(p_allowed text[]) FROM PUBLIC;
@@ -509,6 +522,8 @@ REVOKE ALL ON FUNCTION v2.next_incoming_serial(p_school uuid, p_year uuid) FROM 
 
 REVOKE ALL ON FUNCTION v2.next_outgoing_serial(p_school uuid, p_year uuid) FROM PUBLIC;
 
+REVOKE ALL ON FUNCTION v2.not_my_school_ar() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION v2.not_my_school_ar() TO authenticated;
 REVOKE ALL ON FUNCTION v2.ord_ar(n integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.ord_ar(n integer) TO authenticated;
 REVOKE ALL ON FUNCTION v2.outgoing_absence_close(p_mail uuid, p_event text, p_note text) FROM PUBLIC;
@@ -543,6 +558,8 @@ REVOKE ALL ON FUNCTION v2.practice_threshold_said(p_student uuid, p_code text) F
 
 REVOKE ALL ON FUNCTION v2.practice_weight(p_school uuid, p_code text) FROM PUBLIC;
 
+REVOKE ALL ON FUNCTION v2.probe_run(p_door text) FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.quorum_of(p_school uuid, p_committee text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.quorum_of(p_school uuid, p_committee text) TO authenticated;
 REVOKE ALL ON FUNCTION v2.quota_of(p_school uuid, p_person uuid) FROM PUBLIC;
@@ -559,6 +576,8 @@ REVOKE ALL ON FUNCTION v2.role_gate(p_section uuid, p_subject text, p_code text,
 GRANT EXECUTE ON FUNCTION v2.role_gate(p_section uuid, p_subject text, p_code text, p_student uuid) TO authenticated;
 REVOKE ALL ON FUNCTION v2.rule_n(p_school uuid, p_key text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION v2.rule_n(p_school uuid, p_key text) TO authenticated;
+REVOKE ALL ON FUNCTION v2.say_lock(p_door text, p_state text, p_msg text) FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION v2.school_weeks(p_school uuid) FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION v2.seat_ar(p text) FROM PUBLIC;
@@ -717,6 +736,18 @@ GRANT EXECUTE ON FUNCTION public.v2_audit_structure() TO service_role;
 REVOKE ALL ON FUNCTION public.v2_audit_waive(p_finding uuid, p_why text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_audit_waive(p_finding uuid, p_why text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_audit_waive(p_finding uuid, p_why text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_badge_award(p_student uuid, p_code text, p_reason text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_badge_award(p_student uuid, p_code text, p_reason text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_badge_award(p_student uuid, p_code text, p_reason text) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_badge_run(p_school uuid, p_student uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_badge_run(p_school uuid, p_student uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_badge_run(p_school uuid, p_student uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_badges_catalog(p_school uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_badges_catalog(p_school uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_badges_catalog(p_school uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_badges_of_student(p_student uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_badges_of_student(p_student uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_badges_of_student(p_student uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_bank(p_key text, p_problem integer, p_school uuid, p_all boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_bank(p_key text, p_problem integer, p_school uuid, p_all boolean) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_bank(p_key text, p_problem integer, p_school uuid, p_all boolean) TO service_role;
@@ -1095,6 +1126,9 @@ GRANT EXECUTE ON FUNCTION public.v2_guardian_pending(p_student uuid) TO service_
 REVOKE ALL ON FUNCTION public.v2_guardian_read(p_event uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_guardian_read(p_event uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_guardian_read(p_event uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.v2_guardian_relations() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.v2_guardian_relations() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.v2_guardian_relations() TO service_role;
 REVOKE ALL ON FUNCTION public.v2_guardian_reply(p_student uuid, p_event uuid, p_kind text, p_reply text, p_note text, p_suggested date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_guardian_reply(p_student uuid, p_event uuid, p_kind text, p_reply text, p_note text, p_suggested date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_guardian_reply(p_student uuid, p_event uuid, p_kind text, p_reply text, p_note text, p_suggested date) TO service_role;
@@ -1275,9 +1309,6 @@ GRANT EXECUTE ON FUNCTION public.v2_my_inbox(p_limit integer) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_my_loyalty() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_my_loyalty() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_my_loyalty() TO service_role;
-REVOKE ALL ON FUNCTION public.v2_my_now(p_school uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.v2_my_now(p_school uuid) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.v2_my_now(p_school uuid) TO service_role;
 REVOKE ALL ON FUNCTION public.v2_my_now_board(p_school uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.v2_my_now_board(p_school uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.v2_my_now_board(p_school uuid) TO service_role;

@@ -1,5 +1,5 @@
 -- public.v2_my_committee_tasks(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 511acb24878e6501bd5eb98348793764
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 42fee8e7c923e24a0d1821da3e6f8be2
 CREATE OR REPLACE FUNCTION public.v2_my_committee_tasks(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_my_committee_tasks(p_school uuid)
 AS $function$
 declare me uuid; r jsonb;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   me := v2.current_person();
   if me is null then raise exception 'لا حسابَ فعّالٌ لك'; end if;
   select coalesce(jsonb_agg(jsonb_build_object(

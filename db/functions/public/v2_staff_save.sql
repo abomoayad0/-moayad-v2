@@ -1,5 +1,5 @@
 -- public.v2_staff_save(p_school uuid, p_person uuid, p_full_name text, p_national_id text, p_employee_no text, p_phone text, p_email text, p_major text, p_rank text, p_qualification text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 38c2e263f16429ee3dd569c8c9e3baab
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c1e412b3ae6b78cbd694394086180b5f
 CREATE OR REPLACE FUNCTION public.v2_staff_save(p_school uuid, p_person uuid, p_full_name text, p_national_id text, p_employee_no text, p_phone text, p_email text, p_major text, p_rank text, p_qualification text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -9,7 +9,7 @@ AS $function$
 declare pid uuid; tn uuid;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy'],'إضافة منسوب أو تعديله');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if btrim(coalesce(p_full_name,''))='' then raise exception 'اكتب الاسمَ كاملًا'; end if;
   if p_national_id is not null and p_national_id !~ '^[0-9]{10}$' then
     raise exception 'رقمُ الهويّة عشرةُ أرقام'; end if;

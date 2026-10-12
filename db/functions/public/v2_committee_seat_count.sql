@@ -1,5 +1,5 @@
 -- public.v2_committee_seat_count(p_school uuid, p_committee text, p_seat_role text, p_count smallint, p_reason text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 f3e349fa56058ff7018b3af769b8d375
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 0e8341433c0edb9973a35adc7cb2e21c
 CREATE OR REPLACE FUNCTION public.v2_committee_seat_count(p_school uuid, p_committee text, p_seat_role text, p_count smallint, p_reason text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -9,7 +9,7 @@ AS $function$
 declare s record; seated int;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy'],'تعديل سعة مقعد');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select * into s from v2.committee_seats
    where committee_key=p_committee and seat_role=p_seat_role and post_key is null limit 1;
   if s.committee_key is null then

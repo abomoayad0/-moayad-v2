@@ -1,5 +1,5 @@
 -- public.v2_message_template(p_school uuid, p_key text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 3a41fd79cbb98fb0f4861fb712cf3106
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 3ad15ffc0beed1205aa8ad0ba5bfe280
 CREATE OR REPLACE FUNCTION public.v2_message_template(p_school uuid, p_key text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_message_template(p_school uuid, p_key text)
 AS $function$
 declare r record;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select body_ar, school_id into r from v2.message_templates
    where key=coalesce(p_key,'guardian_notice') and active
      and (school_id is null or school_id=p_school)

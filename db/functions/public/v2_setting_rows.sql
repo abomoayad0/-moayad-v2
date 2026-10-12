@@ -1,5 +1,5 @@
 -- public.v2_setting_rows(p_key text, p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 8de21940de31fd9a89243956a79510c1
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e9d798a1f6f62edf5532253186b06810
 CREATE OR REPLACE FUNCTION public.v2_setting_rows(p_key text, p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -21,7 +21,7 @@ begin
   sc := coalesce(p_school, v2.acting_school());
   if sc is null then
     raise exception 'لم تُحدَّد مدرستُك — بدّل مدرستك ثمّ أعد المحاولة'; end if;
-  if not v2.my_school(sc) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(sc) then raise exception '%', v2.not_my_school_ar(); end if;
 
   cols := format('%I as __id', c.pk_col);
   if c.ctx_cols is not null then

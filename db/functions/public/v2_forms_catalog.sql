@@ -1,5 +1,5 @@
 -- public.v2_forms_catalog(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 6ed5bac1dd136611bc2913542910d498
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 f44b3429a99e4145c08a376133506197
 CREATE OR REPLACE FUNCTION public.v2_forms_catalog(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare r jsonb;
 begin
   if auth.uid() is null then raise exception 'لا بدّ من تسجيل الدخول'; end if;
   if p_school is not null and not v2.my_school(p_school) then
-    raise exception 'ليست مدرستك'; end if;
+    raise exception '%', v2.not_my_school_ar(); end if;
   select coalesce(jsonb_agg(jsonb_build_object(
       'no',f.form_no,'no_ar',v2.ar_num(f.form_no),'title',f.title_ar,
       'group', case when f.form_no between 1 and 17 then 'نماذج السلوك والمواظبة'

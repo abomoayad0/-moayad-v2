@@ -432,9 +432,11 @@
     else if (!ui.mine.length) mb.appendChild(el('p', 'rs-meta', 'لا بندَ واردٍ موجَّهٌ إليك.'));
     for (const x of ui.mine) {
       const f = el('div', 'rs-file' + (x.is_late ? ' rs-late' : ''));
-      f.append(el('h5', null, 'وارد ' + (x.serial_no || '') + ' · ' + (x.subject_ar || '')), el('p', null, x.text_ar || ''), el('p', 'rs-meta', [x.due_h, x.is_late ? 'متأخّر' : null].filter(Boolean).join(' · ')));
+      f.append(el('h5', null, 'وارد ' + (x.serial_no || '') + ' · ' + (x.subject_ar || '')), el('p', null, x.text_ar || ''), el('p', 'rs-meta', [x.due_h, x.late_ar, x.reminders_ar].filter(Boolean).join(' · ')));
       const r = el('div', 'rs-row');
       r.appendChild(btn('أتممتُه', 'rs-btn', () => followupForm(x)));
+      // رقمُ الوارد (mail_id) عاد في الجسر — فالبطاقةُ تُفتح من المتابعة نفسِها
+      if (x.mail_id) r.appendChild(btn('افتح الوارد', 'rs-btn ghost', () => openIncoming(x.mail_id)));
       f.appendChild(r);
       mb.appendChild(f);
     }

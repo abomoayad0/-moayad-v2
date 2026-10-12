@@ -1,5 +1,5 @@
 -- public.v2_calendar_board(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 b0f9b54c5a5f0bc3ac405c78d34b542b
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 a5d5f010f4879ec1657817c06d67c82d
 CREATE OR REPLACE FUNCTION public.v2_calendar_board(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_calendar_board(p_school uuid)
 AS $function$
 declare r jsonb;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select jsonb_build_object(
     'scope', (select jsonb_build_object('key',cs.key,'label',cs.label_ar,
                 'regions',cs.regions_ar,'source',cs.source_doc)

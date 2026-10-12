@@ -1,5 +1,5 @@
 -- public.v2_term_save(p_school uuid, p_year uuid, p_term uuid, p_number smallint, p_starts date, p_ends date, p_current boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 626248ecb651dfc65eaa5bca3f1f586b
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 860acf49b4c332c5a3838f61be0f59a0
 CREATE OR REPLACE FUNCTION public.v2_term_save(p_school uuid, p_year uuid, p_term uuid, p_number smallint, p_starts date, p_ends date, p_current boolean)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare nid uuid; y record;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy','deputy_academic'],
                          'ضبطَ الفصول الدراسيّة');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select * into y from v2.academic_years where id=p_year and school_id=p_school;
   if y.id is null then raise exception 'هذي السنةُ ليست لمدرستك'; end if;
   if y.status='closed' then raise exception 'سنةٌ مقفلةٌ لا تُعدَّل'; end if;

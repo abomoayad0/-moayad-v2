@@ -47,6 +47,8 @@
     if (!st.person && (board.load || []).length) st.person = board.load[0].person_id;
     if (!st.section && sections.length) st.section = sections[0][0];
 
+    // نطاقُ اللوحة وأسبوعُها من الباب: من ليس من الإدارة يرى أسبوعَه وحدَه (mine_only) — والعنوانُ من scope_ar
+    if (board.scope_ar || board.week_ar) box.appendChild(el('p', 'rs-sum', [board.scope_ar, board.week_ar].filter(Boolean).join(' · ')));
     const modeBox = el('div', 'rs-pick');
     pick(modeBox, [['person', 'جدولُ معلّم'], ['section', 'جدولُ فصل']], st.mode, (v) => { st.mode = v; timetableTool(box); });
     box.appendChild(modeBox);
@@ -60,14 +62,14 @@
     const t = el('table', 'rs-table rs-grid');
     const hr = el('tr');
     hr.appendChild(el('th', null, ''));
-    for (const p of periods) hr.appendChild(el('th', null, p.no_ar || String(p.no)));
+    for (const p of periods) { const th = el('th', null, p.period_ar || ''); if (p.at_ar) th.appendChild(el('div', 'rs-meta', p.at_ar)); hr.appendChild(th); }
     t.appendChild(hr);
     // الأيّامُ من القاعدة {no, label}: الأحدُ ٠ والخميسُ ٤ — والحفظُ يرسل no نفسَه
     days.forEach((d) => {
       const wd = d.no;
       const dname = d.label;
       const tr = el('tr');
-      tr.appendChild(el('th', null, dname));
+      const dth = el('th', null, dname); if (d.on_ar) dth.appendChild(el('div', 'rs-meta', d.on_ar)); tr.appendChild(dth);
       for (const p of periods) {
         const here = mine.filter((x) => x.weekday === wd && x.period === p.no);
         const td = el('td', 'click' + (here.length ? ' on k-' + here[0].kind : ''));
@@ -76,6 +78,8 @@
           for (const x of here) {
             td.appendChild(el('b', null, x.subject || x.kind_ar));
             td.appendChild(el('div', 'rs-meta', st.mode === 'person' ? (x.section || x.kind_ar) : (x.person || '—')));
+            // ما وقع على الخانة في هذا الأسبوع (تبديلٌ أو تغطية) — كما جاء
+            if (x.state_ar) td.appendChild(el('div', 'rs-need', x.state_ar));
           }
           if (here.length > 1) td.appendChild(el('div', 'rs-state-open', 'متضاربة'));
         } else td.appendChild(el('span', 'rs-meta', '＋'));
@@ -88,20 +92,14 @@
     });
     wrap.appendChild(t);
     box.appendChild(wrap);
+    if (board.truth_note_ar) box.appendChild(el('p', 'rs-meta', board.truth_note_ar));
 
     // الحملُ كما أرجعته القاعدة
     const det = el('details', 'rs-dt');
-    det.appendChild(el('summary', null, 'حملُ المعلّمين (' + (board.load || []).length + ')'));
-    const lt = el('table', 'rs-table');
-    lt.style.minWidth = '0';
-    const lh = el('tr');
-    for (const h of ['المعلّم', 'تدريس', 'انتظار', 'نشاط', 'المجموع']) lh.appendChild(el('th', null, h));
-    lt.appendChild(lh);
-    for (const l of board.load || []) {
-      const r = el('tr');
-      for (const v of [l.person, l.teaching, l.standby, l.activity, l.total]) r.appendChild(el('td', null, String(v == null ? '—' : v)));
-      lt.appendChild(r);
-    }
+    det.appendChild(el('summary', null, 'حملُ المعلّمين'));
+    // كلُّ معلّمٍ بجملته من الباب (said_ar) — ولا تُصاغ أعدادُه في الشاشة
+    const lt = el('div');
+    for (const l of board.load || []) lt.appendChild(el('p', null, l.said_ar || ''));
     const dd = el('div', 'rs-dtb');
     dd.appendChild(lt);
     det.appendChild(dd);
@@ -125,7 +123,7 @@
       extra.push({ text: 'احذف الحصّة', cls: 'rs-btn ghost', onClick: (v) => deleteForm(box, x, v) });
     }
     V.form({
-      title: (x ? 'حصّة ' : 'حصّةٌ جديدة · ') + dname + ' · الحصّة ' + (p.no_ar || p.no), what: x ? [x.kind_ar, x.section, x.person].filter(Boolean).join(' · ') : '',
+      title: (x ? '' : 'حصّةٌ جديدة · ') + dname + ' · ' + (p.period_ar || ''), what: x ? [x.kind_ar, x.section, x.person].filter(Boolean).join(' · ') : '',
       fields, ok: 'احفظ', extra,
       onOk: async (v) => {
         const args = { p_school: school(), p_slot: x ? x.id : null, p_weekday: wd, p_period: p.no, p_section: v.kind === 'teaching' ? v.section : (v.section || null), p_person: v.person, p_kind: v.kind };

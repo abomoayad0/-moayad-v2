@@ -1,5 +1,5 @@
 -- public.v2_students_board(p_school uuid, p_grade smallint, p_section text, p_q text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 a20d75138421f2cb11f7ed8585288d3e
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 60b6fcb3a1f67e563693a37647b2fb70
 CREATE OR REPLACE FUNCTION public.v2_students_board(p_school uuid, p_grade smallint DEFAULT NULL::smallint, p_section text DEFAULT NULL::text, p_q text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare r jsonb; v_q text;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy','deputy_academic',
       'admin_assistant','admin_assistant_students','info_registrar','counselor'],'كشف الطلّاب');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   v_q := nullif(btrim(coalesce(p_q,'')),'');
   select coalesce(jsonb_agg(jsonb_build_object(
       'student',s.id,'student_no',s.student_no,'name',s.full_name,

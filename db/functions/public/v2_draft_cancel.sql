@@ -1,5 +1,5 @@
 -- public.v2_draft_cancel(p_draft uuid, p_why text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 bcbd1461bb0ff5b05523cb6503afa868
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 ef394cec8901bf45179396d0b76656ef
 CREATE OR REPLACE FUNCTION public.v2_draft_cancel(p_draft uuid, p_why text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -11,7 +11,7 @@ begin
   perform v2.assert_role(array['principal','deputy_academic','deputy'],'إلغاءَ مقترح');
   select * into d from v2.timetable_drafts where id=p_draft;
   if d.id is null then raise exception 'المقترحُ غيرُ موجود'; end if;
-  if not v2.my_school(d.school_id) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(d.school_id) then raise exception '%', v2.not_my_school_ar(); end if;
   if d.state <> 'مقترح' then raise exception 'هذا المقترحُ % سلفًا', d.state; end if;
   if btrim(coalesce(p_why,''))='' then
     raise exception 'لا يُلغى مقترحٌ بلا سببٍ مكتوب'; end if;

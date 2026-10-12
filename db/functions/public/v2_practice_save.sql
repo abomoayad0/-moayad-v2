@@ -1,5 +1,5 @@
 -- public.v2_practice_save(p_school uuid, p_code text, p_title text, p_points numeric, p_polarity text, p_scope text, p_kind text, p_zone text, p_once_per_day boolean, p_threshold_count smallint, p_threshold_days smallint, p_escalate_to integer, p_escalate_note text, p_note text, p_ord smallint)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 1dea32667428ae182a56aece3da03ef0
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 072c4a663542c210f1d0fa2726496cdc
 CREATE OR REPLACE FUNCTION public.v2_practice_save(p_school uuid, p_code text, p_title text, p_points numeric, p_polarity text, p_scope text, p_kind text, p_zone text, p_once_per_day boolean, p_threshold_count smallint, p_threshold_days smallint, p_escalate_to integer, p_escalate_note text, p_note text, p_ord smallint)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare cur record; newcode text;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy','deputy_academic'],
                          'ضبط ممارسات الصفّ');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if btrim(coalesce(p_title,''))='' then raise exception 'اكتب نصَّ الممارسة'; end if;
   if coalesce(p_polarity,'') not in ('positive','negative') then
     raise exception 'الممارسةُ إيجابيّةٌ أو سلبيّة'; end if;

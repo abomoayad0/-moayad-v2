@@ -1,5 +1,5 @@
 -- public.v2_plan_write(p_student uuid, p_record uuid, p_task uuid, p_plan uuid, p_desc text, p_manifest text, p_ante text, p_conseq text, p_gain text, p_prior text, p_target text, p_steps text, p_starts date, p_ends date)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 875e50ffdea8e87c7be18c768dfdfd2b
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 f6a908d53e32b0a2ef2a482c73da2e77
 CREATE OR REPLACE FUNCTION public.v2_plan_write(p_student uuid, p_record uuid, p_task uuid, p_plan uuid, p_desc text, p_manifest text, p_ante text, p_conseq text, p_gain text, p_prior text, p_target text, p_steps text, p_starts date, p_ends date)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -69,7 +69,7 @@ begin
 
   select * into cur from v2.behavior_plans where id=p_plan;
   if cur.id is null then raise exception 'الخطّةُ غيرُ موجودة'; end if;
-  if not v2.my_school(coalesce(cur.school_id,sc)) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(coalesce(cur.school_id,sc)) then raise exception '%', v2.not_my_school_ar(); end if;
   if cur.status in ('final','closed') then
     raise exception 'اعتُمدت هذي الخطّةُ — فلا تُعدَّل. وإن تغيّر الحالُ فاكتب خطّةً جديدة'; end if;
 

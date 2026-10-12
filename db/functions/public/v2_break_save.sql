@@ -1,5 +1,5 @@
 -- public.v2_break_save(p_school uuid, p_break uuid, p_kind text, p_label text, p_starts time without time zone, p_ends time without time zone, p_after smallint, p_needs_duty boolean, p_min_staff smallint, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2d4b5a864eca2bf7a738ebd122221d89
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 5d8e9ac764b4246789beefb8b8e715de
 CREATE OR REPLACE FUNCTION public.v2_break_save(p_school uuid, p_break uuid, p_kind text, p_label text, p_starts time without time zone, p_ends time without time zone, p_after smallint, p_needs_duty boolean, p_min_staff smallint, p_note text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare nid uuid; clash record;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy','deputy_academic'],
                          'ضبطَ فترات اليوم');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if coalesce(p_kind,'') not in ('فسحة','صلاة','اصطفاف','انصراف','أخرى') then
     raise exception 'النوع: فسحةٌ · صلاةٌ · اصطفافٌ · انصرافٌ · أخرى'; end if;
   if btrim(coalesce(p_label,''))='' then raise exception 'اكتب اسمَ الفترة'; end if;

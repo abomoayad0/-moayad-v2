@@ -1,5 +1,5 @@
 -- public.v2_bank(p_key text, p_problem integer, p_school uuid, p_all boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 55c424c5ef94b080951ce001b86e72e5
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 5cf4ab4fb63d87e2de7fa625d1b1a361
 CREATE OR REPLACE FUNCTION public.v2_bank(p_key text, p_problem integer, p_school uuid, p_all boolean DEFAULT false)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -12,7 +12,7 @@ begin
   if v2.current_person() is null then
     raise exception 'بنكُ العبارات لفريق المدرسة — وكلامُك شهادةٌ لا تُملى عليك'; end if;
   if p_school is not null and not v2.my_school(p_school) then
-    raise exception 'ليست مدرستك'; end if;
+    raise exception '%', v2.not_my_school_ar(); end if;
   select coalesce(jsonb_agg(jsonb_build_object('id',b.id,'text',b.text_ar,'ord',b.ord,
       'active',b.active,'mine',(b.school_id is not null))
       order by (b.problem_id is null), b.ord),'[]'::jsonb)

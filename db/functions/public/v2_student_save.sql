@@ -1,5 +1,5 @@
 -- public.v2_student_save(p_school uuid, p_student uuid, p_full_name text, p_student_no text, p_national_id text, p_nationality text, p_birth_hijri text, p_sex text, p_phone text, p_grade smallint, p_section text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 4a9a68ec803f93f08c04d6fc18f7b308
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 416b12d4cac16717239f7082dafb501e
 CREATE OR REPLACE FUNCTION public.v2_student_save(p_school uuid, p_student uuid, p_full_name text, p_student_no text, p_national_id text, p_nationality text, p_birth_hijri text, p_sex text, p_phone text, p_grade smallint, p_section text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare sid uuid; tn uuid; st text; yid uuid; sc uuid;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy',
       'admin_assistant','admin_assistant_students','info_registrar'],'قيدَ الطلّاب');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if btrim(coalesce(p_full_name,''))='' then raise exception 'اكتب اسمَ الطالب كاملًا'; end if;
   if p_national_id is not null and p_national_id !~ '^[0-9]{10}$' then
     raise exception 'رقمُ الهويّة عشرةُ أرقام'; end if;

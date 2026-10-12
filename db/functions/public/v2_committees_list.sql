@@ -1,5 +1,5 @@
 -- public.v2_committees_list(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 cd81d61bbfd6c38ff5f4b82cc647617d
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e34bcb3ec2c5bcdc7a92ccdc62646b48
 CREATE OR REPLACE FUNCTION public.v2_committees_list(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_committees_list(p_school uuid)
 AS $function$
 declare r jsonb;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select coalesce(jsonb_agg(jsonb_build_object(
       'key',c.key,'label',c.label_ar,'purpose',c.purpose,'source',c.source_page,
       'mine',(c.school_id is not null),'active',c.is_active,

@@ -1,5 +1,5 @@
 -- public.v2_draft_apply(p_draft uuid, p_confirm text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 825600bd7e932c74d04df2641ed1b664
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 fc4d57f216a7d0f7ff9a355ae9330c83
 CREATE OR REPLACE FUNCTION public.v2_draft_apply(p_draft uuid, p_confirm text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -11,7 +11,7 @@ begin
   perform v2.assert_role(array['principal','deputy_academic','deputy'],'إقرارَ الجدول');
   select * into d from v2.timetable_drafts where id=p_draft;
   if d.id is null then raise exception 'المقترحُ غيرُ موجود'; end if;
-  if not v2.my_school(d.school_id) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(d.school_id) then raise exception '%', v2.not_my_school_ar(); end if;
   if d.state <> 'مقترح' then raise exception 'هذا المقترحُ % سلفًا', d.state; end if;
   if btrim(coalesce(p_confirm,'')) <> 'أقرّ' then
     raise exception 'إقرارُ المقترح يستبدل جدولَ مدرستك كلَّه — اكتب «أقرّ» لتأكيده'; end if;

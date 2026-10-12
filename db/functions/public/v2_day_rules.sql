@@ -1,5 +1,5 @@
 -- public.v2_day_rules(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2f6cd19eab043a8e4b4669603cad81da
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 b4fd2435ae4ccb1b9df941e7e8dae893
 CREATE OR REPLACE FUNCTION public.v2_day_rules(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_day_rules(p_school uuid)
 AS $function$
 declare d record;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select * into d from v2.day_settings where school_id=p_school;
   if d.school_id is null then
     raise exception 'لا توقيتاتِ يومٍ لمدرستك — أسّسها من لوحة التحكّم'; end if;

@@ -1,5 +1,5 @@
 -- public.v2_committee_board(p_school uuid, p_committee text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 91cfdf1dd0e924f31958ac77eb930b78
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 d5283e3cc65fd0fe20fe02d1bbc065f8
 CREATE OR REPLACE FUNCTION public.v2_committee_board(p_school uuid, p_committee text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_committee_board(p_school uuid, p_committee 
 AS $function$
 declare r jsonb; rule jsonb;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   rule := v2.committee_rule(p_school,p_committee);
   select jsonb_build_object(
     'committee', (select jsonb_build_object('key',c.key,'label',c.label_ar,

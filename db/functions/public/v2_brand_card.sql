@@ -1,5 +1,5 @@
 -- public.v2_brand_card(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 bb43afe578fbdb05e037773785009555
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 6a81fee623a6207f03b2b958867ef3cf
 CREATE OR REPLACE FUNCTION public.v2_brand_card(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_brand_card(p_school uuid)
 AS $function$
 declare r jsonb;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select jsonb_build_object(
     'brand', coalesce((select to_jsonb(b) from v2.branding b where b.school_id=p_school),'{}'::jsonb),
     'stamp', (select jsonb_build_object('id',st.id,'image',st.image_ref,

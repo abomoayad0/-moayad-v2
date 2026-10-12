@@ -1,5 +1,5 @@
 -- public.v2_brand_upload_path(p_school uuid, p_kind text, p_ext text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 219690bf55dc3e9ecedeb69cc5faea2c
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 012da1c75bcd012aaf00da5927f11df4
 CREATE OR REPLACE FUNCTION public.v2_brand_upload_path(p_school uuid, p_kind text, p_ext text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_brand_upload_path(p_school uuid, p_kind tex
 AS $function$
 declare me uuid;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if p_kind not in ('logo','stamp','sign') then
     raise exception 'النوع: logo أو stamp أو sign'; end if;
   if p_kind = 'sign' then

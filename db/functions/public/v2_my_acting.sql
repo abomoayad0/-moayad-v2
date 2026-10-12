@@ -1,5 +1,5 @@
 -- public.v2_my_acting(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 36757e215a11ef75e6be7b6454c17e3d
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 910a497d76c92f35451d1c919af57691
 CREATE OR REPLACE FUNCTION public.v2_my_acting(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_my_acting(p_school uuid)
 AS $function$
 declare r jsonb;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select coalesce(jsonb_agg(jsonb_build_object(
       'post',x.post_key,'post_ar',v2.role_ar(x.post_key),
       'by_delegation',x.by_delegation,

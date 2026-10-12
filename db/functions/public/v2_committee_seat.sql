@@ -1,5 +1,5 @@
 -- public.v2_committee_seat(p_school uuid, p_committee text, p_seat_role text, p_person uuid, p_post_key text, p_nominated_by text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 618571e6c5189f616e266c01eaeb9c48
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 98324cf405ab0f80a8845a025793494a
 CREATE OR REPLACE FUNCTION public.v2_committee_seat(p_school uuid, p_committee text, p_seat_role text, p_person uuid, p_post_key text, p_nominated_by text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -9,7 +9,7 @@ AS $function$
 declare s record; filled int; cap smallint; nm text; m text; st text; d text; h text; c text;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy'],'تشكيل اللجان');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select * into s from v2.committee_seats
    where committee_key=p_committee and seat_role=p_seat_role
      and (post_key is not distinct from p_post_key) limit 1;

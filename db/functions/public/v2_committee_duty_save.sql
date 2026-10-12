@@ -1,5 +1,5 @@
 -- public.v2_committee_duty_save(p_school uuid, p_committee text, p_duty uuid, p_text text, p_cadence text, p_ord smallint)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 f1d2c4bc16168c8c2652d30a1f07b890
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e0e0197fe5c6cdfca0cfa06d9c52ec9a
 CREATE OR REPLACE FUNCTION public.v2_committee_duty_save(p_school uuid, p_committee text, p_duty uuid, p_text text, p_cadence text, p_ord smallint)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -9,7 +9,7 @@ AS $function$
 declare nid uuid; cur record;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy'],'ضبطَ مهامّ اللجان');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if btrim(coalesce(p_text,''))='' then raise exception 'اكتب نصَّ المهمّة'; end if;
   if p_cadence is not null and p_cadence not in
      ('مستمرّة','شهريّة','فصليّة','سنويّة','عند الحاجة') then

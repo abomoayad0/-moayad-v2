@@ -1,5 +1,5 @@
 -- public.v2_form_save(p_form smallint, p_data jsonb, p_rows jsonb, p_student uuid, p_ref uuid, p_task uuid, p_entry uuid, p_final boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 ca8eb218eb22faff219656d910da5615
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 a069ea3a17351be409357834cb9f3b02
 CREATE OR REPLACE FUNCTION public.v2_form_save(p_form smallint, p_data jsonb, p_rows jsonb DEFAULT '[]'::jsonb, p_student uuid DEFAULT NULL::uuid, p_ref uuid DEFAULT NULL::uuid, p_task uuid DEFAULT NULL::uuid, p_entry uuid DEFAULT NULL::uuid, p_final boolean DEFAULT false)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -7,14 +7,22 @@ CREATE OR REPLACE FUNCTION public.v2_form_save(p_form smallint, p_data jsonb, p_
  SET search_path TO 'v2', 'public'
 AS $function$
 declare sc uuid; v uuid; cur text; p_d jsonb; miss text[] := array[]::text[]; r record; sent int := 0;
-  st text; m text; d text; h text; c text;
+  st text; m text; d text; h text; c text; v_rows jsonb;
 begin
   if v2.my_role() not in ('counselor','deputy_students','deputy','principal','admin_assistant',
       'admin_assistant_students','subject_teacher','sped_teacher','gifted_teacher') then
     raise exception 'صفتك «%» لا تملك تعبئة النماذج الرسمية', v2.role_ar(v2.my_role()); end if;
-  p_d := v2.fn_form_derive(p_form, v2.fn_form_strip(p_form, p_data), case when p_student is null then '{}'::jsonb else v2.fn_form_core(p_form,p_student,p_ref) end);
+
+  -- 🔑 حارسان عربيّان مكانَ قفلٍ إنجليزيّ
+  if not exists (select 1 from v2.official_forms f where f.form_no = p_form) then
+    raise exception 'لا نموذجَ رسميٌّ بالرقم % — فاختر من فهرس النماذج', v2.ar_num(p_form); end if;
+  v_rows := coalesce(p_rows, '[]'::jsonb);
+
+  p_d := v2.fn_form_derive(p_form, v2.fn_form_strip(p_form, p_data),
+         case when p_student is null then '{}'::jsonb else v2.fn_form_core(p_form,p_student,p_ref) end);
   if p_student is not null then perform v2.assert_my_student(p_student,'حفظ نموذج');
-    select e2.school_id into sc from v2.enrolments e2 where e2.student_id=p_student and e2.status='active' limit 1;
+    select e2.school_id into sc from v2.enrolments e2
+     where e2.student_id=p_student and e2.status='active' limit 1;
   else sc := (select school_id from v2.session_role where user_id=auth.uid()); end if;
   if sc is null then raise exception 'لا مدرسة محدّدة'; end if;
 
@@ -34,14 +42,14 @@ begin
   end if;
 
   if p_entry is not null then
-    update v2.form_entries set data=p_d, rows_data=p_rows, updated_at=now(),
+    update v2.form_entries set data=p_d, rows_data=v_rows, updated_at=now(),
       status = case when p_final then 'final' else 'draft' end,
       finalized_at = case when p_final then now() end
      where id=p_entry returning id into v;
   else
     insert into v2.form_entries(school_id,form_no,student_id,record_id,task_id,data,rows_data,
       status,filled_by,filled_role,finalized_at)
-    values (sc,p_form,p_student,p_ref,p_task,p_d,p_rows,
+    values (sc,p_form,p_student,p_ref,p_task,p_d,v_rows,
       case when p_final then 'final' else 'draft' end,
       v2.current_person(), coalesce(v2.role_ar(v2.my_role()),'—'),
       case when p_final then now() end)
@@ -57,6 +65,9 @@ exception when others then
   perform v2.fn_log_error(m,'v2_form_save','النماذج','حفظ نموذج',
     jsonb_build_object('form',p_form,'student',p_student,'final',p_final),
     st,d,h,c,'bridge', case when st='P0001' then 'guard' else 'error' end);
+  if st in ('23502','23503','23505','23514','22007','22008','22P02') then
+    raise exception '%', v2.say_lock('v2_form_save', st, m);
+  end if;
   raise exception '%', m using errcode = st;
 end $function$
 ;

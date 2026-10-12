@@ -1,5 +1,5 @@
 -- public.v2_exceptions_board(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c03970b7c2ed99e84e51e538f3544132
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 98311747e10c8ec607859da1836bd669
 CREATE OR REPLACE FUNCTION public.v2_exceptions_board(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare r jsonb;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy','deputy_academic'],
                          'سجلَّ الاستثناءات');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select coalesce(jsonb_agg(jsonb_build_object(
       'id',x.id,'rule_kind',x.rule_kind,'rule_ref',x.rule_ref,
       'system_says',x.system_says,'school_does',x.school_does,

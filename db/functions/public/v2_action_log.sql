@@ -1,5 +1,5 @@
 -- public.v2_action_log(p_school uuid, p_student uuid, p_limit integer)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 9e6759e6ae86749397100bf98032b19c
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 25e5f972b2c2bdbb6587de7868e0a362
 CREATE OR REPLACE FUNCTION public.v2_action_log(p_school uuid, p_student uuid, p_limit integer)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_action_log(p_school uuid, p_student uuid, p
 AS $function$
 declare r jsonb;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select coalesce(jsonb_agg(jsonb_build_object(
       'at',a.at,'action',a.action,'action_ar',a.action_ar,
       'by',a.person_ar,'role',a.role_ar,

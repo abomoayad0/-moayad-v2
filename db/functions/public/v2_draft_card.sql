@@ -1,5 +1,5 @@
 -- public.v2_draft_card(p_draft uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 334ed7153120d4ff3211653a644c4b7f
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 55d7f5e080edac140b755dcf0f9e5fcc
 CREATE OR REPLACE FUNCTION public.v2_draft_card(p_draft uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare r jsonb; sc uuid;
 begin
   select school_id into sc from v2.timetable_drafts where id=p_draft;
   if sc is null then raise exception 'المقترحُ غيرُ موجود'; end if;
-  if not v2.my_school(sc) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(sc) then raise exception '%', v2.not_my_school_ar(); end if;
   select jsonb_build_object(
     'draft', jsonb_build_object('id',d.id,'state',d.state,'made_at',d.made_at,
         'made_by',(select v2.fn_display_name(p.full_name) from v2.people p where p.id=d.made_by),

@@ -1,5 +1,5 @@
 -- v2.audit_hardcoded_numbers()
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 9bd260db6e3b00089ebb6e7162ec7241
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 4166207bddbe609543e04235cdf3ee1b
 CREATE OR REPLACE FUNCTION v2.audit_hardcoded_numbers()
  RETURNS TABLE(fn text, hits text, why_ar text, severity text)
  LANGUAGE sql
@@ -14,6 +14,9 @@ AS $function$
       from pg_proc p join pg_namespace n on n.oid=p.pronamespace
      where n.nspname in ('v2','public') and p.prokind='f'
        and p.proname !~ '^audit' and p.proname !~ 'audit'
+       -- معاوناتُ اللغة والتاريخ: أرقامُها نحوٌ وتقويمٌ لا عتباتٌ مدرسيّة
+       and not (n.nspname='v2' and (p.proname like 'ar\_%' or p.proname like '%\_ar'
+                                    or p.proname in ('fn_to_hijri','fn_from_hijri')))
        and p.prosrc !~ 'teaching_loads' and p.prosrc !~ 'teaching_quota'
        and p.prosrc !~ 'settings_catalog' and p.prosrc !~ 'citations'
        and p.prosrc !~ 'grading_models' and p.prosrc !~ 'conduct_'
@@ -29,6 +32,6 @@ AS $function$
     'انتبه'
   from m group by m.fn
   having count(distinct m.lit) > 0
-  order by 1
+  order by 1;
 $function$
 ;

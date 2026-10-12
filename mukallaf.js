@@ -87,7 +87,7 @@
   }
 
   // ما عليّ من الوارد: متابعاتُك من v2_mail_my_tasks وحدَه — فسجلُّ الوارد المدرسيُّ مُقفلٌ على المعلّم ولا يُنادى من هنا
-  // ولكلّ بندٍ «أتممتُه» (v2_mail_followup_close) · وبطاقةُ الوارد لا تُفتح من هنا: الجسرُ لا يرجع رقمَ الوارد
+  // ولكلّ بندٍ «أتممتُه» (v2_mail_followup_close) و«افتح الوارد» (v2_mail_card بـ mail_id) — والبطاقةُ للقراءة، ورفضُها بنصّه
   function loadMail(r) {
     const box = $('mail');
     box.textContent = '';
@@ -97,11 +97,40 @@
     for (const x of rows) {
       const f = el('div', 'rs-file' + (x.is_late ? ' rs-late' : ''));
       f.append(el('h5', null, 'وارد ' + (x.serial_no || '') + ' · ' + (x.subject_ar || '')), el('p', null, x.text_ar || ''),
-        el('p', 'rs-meta', [x.due_h, x.is_late ? 'متأخّر' : null, x.status === 'done' ? 'أُتمّ' : null].filter(Boolean).join(' · ')));
-      if (x.status !== 'done') { const rr = el('div', 'rs-row'); rr.appendChild(V.btn('أتممتُه', 'rs-btn', () => followupForm(x))); f.appendChild(rr); }
+        el('p', 'rs-meta', [x.due_h, x.late_ar, x.reminders_ar, x.status === 'done' ? 'أُتمّ' : null].filter(Boolean).join(' · ')));
+      const rr = el('div', 'rs-row');
+      if (x.status !== 'done') rr.appendChild(V.btn('أتممتُه', 'rs-btn', () => followupForm(x)));
+      if (x.mail_id) rr.appendChild(V.btn('افتح الوارد', 'rs-btn ghost', () => mailCard(x.mail_id)));
+      f.appendChild(rr);
       box.appendChild(f);
     }
     V.arabize(box);
+  }
+  // بطاقةُ الوارد للقراءة: ما وُجِّه إليك منه — والرفضُ يُعرض بنصّه كما جاء
+  async function mailCard(id) {
+    const { data, error } = await M.rpc('v2_mail_card', { p_mail: id }, 'بطاقة الوارد');
+    const n = el('div');
+    if (error) n.appendChild(el('div', 'notice err', errText(error)));
+    else {
+      const c = data || {}; const m = c.mail || {};
+      n.appendChild(el('p', 'rs-meta', [m.serial_no != null ? 'وارد ' + m.serial_no : null, m.from, m.received_h].filter(Boolean).join(' · ')));
+      if (m.body) n.appendChild(el('p', 'rs-msg', m.body));
+      for (const a of c.attachments || []) {
+        const p = el('p'); p.appendChild(document.createTextNode('📎 '));
+        if (a.url) { const l = el('a', null, a.name || a.url); l.href = a.url; l.target = '_blank'; l.rel = 'noopener'; p.appendChild(l); } else p.appendChild(document.createTextNode(a.name || ''));
+        n.appendChild(p);
+      }
+      for (const i of c.items || []) {
+        const mine = (i.followups || []).filter((x) => x.mine === true);
+        if (!mine.length) continue;
+        const f = el('div', 'rs-file');
+        f.appendChild(el('h5', null, i.text || ''));
+        for (const fu of mine) f.appendChild(el('p', 'rs-meta', ['متابعتُك', fu.due_h, fu.late ? 'متأخّرة' : null, fu.done_h].filter(Boolean).join(' · ')));
+        n.appendChild(f);
+      }
+      if (c.note_ar) n.appendChild(el('p', 'rs-meta', c.note_ar));
+    }
+    V.form({ title: (data && data.mail && data.mail.subject) || 'بطاقةُ الوارد', fields: [{ key: 'c', type: 'node', node: n }], ok: false, cancel: 'أغلق' });
   }
   function followupForm(x) {
     V.form({

@@ -1,5 +1,5 @@
 -- public.v2_signature_save(p_school uuid, p_person uuid, p_image_ref text, p_valid_from date)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e9b0f879406e285eea96214fc5b203d1
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 428924ee95d948b2ca625dc0934654fc
 CREATE OR REPLACE FUNCTION public.v2_signature_save(p_school uuid, p_person uuid, p_image_ref text, p_valid_from date)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_signature_save(p_school uuid, p_person uuid
 AS $function$
 declare nid uuid; me uuid; d date; pth text;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   me := v2.current_person();
   -- 🔒 التوقيعُ شخصيٌّ لا يُرفع عن أحد — ولو كان المدير
   if p_person is distinct from me then

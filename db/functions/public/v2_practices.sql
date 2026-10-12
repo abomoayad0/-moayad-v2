@@ -1,5 +1,5 @@
 -- public.v2_practices(p_school uuid, p_scope text, p_polarity text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 1acb8047f91cb67d98d1dbfe50c81900
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 4ebac9dd8f9dc6b09ae79522ecf48cbe
 CREATE OR REPLACE FUNCTION public.v2_practices(p_school uuid, p_scope text, p_polarity text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_practices(p_school uuid, p_scope text, p_po
 AS $function$
 declare r jsonb;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select coalesce(jsonb_agg(x order by x->>'scope', (x->>'ord')::int, x->>'code'),'[]'::jsonb)
   into r from (
     select jsonb_build_object(

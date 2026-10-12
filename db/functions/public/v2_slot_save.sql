@@ -1,5 +1,5 @@
 -- public.v2_slot_save(p_school uuid, p_slot uuid, p_weekday smallint, p_period smallint, p_section uuid, p_person uuid, p_kind text, p_subject text, p_room text, p_note text, p_force boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e27dea61a209c5a92ea9a575932b507c
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 9b165d52652b54488bc9a46f2d320bd1
 CREATE OR REPLACE FUNCTION public.v2_slot_save(p_school uuid, p_slot uuid, p_weekday smallint, p_period smallint, p_section uuid, p_person uuid, p_kind text, p_subject text, p_room text, p_note text, p_force boolean)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare nid uuid; chk jsonb; yid uuid; tm smallint; fz boolean;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy','deputy_academic'],
                          'ضبطَ جدول الحصص');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if p_weekday is null or p_weekday not between 0 and 4 then
     raise exception 'اليوم: الأحدُ (٠) إلى الخميس (٤)'; end if;
   if p_period is null then raise exception 'اختر الحصّة'; end if;

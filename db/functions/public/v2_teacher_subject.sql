@@ -1,5 +1,5 @@
 -- public.v2_teacher_subject(p_school uuid, p_person uuid, p_subject text, p_main boolean, p_remove boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 1c94ff47f17bf41a1062278b57cdff9a
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 dd5bd4fad1ab777cc68abc2ff323f52d
 CREATE OR REPLACE FUNCTION public.v2_teacher_subject(p_school uuid, p_person uuid, p_subject text, p_main boolean, p_remove boolean)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_teacher_subject(p_school uuid, p_person uui
 AS $function$
 begin
   perform v2.assert_role(array['principal','deputy_academic','deputy'],'ضبطَ تخصّص المعلّم');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if not exists (select 1 from v2.assignments a
         where a.person_id=p_person and a.school_id=p_school and a.ended_on is null) then
     raise exception 'هذا المنسوب ليس من منسوبي مدرستك'; end if;

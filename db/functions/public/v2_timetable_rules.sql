@@ -1,12 +1,12 @@
 -- public.v2_timetable_rules(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 85a869fb9298ca32fa81b4a7eea17f4f
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 6f92e04b24740727ba3e5635fe4158cd
 CREATE OR REPLACE FUNCTION public.v2_timetable_rules(p_school uuid)
  RETURNS jsonb
  LANGUAGE sql
  STABLE SECURITY DEFINER
  SET search_path TO 'v2', 'public'
 AS $function$
-  select case when not v2.my_school(p_school) then jsonb_build_object('ok',false,'why','ليست مدرستك')
+  select case when not v2.my_school(p_school) then jsonb_build_object('ok',false,'why',v2.not_my_school_ar())
   else jsonb_build_object(
     'ok', true,
     'standby_default_ar', 'معلّمٌ واحدٌ لكلّ حصّةٍ ما لم تطلب المدرسةُ غيرَه',

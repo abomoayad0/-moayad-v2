@@ -1,5 +1,5 @@
 -- public.v2_outgoing_create(p_subject text, p_to_entity text, p_body text, p_kind text, p_secrecy text, p_needs_reply boolean, p_reply_due date, p_reply_to_mail uuid, p_ref_table text, p_ref_id uuid, p_tasks uuid[])
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e368eb1031008d03adb973586bdadad8
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 f5f6f1a729efd8280f9cee03373cbcbe
 CREATE OR REPLACE FUNCTION public.v2_outgoing_create(p_subject text, p_to_entity text, p_body text DEFAULT NULL::text, p_kind text DEFAULT 'letter'::text, p_secrecy text DEFAULT 'عادي'::text, p_needs_reply boolean DEFAULT false, p_reply_due date DEFAULT NULL::date, p_reply_to_mail uuid DEFAULT NULL::uuid, p_ref_table text DEFAULT NULL::text, p_ref_id uuid DEFAULT NULL::uuid, p_tasks uuid[] DEFAULT NULL::uuid[])
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION public.v2_outgoing_create(p_subject text, p_to_entity
  SET search_path TO 'v2', 'public'
 AS $function$
 declare sc uuid; yr uuid; mid uuid; n integer := 0; t record; v_due date; v_days smallint;
-        v_auto boolean := false;
+        v_auto boolean := false; v_kind text; v_sec text;
         msg text; st text; d text; h text; ctx text;
 begin
   perform v2.assert_role(array['principal','deputy','deputy_students',
@@ -18,6 +18,19 @@ begin
   if coalesce(btrim(p_subject),'') = '' then raise exception 'موضوعُ الخطاب لا يُترك فارغًا'; end if;
   if coalesce(btrim(p_to_entity),'') = '' then raise exception 'الجهةُ المرسلُ إليها لا تُترك فارغةً'; end if;
 
+  -- 🔑 حارسان عربيّان مكانَ قفلَين إنجليزيَّين
+  v_kind := coalesce(nullif(btrim(coalesce(p_kind,'')),''), 'letter');
+  if v_kind not in ('letter','report','decision','referral','circular','reply') then
+    raise exception 'نوعُ الخطاب غيرُ معروف «%» — والمقبولُ: خطابٌ (letter) · تقريرٌ (report) · قرارٌ (decision) · إحالةٌ (referral) · تعميمٌ (circular) · جوابٌ (reply)', v_kind;
+  end if;
+  v_sec := coalesce(nullif(btrim(coalesce(p_secrecy,'')),''), 'عادي');
+  if v_sec not in ('عادي','سري','سري للغاية') then
+    raise exception 'درجةُ سرّيّةٍ غيرُ معروفة «%» — والمقبولُ: عادي · سري · سري للغاية', v_sec;
+  end if;
+  if v_sec <> 'عادي' then
+    perform v2.assert_role(array['principal','deputy'], format('إنشاءَ خطابٍ %s', v_sec));
+  end if;
+
   select outgoing_reply_days into v_days from v2.conduct_school_rules where school_id = sc;
   v_due := p_reply_due;
   if p_needs_reply and v_due is null and v_days is not null then
@@ -25,15 +38,17 @@ begin
     v_auto := true;
   end if;
   if p_needs_reply and v_due is null then
-    raise exception 'إن كان الخطابُ ينتظر جوابًا فلا بدَّ من موعدٍ يُراجَع عليه — '
-      'ولا أصلَ مضبوطٌ في لوحة التحكّم';
+    raise exception 'إن كان الخطابُ ينتظر جوابًا فلا بدَّ من موعدٍ يُراجَع عليه — ولا أصلَ مضبوطٌ في لوحة التحكّم';
+  end if;
+  if p_reply_due is not null and p_reply_due < current_date then
+    raise exception 'موعدُ المراجعة مضى — ولا يُنتظر جوابٌ على موعدٍ سابق';
   end if;
 
   select id into yr from v2.academic_years where school_id = sc and is_current limit 1;
 
   insert into v2.outgoing_mail(school_id,year_id,subject_ar,body_ar,to_entity,kind,secrecy,
       reply_to_mail,ref_table,ref_id,prepared_by,needs_reply,reply_due_on)
-  values (sc,yr,btrim(p_subject),p_body,btrim(p_to_entity),p_kind,p_secrecy,
+  values (sc,yr,btrim(p_subject),p_body,btrim(p_to_entity),v_kind,v_sec,
       p_reply_to_mail,p_ref_table,p_ref_id,v2.current_person(),p_needs_reply,
       case when p_needs_reply then v_due end)
   returning id into mid;
@@ -90,6 +105,9 @@ exception when others then
   perform v2.fn_log_error(msg,'v2_outgoing_create','المراسلات','إنشاء صادر',
     jsonb_build_object('subject',p_subject,'to',p_to_entity),st,d,h,ctx,'bridge',
     case when st='P0001' then 'guard' else 'error' end);
+  if st in ('23502','23503','23505','23514','22007','22008','22P02') then
+    raise exception '%', v2.say_lock('v2_outgoing_create', st, msg);
+  end if;
   raise exception '%', msg using errcode = st;
 end $function$
 ;

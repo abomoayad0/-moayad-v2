@@ -1,5 +1,5 @@
 -- public.v2_brand_save(p_school uuid, p_logo_path text, p_logo_position text, p_show_ministry boolean, p_primary text, p_accent text, p_header text, p_footer text, p_clear text[])
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 60fd3b1e446a66389bf5cd79f79ab882
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 07b8e2f172c25566b53929d74ae4c962
 CREATE OR REPLACE FUNCTION public.v2_brand_save(p_school uuid, p_logo_path text, p_logo_position text, p_show_ministry boolean, p_primary text, p_accent text, p_header text, p_footer text, p_clear text[] DEFAULT NULL::text[])
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare k text;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy','deputy_academic'],
                          'ضبطَ الهويّة البصريّة');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if p_primary is not null and p_primary !~ '^#[0-9A-Fa-f]{6}$' then
     raise exception 'اللونُ بصيغة ‎#RRGGBB'; end if;
   if p_accent is not null and p_accent !~ '^#[0-9A-Fa-f]{6}$' then

@@ -1,5 +1,5 @@
 -- public.v2_staff_late_record(p_school uuid, p_person uuid, p_date date, p_arrived time without time zone, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 5b216b5a21d5472b202591a57deffd98
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 f3a5bba97ab63cbf64c8650ae8f20911
 CREATE OR REPLACE FUNCTION public.v2_staff_late_record(p_school uuid, p_person uuid, p_date date, p_arrived time without time zone, p_note text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -12,13 +12,18 @@ begin
     'deputy','deputy_school'],'حصرَ تأخّرِ المنسوبين');
   perform v2.assert_my_school(p_school,'حصرَ تأخّرِ المنسوبين');
 
+  if p_date is null then raise exception 'اكتب تاريخَ اليوم الذي تأخّر فيه'; end if;
+  if p_date > current_date then
+    raise exception 'لا يُحصر تأخّرٌ في يومٍ لم يأتِ — %', v2.fn_to_hijri(p_date); end if;
+  if p_arrived is null then raise exception 'اكتب ساعةَ وصوله'; end if;
+
   if not exists (select 1 from v2.assignments a
                   where a.person_id=p_person and a.school_id=p_school and a.ended_on is null) then
     raise exception 'ليس من منسوبي مدرستك'; end if;
 
   v_k := v2.fn_day_kind(p_school, p_date);
   if v_k is null or v_k not in ('study','exam') then
-    raise exception 'اليوم % ليس يومَ دوامٍ — نوعُه: %', p_date, coalesce(v_k,'غيرُ معروف'); end if;
+    raise exception 'اليوم % ليس يومَ دوامٍ — نوعُه: %', v2.fn_to_hijri(p_date), coalesce(v_k,'غيرُ معروف'); end if;
 
   v_duty  := v2.staff_duty_at(p_school);
   v_grace := v2.rule_n(p_school,'staff_late_grace_min');
@@ -57,5 +62,10 @@ begin
       when t.notice_due and t.notice_n = 0 then
         '🔴 بلغ ثلاثَ ساعاتٍ فيجب التنبيه — س-١٦-ا-١ سياسة ٠٣ ص٣٢٦'
       else 'دون عتبةِ التنبيه بعد' end);
+exception
+  when not_null_violation or unique_violation or check_violation
+    or foreign_key_violation or invalid_datetime_format
+    or datetime_field_overflow or invalid_text_representation then
+    raise exception '%', v2.say_lock('v2_staff_late_record', sqlstate, sqlerrm);
 end $function$
 ;

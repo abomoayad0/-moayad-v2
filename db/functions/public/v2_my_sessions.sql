@@ -1,5 +1,5 @@
 -- public.v2_my_sessions(p_date date)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 13155faf1e0e1a8ddbbbda63c4c36625
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 0340401c5511c52f1e2344059b99b63d
 CREATE OR REPLACE FUNCTION public.v2_my_sessions(p_date date DEFAULT CURRENT_DATE)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -14,6 +14,7 @@ begin
   return coalesce((
     select jsonb_agg(jsonb_build_object(
         'period', ep.period_no,
+        'period_ar', v2.period_ar(ep.period_no),
         'section', ep.section_id,
         'section_ar', (select cs.label_ar from v2.class_sections cs where cs.id=ep.section_id),
         'subject', ep.subject_ar,
@@ -21,9 +22,14 @@ begin
                                   when 'cover' then 'تغطيةً عن '||coalesce(ep.from_ar,'زميل')
                                   else 'أصالةً' end,
         'at', to_char(ps.starts_at,'HH24:MI')||' – '||to_char(ps.ends_at,'HH24:MI'),
+        'at_ar', v2.time_ar(ps.starts_at)||' — '||v2.time_ar(ps.ends_at),
         'session', s.id,
         'opened', s.id is not null,
         'late_min', s.late_min,
+        'late_ar', case when s.id is null then null
+                        when coalesce(s.late_min,0) = 0 then 'فُتحت في وقتها'
+                        else 'فُتحت متأخّرةً '||
+                             v2.ar_count(s.late_min,'دقيقةً واحدة','دقيقتين','دقائق','دقيقة') end,
         'attendance_done', s.attendance_at is not null,
         'lesson_ar', s.lesson_ar,
         'closed', s.closed_at is not null,

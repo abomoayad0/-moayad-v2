@@ -1,5 +1,5 @@
 -- public.v2_committee_rules(p_school uuid, p_committee text, p_quorum smallint, p_allow_remote boolean, p_tie_rule text, p_note text, p_quorum_mode text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 4ae966339486c8de8fbe7379e10a60fc
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 659cd646e64ec502846f913b3f683576
 CREATE OR REPLACE FUNCTION public.v2_committee_rules(p_school uuid, p_committee text, p_quorum smallint, p_allow_remote boolean, p_tie_rule text, p_note text, p_quorum_mode text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -9,7 +9,7 @@ AS $function$
 declare seated int;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy'],'ضبط قواعد اللجان');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if p_tie_rule is not null and p_tie_rule not in ('رئيس','تأجيل') then
     raise exception 'حكمُ التعادل: «رئيس» أو «تأجيل»'; end if;
   if p_quorum_mode is not null and p_quorum_mode not in ('majority','fixed','none') then

@@ -737,7 +737,15 @@
     $('gdWhat').textContent = (g ? g.name : 'وليُّ أمرٍ جديد') + ' — لـ' + (st.display || st.name);
     const v = g || {};
     $('gdName').value = v.name || '';
-    $('gdRel').value = v.relation || '';
+    // الصلةُ تُختار من فهرس المدرسة (v2_guardian_relations) لا تُكتب — وما كان محفوظًا بغيره يبقى ظاهرًا، والبابُ يقول حكمَه عند الحفظ
+    const rel = $('gdRel'); rel.textContent = '';
+    const { data: rd, error: re } = await M.rpc('v2_guardian_relations', {}, 'صلات وليّ الأمر');
+    const rows = (rd && rd.rows) || [];
+    $('gdRelNote').textContent = re ? errText(re) : ((rd && rd.note_ar) || '');
+    const o0 = el('option', null, 'اختر الصلة'); o0.value = ''; rel.appendChild(o0);
+    for (const x of rows) { const o = el('option', null, x.label_ar); o.value = x.label_ar; o.title = x.source_ar || ''; rel.appendChild(o); }
+    if (v.relation && !rows.some((x) => x.label_ar === v.relation)) { const o = el('option', null, v.relation); o.value = v.relation; rel.appendChild(o); }
+    rel.value = v.relation || '';
     $('gdNid').value = v.national_id || '';
     $('gdPhone').value = v.phone || '';
     $('gdWork').value = v.work_phone || '';

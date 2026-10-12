@@ -1,5 +1,5 @@
 -- public.v2_entries_pending(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c4f3bfdae8bcf0a6368a4487d407f3ef
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 bbce742986331e3df8e25cf606041d1a
 CREATE OR REPLACE FUNCTION public.v2_entries_pending(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_entries_pending(p_school uuid)
 AS $function$
 declare me uuid; r jsonb;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   me := v2.current_person();
   select coalesce(jsonb_agg(jsonb_build_object(
       'entry',x.id,'opp',o.id,'merit',m.text_ar,'when',o.when_ar,

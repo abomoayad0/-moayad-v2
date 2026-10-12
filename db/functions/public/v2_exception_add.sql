@@ -1,5 +1,5 @@
 -- public.v2_exception_add(p_school uuid, p_rule_kind text, p_rule_ref text, p_system_says text, p_school_does text, p_reason text, p_source text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 601ac8f5ecc3aea20eb61715ad63b872
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e964ae7f0780f62948976e6e1b88f02a
 CREATE OR REPLACE FUNCTION public.v2_exception_add(p_school uuid, p_rule_kind text, p_rule_ref text, p_system_says text, p_school_does text, p_reason text, p_source text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -9,7 +9,7 @@ AS $function$
 declare nid uuid; yid uuid;
 begin
   perform v2.assert_role(array['principal'],'تقييدَ استثناءٍ على النظام');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if p_rule_kind is null or p_rule_kind not in
      ('conduct','attendance','committee','calendar','structure',
       'staffing','grading','inheritance','other') then

@@ -1,5 +1,5 @@
 -- public.v2_assign_add(p_school uuid, p_person uuid, p_post text, p_letter_no text, p_letter_date date, p_started_on date, p_entitled boolean, p_reason text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 095f13a1e285c9e2995b3ad1a02e2491
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 15ab7c171ef6d6168e02a498af696a54
 CREATE OR REPLACE FUNCTION public.v2_assign_add(p_school uuid, p_person uuid, p_post text, p_letter_no text DEFAULT NULL::text, p_letter_date date DEFAULT NULL::date, p_started_on date DEFAULT NULL::date, p_entitled boolean DEFAULT NULL::boolean, p_reason text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -9,7 +9,7 @@ AS $function$
 declare me uuid; yid uuid; nid uuid; other_school text; nm text; pl text; isr text;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy'],'إسناد تكليف');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if not exists (select 1 from v2.people where id=p_person) then
     raise exception 'منسوبٌ غيرُ موجود'; end if;
   if not exists (select 1 from v2.posts where key=p_post) then

@@ -1,5 +1,5 @@
 -- public.v2_committee_close(p_school uuid, p_committee text, p_reason text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 a349b1b060b6218aa37c65bfdb8f5d2c
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 4f6f1a8ff949b422edded7470808864c
 CREATE OR REPLACE FUNCTION public.v2_committee_close(p_school uuid, p_committee text, p_reason text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -9,7 +9,7 @@ AS $function$
 declare c record;
 begin
   perform v2.assert_role(array['principal'],'إيقافَ لجنة');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select * into c from v2.committees where key=p_committee;
   if c.key is null then raise exception 'لجنةٌ غيرُ معروفة'; end if;
   if c.school_id is null then

@@ -1,5 +1,5 @@
 -- public.v2_guardian_save(p_student uuid, p_guardian uuid, p_full_name text, p_relation text, p_national_id text, p_phone text, p_work_phone text, p_home_phone text, p_workplace text, p_is_primary boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 bab25f473e735eb626350d5a6f074a7c
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 7864961b2a71c8d0bf6e9f9b1c800b72
 CREATE OR REPLACE FUNCTION public.v2_guardian_save(p_student uuid, p_guardian uuid, p_full_name text, p_relation text, p_national_id text, p_phone text, p_work_phone text, p_home_phone text, p_workplace text, p_is_primary boolean)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -14,6 +14,13 @@ begin
   perform v2.assert_my_student(p_student,'بيانات وليّ الأمر');
   if btrim(coalesce(p_full_name,''))='' then raise exception 'اكتب اسمَ وليّ الأمر'; end if;
   if btrim(coalesce(p_relation,''))='' then raise exception 'اكتب صلتَه بالطالب'; end if;
+
+  if not exists (select 1 from v2.guardian_relations g
+                  where g.active and g.label_ar = btrim(p_relation)) then
+    raise exception 'صلةٌ غيرُ معروفة «%» — والمقبولُ: %', btrim(p_relation),
+      (select string_agg(g.label_ar, ' · ' order by g.ord) from v2.guardian_relations g where g.active);
+  end if;
+
   if p_phone is not null and p_phone !~ '^[0-9+]{9,15}$' then
     raise exception 'رقمُ الجوّال غيرُ صحيح'; end if;
   if p_national_id is not null and p_national_id !~ '^[0-9]{10}$' then
@@ -39,11 +46,16 @@ begin
     gid := p_guardian;
   end if;
 
-  -- 🔒 وليٌّ أساسيٌّ واحدٌ لا أكثر
   if coalesce(p_is_primary,false) then
     update v2.guardians set is_primary=false
      where student_id=p_student and id<>gid;
   end if;
-  return jsonb_build_object('ok',true,'guardian',gid);
+  return jsonb_build_object('ok',true,'guardian',gid,
+    'said_ar','حُفظ «'||btrim(p_full_name)||'» — '||btrim(p_relation));
+exception
+  when not_null_violation or unique_violation or check_violation
+    or foreign_key_violation or invalid_datetime_format
+    or datetime_field_overflow or invalid_text_representation then
+    raise exception '%', v2.say_lock('v2_guardian_save', sqlstate, sqlerrm);
 end $function$
 ;

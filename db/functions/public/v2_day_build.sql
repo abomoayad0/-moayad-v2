@@ -1,5 +1,5 @@
 -- public.v2_day_build(p_school uuid, p_assembly time without time zone, p_period_minutes smallint, p_periods smallint, p_breaks jsonb, p_apply text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 acaa19f23075ea45158c45fad2f13807
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 5a2efc0a94e4defb36be057dc98582cf
 CREATE OR REPLACE FUNCTION public.v2_day_build(p_school uuid, p_assembly time without time zone, p_period_minutes smallint, p_periods smallint, p_breaks jsonb, p_apply text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -11,7 +11,7 @@ declare t time; i int; b jsonb; plan jsonb := '[]'::jsonb; mins int; lbl text; c
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy','deputy_academic'],
                          'بناءَ اليوم الدراسيّ');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if p_assembly is null then raise exception 'اكتب وقتَ الاصطفاف'; end if;
   v_asm  := v2.rule_n(p_school,'assembly_minutes');
   v_dis  := v2.rule_n(p_school,'dismissal_minutes');

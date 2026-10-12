@@ -1,5 +1,5 @@
 -- public.v2_accounts_board(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 5b15747ae44656b25268021d9d47bf08
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 4c53550b82b04098b90cfa106ea3ceba
 CREATE OR REPLACE FUNCTION public.v2_accounts_board(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -9,7 +9,7 @@ AS $function$
 declare r jsonb;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy'],'كشف الحسابات');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select jsonb_build_object(
     'staff', (select coalesce(jsonb_agg(jsonb_build_object(
         'person',pe.id,'name',v2.fn_display_name(pe.full_name),

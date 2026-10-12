@@ -1,5 +1,5 @@
 -- public.v2_committee_task_done(p_item uuid, p_note text, p_evidence text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e80ec9be900410b985a6775b96659064
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2caa644064e4731638c5a31a6e5a1b31
 CREATE OR REPLACE FUNCTION public.v2_committee_task_done(p_item uuid, p_note text, p_evidence text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -12,7 +12,7 @@ begin
   select * into i from v2.meeting_items where id=p_item;
   if i.id is null then raise exception 'البندُ غيرُ موجود'; end if;
   select * into m from v2.committee_meetings where id=i.meeting_id;
-  if not v2.my_school(m.school_id) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(m.school_id) then raise exception '%', v2.not_my_school_ar(); end if;
   if m.status <> 'معتمد' then raise exception 'لا يُنفَّذ قرارٌ من محضرٍ لم يُعتمد'; end if;
   if i.outcome <> 'أُقرّ' then raise exception 'هذا البندُ % — ولا تنفيذَ له', i.outcome; end if;
   if i.done_at is not null then raise exception 'أُقرّ تنفيذُه سلفًا'; end if;

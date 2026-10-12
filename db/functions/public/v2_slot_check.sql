@@ -1,5 +1,5 @@
 -- public.v2_slot_check(p_school uuid, p_slot uuid, p_weekday smallint, p_period smallint, p_section uuid, p_person uuid, p_kind text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 ced5586f280a35d153997058cce3cc31
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 4751226662fbc8d57c7983d4655f938b
 CREATE OR REPLACE FUNCTION public.v2_slot_check(p_school uuid, p_slot uuid, p_weekday smallint, p_period smallint, p_section uuid, p_person uuid, p_kind text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_slot_check(p_school uuid, p_slot uuid, p_we
 AS $function$
 declare busy record; occupied record; w jsonb := '[]'::jsonb;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if p_person is not null then
     select t.*, coalesce(c.label_ar, c.grade||'/'||c.section) sec into busy
       from v2.timetable t left join v2.class_sections c on c.id=t.section_id

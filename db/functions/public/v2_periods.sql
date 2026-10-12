@@ -1,5 +1,5 @@
 -- public.v2_periods(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 23d43dac2d5ba8f19ba189b629887d5c
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c763c19f018c166a1cb69c8e0a413a53
 CREATE OR REPLACE FUNCTION public.v2_periods(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_periods(p_school uuid)
 AS $function$
 declare r jsonb;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select coalesce(jsonb_agg(jsonb_build_object(
       'no',s.period_no,'no_ar',v2.ar_num(s.period_no),
       'label', case when s.label_ar is null or s.label_ar ~ '[0-9]'

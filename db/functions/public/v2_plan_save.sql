@@ -1,5 +1,5 @@
 -- public.v2_plan_save(p_school uuid, p_plan uuid, p_grade smallint, p_subject text, p_slots smallint, p_ord smallint)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 1dd47b52e7f7b66177bf57b84710e832
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 5ddc9941fa83175719b27c5aa0219be3
 CREATE OR REPLACE FUNCTION public.v2_plan_save(p_school uuid, p_plan uuid, p_grade smallint, p_subject text, p_slots smallint, p_ord smallint)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -9,7 +9,7 @@ AS $function$
 declare nid uuid;
 begin
   perform v2.assert_role(array['principal','deputy_academic','deputy'],'ضبطَ خطّة المواد');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if p_grade is null then raise exception 'اختر الصفّ'; end if;
   if btrim(coalesce(p_subject,''))='' then raise exception 'اكتب اسمَ المادّة'; end if;
   if p_slots is null or p_slots < 1 then raise exception 'اكتب عددَ حصص المادّة'; end if;

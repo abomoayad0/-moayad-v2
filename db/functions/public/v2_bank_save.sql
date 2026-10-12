@@ -1,5 +1,5 @@
 -- public.v2_bank_save(p_school uuid, p_id uuid, p_key text, p_problem integer, p_text text, p_ord smallint, p_active boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 67b68b5da31d212f78446c3ae06add44
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 07829d16de8c1d118a2e53a8c51d1507
 CREATE OR REPLACE FUNCTION public.v2_bank_save(p_school uuid, p_id uuid, p_key text, p_problem integer, p_text text, p_ord smallint, p_active boolean)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare cur record; nid uuid;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy','deputy_academic','counselor'],
                          'ضبطَ بنك العبارات');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if p_id is null then
     if btrim(coalesce(p_key,''))='' then raise exception 'اختر مفتاحَ العبارة'; end if;
     if btrim(coalesce(p_text,''))='' then raise exception 'اكتب العبارة'; end if;

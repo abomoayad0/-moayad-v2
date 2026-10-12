@@ -1,5 +1,5 @@
 -- public.v2_problems(p_school uuid, p_degree smallint)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 680b5d2e13e959de4dda30f6688f1014
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 4516c02cf9e4565fa9b5ccc8ae1af610
 CREATE OR REPLACE FUNCTION public.v2_problems(p_school uuid, p_degree smallint DEFAULT NULL::smallint)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_problems(p_school uuid, p_degree smallint D
 AS $function$
 declare r jsonb; st text; md text;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select stage into st from v2.schools where id=p_school;
   md := v2.conduct_mode_of(p_school);
   if md is null then

@@ -1,5 +1,5 @@
 -- public.v2_census_review(p_census uuid, p_accept boolean, p_why text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2f8b9a35d24fd60c80b5d6313a0470ad
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 6ecbf15c2999c36c1de722d8a0d3f723
 CREATE OR REPLACE FUNCTION public.v2_census_review(p_census uuid, p_accept boolean, p_why text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -11,7 +11,7 @@ begin
   perform v2.assert_role(array['deputy_students','deputy','principal'],'النظرَ في الحصر');
   select * into c from v2.behavior_census where id=p_census;
   if c.id is null then raise exception 'تكليفُ الحصر غيرُ موجود'; end if;
-  if not v2.my_school(c.school_id) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(c.school_id) then raise exception '%', v2.not_my_school_ar(); end if;
   if c.state <> 'مكتمل' then raise exception 'لم يُسلَّم هذا الحصرُ بعد'; end if;
 
   if coalesce(p_accept,false) then

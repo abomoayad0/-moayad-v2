@@ -1,5 +1,5 @@
 -- public.v2_delegate_add(p_school uuid, p_post text, p_to uuid, p_starts date, p_ends date, p_reason text, p_letter text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 203e54d027b83b0bc9fcc0bee7084040
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 283e42459e161c19928092876bccc8f6
 CREATE OR REPLACE FUNCTION public.v2_delegate_add(p_school uuid, p_post text, p_to uuid, p_starts date, p_ends date, p_reason text, p_letter text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -9,7 +9,7 @@ AS $function$
 declare nid uuid; owner_p uuid; nm text;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy'],'الإنابةَ في صفة');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if not exists (select 1 from v2.posts where key=p_post) then
     raise exception 'وظيفةٌ غيرُ معروفة'; end if;
   if not exists (select 1 from v2.assignments a

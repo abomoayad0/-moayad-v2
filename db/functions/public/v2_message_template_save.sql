@@ -1,5 +1,5 @@
 -- public.v2_message_template_save(p_school uuid, p_key text, p_body text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 197af7dd925298ca9359dbdacd3660d8
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 48f797ded145d97415be3707a850a12f
 CREATE OR REPLACE FUNCTION public.v2_message_template_save(p_school uuid, p_key text, p_body text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_message_template_save(p_school uuid, p_key 
 AS $function$
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy'],'ضبطَ قوالب الرسائل');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if btrim(coalesce(p_body,''))='' then raise exception 'اكتب نصَّ الرسالة'; end if;
   if p_body not like '%{الطالب}%' then
     raise exception 'لا بدّ أن يحمل القالبُ {الطالب} على الأقلّ'; end if;

@@ -1,5 +1,5 @@
 -- public.v2_year_save(p_school uuid, p_year uuid, p_name text, p_starts date, p_ends date, p_current boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2fcd4556488aa5e1f96a89c0aa12047e
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 9106cd9a7e2419ba370daa9dc62c1a0b
 CREATE OR REPLACE FUNCTION public.v2_year_save(p_school uuid, p_year uuid, p_name text, p_starts date, p_ends date, p_current boolean)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare nid uuid; t record;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy','deputy_academic'],
                          'ضبطَ السنة الدراسيّة');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if btrim(coalesce(p_name,''))='' then raise exception 'اكتب اسمَ السنة — مثل ١٤٤٨هـ'; end if;
   if p_starts is null or p_ends is null then raise exception 'اكتب بدايةَ السنة ونهايتَها'; end if;
   if p_ends <= p_starts then raise exception 'نهايةُ السنة قبل بدايتها'; end if;

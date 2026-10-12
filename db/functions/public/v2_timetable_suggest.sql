@@ -1,5 +1,5 @@
 -- public.v2_timetable_suggest(p_school uuid, p_keep_fixed boolean, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 a8eb119ef3dad6039ceb2f0843c4b90c
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 623ad78b0f5bb2bd09e3e358e18eeb51
 CREATE OR REPLACE FUNCTION public.v2_timetable_suggest(p_school uuid, p_keep_fixed boolean, p_note text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -14,7 +14,7 @@ declare
   v_need smallint; v_taken int; v_sec_ar text;
 begin
   perform v2.assert_role(array['principal','deputy_academic','deputy'],'اقتراحَ جدول');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if not exists (select 1 from v2.subject_plan where school_id=p_school and active) then
     raise exception 'لا خطّةَ موادَّ لمدرستك — أسّسها أوّلًا من لوحة التحكّم'; end if;
   select max(period_no) into maxp from v2.period_slots where school_id=p_school;

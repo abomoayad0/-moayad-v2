@@ -1,5 +1,5 @@
 -- public.v2_opps_list(p_school uuid, p_state text, p_days integer)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 14e598d79d51caf724865eb62ed62b72
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 01e12b9da31195f81fc8e668c8134c76
 CREATE OR REPLACE FUNCTION public.v2_opps_list(p_school uuid, p_state text, p_days integer)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_opps_list(p_school uuid, p_state text, p_da
 AS $function$
 declare r jsonb;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select coalesce(jsonb_agg(jsonb_build_object(
       'opp',o.id,'merit_id',o.merit_id,'merit',m.text_ar,'group',m.group_ar,
       'points',m.points,'points_note',m.points_note,'source',m.source_page,

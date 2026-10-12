@@ -1,5 +1,5 @@
 -- public.v2_committee_create(p_school uuid, p_key text, p_label text, p_purpose text, p_seats jsonb)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 dd36d30777187ec5d895e715a92a2785
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c12e32a622098ccace61d46ce78da627
 CREATE OR REPLACE FUNCTION public.v2_committee_create(p_school uuid, p_key text, p_label text, p_purpose text, p_seats jsonb)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -9,7 +9,7 @@ AS $function$
 declare k text; s jsonb; n int := 0;
 begin
   perform v2.assert_role(array['principal'],'إنشاءَ لجنةٍ مدرسيّة');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if btrim(coalesce(p_label,''))='' then raise exception 'اكتب اسمَ اللجنة'; end if;
   if p_seats is null or jsonb_array_length(p_seats)=0 then
     raise exception 'لا لجنةَ بلا مقاعد — وأقلُّها رئيسٌ ومقرّرٌ وعضو'; end if;

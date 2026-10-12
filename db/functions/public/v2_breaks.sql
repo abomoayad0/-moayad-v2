@@ -1,5 +1,5 @@
 -- public.v2_breaks(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 31e6eacd02496509b22af14f16cc1194
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 0f7983846507fed94d79ea4c68a012ea
 CREATE OR REPLACE FUNCTION public.v2_breaks(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_breaks(p_school uuid)
 AS $function$
 declare r jsonb;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select coalesce(jsonb_agg(jsonb_build_object(
       'id',b.id,'kind',b.kind,'label',b.label_ar,
       'starts',b.starts_at,'starts_ar',v2.time_ar(b.starts_at),

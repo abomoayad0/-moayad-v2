@@ -1,5 +1,5 @@
 -- public.v2_quota_board(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 924bb130a84e7a7506958bd879c2eefd
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 0e1a2a9efc47952e3a943a1a7153ec52
 CREATE OR REPLACE FUNCTION public.v2_quota_board(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_quota_board(p_school uuid)
 AS $function$
 declare r jsonb;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select jsonb_build_object(
     'quota', (select coalesce(jsonb_agg(jsonb_build_object(
           'post',q.post_key,'post_ar',v2.role_ar(q.post_key),

@@ -1,5 +1,5 @@
 -- public.v2_scope_upsert(p_school uuid, p_key text, p_label text, p_ord smallint, p_active boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c82125a17e98bdf023eae177a5041d49
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 9fa15ea0eb6c5e09ae3e3fd51bf9c707
 CREATE OR REPLACE FUNCTION public.v2_scope_upsert(p_school uuid, p_key text, p_label text, p_ord smallint, p_active boolean)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare k text;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy','deputy_academic'],
                          'ضبط مجالات الممارسة');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if btrim(coalesce(p_label,''))='' then raise exception 'اكتب اسمَ المجال'; end if;
   k := coalesce(nullif(btrim(coalesce(p_key,'')),''),
                 'sc_'||substr(md5(p_school::text||p_label),1,10));

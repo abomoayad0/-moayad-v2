@@ -1,5 +1,5 @@
 -- public.v2_now_slot(p_school uuid, p_at time without time zone)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 8ed410ca5acef988d5a454725da737a1
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 b4f2603febc82183a48a6d473b1a8a53
 CREATE OR REPLACE FUNCTION public.v2_now_slot(p_school uuid, p_at time without time zone)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_now_slot(p_school uuid, p_at time without t
 AS $function$
 declare t time; b record; s record;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   t := coalesce(p_at, (now() at time zone 'Asia/Riyadh')::time);
   select * into b from v2.break_slots
    where school_id=p_school and active and t between starts_at and ends_at limit 1;

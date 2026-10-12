@@ -1,5 +1,5 @@
 -- public.v2_meetings_list(p_school uuid, p_committee text, p_status text, p_days integer)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 61452cc9bc1ab3478fbf81b5ae6c5fe1
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 6bcceb44d7a2773f020c9b8b59ab9446
 CREATE OR REPLACE FUNCTION public.v2_meetings_list(p_school uuid, p_committee text, p_status text, p_days integer)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_meetings_list(p_school uuid, p_committee te
 AS $function$
 declare r jsonb;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select coalesce(jsonb_agg(jsonb_build_object(
       'id',m.id,'no',m.meeting_no,'kind',m.kind,'held_on',m.held_on,
       'started',m.started_at,'place',m.place_ar,'status',m.status,

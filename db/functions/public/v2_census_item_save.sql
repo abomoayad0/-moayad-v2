@@ -1,5 +1,5 @@
 -- public.v2_census_item_save(p_school uuid, p_item uuid, p_polarity text, p_icon text, p_text text, p_hint text, p_ord smallint, p_active boolean)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 11b45ad8792283915244a37b1eb251cb
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 02cc8c1150bf918b4c524e786c9c651c
 CREATE OR REPLACE FUNCTION public.v2_census_item_save(p_school uuid, p_item uuid, p_polarity text, p_icon text, p_text text, p_hint text, p_ord smallint, p_active boolean)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare cur record; nid uuid;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy','deputy_academic'],
                          'ضبطَ قوائم الحصر');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if p_item is null then
     if coalesce(p_polarity,'') not in ('negative','positive') then
       raise exception 'السلوك: سلبيٌّ أو إيجابيّ'; end if;

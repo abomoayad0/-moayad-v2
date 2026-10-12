@@ -1,5 +1,5 @@
 -- public.v2_structure_board(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2636bdbb96ae024b8dc7ecbdfa95b5e2
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 b66df517168e191d28dcd0c081b1cce4
 CREATE OR REPLACE FUNCTION public.v2_structure_board(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_structure_board(p_school uuid)
 AS $function$
 declare r jsonb; v_code text;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select s.structure_code into v_code from v2.schools s where s.id=p_school;
   select jsonb_build_object(
     'current', (select jsonb_build_object('code',st.code,'label',st.label_ar,

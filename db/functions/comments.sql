@@ -1,7 +1,7 @@
 -- functions/comments.sql
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
 
--- ── fn_comments · md5 f7252a38e63e2d94f9dbafdf866efe8e
+-- ── fn_comments · md5 2d32052acf6cf31f45c1a967dbb0afa3
 COMMENT ON FUNCTION v2.ar_bare(p_in text) IS 'يُجرّد النصَّ العربيَّ من الحركات والتطويل ويوحّد المسافات — ليُقارَن المعنى لا الشكل. وسببُ بنائه: «غيرُ متقن» و«غير متقن» رُفض أحدُهما لأجل ضمّةٍ واحدة ١٠/١٠/٢٠٢٦.';
 COMMENT ON FUNCTION v2.arrival_state(p_school uuid, p_at time without time zone) IS 'حالُ الوصول بحسب وقته: حاضرٌ قبل المهلة · متأخّرٌ بعدها · غائبٌ بعد حدّ التأخّر';
 COMMENT ON FUNCTION v2.assert_role(p_allowed text[], p_what text) IS 'حارسُ الصفة. ومالكُ النظام (owner) يمرّ عليه بقرار مفرح ٦/١٠/٢٠٢٦ — ولا يمسُّ ذلك سرَّ الموجّه، فجسورُه تُحرس بـ v2.is_counselor لا بهذا الحارس.';
@@ -18,6 +18,7 @@ COMMENT ON FUNCTION v2.audit_skill_never_measured() IS 'كاشفٌ: سندُه �
 COMMENT ON FUNCTION v2.audit_staff_late_due() IS 'كاشفٌ: سندُه الدليل الإجرائيّ س-١٦-ا-١ سياسة ٠٣ ص٣٢٦ — يصيح على كلّ منسوبٍ وجب تنبيهُه أو حسمُه ولم يُعدّ.';
 COMMENT ON FUNCTION v2.audit_work_unseen() IS 'كاشفٌ: عملٌ ظاهرٌ وبوّابةُ الطالب مغلقة — وهو عينُ خلل النظام القائم حيث كان «كلّفه بواجب» لا يصل الطالبَ أبدًا.';
 COMMENT ON FUNCTION v2.behavior_score(p_student uuid, p_year uuid, p_term smallint) IS 'درجةُ السلوك: الإيجابيُّ ٨٠ سقفًا · والمتميّزُ ٢٠ سقفًا · والمجموعُ ١٠٠ — CONDUCT-1447-OFF ص15';
+COMMENT ON FUNCTION v2.caller_is_server() IS 'هل المتّصلُ خادمٌ لا شاشة؟ — تُقرأ من دعوى الطلب (request.jwt) لا من دورِ قاعدةِ البيانات · لأبواب التكامل التي لا هويّةَ بشريّةً لها';
 COMMENT ON FUNCTION v2.caller_kind(p_student uuid) IS 'صفةُ المتّصل من القاعدة لا من الشاشة. 🔑 والصفةُ المختارةُ تحكم: من اختار صفةً غيرَ الموجّه الطلابيّ لا يرى ما وُسم counselor_only ولو كان هو الموجّه — قرار مفرح ٥/١٠/٢٠٢٦: فصلٌ تامّ بين الصفات.';
 COMMENT ON FUNCTION v2.card_blocked(p_student uuid, p_date date) IS 'حارسُ البطاقة الأوّل: الغائبُ والمنصرفُ للاطّلاع فقط. والقائمُ كان يسأل الحصّةَ الأولى وحدَها، فمن غاب في الثالثة بقي قابلًا للرصد — وهنا يُسأل سجلُّ اليومِ كلُّه.';
 COMMENT ON FUNCTION v2.card_gate(p_student uuid, p_what text, p_needs_window boolean) IS 'بوّابةُ البطاقة: هويّةٌ · قيدٌ فعّالٌ · مدرستُك · ليس محجوبًا · وفي النافذة إن كان الفعلُ رصدًا. والتكليفُ والتصحيحُ يمرّان بلا نافذةٍ — «تكليفٌ ومتابعةٌ لا رصد».';
@@ -50,12 +51,15 @@ COMMENT ON FUNCTION v2.my_owner_roles(p_school uuid) IS 'ما يقع عليَّ 
 COMMENT ON FUNCTION v2.my_post_keys() IS 'جميعُ مفاتيح أدوار المستعمل — لا الصفةُ الواحدةُ وحدَها';
 COMMENT ON FUNCTION v2.my_school(p_school uuid) IS 'المدرسةُ النافذةُ من الصفة المختارة أوّلًا، ثمّ من حساب المستخدم. أُصلح ٥/١٠/٢٠٢٦ — كان من school_id فارغٌ يمرّ على كلّ مدرسة.';
 COMMENT ON FUNCTION v2.my_taught_sections(p_school uuid) IS 'فصولُ المعلّم — من إسناد النصاب ومن الجدول كليهما. يُبنى عليها قصرُ بحثه على طلّابه.';
+COMMENT ON FUNCTION v2.not_my_school_ar() IS 'نصُّ ردِّ «ليست مدرستك» — يقول الصفةَ المثبَّتةَ والمدرسةَ ويدلُّ على المخرج (بدّل صفتك) · موضعٌ واحدٌ لثمانيةٍ وثمانين بابًا';
 COMMENT ON FUNCTION v2.period_truth(p_school uuid, p_section uuid, p_period smallint, p_date date) IS 'الحقيقةُ الواحدةُ للحصّة: من المسؤولُ عنها في هذا اليوم فعلًا وبأيّ سبب — الجدولُ المعتمد، أو تبديلٌ معتمد، أو تغطيةُ غياب، أو بلا تغطية. وتقرأ منها الشاشاتُ كلُّها ولا تقرأ الجدولَ الخام.';
 COMMENT ON FUNCTION v2.plan_guard(p_plan uuid, p_what text) IS 'حارسُ أبواب التوزيع: مدرستُك · والخطّةُ غيرُ مُقفلة · وأنت صاحبُها أو الإدارة.';
 COMMENT ON FUNCTION v2.plan_reviewers(p_school uuid, p_subject text) IS 'من يصلح لمراجعة توزيع مادّة: خبيرٌ أوّلًا فمتقدّم — من معلّمي المادّة في المدرسة.';
+COMMENT ON FUNCTION v2.probe_run(p_door text) IS 'يُشغّل فحصَ العناد: كلُّ نداءٍ في كتلةٍ مستقلّةٍ تُلفّ، فلا يبقى أثرٌ ولو قَبِل البابُ الخطأ';
 COMMENT ON FUNCTION v2.reading_due(p_school uuid, p_person uuid, p_date date) IS 'ما يلزم المعلّمَ من استقطاعِ القراءة والكتابة في يومٍ — س-٨-ا-٣ سياسة ٠٤ ص٢٠٩. ويُقرأ من الحصص النافذة (v2.effective_periods) فيرى التبديلَ المعتمد. والواجبُ أقلُّ العددين: حصصُه في الصفوف ٢–٦، وأربعُ حصصٍ منصوصة — فمن لم يكن له أربعٌ لم يُطلب منه ما لا يملك، وهذا تفسيرٌ للنصّ لا نصُّه.';
 COMMENT ON FUNCTION v2.remedial_day(p_school uuid, p_person uuid, p_date date) IS 'حصصُ المعلّم العلاجيّةُ في يومٍ بعينه — س-٩-ا-٢. وخانتُها بلا فصلٍ فلا تدخل v2_my_sections ولا يقع عليها تبديلٌ أو تغطية.';
 COMMENT ON FUNCTION v2.rule_n(p_school uuid, p_key text) IS 'قارئُ مرجع الأرقام — صفُّ المدرسة يسبق الافتراضَ العامّ، ويصيح إن نُودي بمفتاحٍ غيرِ مُعلَن فلا يفترض رقمًا بلا سند.';
+COMMENT ON FUNCTION v2.say_lock(p_door text, p_state text, p_msg text) IS 'شبكةُ أمان: تُلبس قفلَ القاعدة نصًّا عربيًّا إن أفلت من ردِّ الباب · وكلُّ ظهورٍ لها عيبٌ يُصلح في بابه لا حالةٌ مقبولة';
 COMMENT ON FUNCTION v2.school_weeks(p_school uuid) IS 'أسابيعُ المدرسة الفعليّة: الأمُّ من تقويم مسارها، ويُرجَّح عليها تخصيصُها إن وُجد. ومعها قيمُ الأصل ليُعرض الاثنان.';
 COMMENT ON FUNCTION v2.session_autoclose(p_school uuid) IS 'يُقفل ما انقضت نافذتُه من الجلسات، ويكتب ما نقص فيها — فلا يُحسب الناقصُ تامًّا. يُنادى عند قراءة يوم المعلّم وعند فتح أيِّ حصّة.';
 COMMENT ON FUNCTION v2.session_of(p_school uuid, p_person uuid, p_date date, p_period smallint, p_section uuid, p_create boolean) IS 'جلسةُ حصّةٍ بعينها — تُقرأ أو تُفتح. ولا تُفتح إلّا لمن تقول طبقةُ الحقيقة إنّ الحصّةَ حصّتُه.';
@@ -76,8 +80,8 @@ COMMENT ON FUNCTION public.v2_calendar_entry_remove(p_entry uuid, p_reason text)
 COMMENT ON FUNCTION public.v2_calendar_full(p_school uuid, p_term smallint) IS 'لوحةُ التقويم كاملةً: المسارُ ودرجةُ مرجعه · سنةُ المدرسة وفصولُها · أسابيعُها المرجَّحةُ (الأمُّ وتخصيصُها معًا) بإجازاتها وأيّام دراستها · الإجازاتُ والمعالمُ وبنودُ المدرسة · وفحوصٌ تقول ما ينقص ومعها بابُ إصلاحه. قراءةٌ محضة.';
 COMMENT ON FUNCTION public.v2_calendar_scope_set(p_school uuid, p_scope text) IS 'يُحدّد مسارَ تقويم المدرسة من المسارات المُعلَنة. للمدير والوكلاء والمساعدين ومسجّلِ المعلومات.';
 COMMENT ON FUNCTION public.v2_calendar_week_reset(p_school uuid, p_term smallint, p_week smallint, p_reason text) IS 'يُعيد أسبوعًا مخصَّصًا إلى أصله — إبطالٌ مُسجَّلٌ بسببه لا حذف.';
-COMMENT ON FUNCTION public.v2_calendar_week_set(p_school uuid, p_term smallint, p_week smallint, p_from date, p_to date, p_is_exam boolean, p_reason text, p_note text) IS '⚠ نسخةٌ مهجورةٌ بثمانية وسائط — تُفوّض إلى النسخة ذات الوسيط التاسع بجهة «المدرسة». ولا منطقَ فيها. تُسقَط بيد مفرح.';
 COMMENT ON FUNCTION public.v2_calendar_week_set(p_school uuid, p_term smallint, p_week smallint, p_from date, p_to date, p_is_exam boolean, p_reason text, p_note text, p_authority text) IS 'يُخصّص أسبوعًا في تقويم المدرسة. وبقرار المدرسة لا يُنقص أسبوعُ دراسةٍ ولا يُلغى أسبوعُ اختبارٍ معتمدٌ ولا يُختصر أسبوع — وذلك لإدارة التعليم والوزارة، ويُثبّته إدارةُ النظام. والسببُ إلزاميّ، والأصلُ لا يُمسّ.';
+COMMENT ON FUNCTION public.v2_calendar_week_set(p_school uuid, p_term smallint, p_week smallint, p_from date, p_to date, p_is_exam boolean, p_reason text, p_note text) IS '⚠ نسخةٌ مهجورةٌ بثمانية وسائط — تُفوّض إلى النسخة ذات الوسيط التاسع بجهة «المدرسة». ولا منطقَ فيها. تُسقَط بيد مفرح.';
 COMMENT ON FUNCTION public.v2_contacts_of(p_student uuid) IS 'يُرجع مصفوفةً كما كان — وزاد في كلّ سطرٍ source و source_ar و task و about · والعدّاتُ والخلاصةُ في v2_contacts_card';
 COMMENT ON FUNCTION public.v2_curriculum_of(p_grade smallint, p_subject text) IS 'منهجُ صفٍّ ومادّةٍ — وحداتُه ودروسُه وحصصُها. يُسأل باسم المادّة في خطّتنا، والجسرُ يُطابقه بأسماء المصدر.';
 COMMENT ON FUNCTION public.v2_delivery_board(p_school uuid, p_days integer) IS 'لوحةُ إثبات الوصول — ما أُرسل ولمن وهل قُرئ. لإدارة المدرسة والموجّه.';

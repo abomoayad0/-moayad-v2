@@ -1,5 +1,5 @@
 -- public.v2_committee_quorum(p_school uuid, p_committee text, p_min smallint, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 01e580ce4007a157e73b4d02a5bef9bd
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 9aace0d4a1113f41271a0bae87545470
 CREATE OR REPLACE FUNCTION public.v2_committee_quorum(p_school uuid, p_committee text, p_min smallint, p_note text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -9,7 +9,7 @@ AS $function$
 declare c record; seats int;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy'],'ضبط نصاب اللجان');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select * into c from v2.committees where key=p_committee;
   if c.key is null then raise exception 'لجنةٌ غيرُ معروفة'; end if;
   if p_min is null then

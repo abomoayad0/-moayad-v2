@@ -1,5 +1,5 @@
 -- public.v2_meeting_call(p_school uuid, p_committee text, p_kind text, p_held_on date, p_started time without time zone, p_place text, p_agenda text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 76a2fce5799bfd7e8ee7ff749bb4ee7f
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 6e9f8bd2245b1d6a48ce3df075fb9404
 CREATE OR REPLACE FUNCTION public.v2_meeting_call(p_school uuid, p_committee text, p_kind text, p_held_on date, p_started time without time zone, p_place text, p_agenda text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_meeting_call(p_school uuid, p_committee tex
 AS $function$
 declare me uuid; seat text; nid uuid; n smallint;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   me := v2.current_person();
   seat := v2.my_seat(p_school,p_committee);
   if seat is distinct from 'chair' then

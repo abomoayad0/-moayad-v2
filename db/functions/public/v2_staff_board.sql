@@ -1,5 +1,5 @@
 -- public.v2_staff_board(p_school uuid, p_q text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 d43a5d2dc6b2bb2811182b4c808fc777
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 d44c9fbbfe8df13563fbe2eae19fc055
 CREATE OR REPLACE FUNCTION public.v2_staff_board(p_school uuid, p_q text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -10,7 +10,7 @@ declare r jsonb; tn uuid;
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy','deputy_academic',
                                'admin_assistant','admin_assistant_students'],'كشف المنسوبين');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select tenant_id into tn from v2.schools where id=p_school;
 
   select coalesce(jsonb_agg(jsonb_build_object(

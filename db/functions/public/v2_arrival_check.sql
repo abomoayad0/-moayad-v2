@@ -1,5 +1,5 @@
 -- public.v2_arrival_check(p_school uuid, p_at time without time zone)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 586306126b2d3858c1dbd0cd0f50e0d4
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 bef1ef56e6e380ec2f88575059db4ca2
 CREATE OR REPLACE FUNCTION public.v2_arrival_check(p_school uuid, p_at time without time zone)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_arrival_check(p_school uuid, p_at time with
 AS $function$
 declare d record; stt text; mins int;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select * into d from v2.day_settings where school_id=p_school;
   if d.school_id is null then
     raise exception 'لا توقيتاتِ يومٍ لمدرستك — أسّسها من لوحة التحكّم'; end if;

@@ -1,5 +1,5 @@
 -- public.v2_school_card(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 bd18b5bd3a73b0ab7607275d2d00a5da
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 27dafbd3dc498c29c6b5e5d14d31a952
 CREATE OR REPLACE FUNCTION public.v2_school_card(p_school uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.v2_school_card(p_school uuid)
 AS $function$
 declare r jsonb;
 begin
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   select jsonb_build_object(
     'school',s.id,'name',s.name_ar,'stage',s.stage,'category',s.category,
     'structure',s.structure_code,'calendar_scope',s.calendar_scope,

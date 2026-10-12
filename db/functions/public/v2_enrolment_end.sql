@@ -1,5 +1,5 @@
 -- public.v2_enrolment_end(p_school uuid, p_student uuid, p_reason text, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 8309346715f1d5667fbdd1e746d7f30d
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 fef53bd4630580cdc5e63dbd84bcd70a
 CREATE OR REPLACE FUNCTION public.v2_enrolment_end(p_school uuid, p_student uuid, p_reason text, p_note text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -9,7 +9,7 @@ AS $function$
 begin
   perform v2.assert_role(array['principal','deputy_students','deputy','info_registrar'],
                          'إنهاءَ قيد طالب');
-  if not v2.my_school(p_school) then raise exception 'ليست مدرستك'; end if;
+  if not v2.my_school(p_school) then raise exception '%', v2.not_my_school_ar(); end if;
   if p_reason not in ('transferred','graduated','withdrawn','deceased',
                       'year_closed','suspended','absent_long','travel','other') then
     raise exception 'سببُ إنهاء القيد غيرُ معروف — اقرأ القائمة من v2_enrol_reasons'; end if;
