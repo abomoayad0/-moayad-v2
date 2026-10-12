@@ -681,3 +681,9 @@
 .hs-tab { min-height: 44px; padding: 6px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); font: inherit; font-size: 13px; line-height: 18px; cursor: pointer; overflow-wrap: anywhere; }
 .hs-tab.on { border-color: var(--school-primary, var(--info-c)); box-shadow: inset 0 -3px 0 var(--school-primary, var(--info-c)); font-weight: 700; }
 .hs-tab.shut { color: var(--muted); }
+
+/* صفحة المعلّم · توزيعُ المنهج: سطرٌ يُفتح · ومربّعُ فصلٍ في لوح البند */
+ul.rs-acts li.click { cursor: pointer; }
+ul.rs-acts li.click:hover { background: var(--soft); border-radius: 8px; }
+.rs-chk { display: flex; align-items: center; gap: 6px; font-size: 14px; color: inherit; margin: 4px 0; }
+.rs-chk input { width: auto; }
