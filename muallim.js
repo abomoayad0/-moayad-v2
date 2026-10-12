@@ -240,17 +240,20 @@
   }
 
   // لوحُ البند: حالُه في فصوله (plan_mark الطويل بـ p_sections) · نقلُه · حصصُه · وسمُه · دمجُه وفكُّه
-  // والأحوالُ والأنواعُ تُعرض بألفاظها كما جاءت في البطاقة نفسِها — فلا بابَ يُعطي قائمتَها كاملةً بألفاظها (ثغرةٌ مرفوعة)
-  function itemSheet(it, first) {
+  // والأحوالُ والأنواعُ بألفاظها كاملةً من v2_plan_vocab — ولو لم تقع بعدُ في الخطّة
+  let vocab = null;
+  async function itemSheet(it, first) {
+    if (!vocab) {
+      const { data, error } = await M.rpc('v2_plan_vocab', {}, 'ألفاظ التوزيع');
+      if (error) { V.flash('bad', errText(error)); return; }
+      vocab = data || {};
+    }
     const d = plan.card || {};
     const all = [];
     for (const w of d.weeks || []) for (const x of w.items || []) all.push(x);
-    const states = new Map(); const kinds = new Map();
-    for (const x of all) {
-      if (x.state && x.state_ar) states.set(x.state, x.state_ar);
-      for (const s of x.by_section || []) if (s.state && s.state_ar) states.set(s.state, s.state_ar);
-      if (x.kind && x.kind_ar) kinds.set(x.kind, x.kind_ar);
-    }
+    const byOrd = (a, b) => (a.ord || 0) - (b.ord || 0);
+    const states = (vocab.states || []).slice().sort(byOrd).map((x) => [x.key, x.label_ar || '']);
+    const kinds = (vocab.kinds || []).slice().sort(byOrd).map((x) => [x.key, x.label_ar || '']);
     const weeks = (d.weeks || []).filter((w) => !w.is_exam).map((w) => [w.week_no, w.week_ar || '', w.on_ar || '']);
     const others = all.filter((x) => x.lesson !== it.lesson).map((x) => [x.lesson, x.title_ar || '', [x.kind_ar, x.periods_ar].filter(Boolean).join(' · ')]);
     const acts = it.pending ? [['move', 'نقلُه إلى أسبوع'], ['merge', 'دمجُه']]
@@ -274,12 +277,12 @@
       ok: 'سجّل',
       fields: [
         { key: 'act', type: 'pick', label: 'ما تفعل', items: acts, value: first || acts[0][0] },
-        { key: 'state', type: 'pick', label: 'حالُه', items: [...states], show: isA('mark') },
+        { key: 'state', type: 'pick', label: 'حالُه', items: states, value: it.state, show: isA('mark') },
         { key: 'secs', type: 'node', node: secBox, show: isA('mark') },
         { key: 'used', type: 'number', label: 'الحصصُ التي استُعملت (إن شئت)', show: isA('mark') },
         { key: 'week', type: 'choose', label: 'إلى أيّ أسبوع', items: weeks, show: isA('move') },
         { key: 'periods', type: 'number', label: 'عددُ حصصه', show: isA('periods') },
-        { key: 'kind', type: 'pick', label: 'وسمُه في خطّتك', items: [...kinds], show: isA('kind') },
+        { key: 'kind', type: 'pick', label: 'وسمُه في خطّتك', items: kinds, value: it.kind, show: isA('kind') },
         { key: 'into', type: 'choose', label: 'يُدمج في', items: others, show: isA('merge') },
         { key: 'why', type: 'textarea', label: 'السبب', show: (v) => v.act !== 'kind' },
       ],
@@ -301,19 +304,20 @@
     });
   }
 
-  // منهجُ المادّة كما في الكتاب: الوحداتُ ودروسُها — والأعدادُ لا تُكتب: الباب يرجعها بلا ألفاظ (ثغرةٌ مرفوعة)
+  // منهجُ المادّة كما في الكتاب: الوحداتُ بلفظها (unit_no_ar · said_ar) ودروسُها (no_ar · periods_ar)
   async function pCurr(box) {
     const c = el('section', 'rs-card');
     box.appendChild(c);
     const { data, error } = await M.rpc('v2_curriculum_of', { p_grade: plan.subj.grade, p_subject: plan.subj.subject_ar }, 'منهج مادّتي');
     if (error) { errBox(c, error); arabize(c); return; }
     const d = data || {};
-    line(c, 'rs-sum', d.summary_ar);
+    line(c, 'rs-sum', [d.summary_ar, d.periods_total_ar].filter(Boolean).join(' · '));
     for (const u of d.rows || []) {
       const det = el('details', 'rs-dt');
-      det.appendChild(el('summary', null, u.unit_ar || ''));
+      det.appendChild(el('summary', null, u.said_ar || [u.unit_no_ar, u.unit_title_ar || u.unit_ar, u.periods_ar].filter(Boolean).join(' · ')));
+      if (u.term_ar) det.appendChild(el('p', 'rs-meta', u.term_ar));
       const ul = el('ul', 'rs-acts');
-      for (const x of u.lessons || []) ul.appendChild(el('li', null, x.title || ''));
+      for (const x of u.lessons || []) ul.appendChild(el('li', null, [x.no_ar, x.title, x.periods_ar].filter(Boolean).join(' · ')));
       det.appendChild(ul);
       if (u.source_doc) det.appendChild(el('p', 'rs-meta', u.source_doc));
       c.appendChild(det);

@@ -61,7 +61,7 @@
     if (!rows.length) { box.appendChild(el('p', 'rs-meta', 'لا حصصَ لك اليومَ.')); return; }
     for (const s of rows) {
       const f = el('div', 'rs-file');
-      f.append(el('h5', null, 'الحصّة ' + s.period + ' · ' + (s.section_ar || '') + ' · ' + (s.subject || '')),
+      f.append(el('h5', null, (s.period_ar || '') + ' · ' + (s.section_ar || '') + ' · ' + (s.subject || '')),
         el('p', 'rs-meta', [s.at, s.basis_ar].filter(Boolean).join(' · ')));
       // الحالُ كما جاء — والمقفلةُ آليًّا بنقصٍ غيرُ المقفلة تامّة
       const st = el('p');
@@ -112,7 +112,7 @@
     // والنصُّ لا يُملأ مسبقًا إن كانت بنود: فالبابُ يقدّم النصَّ على البند، فلا يُرسل اسمٌ قديمٌ مع بندٍ مختار
     fields.push({ key: 't', label: items.length ? 'أو اكتبه' : 'الدرس', value: items.length ? '' : (s.lesson_ar || '') });
     V.form({
-      title: 'درسُ الحصّة', what: 'الحصّة ' + s.period + ' · ' + (s.section_ar || ''),
+      title: 'درسُ الحصّة', what: (s.period_ar || '') + ' · ' + (s.section_ar || ''),
       fields,
       ok: 'سمِّه',
       onOk: async (v) => {
@@ -124,7 +124,7 @@
   }
   function closeForm(s) {
     V.form({
-      title: 'إقفالُ الحصّة', what: 'الحصّة ' + s.period + ' · ' + (s.section_ar || ''),
+      title: 'إقفالُ الحصّة', what: (s.period_ar || '') + ' · ' + (s.section_ar || ''),
       fields: [{ key: 'n', type: 'textarea', label: 'ملاحظةٌ (اختياريّة)', rows: 2 }],
       ok: 'أقفِلها',
       onOk: async (v) => {
