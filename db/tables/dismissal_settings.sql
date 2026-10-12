@@ -1,6 +1,6 @@
 -- v2.dismissal_settings
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 102f39771f05856493ac40a26a71d88c
+-- md5 67acebee418911770bbb1b5d1247d3b1
 
 CREATE TABLE v2.dismissal_settings (
     school_id uuid NOT NULL,
@@ -11,3 +11,4 @@ CREATE TABLE v2.dismissal_settings (
     CONSTRAINT dismissal_settings_pkey PRIMARY KEY (school_id)
 );
 ALTER TABLE v2.dismissal_settings ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE v2.dismissal_settings IS 'إعداداتُ الانصراف — وسندُ رقميها منصوصٌ: census_after_min من س-٦-ا-١ سياسة ٠٣ ص١٧٩ (حصرُ المناوب بعد ١٥ دقيقة)، وaction_after_min من سياسة ٠٦ ص١٧٩ (الإجراءُ بعد ٣٠ دقيقة). ومفتاحا الاستشهاد: attendance.dismissal_census_15 وattendance.dismissal_action_30.';

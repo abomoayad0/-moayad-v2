@@ -1,5 +1,5 @@
 -- public.v2_mail_register(p_from_entity text, p_subject text, p_body text, p_ref_no text, p_received_on date, p_doc_date date, p_secrecy text, p_source text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 9f10497b699703150f673a8a6c2cae4b
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c231ea710756498e9005b53c53f31517
 CREATE OR REPLACE FUNCTION public.v2_mail_register(p_from_entity text, p_subject text, p_body text DEFAULT NULL::text, p_ref_no text DEFAULT NULL::text, p_received_on date DEFAULT CURRENT_DATE, p_doc_date date DEFAULT NULL::date, p_secrecy text DEFAULT 'عادي'::text, p_source text DEFAULT 'school_inbox'::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -16,8 +16,23 @@ begin
   if coalesce(btrim(p_from_entity),'') = '' then raise exception 'الجهةُ الواردُ منها لا تُترك فارغةً'; end if;
   if coalesce(btrim(p_subject),'') = '' then raise exception 'موضوعُ الوارد لا يُترك فارغًا'; end if;
   if p_received_on > current_date then raise exception 'لا يُسجَّل واردٌ بتاريخٍ لم يأتِ'; end if;
-  if p_secrecy <> 'عادي' then
-    perform v2.assert_role(array['principal','deputy'],'تسجيل واردٍ '||p_secrecy);
+
+  -- 🔑 حارسان عربيّان مكانَ قيدَين إنجليزيَّين
+  if coalesce(btrim(p_source),'') = '' then
+    raise exception 'مصدرُ الوارد لا يُترك فارغًا — واختر منه: صندوقُ البريد المدرسيّ أو يدًا أو من النظام أو غيرَ ذلك';
+  end if;
+  if btrim(p_source) not in ('school_inbox','hand','system','other') then
+    raise exception 'مصدرُ الوارد غيرُ معروف — والمقبولُ: صندوقُ البريد المدرسيّ (school_inbox) · يدًا (hand) · من النظام (system) · غيرُ ذلك (other)';
+  end if;
+  if coalesce(btrim(p_secrecy),'') = '' then
+    raise exception 'درجةُ السرّيّة لا تُترك فارغةً — والأصلُ «عادي»';
+  end if;
+  if btrim(p_secrecy) not in ('عادي','سري','سري عاجل','غير قابل للتداول') then
+    raise exception 'درجةُ سرّيّةٍ غيرُ معروفة — والمقبولُ: عادي · سري · سري عاجل · غير قابل للتداول';
+  end if;
+
+  if btrim(p_secrecy) <> 'عادي' then
+    perform v2.assert_role(array['principal','deputy'],'تسجيل واردٍ '||btrim(p_secrecy));
   end if;
 
   select id into yr from v2.academic_years where school_id = sc and is_current limit 1;
@@ -29,7 +44,7 @@ begin
   values (sc,yr,n,nullif(btrim(p_ref_no),''),btrim(p_from_entity),
       btrim(p_subject),p_body,p_received_on,v2.fn_to_hijri(p_received_on),
       p_doc_date, case when p_doc_date is null then null else v2.fn_to_hijri(p_doc_date) end,
-      p_secrecy,v2.current_person(),'new',p_source)
+      btrim(p_secrecy),v2.current_person(),'new',btrim(p_source))
   returning id into mid;
 
   perform v2.log_action(sc,null,'mail_register','سُجّل واردٌ جديد','incoming_mail',mid,

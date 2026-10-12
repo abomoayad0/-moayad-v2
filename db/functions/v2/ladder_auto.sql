@@ -1,5 +1,5 @@
 -- v2.ladder_auto(p_record uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 2a348b9756a5f85d9def591a1cfd6bd1
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 261d7dd70811b1b2e0365ed654598a04
 CREATE OR REPLACE FUNCTION v2.ladder_auto(p_record uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION v2.ladder_auto(p_record uuid)
  SET search_path TO ''
 AS $function$
 declare
-  r record; t record; did jsonb := '[]'::jsonb; nid uuid; d date; adv text;
+  r record; t record; did jsonb := '[]'::jsonb; nid uuid; d date; adv text; v_dlv jsonb;
   v_rules record; v_issue jsonb; v_time time; v_form smallint; v_comp jsonb; v_mv jsonb;
 begin
   select br.*, cp.text_ar ptext, cp.degree_no dno into r
@@ -26,7 +26,9 @@ begin
    order by (a.school_id is null) limit 1;
   if adv is not null then
     update v2.behavior_records set advice_ar=adv where id=p_record;
-    did := did || jsonb_build_object('kind','advice','text',adv);
+    v_dlv := v2.fn_advice_deliver(p_record);
+    did := did || jsonb_build_object('kind','advice','text',adv,
+             'delivered', coalesce(v_dlv->>'summary_ar','لم تُرسل — وهي في سجلّ الأخطاء'));
   end if;
 
   for t in select * from v2.behavior_tasks where record_id=p_record and status<>'done' loop
@@ -34,7 +36,7 @@ begin
 
     if t.evidence_kind='auto' and t.kind='other' then
       update v2.behavior_tasks set status='done', done_at=now(), done_by=r.recorded_by,
-        auto_note='وقع لحظةَ الرصد — فالتنبيهُ شفهيٌّ لا يُطلب إثباتُه'
+        auto_note='أُرسلت النصيحةُ إلى صفحة الطالب لحظةَ الرصد — فلا يُطلب إثباتٌ بيد'
        where id=t.id;
       did := did || jsonb_build_object('kind','notice','text',t.text_ar);
 

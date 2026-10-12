@@ -1,12 +1,12 @@
 -- public.v2_resume_escalation(p_case uuid, p_reason text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 96b79646e3c78ea128ca454edd97051c
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 bfcc98c260853fd6a44d39bbb166944b
 CREATE OR REPLACE FUNCTION public.v2_resume_escalation(p_case uuid, p_reason text)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'v2', 'public'
 AS $function$
-declare c record;
+declare c record; v_min int;
 begin
   perform v2.assert_role(array['principal'],'رفعَ وقفِ التصعيد');
   select * into c from v2.absence_cases where id=p_case;
@@ -14,8 +14,9 @@ begin
   perform v2.assert_my_school(c.school_id,'رفعَ وقفِ التصعيد');
   if not coalesce(c.escalation_halted,false) then
     raise exception 'تصعيدُ هذي الحالة غيرُ موقوف'; end if;
-  if length(btrim(coalesce(p_reason,''))) < 10 then
-    raise exception 'رفعُ الوقف لا يقع بلا سببٍ مكتوب'; end if;
+  v_min := v2.rule_n(c.school_id,'reason_min_chars');
+  if length(btrim(coalesce(p_reason,''))) < v_min then
+    raise exception 'رفعُ الوقف لا يقع بلا سببٍ مكتوب — وأقلُّه % حرفًا', v2.ar_num(v_min); end if;
 
   update v2.absence_cases
      set escalation_halted = false,

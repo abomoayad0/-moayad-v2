@@ -1,6 +1,6 @@
 -- v2.timetable
 -- مستخرَجٌ من القاعدة qbhuuuiyitsgumrgjkme من الكتالوج (pg_catalog)، لا من الذاكرة.
--- md5 11baa88029743a6792ccb7e237b48bf3
+-- md5 cdf7cbc56842288784965e7d967c6bb4
 
 CREATE TABLE v2.timetable (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -29,7 +29,7 @@ END) STORED,
     slot_kind text DEFAULT 'teaching'::text NOT NULL,
     CONSTRAINT timetable_pkey PRIMARY KEY (id),
     CONSTRAINT timetable_school_id_year_id_term_no_weekday_period_no_secti_key UNIQUE (school_id, year_id, term_no, weekday, period_no, section_id),
-    CONSTRAINT timetable_slot_kind_check CHECK ((slot_kind = ANY (ARRAY['teaching'::text, 'standby'::text, 'activity'::text]))),
+    CONSTRAINT timetable_slot_kind_check CHECK ((slot_kind = ANY (ARRAY['teaching'::text, 'standby'::text, 'activity'::text, 'remedial'::text]))),
     CONSTRAINT timetable_term_no_check CHECK ((term_no = ANY (ARRAY[1, 2]))),
     CONSTRAINT timetable_weekday_check CHECK (((weekday >= 0) AND (weekday <= 6)))
 );

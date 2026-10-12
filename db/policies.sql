@@ -29,6 +29,13 @@ CREATE POLICY absence_ladder_read ON v2.absence_ladder AS PERMISSIVE FOR SELECT 
 CREATE POLICY ali_read ON v2.absence_ladder_items AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
 
+-- ── absence_notices · md5 6dfa7b4b94897421c5390aea710de0cc
+CREATE POLICY absence_notices_read ON v2.absence_notices AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY absence_notices_write ON v2.absence_notices AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
+
 -- ── absence_tasks · md5 27434238ccae00aedde4d04ae442c4f5
 CREATE POLICY atsk_t ON v2.absence_tasks AS PERMISSIVE FOR ALL TO authenticated
     USING ((EXISTS ( SELECT 1
@@ -50,6 +57,10 @@ CREATE POLICY al_read ON v2.action_log AS PERMISSIVE FOR SELECT TO authenticated
 -- ── app_users · md5 f2cd24157b99eaa9a0993324be344709
 CREATE POLICY app_users_own ON v2.app_users AS PERMISSIVE FOR SELECT TO authenticated
     USING ((tenant_id = v2.current_tenant()));
+
+-- ── assess_tools · md5 24d9373f911e9ce5f0860227106f9bf8
+CREATE POLICY assess_tools_read ON v2.assess_tools AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
 
 -- ── assignments · md5 d43b65bb9ddf9f98e6f2859097f10478
 CREATE POLICY assignments_tenant ON v2.assignments AS PERMISSIVE FOR ALL TO authenticated
@@ -74,6 +85,14 @@ CREATE POLICY att_t ON v2.attendance AS PERMISSIVE FOR ALL TO authenticated
 CREATE POLICY attl_t ON v2.attendance_ledger AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
+
+-- ── audit_checks · md5 548fb41d8ee4f2519c3e9c0d2579ab3a
+CREATE POLICY audit_checks_read ON v2.audit_checks AS PERMISSIVE FOR SELECT TO authenticated
+    USING (true);
+
+-- ── audit_findings · md5 36b5343a7bfda3d3d2228db5167a5653
+CREATE POLICY audit_findings_read ON v2.audit_findings AS PERMISSIVE FOR SELECT TO authenticated
+    USING ((v2.my_grant() = ANY (ARRAY['owner'::text, 'admin'::text])));
 
 -- ── behavior_census · md5 727930e305638d3b05d0a3fa279a8136
 CREATE POLICY bc_tenant ON v2.behavior_census AS PERMISSIVE FOR ALL TO authenticated
@@ -136,6 +155,10 @@ CREATE POLICY bs_tenant ON v2.break_slots AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 
+-- ── build_journal · md5 42830ca212b492252b8fe538cec85637
+CREATE POLICY build_journal_read ON v2.build_journal AS PERMISSIVE FOR SELECT TO authenticated
+    USING ((v2.my_grant() = ANY (ARRAY['owner'::text, 'admin'::text])));
+
 -- ── calendar_days · md5 aa476d6454441d75060b5a11c8e7d0cd
 CREATE POLICY calendar_days_read ON v2.calendar_days AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
@@ -165,6 +188,13 @@ CREATE POLICY calendar_scopes_read ON v2.calendar_scopes AS PERMISSIVE FOR SELEC
 CREATE POLICY calendar_term_stats_read ON v2.calendar_term_stats AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
 
+-- ── calendar_week_overrides · md5 345f2b1731e40f09cb3e7e6ebc42ea80
+CREATE POLICY calendar_week_overrides_read ON v2.calendar_week_overrides AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY calendar_week_overrides_write ON v2.calendar_week_overrides AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
+
 -- ── calendar_weeks · md5 33e3b9c0189bf352af18e2f86beaf483
 CREATE POLICY calendar_weeks_read ON v2.calendar_weeks AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
@@ -177,9 +207,25 @@ CREATE POLICY calendar_years_read ON v2.calendar_years AS PERMISSIVE FOR SELECT 
 CREATE POLICY card_doors_read ON v2.card_doors AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
 
+-- ── card_due_steps · md5 db48ae22233cd0a4ed0e336e1d5ff339
+CREATE POLICY card_due_steps_read ON v2.card_due_steps AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
+-- ── card_events · md5 be9a242ffc351e50814f898556ab108a
+CREATE POLICY card_events_read ON v2.card_events AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
+-- ── card_health_views · md5 c2d2676ff77a1ae97f6f4ca25ec5c793
+CREATE POLICY card_health_views_read ON v2.card_health_views AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
 -- ── card_matrix · md5 6b5e523fe724309ceae5de69626c2489
 CREATE POLICY card_matrix_read ON v2.card_matrix AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
+
+-- ── card_sessions · md5 fd0cc7fb466efbf3ccdfb8e936e50191
+CREATE POLICY card_sessions_read ON v2.card_sessions AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
 
 -- ── card_steps · md5 ca2d6d18e5c5ded0bacd4ce30e17fd33
 CREATE POLICY card_steps_read ON v2.card_steps AS PERMISSIVE FOR SELECT TO authenticated
@@ -188,6 +234,10 @@ CREATE POLICY card_steps_read ON v2.card_steps AS PERMISSIVE FOR SELECT TO authe
 -- ── card_values · md5 fe08fd9a01a20fed12eb502e4407e82c
 CREATE POLICY card_values_read ON v2.card_values AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
+
+-- ── card_views · md5 399fd171622aca176beed82bf0ad8671
+CREATE POLICY card_views_read ON v2.card_views AS PERMISSIVE FOR SELECT TO public
+    USING (v2.my_school(school_id));
 
 -- ── case_docs · md5 b7e2470e7456be096acbae50618f8219
 CREATE POLICY cd_t ON v2.case_docs AS PERMISSIVE FOR ALL TO authenticated
@@ -205,14 +255,45 @@ CREATE POLICY ci_write ON v2.census_items AS PERMISSIVE FOR ALL TO authenticated
     USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
     WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
 
+-- ── citations · md5 b212ac758fc06330b6cd5d83fa9f1638
+CREATE POLICY citations_read ON v2.citations AS PERMISSIVE FOR SELECT TO authenticated
+    USING (true);
+
+-- ── class_exits · md5 8aff6d92552d385846ecb52f297fbb9f
+CREATE POLICY class_exits_read ON v2.class_exits AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
+-- ── class_moves · md5 91c63332321c4e7815dfb89f8a6f3c89
+CREATE POLICY class_moves_read ON v2.class_moves AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY class_moves_write ON v2.class_moves AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
+
 -- ── class_practices · md5 94e73afa30743dde70df1636decad129
 CREATE POLICY cp_read ON v2.class_practices AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
+
+-- ── class_role_holders · md5 ebec3fe1046855372f2fbe6afc11d70e
+CREATE POLICY role_holders_read ON v2.class_role_holders AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
+-- ── class_roles · md5 6bf90772a1c54af916248fc028e3bf11
+CREATE POLICY class_roles_read ON v2.class_roles AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
 
 -- ── class_sections · md5 da8c47ae7df1b13ec27582591b6e5ac2
 CREATE POLICY class_sections_t ON v2.class_sections AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
+
+-- ── class_sessions · md5 a8102af27b7249f8fe9e0dd2e8130e79
+CREATE POLICY class_sessions_read ON v2.class_sessions AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
+-- ── class_work · md5 ef51e2f55afaf3bed874f2133eeb53c5
+CREATE POLICY class_work_read ON v2.class_work AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
 
 -- ── committee_duties · md5 52fb8fab5661f7290190856477622c5e
 CREATE POLICY cd_read ON v2.committee_duties AS PERMISSIVE FOR SELECT TO authenticated
@@ -275,6 +356,13 @@ CREATE POLICY conduct_problems_read ON v2.conduct_problems AS PERMISSIVE FOR SEL
 CREATE POLICY conduct_rules_read ON v2.conduct_rules AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
 
+-- ── conduct_school_rules · md5 7d714a789ba34ce0962b85730e6ade63
+CREATE POLICY conduct_school_rules_read ON v2.conduct_school_rules AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY conduct_school_rules_write ON v2.conduct_school_rules AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
+
 -- ── conduct_universal · md5 90893fe713f423aacbdeedf3d180a80d
 CREATE POLICY conduct_universal_read ON v2.conduct_universal AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
@@ -302,6 +390,37 @@ CREATE POLICY counsel_sessions_tenant ON v2.counsel_sessions AS PERMISSIVE FOR A
    FROM v2.counsel_cases c
   WHERE ((c.id = counsel_sessions.case_id) AND v2.my_school(c.school_id)))));
 
+-- ── cover_rules · md5 d0863e69ed4b2be3e0d6835477d072af
+CREATE POLICY cover_rules_read ON v2.cover_rules AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY cover_rules_write ON v2.cover_rules AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
+
+-- ── curriculum_books · md5 7de3067e919a9686052d1b5d1b144feb
+CREATE POLICY curriculum_books_read ON v2.curriculum_books AS PERMISSIVE FOR SELECT TO authenticated
+    USING (true);
+
+-- ── curriculum_gaps · md5 74da2d4c71b99d381bfb37520939b2df
+CREATE POLICY curriculum_gaps_read ON v2.curriculum_gaps AS PERMISSIVE FOR SELECT TO authenticated
+    USING (true);
+
+-- ── curriculum_lessons · md5 b9cf964ff704ad5f8f79e3212d9ce1b6
+CREATE POLICY curriculum_lessons_read ON v2.curriculum_lessons AS PERMISSIVE FOR SELECT TO authenticated
+    USING (true);
+
+-- ── curriculum_subject_map · md5 1e0fc9a3a22838031a5edca7c0c08c96
+CREATE POLICY curriculum_subject_map_read ON v2.curriculum_subject_map AS PERMISSIVE FOR SELECT TO authenticated
+    USING (true);
+
+-- ── curriculum_term_split · md5 b47f6b8f64b2d996f9008c0452dd4063
+CREATE POLICY curriculum_term_split_read ON v2.curriculum_term_split AS PERMISSIVE FOR SELECT TO authenticated
+    USING (true);
+
+-- ── curriculum_units · md5 1e065a533db3b5bdf35ef57a8b5a4976
+CREATE POLICY curriculum_units_read ON v2.curriculum_units AS PERMISSIVE FOR SELECT TO authenticated
+    USING (true);
+
 -- ── day_closures · md5 33b5aa7a1c544342820e741f9f9924fb
 CREATE POLICY dc_t ON v2.day_closures AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
@@ -325,6 +444,13 @@ CREATE POLICY ds_t ON v2.day_settings AS PERMISSIVE FOR ALL TO authenticated
 CREATE POLICY dlg_tenant ON v2.delegations AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
+
+-- ── denial_actions · md5 7850cba9463fa8827187c08e997086aa
+CREATE POLICY denial_actions_read ON v2.denial_actions AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY denial_actions_write ON v2.denial_actions AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
 
 -- ── dismissal_records · md5 0f4d4465b052e9a3ad47445e9e3fd881
 CREATE POLICY dismissal_records_t ON v2.dismissal_records AS PERMISSIVE FOR ALL TO authenticated
@@ -419,6 +545,10 @@ CREATE POLICY fe_t ON v2.form_entries AS PERMISSIVE FOR ALL TO authenticated
   WHERE ((guardians.user_id = auth.uid()) AND guardians.portal_active)))))
     WITH CHECK (v2.my_school(school_id));
 
+-- ── form_field_source · md5 ba95db31ef225a39a56b51ef40355192
+CREATE POLICY form_field_source_read ON v2.form_field_source AS PERMISSIVE FOR SELECT TO authenticated
+    USING (true);
+
 -- ── form_inbox · md5 2d176d9a8a3f0951cb599b9e51389d38
 CREATE POLICY fi_t ON v2.form_inbox AS PERMISSIVE FOR ALL TO authenticated
     USING (((guardian_id IN ( SELECT guardians.id
@@ -483,6 +613,14 @@ CREATE POLICY guardians_tenant ON v2.guardians AS PERMISSIVE FOR ALL TO authenti
    FROM v2.students s
   WHERE ((s.id = guardians.student_id) AND v2.my_school(s.school_id)))));
 
+-- ── guide_pages · md5 1a3ad8cfb787ba2edf8312d1aafd2fca
+CREATE POLICY guide_pages_read ON v2.guide_pages AS PERMISSIVE FOR SELECT TO authenticated
+    USING (true);
+
+-- ── guides · md5 341f3816f4c42666d5d15d179a5dba80
+CREATE POLICY guides_read ON v2.guides AS PERMISSIVE FOR SELECT TO authenticated
+    USING (true);
+
 -- ── hijri_months · md5 f72dfc70030be3c8d098247638e4c8eb
 CREATE POLICY hm_read ON v2.hijri_months AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
@@ -513,6 +651,49 @@ CREATE POLICY im_t ON v2.incoming_mail AS PERMISSIVE FOR ALL TO authenticated
 -- ── inheritance_rules · md5 654d5a2d7dd7e1d8ecc90ce95735fce0
 CREATE POLICY inheritance_rules_read ON v2.inheritance_rules AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
+
+-- ── ladder_table_scope · md5 ff27f5cb67bafb5823268a330927e336
+CREATE POLICY ladder_table_scope_read ON v2.ladder_table_scope AS PERMISSIVE FOR SELECT TO authenticated
+    USING (true);
+
+-- ── lesson_item_progress · md5 9a14b36ede8b406a01594d4dd8452430
+CREATE POLICY lesson_item_progress_tenant ON v2.lesson_item_progress AS PERMISSIVE FOR ALL TO authenticated
+    USING ((EXISTS ( SELECT 1
+   FROM (v2.lesson_plan_items i
+     JOIN v2.lesson_plans p ON ((p.id = i.plan_id)))
+  WHERE ((i.id = lesson_item_progress.item_id) AND v2.my_school(p.school_id)))))
+    WITH CHECK ((EXISTS ( SELECT 1
+   FROM (v2.lesson_plan_items i
+     JOIN v2.lesson_plans p ON ((p.id = i.plan_id)))
+  WHERE ((i.id = lesson_item_progress.item_id) AND v2.my_school(p.school_id)))));
+
+-- ── lesson_plan_items · md5 0df176223e2e0d3d9809b6096589ed7f
+CREATE POLICY lesson_plan_items_tenant ON v2.lesson_plan_items AS PERMISSIVE FOR ALL TO authenticated
+    USING ((EXISTS ( SELECT 1
+   FROM v2.lesson_plans p
+  WHERE ((p.id = lesson_plan_items.plan_id) AND v2.my_school(p.school_id)))))
+    WITH CHECK ((EXISTS ( SELECT 1
+   FROM v2.lesson_plans p
+  WHERE ((p.id = lesson_plan_items.plan_id) AND v2.my_school(p.school_id)))));
+
+-- ── lesson_plans · md5 33bd7e852b62b8dc53af499166f10f99
+CREATE POLICY lesson_plans_read ON v2.lesson_plans AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY lesson_plans_write ON v2.lesson_plans AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
+
+-- ── loyalty_ledger · md5 c2820bfd9d0a623abc3bb70cfdcab05f
+CREATE POLICY loyalty_ledger_read ON v2.loyalty_ledger AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
+-- ── loyalty_rewards · md5 6453d743c541f4de291558d7a91f5067
+CREATE POLICY loyalty_rewards_read ON v2.loyalty_rewards AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+
+-- ── loyalty_sources · md5 78bbaa425fc38ee5e2b89b386d9dfcc4
+CREATE POLICY loyalty_sources_read ON v2.loyalty_sources AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
 
 -- ── mail_acknowledgements · md5 44e1b8c1f542dcc01ff82418c8249529
 CREATE POLICY mack_t ON v2.mail_acknowledgements AS PERMISSIVE FOR ALL TO authenticated
@@ -626,6 +807,40 @@ CREATE POLICY ob_t ON v2.outbox AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 
+-- ── outgoing_attachments · md5 6ff80b8546322c63dd9977f620dc67a7
+CREATE POLICY outgoing_attachments_tenant ON v2.outgoing_attachments AS PERMISSIVE FOR ALL TO authenticated
+    USING ((EXISTS ( SELECT 1
+   FROM v2.outgoing_mail p
+  WHERE ((p.id = outgoing_attachments.mail_id) AND v2.my_school(p.school_id)))))
+    WITH CHECK ((EXISTS ( SELECT 1
+   FROM v2.outgoing_mail p
+  WHERE ((p.id = outgoing_attachments.mail_id) AND v2.my_school(p.school_id)))));
+
+-- ── outgoing_links · md5 e2e9ac24fdc88af4e8036e0d59f7ae1d
+CREATE POLICY outgoing_links_tenant ON v2.outgoing_links AS PERMISSIVE FOR ALL TO authenticated
+    USING ((EXISTS ( SELECT 1
+   FROM v2.outgoing_mail p
+  WHERE ((p.id = outgoing_links.mail_id) AND v2.my_school(p.school_id)))))
+    WITH CHECK ((EXISTS ( SELECT 1
+   FROM v2.outgoing_mail p
+  WHERE ((p.id = outgoing_links.mail_id) AND v2.my_school(p.school_id)))));
+
+-- ── outgoing_mail · md5 cdc25c34552bcf4bd3cc2cd7151c6484
+CREATE POLICY outgoing_mail_read ON v2.outgoing_mail AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY outgoing_mail_write ON v2.outgoing_mail AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
+
+-- ── outgoing_mail_tasks · md5 7c2b89a3362471fc267d1b33975f623d
+CREATE POLICY outgoing_mail_tasks_tenant ON v2.outgoing_mail_tasks AS PERMISSIVE FOR ALL TO authenticated
+    USING ((EXISTS ( SELECT 1
+   FROM v2.outgoing_mail p
+  WHERE ((p.id = outgoing_mail_tasks.mail_id) AND v2.my_school(p.school_id)))))
+    WITH CHECK ((EXISTS ( SELECT 1
+   FROM v2.outgoing_mail p
+  WHERE ((p.id = outgoing_mail_tasks.mail_id) AND v2.my_school(p.school_id)))));
+
 -- ── people · md5 6edb12615969e93884b29d08b51328bb
 CREATE POLICY people_rw ON v2.people AS PERMISSIVE FOR ALL TO authenticated
     USING ((tenant_id = v2.current_tenant()))
@@ -636,15 +851,36 @@ CREATE POLICY pa_t ON v2.period_attendance AS PERMISSIVE FOR ALL TO authenticate
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 
+-- ── period_covers · md5 cefe091f178001956c2fbe0d270c2afe
+CREATE POLICY period_covers_read ON v2.period_covers AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY period_covers_write ON v2.period_covers AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
+
 -- ── period_slots · md5 289cb85539d9f6f492c96e0601181370
 CREATE POLICY period_slots_t ON v2.period_slots AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 
+-- ── period_swaps · md5 44a5fc2dd74daeddf060d0e937d6f703
+CREATE POLICY period_swaps_read ON v2.period_swaps AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY period_swaps_write ON v2.period_swaps AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
+
 -- ── phrase_bank · md5 e93add4168a10b509bac7c76aa01a484
 CREATE POLICY pb_read ON v2.phrase_bank AS PERMISSIVE FOR SELECT TO authenticated
     USING (((school_id IS NULL) OR v2.my_school(school_id)));
 CREATE POLICY pb_write ON v2.phrase_bank AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
+
+-- ── phrase_use · md5 b15e5817c8f8e72d2a80d806904c6f52
+CREATE POLICY phrase_use_read ON v2.phrase_use AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY phrase_use_write ON v2.phrase_use AS PERMISSIVE FOR ALL TO authenticated
     USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
     WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
 
@@ -678,10 +914,43 @@ CREATE POLICY ps_write ON v2.practice_scopes AS PERMISSIVE FOR ALL TO authentica
 CREATE POLICY proc_cards_read ON v2.proc_cards AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
 
+-- ── qualitative_bands · md5 31e7bccf585251937f7a6dd29f04452d
+CREATE POLICY qualitative_bands_read ON v2.qualitative_bands AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY qualitative_bands_write ON v2.qualitative_bands AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
+
+-- ── reading_sessions · md5 a5b9620c6ade84574267fd118bfa589f
+CREATE POLICY reading_sessions_read ON v2.reading_sessions AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
+-- ── remedial_members · md5 07b0025067b3c9348bc8c67cfdfce07d
+CREATE POLICY remedial_members_read ON v2.remedial_members AS PERMISSIVE FOR SELECT TO authenticated
+    USING ((EXISTS ( SELECT 1
+   FROM v2.remedial_plans p
+  WHERE ((p.id = remedial_members.plan_id) AND v2.my_school(p.school_id)))));
+
+-- ── remedial_periods · md5 babe1bc2efe6b3aff9e9cd40e1e99c57
+CREATE POLICY remedial_periods_read ON v2.remedial_periods AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
+-- ── remedial_plans · md5 aa3de3b11db9ce05ef506395fbf525a2
+CREATE POLICY remedial_plans_read ON v2.remedial_plans AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
+-- ── remedial_referrals · md5 5eaf1962096aea98ad121fafae865c4a
+CREATE POLICY remedial_referrals_read ON v2.remedial_referrals AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
 -- ── report_filers · md5 0b878ef55cf7c2911229baef908b98b7
 CREATE POLICY rf_t ON v2.report_filers AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
+
+-- ── rule_numbers · md5 a44be0249da68bda49689f4535aff9bb
+CREATE POLICY rule_numbers_read ON v2.rule_numbers AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
 
 -- ── school_custody · md5 3f417324133c169f9760b40546157b5e
 CREATE POLICY cust_t ON v2.school_custody AS PERMISSIVE FOR ALL TO authenticated
@@ -728,6 +997,41 @@ CREATE POLICY signoffs_tenant ON v2.signoffs AS PERMISSIVE FOR ALL TO authentica
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
 
+-- ── skill_levels · md5 55cf43a5103e65078900827fc4e187c6
+CREATE POLICY skill_levels_read ON v2.skill_levels AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+
+-- ── skill_marks · md5 88a0e189ed2c38c3077c45239de3a498
+CREATE POLICY skill_marks_read ON v2.skill_marks AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
+-- ── skill_reports · md5 f86bc163d0df1cfc754999f9e11ed130
+CREATE POLICY skill_reports_read ON v2.skill_reports AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
+-- ── skills · md5 bbefefe648dfbda57218e36248721109
+CREATE POLICY skills_read ON v2.skills AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
+-- ── staff_absence_reasons · md5 f290ed4682f5e291dc7623495e41f8ef
+CREATE POLICY staff_absence_reasons_read ON v2.staff_absence_reasons AS PERMISSIVE FOR SELECT TO authenticated
+    USING (true);
+
+-- ── staff_absences · md5 9a69a297b33d79d0ed00f2d4c4d3d0e6
+CREATE POLICY staff_absences_read ON v2.staff_absences AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY staff_absences_write ON v2.staff_absences AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
+
+-- ── staff_late_actions · md5 bb163bd2bb4d2a7867f936d333fc7434
+CREATE POLICY staff_late_actions_read ON v2.staff_late_actions AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
+-- ── staff_lateness · md5 bcb9dc58fd85984d1b98e0bcac4718c5
+CREATE POLICY staff_lateness_read ON v2.staff_lateness AS PERMISSIVE FOR SELECT TO authenticated
+    USING (v2.my_school(school_id));
+
 -- ── staffing_rules · md5 43baf48e10a19256e557d34a6b94dfe4
 CREATE POLICY staffing_rules_read ON v2.staffing_rules AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
@@ -736,6 +1040,13 @@ CREATE POLICY staffing_rules_read ON v2.staffing_rules AS PERMISSIVE FOR SELECT 
 CREATE POLICY stamps_tenant ON v2.stamps AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
+
+-- ── standby_need · md5 f192e17e1f67f29c2dd264c114c81f13
+CREATE POLICY standby_need_read ON v2.standby_need AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY standby_need_write ON v2.standby_need AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
 
 -- ── structure_posts · md5 c87a0169afec0b28994e1cb1078f487d
 CREATE POLICY structure_posts_read ON v2.structure_posts AS PERMISSIVE FOR SELECT TO authenticated
@@ -763,10 +1074,28 @@ CREATE POLICY spr_read ON v2.study_plan_rules AS PERMISSIVE FOR SELECT TO authen
 CREATE POLICY sp_read ON v2.study_plans AS PERMISSIVE FOR SELECT TO authenticated
     USING (true);
 
+-- ── subject_pairing · md5 80620a4e859a79064d18a16f6615f300
+CREATE POLICY subject_pairing_read ON v2.subject_pairing AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY subject_pairing_write ON v2.subject_pairing AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
+
 -- ── subject_plan · md5 c7843e6bcbce29ceb51f7602ebef4dba
 CREATE POLICY sp_tenant ON v2.subject_plan AS PERMISSIVE FOR ALL TO authenticated
     USING (v2.my_school(school_id))
     WITH CHECK (v2.my_school(school_id));
+
+-- ── task_kind_forms · md5 6d9f1ab27c6fa08d2d11b23cc268d749
+CREATE POLICY task_kind_forms_read ON v2.task_kind_forms AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY task_kind_forms_write ON v2.task_kind_forms AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
+
+-- ── task_role_map · md5 7ab5e4cb8431ed489edf49fe127dc697
+CREATE POLICY task_role_map_read ON v2.task_role_map AS PERMISSIVE FOR SELECT TO authenticated
+    USING (true);
 
 -- ── teacher_subjects · md5 5334716c874aaa914a6b87deb01de458
 CREATE POLICY ts_tenant ON v2.teacher_subjects AS PERMISSIVE FOR ALL TO authenticated
@@ -794,6 +1123,13 @@ CREATE POLICY tr_read ON v2.teaching_ranks AS PERMISSIVE FOR SELECT TO authentic
 -- ── tenants · md5 859d5704cdb737cd02d20a52e27918ba
 CREATE POLICY tenants_own ON v2.tenants AS PERMISSIVE FOR SELECT TO authenticated
     USING ((id = v2.current_tenant()));
+
+-- ── term_split_objections · md5 09ab15ce687bd4b3e49ead3991fbbbb0
+CREATE POLICY term_split_objections_read ON v2.term_split_objections AS PERMISSIVE FOR SELECT TO authenticated
+    USING (((school_id IS NULL) OR v2.my_school(school_id)));
+CREATE POLICY term_split_objections_write ON v2.term_split_objections AS PERMISSIVE FOR ALL TO authenticated
+    USING (((school_id IS NOT NULL) AND v2.my_school(school_id)))
+    WITH CHECK (((school_id IS NOT NULL) AND v2.my_school(school_id)));
 
 -- ── terms · md5 f1bc8cc90be9b32f6c3822958b1fe371
 CREATE POLICY terms_tenant ON v2.terms AS PERMISSIVE FOR ALL TO authenticated

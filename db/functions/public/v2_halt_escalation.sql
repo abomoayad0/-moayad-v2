@@ -1,12 +1,12 @@
 -- public.v2_halt_escalation(p_case uuid, p_reason text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 42dee88c094e9153c75f244337a9c51e
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c1c68250547def76b8d7f5bcb1dbd991
 CREATE OR REPLACE FUNCTION public.v2_halt_escalation(p_case uuid, p_reason text)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'v2', 'public'
 AS $function$
-declare c record; st text; v_counsel boolean; v_ev uuid; g record;
+declare c record; v_counsel boolean; v_ev uuid; v_min int;
 begin
   perform v2.assert_role(array['principal'],'وقفَ التصعيد');
   select ac.*, s.full_name nm into c
@@ -16,8 +16,9 @@ begin
   if coalesce(c.escalation_halted,false) then
     raise exception 'تصعيدُ هذي الحالة موقوفٌ سلفًا — والسببُ: %', coalesce(c.halt_reason,'غيرُ مكتوب');
   end if;
-  if length(btrim(coalesce(p_reason,''))) < 10 then
-    raise exception 'وقفُ التصعيد لا يقع بلا سببٍ مكتوبٍ يبقى في السجلّ باسمك';
+  v_min := v2.rule_n(c.school_id,'reason_min_chars');
+  if length(btrim(coalesce(p_reason,''))) < v_min then
+    raise exception 'وقفُ التصعيد لا يقع بلا سببٍ مكتوبٍ يبقى في السجلّ باسمك — وأقلُّه % حرفًا', v2.ar_num(v_min);
   end if;
 
   v_counsel := exists (select 1 from v2.counsel_cases cc

@@ -6,14 +6,14 @@
 
 | الملفّ | العدد |
 |---|---|
-| `tables/*.sql` — الأعمدة والمفاتيح والقيود والفهارس وتفعيل RLS والتعليقات | 162 جدولًا · 72 فهرسًا |
+| `tables/*.sql` — الأعمدة والمفاتيح والقيود والفهارس وتفعيل RLS والتعليقات | 211 جدولًا · 136 فهرسًا |
 | `views/*.sql` (`v_students` · `v_obligations`) | 2 |
-| `functions/v2/*.sql` | 213 دالّة |
-| `functions/public/*.sql` — الجسور `v2_*` | 262 |
-| `functions/comments.sql` | 45 تعليقًا |
-| `foreign_keys.sql` | 127 جدولًا لها مفاتيح خارجيّة |
+| `functions/v2/*.sql` | 289 دالّة |
+| `functions/public/*.sql` — الجسور `v2_*` | 399 |
+| `functions/comments.sql` | 159 تعليقًا |
+| `foreign_keys.sql` | 167 جدولًا لها مفاتيح خارجيّة |
 | `triggers.sql` | 46 زنادًا على 36 جدولًا |
-| `policies.sql` | 159 سياسةً على 147 جدولًا |
+| `policies.sql` | 240 سياسةً على 211 جدولًا |
 | `grants.sql` — صلاحيّات المخطّط والدوالّ (لا منحَ على الجداول في القاعدة) | — |
 | `storage.sql` — دلو `v2-attachments` وسياساته الخمس `v2att_*` فقط | — |
 

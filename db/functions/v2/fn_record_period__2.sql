@@ -1,5 +1,5 @@
 -- v2.fn_record_period(p_student uuid, p_period smallint, p_state text, p_date date, p_minutes smallint, p_note text, p_by uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 b5eaf14e3f075e8ab6c13ffd309727c9
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 0f9be123ab33b269b336a86e01217b16
 CREATE OR REPLACE FUNCTION v2.fn_record_period(p_student uuid, p_period smallint, p_state text, p_date date DEFAULT CURRENT_DATE, p_minutes smallint DEFAULT NULL::smallint, p_note text DEFAULT NULL::text, p_by uuid DEFAULT NULL::uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -7,6 +7,7 @@ CREATE OR REPLACE FUNCTION v2.fn_record_period(p_student uuid, p_period smallint
  SET search_path TO 'v2', 'public'
 AS $function$
 declare sc uuid; y uuid; t smallint; k text; v_role text; subj text; tid uuid; day_st text;
+        v_sec uuid; v_basis text; v_why text; v_owner_ar text;
 begin
   perform v2.assert_my_student(p_student,'رصد حضور الحصة');
   perform v2.assert_role(array['subject_teacher','sped_teacher','gifted_teacher','counselor',
@@ -29,12 +30,24 @@ begin
 
   t := v2.fn_term_of(sc,p_date);
   v_role := coalesce(v2.role_ar(v2.my_role()),'معلم');
-  select tt.subject_ar, tt.person_id into subj, tid
-   from v2.timetable tt join v2.class_sections cs on cs.id=tt.section_id
-   join v2.enrolments e2 on e2.grade=cs.grade and e2.section=cs.section and e2.school_id=cs.school_id
-   where e2.student_id=p_student and e2.status='active'
-     and tt.period_no=p_period and tt.weekday=extract(dow from p_date)::smallint
-     and tt.slot_kind='teaching' limit 1;
+
+  -- فصلُ الطالب · ثمّ حقيقةُ تلك الحصّة فيه: جدولٌ أم تبديلٌ أم تغطيةٌ أم فراغ
+  select cs.id into v_sec
+    from v2.class_sections cs
+    join v2.enrolments e2 on e2.school_id=cs.school_id and e2.grade=cs.grade and e2.section=cs.section
+   where e2.student_id=p_student and e2.status='active' limit 1;
+
+  select pt.person_id, pt.subject_ar, pt.basis, pt.why_ar, pt.person_ar
+    into tid, subj, v_basis, v_why, v_owner_ar
+    from v2.period_truth(sc, v_sec, p_period, p_date) pt;
+
+  if v2.my_role() in ('subject_teacher','sped_teacher','gifted_teacher') then
+    if tid is not null and tid <> v2.current_person() then
+      raise exception 'الحصة % ليست لك اليوم — صاحبها %: %', p_period, v_owner_ar, coalesce(v_why,'من الجدول المعتمد');
+    elsif v_basis = 'gap' then
+      raise exception 'الحصة % بلا معلم اليوم — %، ورصدها لمن كُلِّف لا لك', p_period, coalesce(v_why,'فراغ');
+    end if;
+  end if;
 
   insert into v2.period_attendance(school_id,year_id,term_no,student_id,on_date,period_no,
     subject_ar,teacher_id,state,minutes_late,note,recorded_by,recorded_role)
@@ -42,9 +55,11 @@ begin
     p_state,p_minutes,p_note,coalesce(p_by,v2.current_person()),v_role)
   on conflict (student_id,on_date,period_no) do update
     set state=excluded.state, minutes_late=excluded.minutes_late, note=excluded.note,
+        subject_ar=excluded.subject_ar, teacher_id=excluded.teacher_id,
         recorded_by=excluded.recorded_by, recorded_role=excluded.recorded_role;
 
   return jsonb_build_object('ok',true,'subject',subj,'state',p_state,'by',v_role,
+    'basis',coalesce(v_basis,'—'),'why',coalesce(v_why,'—'),
     'day_state',(select state from v2.attendance where student_id=p_student and on_date=p_date));
 end $function$
 ;

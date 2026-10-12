@@ -1,19 +1,20 @@
 -- public.v2_denial_cancel(p_decision uuid, p_reason text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 dfa392d57e9849d897163d57f9f2a393
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c562d2ea7123a02c57ff70289a907e4f
 CREATE OR REPLACE FUNCTION public.v2_denial_cancel(p_decision uuid, p_reason text)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'v2', 'public'
 AS $function$
-declare d record; v_id uuid;
+declare d record; v_id uuid; v_min int;
 begin
   perform v2.assert_role(array['principal'],'إلغاءَ قرار الحرمان');
   select * into d from v2.denial_actions where id=p_decision and kind='decision';
   if d.id is null then raise exception 'لا قرارَ حرمانٍ بهذا المعرّف'; end if;
   perform v2.assert_my_school(d.school_id,'إلغاءَ قرار الحرمان');
-  if length(btrim(coalesce(p_reason,''))) < 10 then
-    raise exception 'الإلغاءُ لا يقع بلا سببٍ مكتوب'; end if;
+  v_min := v2.rule_n(d.school_id,'reason_min_chars');
+  if length(btrim(coalesce(p_reason,''))) < v_min then
+    raise exception 'الإلغاءُ لا يقع بلا سببٍ مكتوبٍ — وأقلُّه % حرفًا', v2.ar_num(v_min); end if;
   if exists (select 1 from v2.denial_actions c where c.kind='cancel'
               and c.committee_entry = p_decision) then
     raise exception 'أُلغي هذا القرارُ سلفًا'; end if;

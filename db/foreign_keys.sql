@@ -57,6 +57,10 @@ ALTER TABLE v2.app_users
 ALTER TABLE v2.app_users
     ADD CONSTRAINT app_users_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES v2.tenants(id);
 
+-- ── assess_tools · md5 787301204a626dbe34f90c61936be026
+ALTER TABLE v2.assess_tools
+    ADD CONSTRAINT assess_tools_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+
 -- ── assignments · md5 c18acbe36cb4a6c4c844dbd4de30e7f0
 ALTER TABLE v2.assignments
     ADD CONSTRAINT assignments_issued_by_fkey FOREIGN KEY (issued_by) REFERENCES v2.people(id);
@@ -106,6 +110,12 @@ ALTER TABLE v2.attendance_ledger
     ADD CONSTRAINT attendance_ledger_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id);
 ALTER TABLE v2.attendance_ledger
     ADD CONSTRAINT attendance_ledger_year_id_fkey FOREIGN KEY (year_id) REFERENCES v2.academic_years(id);
+
+-- ── audit_findings · md5 3b9fd8dfe1df9c44ec371f0d657a6944
+ALTER TABLE v2.audit_findings
+    ADD CONSTRAINT audit_findings_check_key_fkey FOREIGN KEY (check_key) REFERENCES v2.audit_checks(key);
+ALTER TABLE v2.audit_findings
+    ADD CONSTRAINT audit_findings_waived_by_fkey FOREIGN KEY (waived_by) REFERENCES v2.people(id);
 
 -- ── behavior_census · md5 2eb7914cd903484e99f8a58ec54b399a
 ALTER TABLE v2.behavior_census
@@ -213,6 +223,12 @@ ALTER TABLE v2.calendar_milestones
 ALTER TABLE v2.calendar_term_stats
     ADD CONSTRAINT calendar_term_stats_year_id_fkey FOREIGN KEY (year_id) REFERENCES v2.calendar_years(id) ON DELETE CASCADE;
 
+-- ── calendar_week_overrides · md5 2f449fc1546e9201f0497a9b6d607cb5
+ALTER TABLE v2.calendar_week_overrides
+    ADD CONSTRAINT calendar_week_overrides_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+ALTER TABLE v2.calendar_week_overrides
+    ADD CONSTRAINT calendar_week_overrides_week_id_fkey FOREIGN KEY (week_id) REFERENCES v2.calendar_weeks(id) ON DELETE CASCADE;
+
 -- ── calendar_weeks · md5 f2f7fd6c8be7191c1adbcc2af3e22560
 ALTER TABLE v2.calendar_weeks
     ADD CONSTRAINT calendar_weeks_year_id_fkey FOREIGN KEY (year_id) REFERENCES v2.calendar_years(id) ON DELETE CASCADE;
@@ -221,9 +237,55 @@ ALTER TABLE v2.calendar_weeks
 ALTER TABLE v2.calendar_years
     ADD CONSTRAINT calendar_years_scope_key_fkey FOREIGN KEY (scope_key) REFERENCES v2.calendar_scopes(key);
 
+-- ── card_due_steps · md5 fd86b6cbd944c10ee3401adb4619fc91
+ALTER TABLE v2.card_due_steps
+    ADD CONSTRAINT card_due_steps_answered_by_fkey FOREIGN KEY (answered_by) REFERENCES v2.people(id);
+ALTER TABLE v2.card_due_steps
+    ADD CONSTRAINT card_due_steps_owner_person_fkey FOREIGN KEY (owner_person) REFERENCES v2.people(id);
+ALTER TABLE v2.card_due_steps
+    ADD CONSTRAINT card_due_steps_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.card_due_steps
+    ADD CONSTRAINT card_due_steps_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id);
+
+-- ── card_events · md5 6da06337f23b3f418d5866607c1b1f36
+ALTER TABLE v2.card_events
+    ADD CONSTRAINT card_events_class_session_fkey FOREIGN KEY (class_session) REFERENCES v2.class_sessions(id);
+ALTER TABLE v2.card_events
+    ADD CONSTRAINT card_events_person_id_fkey FOREIGN KEY (person_id) REFERENCES v2.people(id);
+ALTER TABLE v2.card_events
+    ADD CONSTRAINT card_events_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.card_events
+    ADD CONSTRAINT card_events_session_id_fkey FOREIGN KEY (session_id) REFERENCES v2.card_sessions(id);
+ALTER TABLE v2.card_events
+    ADD CONSTRAINT card_events_slot_id_fkey FOREIGN KEY (slot_id) REFERENCES v2.timetable(id);
+ALTER TABLE v2.card_events
+    ADD CONSTRAINT card_events_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id);
+ALTER TABLE v2.card_events
+    ADD CONSTRAINT card_events_undone_by_fkey FOREIGN KEY (undone_by) REFERENCES v2.people(id);
+
+-- ── card_health_views · md5 c2c672294f2cad0337a7a868bdb5cc6b
+ALTER TABLE v2.card_health_views
+    ADD CONSTRAINT card_health_views_person_id_fkey FOREIGN KEY (person_id) REFERENCES v2.people(id);
+ALTER TABLE v2.card_health_views
+    ADD CONSTRAINT card_health_views_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.card_health_views
+    ADD CONSTRAINT card_health_views_session_id_fkey FOREIGN KEY (session_id) REFERENCES v2.card_sessions(id);
+ALTER TABLE v2.card_health_views
+    ADD CONSTRAINT card_health_views_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id);
+
 -- ── card_matrix · md5 9f12a783e385515ba6ae29339650f2bf
 ALTER TABLE v2.card_matrix
     ADD CONSTRAINT card_matrix_card_code_step_no_fkey FOREIGN KEY (card_code, step_no) REFERENCES v2.card_steps(card_code, step_no);
+
+-- ── card_sessions · md5 d5312b51d1d3ad8c64d6de0fa6446964
+ALTER TABLE v2.card_sessions
+    ADD CONSTRAINT card_sessions_person_id_fkey FOREIGN KEY (person_id) REFERENCES v2.people(id);
+ALTER TABLE v2.card_sessions
+    ADD CONSTRAINT card_sessions_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.card_sessions
+    ADD CONSTRAINT card_sessions_slot_id_fkey FOREIGN KEY (slot_id) REFERENCES v2.timetable(id);
+ALTER TABLE v2.card_sessions
+    ADD CONSTRAINT card_sessions_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id);
 
 -- ── card_steps · md5 25020ddec1d670011cef658bfbb238c5
 ALTER TABLE v2.card_steps
@@ -234,6 +296,14 @@ ALTER TABLE v2.card_values
     ADD CONSTRAINT card_values_card_code_fkey FOREIGN KEY (card_code) REFERENCES v2.proc_cards(code);
 ALTER TABLE v2.card_values
     ADD CONSTRAINT card_values_door_key_fkey FOREIGN KEY (door_key) REFERENCES v2.card_doors(key);
+
+-- ── card_views · md5 f33db2e3cac0be93729cb5a36a52d17d
+ALTER TABLE v2.card_views
+    ADD CONSTRAINT card_views_by_person_fkey FOREIGN KEY (by_person) REFERENCES v2.people(id);
+ALTER TABLE v2.card_views
+    ADD CONSTRAINT card_views_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.card_views
+    ADD CONSTRAINT card_views_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id);
 
 -- ── case_docs · md5 f91c760d48beb3e19138e96d7042e382
 ALTER TABLE v2.case_docs
@@ -248,6 +318,20 @@ ALTER TABLE v2.census_items
     ADD CONSTRAINT census_items_based_on_fkey FOREIGN KEY (based_on) REFERENCES v2.census_items(id);
 ALTER TABLE v2.census_items
     ADD CONSTRAINT census_items_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+
+-- ── class_exits · md5 ee28092994054424cebeac21a7b3f045
+ALTER TABLE v2.class_exits
+    ADD CONSTRAINT class_exits_back_by_fkey FOREIGN KEY (back_by) REFERENCES v2.people(id);
+ALTER TABLE v2.class_exits
+    ADD CONSTRAINT class_exits_class_session_fkey FOREIGN KEY (class_session) REFERENCES v2.class_sessions(id);
+ALTER TABLE v2.class_exits
+    ADD CONSTRAINT class_exits_out_by_fkey FOREIGN KEY (out_by) REFERENCES v2.people(id);
+ALTER TABLE v2.class_exits
+    ADD CONSTRAINT class_exits_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.class_exits
+    ADD CONSTRAINT class_exits_section_id_fkey FOREIGN KEY (section_id) REFERENCES v2.class_sections(id);
+ALTER TABLE v2.class_exits
+    ADD CONSTRAINT class_exits_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id);
 
 -- ── class_moves · md5 3610e8fe26f64068b52324e97be61a1d
 ALTER TABLE v2.class_moves
@@ -273,6 +357,22 @@ ALTER TABLE v2.class_practices
 ALTER TABLE v2.class_practices
     ADD CONSTRAINT class_practices_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 
+-- ── class_role_holders · md5 2f199ee3585352f1a37b792e4ead6fed
+ALTER TABLE v2.class_role_holders
+    ADD CONSTRAINT class_role_holders_by_person_fkey FOREIGN KEY (by_person) REFERENCES v2.people(id);
+ALTER TABLE v2.class_role_holders
+    ADD CONSTRAINT class_role_holders_ended_by_fkey FOREIGN KEY (ended_by) REFERENCES v2.people(id);
+ALTER TABLE v2.class_role_holders
+    ADD CONSTRAINT class_role_holders_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.class_role_holders
+    ADD CONSTRAINT class_role_holders_section_id_fkey FOREIGN KEY (section_id) REFERENCES v2.class_sections(id);
+ALTER TABLE v2.class_role_holders
+    ADD CONSTRAINT class_role_holders_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id);
+
+-- ── class_roles · md5 b2e4390cc8b77db2d4fdfe9494e2aab9
+ALTER TABLE v2.class_roles
+    ADD CONSTRAINT class_roles_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+
 -- ── class_sections · md5 f24bffd0f25514770da91d262aca2122
 ALTER TABLE v2.class_sections
     ADD CONSTRAINT class_sections_homeroom_person_fkey FOREIGN KEY (homeroom_person) REFERENCES v2.people(id);
@@ -280,6 +380,34 @@ ALTER TABLE v2.class_sections
     ADD CONSTRAINT class_sections_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 ALTER TABLE v2.class_sections
     ADD CONSTRAINT class_sections_year_id_fkey FOREIGN KEY (year_id) REFERENCES v2.academic_years(id);
+
+-- ── class_sessions · md5 cf9eb06c8bd27bd8db29ee40e1d2a576
+ALTER TABLE v2.class_sessions
+    ADD CONSTRAINT class_sessions_attendance_by_fkey FOREIGN KEY (attendance_by) REFERENCES v2.people(id);
+ALTER TABLE v2.class_sessions
+    ADD CONSTRAINT class_sessions_closed_by_fkey FOREIGN KEY (closed_by) REFERENCES v2.people(id);
+ALTER TABLE v2.class_sessions
+    ADD CONSTRAINT class_sessions_lesson_item_fkey FOREIGN KEY (lesson_item) REFERENCES v2.lesson_plan_items(id);
+ALTER TABLE v2.class_sessions
+    ADD CONSTRAINT class_sessions_opened_by_fkey FOREIGN KEY (opened_by) REFERENCES v2.people(id);
+ALTER TABLE v2.class_sessions
+    ADD CONSTRAINT class_sessions_person_id_fkey FOREIGN KEY (person_id) REFERENCES v2.people(id);
+ALTER TABLE v2.class_sessions
+    ADD CONSTRAINT class_sessions_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.class_sessions
+    ADD CONSTRAINT class_sessions_section_id_fkey FOREIGN KEY (section_id) REFERENCES v2.class_sections(id);
+
+-- ── class_work · md5 1a4ddffdcedb3ceb2b1cf9c29cb8a45b
+ALTER TABLE v2.class_work
+    ADD CONSTRAINT class_work_by_person_fkey FOREIGN KEY (by_person) REFERENCES v2.people(id);
+ALTER TABLE v2.class_work
+    ADD CONSTRAINT class_work_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.class_work
+    ADD CONSTRAINT class_work_section_id_fkey FOREIGN KEY (section_id) REFERENCES v2.class_sections(id);
+ALTER TABLE v2.class_work
+    ADD CONSTRAINT class_work_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id);
+ALTER TABLE v2.class_work
+    ADD CONSTRAINT class_work_voided_by_fkey FOREIGN KEY (voided_by) REFERENCES v2.people(id);
 
 -- ── committee_duties · md5 ed7c68c4657b2ed734ea96d5ce662fb1
 ALTER TABLE v2.committee_duties
@@ -384,6 +512,16 @@ ALTER TABLE v2.counsel_sessions
     ADD CONSTRAINT counsel_sessions_by_person_fkey FOREIGN KEY (by_person) REFERENCES v2.people(id);
 ALTER TABLE v2.counsel_sessions
     ADD CONSTRAINT counsel_sessions_case_id_fkey FOREIGN KEY (case_id) REFERENCES v2.counsel_cases(id) ON DELETE CASCADE;
+
+-- ── cover_rules · md5 1044a623dc5bb17b5a82544d019551eb
+ALTER TABLE v2.cover_rules
+    ADD CONSTRAINT cover_rules_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.cover_rules
+    ADD CONSTRAINT cover_rules_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES v2.people(id);
+
+-- ── curriculum_lessons · md5 e6ac6206871db669cba367577d0068dd
+ALTER TABLE v2.curriculum_lessons
+    ADD CONSTRAINT curriculum_lessons_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES v2.curriculum_units(id) ON DELETE CASCADE;
 
 -- ── day_closures · md5 f9d5bc1ca8a639de29875da2a34b1a5f
 ALTER TABLE v2.day_closures
@@ -581,6 +719,10 @@ ALTER TABLE v2.guardian_contacts
 ALTER TABLE v2.guardians
     ADD CONSTRAINT guardians_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id) ON DELETE CASCADE;
 
+-- ── guide_pages · md5 d39b508f9ea5e56badfe2c0d72615acb
+ALTER TABLE v2.guide_pages
+    ADD CONSTRAINT guide_pages_guide_id_fkey FOREIGN KEY (guide_id) REFERENCES v2.guides(id) ON DELETE CASCADE;
+
 -- ── incident_seizures · md5 17ccbd6a599d2d0eb953822aabe8e7f1
 ALTER TABLE v2.incident_seizures
     ADD CONSTRAINT incident_seizures_record_id_fkey FOREIGN KEY (record_id) REFERENCES v2.behavior_records(id) ON DELETE CASCADE;
@@ -604,6 +746,56 @@ ALTER TABLE v2.inheritance_rules
     ADD CONSTRAINT inheritance_rules_heir_post_key_fkey FOREIGN KEY (heir_post_key) REFERENCES v2.posts(key);
 ALTER TABLE v2.inheritance_rules
     ADD CONSTRAINT inheritance_rules_vacant_post_key_fkey FOREIGN KEY (vacant_post_key) REFERENCES v2.posts(key);
+
+-- ── lesson_item_progress · md5 e06b5a1212d6a26d0ecf0628c81d6169
+ALTER TABLE v2.lesson_item_progress
+    ADD CONSTRAINT lesson_item_progress_by_person_fkey FOREIGN KEY (by_person) REFERENCES v2.people(id);
+ALTER TABLE v2.lesson_item_progress
+    ADD CONSTRAINT lesson_item_progress_item_id_fkey FOREIGN KEY (item_id) REFERENCES v2.lesson_plan_items(id) ON DELETE CASCADE;
+ALTER TABLE v2.lesson_item_progress
+    ADD CONSTRAINT lesson_item_progress_section_id_fkey FOREIGN KEY (section_id) REFERENCES v2.class_sections(id);
+ALTER TABLE v2.lesson_item_progress
+    ADD CONSTRAINT lesson_item_progress_voided_by_fkey FOREIGN KEY (voided_by) REFERENCES v2.people(id);
+
+-- ── lesson_plan_items · md5 f6ab3e20757ee7dc7e258b8c6205faa2
+ALTER TABLE v2.lesson_plan_items
+    ADD CONSTRAINT lesson_plan_items_lesson_id_fkey FOREIGN KEY (lesson_id) REFERENCES v2.curriculum_lessons(id) ON DELETE CASCADE;
+ALTER TABLE v2.lesson_plan_items
+    ADD CONSTRAINT lesson_plan_items_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES v2.lesson_plans(id) ON DELETE CASCADE;
+
+-- ── lesson_plans · md5 4bff72f72cbb2438fd43d6baa48293b6
+ALTER TABLE v2.lesson_plans
+    ADD CONSTRAINT lesson_plans_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+ALTER TABLE v2.lesson_plans
+    ADD CONSTRAINT lesson_plans_year_id_fkey FOREIGN KEY (year_id) REFERENCES v2.academic_years(id) ON DELETE SET NULL;
+
+-- ── loyalty_ledger · md5 40f8a508beeaaf83c840c1e1e6699387
+ALTER TABLE v2.loyalty_ledger
+    ADD CONSTRAINT loyalty_ledger_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES v2.people(id);
+ALTER TABLE v2.loyalty_ledger
+    ADD CONSTRAINT loyalty_ledger_by_person_fkey FOREIGN KEY (by_person) REFERENCES v2.people(id);
+ALTER TABLE v2.loyalty_ledger
+    ADD CONSTRAINT loyalty_ledger_class_session_fkey FOREIGN KEY (class_session) REFERENCES v2.class_sessions(id) ON DELETE SET NULL;
+ALTER TABLE v2.loyalty_ledger
+    ADD CONSTRAINT loyalty_ledger_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+ALTER TABLE v2.loyalty_ledger
+    ADD CONSTRAINT loyalty_ledger_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id) ON DELETE CASCADE;
+ALTER TABLE v2.loyalty_ledger
+    ADD CONSTRAINT loyalty_ledger_voided_by_fkey FOREIGN KEY (voided_by) REFERENCES v2.people(id);
+ALTER TABLE v2.loyalty_ledger
+    ADD CONSTRAINT loyalty_ledger_year_id_fkey FOREIGN KEY (year_id) REFERENCES v2.academic_years(id);
+
+-- ── loyalty_rewards · md5 ddd98a498e34aa6a482750d5dbde39ac
+ALTER TABLE v2.loyalty_rewards
+    ADD CONSTRAINT loyalty_rewards_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+ALTER TABLE v2.loyalty_rewards
+    ADD CONSTRAINT loyalty_rewards_set_by_fkey FOREIGN KEY (set_by) REFERENCES v2.people(id);
+
+-- ── loyalty_sources · md5 259c45e11cd38515268cfb251f03f348
+ALTER TABLE v2.loyalty_sources
+    ADD CONSTRAINT loyalty_sources_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+ALTER TABLE v2.loyalty_sources
+    ADD CONSTRAINT loyalty_sources_set_by_fkey FOREIGN KEY (set_by) REFERENCES v2.people(id);
 
 -- ── mail_acknowledgements · md5 131f866dd3ee036ae9cce2660e86ae55
 ALTER TABLE v2.mail_acknowledgements
@@ -753,9 +945,39 @@ ALTER TABLE v2.period_attendance
 ALTER TABLE v2.period_attendance
     ADD CONSTRAINT period_attendance_year_id_fkey FOREIGN KEY (year_id) REFERENCES v2.academic_years(id);
 
+-- ── period_covers · md5 80fdbe4f8b59a709a651428b6ce716ed
+ALTER TABLE v2.period_covers
+    ADD CONSTRAINT period_covers_absent_person_fkey FOREIGN KEY (absent_person) REFERENCES v2.people(id);
+ALTER TABLE v2.period_covers
+    ADD CONSTRAINT period_covers_cover_person_fkey FOREIGN KEY (cover_person) REFERENCES v2.people(id);
+ALTER TABLE v2.period_covers
+    ADD CONSTRAINT period_covers_decided_by_fkey FOREIGN KEY (decided_by) REFERENCES v2.people(id);
+ALTER TABLE v2.period_covers
+    ADD CONSTRAINT period_covers_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.period_covers
+    ADD CONSTRAINT period_covers_section_id_fkey FOREIGN KEY (section_id) REFERENCES v2.class_sections(id);
+ALTER TABLE v2.period_covers
+    ADD CONSTRAINT period_covers_source_slot_fkey FOREIGN KEY (source_slot) REFERENCES v2.timetable(id);
+ALTER TABLE v2.period_covers
+    ADD CONSTRAINT period_covers_voided_by_fkey FOREIGN KEY (voided_by) REFERENCES v2.people(id);
+
 -- ── period_slots · md5 50654d9de686fca358164f8a4a08a972
 ALTER TABLE v2.period_slots
     ADD CONSTRAINT period_slots_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+
+-- ── period_swaps · md5 3f52cf2e96d3b4181f37baeae1ef02ad
+ALTER TABLE v2.period_swaps
+    ADD CONSTRAINT period_swaps_admin_by_fkey FOREIGN KEY (admin_by) REFERENCES v2.people(id);
+ALTER TABLE v2.period_swaps
+    ADD CONSTRAINT period_swaps_partner_fkey FOREIGN KEY (partner) REFERENCES v2.people(id);
+ALTER TABLE v2.period_swaps
+    ADD CONSTRAINT period_swaps_partner_slot_fkey FOREIGN KEY (partner_slot) REFERENCES v2.timetable(id);
+ALTER TABLE v2.period_swaps
+    ADD CONSTRAINT period_swaps_req_slot_fkey FOREIGN KEY (req_slot) REFERENCES v2.timetable(id);
+ALTER TABLE v2.period_swaps
+    ADD CONSTRAINT period_swaps_requester_fkey FOREIGN KEY (requester) REFERENCES v2.people(id);
+ALTER TABLE v2.period_swaps
+    ADD CONSTRAINT period_swaps_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 
 -- ── phrase_bank · md5 5d6b0bb8706c0b74c065be6bba964739
 ALTER TABLE v2.phrase_bank
@@ -805,11 +1027,87 @@ ALTER TABLE v2.practice_records
 ALTER TABLE v2.practice_scopes
     ADD CONSTRAINT practice_scopes_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 
+-- ── reading_sessions · md5 bf52dea99207ba4087f79717b0e57476
+ALTER TABLE v2.reading_sessions
+    ADD CONSTRAINT reading_sessions_person_id_fkey FOREIGN KEY (person_id) REFERENCES v2.people(id);
+ALTER TABLE v2.reading_sessions
+    ADD CONSTRAINT reading_sessions_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES v2.people(id);
+ALTER TABLE v2.reading_sessions
+    ADD CONSTRAINT reading_sessions_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+ALTER TABLE v2.reading_sessions
+    ADD CONSTRAINT reading_sessions_section_id_fkey FOREIGN KEY (section_id) REFERENCES v2.class_sections(id);
+ALTER TABLE v2.reading_sessions
+    ADD CONSTRAINT reading_sessions_voided_by_fkey FOREIGN KEY (voided_by) REFERENCES v2.people(id);
+
+-- ── remedial_members · md5 4332abae88330e7bf73b2d26312d9a45
+ALTER TABLE v2.remedial_members
+    ADD CONSTRAINT remedial_members_added_by_fkey FOREIGN KEY (added_by) REFERENCES v2.people(id);
+ALTER TABLE v2.remedial_members
+    ADD CONSTRAINT remedial_members_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES v2.remedial_plans(id) ON DELETE CASCADE;
+ALTER TABLE v2.remedial_members
+    ADD CONSTRAINT remedial_members_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id);
+
+-- ── remedial_periods · md5 2754788072518dd115ebde116efa3355
+ALTER TABLE v2.remedial_periods
+    ADD CONSTRAINT remedial_periods_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES v2.people(id);
+ALTER TABLE v2.remedial_periods
+    ADD CONSTRAINT remedial_periods_cancelled_by_fkey FOREIGN KEY (cancelled_by) REFERENCES v2.people(id);
+ALTER TABLE v2.remedial_periods
+    ADD CONSTRAINT remedial_periods_person_id_fkey FOREIGN KEY (person_id) REFERENCES v2.people(id);
+ALTER TABLE v2.remedial_periods
+    ADD CONSTRAINT remedial_periods_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES v2.remedial_plans(id) ON DELETE CASCADE;
+ALTER TABLE v2.remedial_periods
+    ADD CONSTRAINT remedial_periods_proposed_by_fkey FOREIGN KEY (proposed_by) REFERENCES v2.people(id);
+ALTER TABLE v2.remedial_periods
+    ADD CONSTRAINT remedial_periods_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+ALTER TABLE v2.remedial_periods
+    ADD CONSTRAINT remedial_periods_section_id_fkey FOREIGN KEY (section_id) REFERENCES v2.class_sections(id);
+ALTER TABLE v2.remedial_periods
+    ADD CONSTRAINT remedial_periods_slot_id_fkey FOREIGN KEY (slot_id) REFERENCES v2.timetable(id);
+
+-- ── remedial_plans · md5 05a579fa4696481d76b38e214062b6ca
+ALTER TABLE v2.remedial_plans
+    ADD CONSTRAINT remedial_plans_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES v2.people(id);
+ALTER TABLE v2.remedial_plans
+    ADD CONSTRAINT remedial_plans_evaluated_by_fkey FOREIGN KEY (evaluated_by) REFERENCES v2.people(id);
+ALTER TABLE v2.remedial_plans
+    ADD CONSTRAINT remedial_plans_owner_person_fkey FOREIGN KEY (owner_person) REFERENCES v2.people(id);
+ALTER TABLE v2.remedial_plans
+    ADD CONSTRAINT remedial_plans_reviewed_by_fkey FOREIGN KEY (reviewed_by) REFERENCES v2.people(id);
+ALTER TABLE v2.remedial_plans
+    ADD CONSTRAINT remedial_plans_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+ALTER TABLE v2.remedial_plans
+    ADD CONSTRAINT remedial_plans_skill_id_fkey FOREIGN KEY (skill_id) REFERENCES v2.skills(id);
+ALTER TABLE v2.remedial_plans
+    ADD CONSTRAINT remedial_plans_source_report_fkey FOREIGN KEY (source_report) REFERENCES v2.skill_reports(id);
+ALTER TABLE v2.remedial_plans
+    ADD CONSTRAINT remedial_plans_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id);
+ALTER TABLE v2.remedial_plans
+    ADD CONSTRAINT remedial_plans_voided_by_fkey FOREIGN KEY (voided_by) REFERENCES v2.people(id);
+
+-- ── remedial_referrals · md5 f0b963455649230393c140426d9dd01f
+ALTER TABLE v2.remedial_referrals
+    ADD CONSTRAINT remedial_referrals_by_person_fkey FOREIGN KEY (by_person) REFERENCES v2.people(id);
+ALTER TABLE v2.remedial_referrals
+    ADD CONSTRAINT remedial_referrals_case_id_fkey FOREIGN KEY (case_id) REFERENCES v2.counsel_cases(id);
+ALTER TABLE v2.remedial_referrals
+    ADD CONSTRAINT remedial_referrals_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES v2.remedial_plans(id);
+ALTER TABLE v2.remedial_referrals
+    ADD CONSTRAINT remedial_referrals_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+ALTER TABLE v2.remedial_referrals
+    ADD CONSTRAINT remedial_referrals_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id);
+
 -- ── report_filers · md5 f8197dc364fc905bd1362f304591adeb
 ALTER TABLE v2.report_filers
     ADD CONSTRAINT report_filers_record_id_fkey FOREIGN KEY (record_id) REFERENCES v2.behavior_records(id) ON DELETE CASCADE;
 ALTER TABLE v2.report_filers
     ADD CONSTRAINT report_filers_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+
+-- ── rule_numbers · md5 289d2def8ecbf70e895bf613b0f37c56
+ALTER TABLE v2.rule_numbers
+    ADD CONSTRAINT rule_numbers_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+ALTER TABLE v2.rule_numbers
+    ADD CONSTRAINT rule_numbers_set_by_fkey FOREIGN KEY (set_by) REFERENCES v2.people(id);
 
 -- ── school_custody · md5 db753f3bb268978238d0d981ce84d06c
 ALTER TABLE v2.school_custody
@@ -873,6 +1171,82 @@ ALTER TABLE v2.signoffs
 ALTER TABLE v2.signoffs
     ADD CONSTRAINT signoffs_year_id_fkey FOREIGN KEY (year_id) REFERENCES v2.academic_years(id);
 
+-- ── skill_levels · md5 660a294cf51700c318fb64c92c50c80c
+ALTER TABLE v2.skill_levels
+    ADD CONSTRAINT skill_levels_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+
+-- ── skill_marks · md5 3d5c50519cb1ebd43cd8bef26f4a0785
+ALTER TABLE v2.skill_marks
+    ADD CONSTRAINT skill_marks_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES v2.people(id);
+ALTER TABLE v2.skill_marks
+    ADD CONSTRAINT skill_marks_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+ALTER TABLE v2.skill_marks
+    ADD CONSTRAINT skill_marks_session_id_fkey FOREIGN KEY (session_id) REFERENCES v2.reading_sessions(id);
+ALTER TABLE v2.skill_marks
+    ADD CONSTRAINT skill_marks_skill_id_fkey FOREIGN KEY (skill_id) REFERENCES v2.skills(id);
+ALTER TABLE v2.skill_marks
+    ADD CONSTRAINT skill_marks_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id);
+ALTER TABLE v2.skill_marks
+    ADD CONSTRAINT skill_marks_voided_by_fkey FOREIGN KEY (voided_by) REFERENCES v2.people(id);
+
+-- ── skill_reports · md5 7bec317dd55c2f8d0da586e84a351c8e
+ALTER TABLE v2.skill_reports
+    ADD CONSTRAINT skill_reports_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES v2.people(id);
+ALTER TABLE v2.skill_reports
+    ADD CONSTRAINT skill_reports_expert_person_fkey FOREIGN KEY (expert_person) REFERENCES v2.people(id);
+ALTER TABLE v2.skill_reports
+    ADD CONSTRAINT skill_reports_prepared_by_fkey FOREIGN KEY (prepared_by) REFERENCES v2.people(id);
+ALTER TABLE v2.skill_reports
+    ADD CONSTRAINT skill_reports_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+ALTER TABLE v2.skill_reports
+    ADD CONSTRAINT skill_reports_student_id_fkey FOREIGN KEY (student_id) REFERENCES v2.students(id);
+ALTER TABLE v2.skill_reports
+    ADD CONSTRAINT skill_reports_voided_by_fkey FOREIGN KEY (voided_by) REFERENCES v2.people(id);
+
+-- ── skills · md5 8edf05bba9345a2b92439e04dbc49bcf
+ALTER TABLE v2.skills
+    ADD CONSTRAINT skills_created_by_fkey FOREIGN KEY (created_by) REFERENCES v2.people(id);
+ALTER TABLE v2.skills
+    ADD CONSTRAINT skills_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+ALTER TABLE v2.skills
+    ADD CONSTRAINT skills_voided_by_fkey FOREIGN KEY (voided_by) REFERENCES v2.people(id);
+
+-- ── staff_absences · md5 44b0dd5e1d1e26ebfa0a5aecaa064411
+ALTER TABLE v2.staff_absences
+    ADD CONSTRAINT staff_absences_person_id_fkey FOREIGN KEY (person_id) REFERENCES v2.people(id);
+ALTER TABLE v2.staff_absences
+    ADD CONSTRAINT staff_absences_reason_key_fkey FOREIGN KEY (reason_key) REFERENCES v2.staff_absence_reasons(key);
+ALTER TABLE v2.staff_absences
+    ADD CONSTRAINT staff_absences_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES v2.people(id);
+ALTER TABLE v2.staff_absences
+    ADD CONSTRAINT staff_absences_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.staff_absences
+    ADD CONSTRAINT staff_absences_voided_by_fkey FOREIGN KEY (voided_by) REFERENCES v2.people(id);
+
+-- ── staff_late_actions · md5 cc19fcb4823726e6d43553e386b88e9b
+ALTER TABLE v2.staff_late_actions
+    ADD CONSTRAINT staff_late_actions_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES v2.people(id);
+ALTER TABLE v2.staff_late_actions
+    ADD CONSTRAINT staff_late_actions_person_id_fkey FOREIGN KEY (person_id) REFERENCES v2.people(id);
+ALTER TABLE v2.staff_late_actions
+    ADD CONSTRAINT staff_late_actions_prepared_by_fkey FOREIGN KEY (prepared_by) REFERENCES v2.people(id);
+ALTER TABLE v2.staff_late_actions
+    ADD CONSTRAINT staff_late_actions_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+ALTER TABLE v2.staff_late_actions
+    ADD CONSTRAINT staff_late_actions_voided_by_fkey FOREIGN KEY (voided_by) REFERENCES v2.people(id);
+
+-- ── staff_lateness · md5 b7329027d929e9511edd4c11843ea4da
+ALTER TABLE v2.staff_lateness
+    ADD CONSTRAINT staff_lateness_decided_by_fkey FOREIGN KEY (decided_by) REFERENCES v2.people(id);
+ALTER TABLE v2.staff_lateness
+    ADD CONSTRAINT staff_lateness_person_id_fkey FOREIGN KEY (person_id) REFERENCES v2.people(id);
+ALTER TABLE v2.staff_lateness
+    ADD CONSTRAINT staff_lateness_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES v2.people(id);
+ALTER TABLE v2.staff_lateness
+    ADD CONSTRAINT staff_lateness_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
+ALTER TABLE v2.staff_lateness
+    ADD CONSTRAINT staff_lateness_voided_by_fkey FOREIGN KEY (voided_by) REFERENCES v2.people(id);
+
 -- ── staffing_rules · md5 ba8586dc1bceed427d2a876cd594d818
 ALTER TABLE v2.staffing_rules
     ADD CONSTRAINT staffing_rules_post_key_fkey FOREIGN KEY (post_key) REFERENCES v2.posts(key);
@@ -880,6 +1254,12 @@ ALTER TABLE v2.staffing_rules
 -- ── stamps · md5 e591c60a0bbbfe177906cc598fe46d90
 ALTER TABLE v2.stamps
     ADD CONSTRAINT stamps_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+
+-- ── standby_need · md5 0b8c58984861d2534b5672db1f13fd0e
+ALTER TABLE v2.standby_need
+    ADD CONSTRAINT standby_need_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.standby_need
+    ADD CONSTRAINT standby_need_set_by_fkey FOREIGN KEY (set_by) REFERENCES v2.people(id);
 
 -- ── structure_posts · md5 8c76445503efaa17e9a81be247d689f3
 ALTER TABLE v2.structure_posts
@@ -906,6 +1286,12 @@ ALTER TABLE v2.students
     ADD CONSTRAINT students_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 ALTER TABLE v2.students
     ADD CONSTRAINT students_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES v2.tenants(id);
+
+-- ── subject_pairing · md5 2b4bff7e1685a12ebf80053e330b3e9d
+ALTER TABLE v2.subject_pairing
+    ADD CONSTRAINT subject_pairing_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
+ALTER TABLE v2.subject_pairing
+    ADD CONSTRAINT subject_pairing_set_by_fkey FOREIGN KEY (set_by) REFERENCES v2.people(id);
 
 -- ── subject_plan · md5 5aad647ddc38aa4a6e8cd14e89770970
 ALTER TABLE v2.subject_plan
@@ -942,6 +1328,10 @@ ALTER TABLE v2.teaching_quota
     ADD CONSTRAINT teaching_quota_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id);
 ALTER TABLE v2.teaching_quota
     ADD CONSTRAINT teaching_quota_set_by_fkey FOREIGN KEY (set_by) REFERENCES v2.people(id);
+
+-- ── term_split_objections · md5 27f03de7b3211a2f1d79e386590bd791
+ALTER TABLE v2.term_split_objections
+    ADD CONSTRAINT term_split_objections_school_id_fkey FOREIGN KEY (school_id) REFERENCES v2.schools(id) ON DELETE CASCADE;
 
 -- ── terms · md5 4712f1be1f0a0b096d39db36086bc5cb
 ALTER TABLE v2.terms
