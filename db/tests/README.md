@@ -56,5 +56,6 @@
 | `43_find_after_drop.expected.md` | بعد حذف ذي الوسائط الخمسة: `v2_students_find` · الكشفُ بالأربعة · آخرُ من عملتَ عليهم · المحسوب · `v2_my_obligations` — بحساب الموجّه والمعلّم (نصُّ الفحص في سجلّ الجلسة؛ نفّذتُه نداءً واحدًا) | ✅ ٨ من ٨ |
 | `44_mail_card_scoped_find.sql` | تكليف ⑦: `v2_mail_card` ومن يفتحها · `v2_mail_inbox` مُقفلٌ على المعلّم · `v2_students_find` مقصورٌ على فصول المعلّم · رفضُ مسار الشاهد — بحسابات الموجّه والمعلّم والمساعد والطالب | ✅ ١٠ من ١١ · ⚠️ `v2_mail_my_tasks` بلا رقم وارد · ومسارُ الشاهد لم يُجرَّب |
 | `45_denial_halt_notices.sql` | تكليف ⑧: `v2_denial_board` · `v2_denial_decide` · `v2_denial_cancel` · `v2_halted_cases` · `v2_halt_escalation` · `v2_resume_escalation` · `v2_absence_notices` — حرّاسُها بالموجّه والمساعد والمعلّم، ونصوصُ شروط القرار | ✅ ١٤ من ١٥ · ❌ خطوةٌ خطؤها في الفحص |
+| `46_session_card.sql` | تكليف ④: `v2_my_sessions` · `v2_loyalty_of_section` · `v2_card_open` (التبويبات ونافذةُ الكتابة) · `v2_card_act` · `v2_loyalty_catalog` · الشبكة · `v2_session_open` · `v2_card_health` — بالمعلّم والموجّه والمساعد | ✅ ١٣ · ❌ `health_view` مرفوض · ⚠️ خطوةٌ لا تُثبت حارسًا |
 
 يُشغَّل الملفُّ دفعةً واحدةً كما هو، فيرجع جدولًا واحدًا.

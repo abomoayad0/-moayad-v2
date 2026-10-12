@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مؤيّد · الحصّة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>مؤيّد · الحصّة</h1>
+    <div class="who" id="who"></div>
+  </div>
+  <div class="hdr-acts">
+    <button id="logout" class="hbtn" type="button">خروج</button>
+  </div>
+</header>
+<nav class="screens" id="screens" aria-label="الشاشات" hidden></nav>
+<div class="testmode" id="testMode" hidden></div>
+<div class="gatebox"><div class="notice err" id="gateErr" hidden></div></div>
+
+<main id="dayView" class="wrap" hidden>
+  <div class="day">
+    <div class="full" id="schoolBox">
+      <label for="school">المدرسة</label>
+      <select id="school"></select>
+    </div>
+    <div class="full" hidden><input id="date" type="date"></div>
+  </div>
+
+  <p class="role" id="roleLine" hidden><i class="dot"></i><span id="roleText"></span></p>
+  <div class="flash" id="flash" hidden></div>
+  <div class="notice err" id="loadErr" hidden></div>
+
+  <!-- الطبقةُ الأولى: جلسةُ الحصّة — v2_my_now · v2_my_sessions (غيرُ ثابت: يُنادى عند الحاجة وحدَها) · v2_session_* -->
+  <div id="layer1">
+    <section class="rs-card">
+      <h3>الآن</h3>
+      <div id="now"></div>
+    </section>
+    <section class="rs-card">
+      <h3>حصصي اليوم</h3>
+      <div id="sessions"></div>
+    </section>
+    <section class="rs-card">
+      <h3>ما ينتظرني أنا</h3>
+      <p class="rs-sum" id="stepsSum"></p>
+      <div id="steps"></div>
+    </section>
+    <section class="rs-card">
+      <h3>من خرج الآن</h3>
+      <div id="exitsNow"></div>
+    </section>
+  </div>
+
+  <!-- الطبقةُ الثانية: شبكةُ الفصل — الطلّابُ بالترتيب الذي جاء به الباب، ولا ترتيبَ من الشاشة -->
+  <section class="rs-card" id="gridCard" hidden>
+    <div class="rs-row"><button type="button" class="rs-btn ghost" id="gridBack">→ حصصي</button></div>
+    <h3 id="gridTitle"></h3>
+    <p class="rs-meta" id="gridNote"></p>
+    <div class="hs-grid" id="grid"></div>
+    <h4 class="rs-sub">لوحةُ أعمال الفصل</h4>
+    <div id="workBoard"></div>
+  </section>
+
+  <!-- الطبقةُ الثالثة: بطاقةُ الطالب — v2_card_open بابٌ واحد -->
+  <section class="rs-card" id="cardView" hidden>
+    <div class="rs-row"><button type="button" class="rs-btn ghost" id="cardBack">→ الفصل</button></div>
+    <h3 id="cardName"></h3>
+    <p class="rs-meta" id="cardSub"></p>
+    <div id="cardHead"></div>
+    <div class="hs-tabs" id="tabs" role="tablist" aria-label="تبويباتُ البطاقة"></div>
+    <div id="tabBody"></div>
+    <h4 class="rs-sub">نقاطُ الولاء</h4>
+    <div id="loyalty"></div>
+  </section>
+</main>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="vendor/supabase-2.117.2.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="views.js"></script>
+<script src="hissa.js"></script>
+</body>
+</html>

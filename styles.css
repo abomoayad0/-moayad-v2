@@ -672,3 +672,12 @@
 
 /* الاستشهادُ صغيرًا في ذيل اللوحة (تكليف ⑧) */
 .rs-cite { font-size: 13px; line-height: 20px; color: var(--muted); margin: 8px 0 0; }
+
+/* الحصّة (تكليف ④): شبكةُ الفصل · والتبويباتُ العشرةُ في صفّين */
+.hs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 8px 0 12px; }
+.hs-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: start; min-height: 64px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--text); font: inherit; cursor: pointer; }
+.hs-tile small { color: var(--muted); font-size: 13px; }
+.hs-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 12px 0; }
+.hs-tab { min-height: 44px; padding: 6px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); font: inherit; font-size: 13px; line-height: 18px; cursor: pointer; overflow-wrap: anywhere; }
+.hs-tab.on { border-color: var(--school-primary, var(--info-c)); box-shadow: inset 0 -3px 0 var(--school-primary, var(--info-c)); font-weight: 700; }
+.hs-tab.shut { color: var(--muted); }
