@@ -1,5 +1,5 @@
 -- public.v2_mail_card(p_mail uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 c615ab76384d2695aaba3c47abe8cf48
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 7c786b6b4bf2cf4e18cfe1e93c50ff50
 CREATE OR REPLACE FUNCTION public.v2_mail_card(p_mail uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -41,7 +41,7 @@ begin
 
   return (select jsonb_build_object(
     'ok', true,
-    'mail', jsonb_build_object('id',m.id,'serial_no',m.serial_no,'ref_no',m.ref_no,
+    'mail', jsonb_build_object('id',m.id,'serial_no', m.serial_no, 'serial_ar', v2.serial_ar(m.serial_no,'in'),'ref_no',m.ref_no,
       'subject',m.subject_ar,'from',m.from_entity,'body',m.body_ar,
       'received_h', m.received_on_h||' هـ', 'doc_date_h', m.doc_date_h,
       'secrecy', m.secrecy, 'status', m.status, 'source', m.source),

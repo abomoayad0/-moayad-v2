@@ -1,5 +1,5 @@
 -- v2.audit_number_without_words()
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 aacca443693274a11c8b5e49dc955476
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 7a173bfb845fb13752ab44720d36a17f
 CREATE OR REPLACE FUNCTION v2.audit_number_without_words()
  RETURNS TABLE(fn text, why_ar text, severity text)
  LANGUAGE sql
@@ -24,7 +24,7 @@ bare_cols as (
   select c.proname, c.nm
     from outc c
    where c.typname in ('int2','int4','int8','numeric')
-     and c.nm not in ('ord','serial_no','form_no')
+     and c.nm not in ('ord','form_no')
      and not exists (select 1 from outc s where s.proname = c.proname
                       and s.nm in (c.nm||'_ar',
                            regexp_replace(c.nm,'(_n|_no|_count|_days|_min|_minutes|_pct|_left|_max)$','')||'_ar'))
@@ -38,9 +38,9 @@ keys as (
 bare_keys as (
   select k.proname, k.key
     from keys k
-   where k.key not in ('ord','serial_no','form_no')
+   where k.key not in ('ord','form_no')
      and (k.key ~ '(_n|_no|_count|_days|_min|_minutes|_pct|_left|_max)$'
-          or k.key in ('points','days','count','balance','stock','price','limit','period','minutes'))
+          or k.key in ('points','days','count','balance','stock','price','limit','period','minutes','serial'))
      and not exists (select 1 from v2.rule_numbers rn where rn.key = k.key)
      and not exists (select 1 from keys s where s.proname = k.proname
                       and s.key in (k.key||'_ar',

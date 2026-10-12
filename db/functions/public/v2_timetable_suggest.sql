@@ -1,5 +1,5 @@
 -- public.v2_timetable_suggest(p_school uuid, p_keep_fixed boolean, p_note text)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 623ad78b0f5bb2bd09e3e358e18eeb51
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 e48ec559afb2b94f159aaf30d3caab19
 CREATE OR REPLACE FUNCTION public.v2_timetable_suggest(p_school uuid, p_keep_fixed boolean, p_note text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -191,7 +191,7 @@ begin
          where draft_id=did and weekday=v_d and period_no=v_p and slot_kind='standby';
         if v_taken < v_need then
           gaps := gaps || jsonb_build_object('grade',null,'subject','الاحتياط',
-            'section','الحصّة '||v2.ar_num(v_p),
+            'section', v2.period_ar(v_p),
             'why','طلبت مدرستك '||v2.ar_count(v_need,'معلّم','معلّمين','معلّمين','معلّمًا')||
                   ' ولم يتهيّأ إلّا '||v2.ar_num(v_taken)||' — فالباقون مشغولون أو بلغوا سقفَهم');
         end if;
@@ -207,6 +207,13 @@ begin
    where id=did;
   return jsonb_build_object('ok',true,'draft',did,
     'placed',placed,'unplaced',unplaced,'standby',standby,'split_warn',split_warn,'gaps',gaps,
+    'placed_ar', v2.ar_count0(placed,'لم تُوضع حصّةٌ واحدة','حصّةٌ واحدة','حصّتان','حصص','حصّة'),
+    'unplaced_ar', v2.ar_count0(unplaced,'ولم يبقَ شيءٌ بلا موضع','حصّةٌ واحدة بلا موضع','حصّتان بلا موضع','حصص بلا موضع','حصّةً بلا موضع'),
+    'standby_ar', v2.ar_count0(standby,'ولا احتياطَ في المقترح','حصّةُ احتياطٍ واحدة','حصّتا احتياط','حصصِ احتياط','حصّةَ احتياط'),
+    'split_warn_ar', v2.ar_count0(split_warn,'ولا مادّةَ قُسّمت بين معلّمين','مادّةٌ قُسّمت بين معلّمين','مادّتان قُسّمتا','موادَّ قُسّمت','مادّةً قُسّمت'),
+    'said_ar', 'وُضعت '||v2.ar_num(placed)||' حصّةً · وبقي '||v2.ar_num(unplaced)||
+               ' بلا موضع · والاحتياطُ '||v2.ar_num(standby)||
+               case when split_warn > 0 then ' · وتُنبَّه على '||v2.ar_num(split_warn)||' مادّةً قُسّمت بين معلّمين' else '' end,
     'note','هذا مقترحٌ يُعرض ولا يُثبَّت — راجعه ثمّ أقرّه أو ألغِه');
 end $function$
 ;

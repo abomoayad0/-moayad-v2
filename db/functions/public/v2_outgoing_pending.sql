@@ -1,5 +1,5 @@
 -- public.v2_outgoing_pending(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 b08ab56c521cda43104903dd123dc0b0
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 ee11597c7e36761b0bb764f751c7f4d4
 CREATE OR REPLACE FUNCTION public.v2_outgoing_pending(p_school uuid DEFAULT NULL::uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -19,14 +19,14 @@ begin
          order by m.created_at), '[]'::jsonb) into v_draft
     from v2.outgoing_mail m where m.school_id = sc and m.status = 'draft';
 
-  select coalesce(jsonb_agg(jsonb_build_object('mail',m.id,'serial',m.serial_no,
+  select coalesce(jsonb_agg(jsonb_build_object('mail',m.id,'serial',m.serial_no,'serial_ar',v2.serial_ar(m.serial_no,'out'),
            'subject',m.subject_ar,'to_entity',m.to_entity,
            'signed_ar',coalesce(m.issued_on_h, v2.fn_to_hijri(m.issued_on_g))||' هـ',
            'age_days',current_date - m.signed_at::date)
          order by m.serial_no), '[]'::jsonb) into v_signed
     from v2.outgoing_mail m where m.school_id = sc and m.status = 'signed';
 
-  select coalesce(jsonb_agg(jsonb_build_object('mail',m.id,'serial',m.serial_no,
+  select coalesce(jsonb_agg(jsonb_build_object('mail',m.id,'serial',m.serial_no,'serial_ar',v2.serial_ar(m.serial_no,'out'),
            'subject',m.subject_ar,'to_entity',m.to_entity,'sent_on',m.sent_on,
            'due_on',m.reply_due_on,
            'late_days', case when m.reply_due_on < current_date

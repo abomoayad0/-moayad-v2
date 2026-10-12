@@ -54,6 +54,9 @@
     // للصفات التي تقبلها جسورُ الصادر نفسُها: المديرُ والوكيلُ ووكيلُ شؤون الطلاب والمساعدان الإداريّان — والجسورُ تحرس كلَّ فعل
     { key: 'barid', group: 'الإدارة', title: 'بريد المدرسة', desc: 'ما ينتظر الصادر · السجلّ · الوارد',
       href: 'barid.html', allow: (c, me) => !!c.wakeel_full || MAIL_ROLES.includes(currentRole(me)) },
+    // صفحةُ المعلّم (تكليف ⑤): بيتٌ واحدٌ بستّة أقسام — بالتكليف لمعلّمي الموادّ والتربية الخاصّة والموهوبين
+    { key: 'muallim', group: 'ما عليّ', title: 'صفحة المعلّم', desc: 'صفّي · توزيعُ المنهج · يومي · ما كُلِّفتُ به · ما وصلني · ما يُقاس بي',
+      href: 'muallim.html', allow: (c, me) => ['subject_teacher', 'sped_teacher', 'gifted_teacher'].includes(currentRole(me)) },
     // الحصّة (تكليفُ الباني ④): جلسةُ الحصّة ← شبكةُ الفصل ← بطاقةُ الطالب — بالتكليف: لمعلّمي الموادّ والتربية الخاصّة (لا مفتاحَ لها في can)
     { key: 'hissa', group: 'ما عليّ', title: 'الحصّة', desc: 'حصصي اليوم · شبكةُ الفصل · بطاقةُ الطالب',
       href: 'hissa.html', allow: (c, me) => ['subject_teacher', 'sped_teacher'].includes(currentRole(me)) },

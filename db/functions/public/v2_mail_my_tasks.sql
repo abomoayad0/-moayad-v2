@@ -1,7 +1,7 @@
 -- public.v2_mail_my_tasks(p_school uuid)
--- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 9801afbf3528b8da4469b7328758e1f3
+-- مستخرَجٌ من القاعدة بـ pg_get_functiondef · md5 f74c303013246a2eb8a4bc9f75bb064a
 CREATE OR REPLACE FUNCTION public.v2_mail_my_tasks(p_school uuid)
- RETURNS TABLE(followup_id uuid, item_id uuid, mail_id uuid, serial_no integer, subject_ar text, text_ar text, due_on date, due_h text, is_late boolean, late_ar text, status text, reminders_n smallint, reminders_ar text)
+ RETURNS TABLE(followup_id uuid, item_id uuid, mail_id uuid, serial_no integer, serial_ar text, subject_ar text, text_ar text, due_on date, due_h text, is_late boolean, late_ar text, status text, reminders_n smallint, reminders_ar text)
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
  SET search_path TO 'v2', 'public'
@@ -15,7 +15,7 @@ begin
   v_days := (v2.rule_n(p_school,'mail_followup_done_days'))::int;
 
   return query
-  select f.id, f.item_id, m.id, m.serial_no,
+  select f.id, f.item_id, m.id, m.serial_no, v2.serial_ar(m.serial_no,'in'),
          case when m.secrecy = 'عادي' or v_may then m.subject_ar
               else 'خطابٌ '||m.secrecy||' — لا يُعرض عنوانُه هنا' end,
          i.text_ar,
