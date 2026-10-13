@@ -548,7 +548,7 @@
       const drawPer = () => {
         pb.textContent = '';
         const x = pers.find((y) => y.period_no === gr.per) || {};
-        line(pb, 'rs-meta', [x.from_week_ar && x.to_week_ar ? x.from_week_ar + ' ← ' + x.to_week_ar : null, x.said_ar].filter(Boolean).join(' · '));
+        line(pb, 'rs-meta', [x.from_week_ar && x.to_week_ar ? x.from_week_ar + ' ← ' + x.to_week_ar : null, x.sum_ar, x.said_ar].filter(Boolean).join(' · '));
         pb.appendChild(itemList(x.items || [], ro, pers));
         arabize(pb);
       };
@@ -689,7 +689,10 @@
       const pers = d.periods || [];
       for (const pr of pers) {
         n.appendChild(el('h4', null, pr.period_ar || ''));
-        if (pr.said_ar) n.appendChild(el('p', 'rs-meta', pr.said_ar));
+        // ومجموعُها بلفظه (sum_ar) وسقفُها (max_ar) — ولا يُكرَّر إن كانت جملتُها تقوله
+        const sm = pr.sum_ar && !(pr.said_ar || '').includes(pr.sum_ar) ? pr.sum_ar : null;
+        const pl2 = [pr.said_ar, sm, pr.max_ar ? 'من ' + pr.max_ar : null].filter(Boolean);
+        if (pl2.length) n.appendChild(el('p', 'rs-meta', pl2.join(' · ')));
         const ul = el('ul', 'rs-acts');
         for (const x of (d.items || []).filter((y) => y.period_no === pr.period_no && y.counts !== false)) {
           const li = el('li'); const sp = el('span'); sp.style.flex = '1';
