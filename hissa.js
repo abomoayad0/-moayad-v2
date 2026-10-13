@@ -8,6 +8,7 @@
 //    واجب: v2_work_set · v2_work_void · خروج: v2_exit_out · v2_exit_back · دور: v2_role_assign · v2_role_end
 //    رصيدُ الممارسات: practice_balance (مرآةٌ لا درجة) · ونقاطُ الولاء الآليّةُ لا أزرارَ لها (can_grant يحمل اليدويَّ وحده)
 //    تتمّتُها: v2_badges_of_student · v2_work_of_student · v2_contacts_of · v2_student_timeline · ومجالاتُ الممارسات: v2_practice_scopes · ونصيحةُ اللائحة: v2_advice_for
+//    كشفُ الحضور (لوحة ٤): v2_session_sheet (قارئ) · v2_period_states · v2_record_period — و v2_session_attendance كاتبٌ يُقفل
 //    صحّته: v2_card_health للقراءة وحدها (health_from) · الدرسُ من v2_session_lesson_options · وأنواعُ العمل من v2_work_kinds · نقاطُ الولاء: v2_loyalty_catalog · v2_loyalty_wallet · v2_loyalty_record · v2_loyalty_spend · v2_loyalty_undo
 // ولا رقمَ في الشاشة: كلُّ مهلةٍ وسقفٍ وعتبةٍ من الباب · وكلُّ رفضٍ بنصّه · ولا زرَّ يُعطَّل بحساب
 (function () {
@@ -63,7 +64,7 @@
     for (const s of rows) {
       const f = el('div', 'rs-file');
       f.append(el('h5', null, (s.period_ar || '') + ' · ' + (s.section_ar || '') + ' · ' + (s.subject || '')),
-        el('p', 'rs-meta', [s.at, s.basis_ar].filter(Boolean).join(' · ')));
+        el('p', 'rs-meta', [s.at_ar, s.basis_ar].filter(Boolean).join(' · ')));
       // الحالُ كما جاء — والمقفلةُ آليًّا بنقصٍ غيرُ المقفلة تامّة
       const st = el('p');
       const cls = !s.opened ? 'wait' : s.closed ? (s.auto_closed && (!s.attendance_done || !s.lesson_ar) ? 'late' : 'done') : 'open';
@@ -75,7 +76,8 @@
       const r = el('div', 'rs-row');
       if (!s.opened || s.closed) r.appendChild(btn('افتح الحصّة', 'rs-btn' + (s.opened ? '' : ' pri'), () => openSession(s)));
       if (s.opened && !s.closed) {
-        if (!s.attendance_done) r.appendChild(btn('اعتمد الحضور', 'rs-btn pri', () => attendance(s)));
+        r.appendChild(btn('كشفُ الحضور', 'rs-btn pri', () => attSheet(s)));
+        if (!s.attendance_done) r.appendChild(btn('اعتمد الحضور', 'rs-btn', () => attendanceForm(s)));
         r.appendChild(btn(s.lesson_ar ? 'غيّر الدرس' : 'سمِّ الدرس', 'rs-btn', () => lessonForm(s)));
         r.appendChild(btn('أقفِل الحصّة', 'rs-btn', () => closeForm(s)));
       }
@@ -93,7 +95,60 @@
     return data;
   }
   const openSession = (s) => act('v2_session_open', { p_period: s.period, p_section: s.section }, 'فتح الحصّة', loadSessions);
-  const attendance = (s) => act('v2_session_attendance', { p_session: s.session }, 'اعتماد الحضور', loadSessions);
+  // ---------- كشفُ حضور الحصّة (لوحة ٤) ----------
+  // القارئُ v2_session_sheet · والرصدُ v2_record_period بمفتاح الحال (key) وتاريخِ الكشف (on) · والأحوالُ من v2_period_states (choosable وحدَها)
+  // 🔴 v2_session_attendance كاتبٌ لا قارئ: يعتمد الحضورَ ويُقفله — فلا يُنادى إلّا من «اعتمد الحضور» بعد عرض العدّ
+  async function attSheet(s) {
+    const { data, error } = await M.rpc('v2_session_sheet', { p_session: s.session }, 'كشف حضور الحصّة');
+    if (error) { flash('bad', errText(error)); return; }
+    const d = data || {};
+    const n = el('div');
+    if (d.tally_ar) n.appendChild(el('p', 'rs-sum', d.tally_ar));
+    if (d.confirmed_ar) n.appendChild(el('p', 'rs-meta', d.confirmed_ar));
+    const list = el('div', 'rs-list');
+    for (const st of arr(d.students)) {
+      const b = btn('', 'rs-item' + (st.recorded ? ' on' : ''), () => periodForm(s, d, st));
+      b.append(el('span', null, st.name_ar || ''), el('small', null, st.said_ar || ''));
+      list.appendChild(b);
+    }
+    n.appendChild(list);
+    V.form({ title: d.said_ar || 'كشفُ الحضور', ok: false, cancel: 'إغلاق', fields: [{ key: 'n', type: 'node', node: n }] });
+  }
+  async function periodForm(s, d, st) {
+    if (!ui.pstates) {
+      const { data, error } = await M.rpc('v2_period_states', {}, 'أحوال الحضور');
+      if (error) { flash('bad', errText(error)); return; }
+      ui.pstates = data || {};
+    }
+    const ch = arr(ui.pstates.states).filter((x) => x.choosable);
+    V.form({
+      title: st.name_ar || '', what: [d.period_ar, st.said_ar].filter(Boolean).join(' · '), ok: 'ارصد',
+      fields: [
+        { key: 'state', type: 'pick', label: 'حالُه', items: ch.map((x) => [x.key, x.label_ar || '']), value: st.state, hint: ui.pstates.said_ar },
+        { key: 'min', type: 'number', label: 'دقائقُ التأخّر', value: st.minutes_late, show: (v) => v.state === 'late' },
+        { key: 'note', type: 'textarea', label: 'ملاحظة (اختياريّة)', rows: 2 },
+      ],
+      onOk: async (v) => {
+        const { error } = await M.rpc('v2_record_period', { p_student: st.student_id, p_period: s.period, p_state: v.state, p_date: d.on, p_minutes: v.state === 'late' ? v.min : null, p_note: v.note }, 'رصد الحضور');
+        if (error) return error;
+        attSheet(s); return null;
+      },
+    });
+  }
+  // الاعتمادُ لا يُعدَّل بعده إلّا من القيادة — فيُعرض العدُّ ومن لم يُرصد قبل الإقرار
+  async function attendanceForm(s) {
+    const { data } = await M.rpc('v2_session_sheet', { p_session: s.session }, 'كشف حضور الحصّة');
+    const d = data || {};
+    V.form({
+      title: 'اعتمادُ حضور الحصّة', what: d.said_ar || '', ok: 'اعتمد الحضور', okCls: 'rs-btn irrev',
+      fields: [{ key: 'n', type: 'node', node: el('p', 'rs-sum', [d.tally_ar, d.confirmed_ar].filter(Boolean).join(' — ')) }],
+      onOk: async () => {
+        const { data: r, error } = await M.rpc('v2_session_attendance', { p_session: s.session }, 'اعتماد الحضور');
+        if (error) return error;
+        flash('ok', (r && r.msg) || ''); loadSessions(); return null;
+      },
+    });
+  }
   // الدرس: بنودُ التوزيع من v2_session_lesson_options (والصفُّ يُستخرج من قسم الجلسة) — و note_ar يقول حالَ التوزيع كما جاء
   //        فإن لم يكن توزيعٌ بقي النصُّ الحرّ · والبندُ يُرسل في p_item والنصُّ في p_text
   async function lessonForm(s) {
@@ -331,7 +386,7 @@
     part('سجلُّه الزمنيّ', async (b) => {
       const { data, error } = await M.rpc('v2_student_timeline', { p_student: stu.id, p_as: null }, 'سجلّ الطالب الزمنيّ');
       if (error) { err(b, error); return; }
-      V.events(b, arr((data || {}).events));
+      V.events(b, arr((data || {}).events).map((e) => Object.assign({}, e, { on: e.on_ar || e.on })));
     });
   }
   // التبويباتُ العشرةُ بترتيبها في صفّين — والمغلقُ يُعرض مغلقًا بسببه
