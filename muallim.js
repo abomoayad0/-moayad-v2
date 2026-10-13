@@ -2,7 +2,7 @@
 // الأقسام: صفّي · توزيعُ المنهج · يومي في المدرسة · ما كُلِّفتُ به · ما وصلني · ما يُقاس بي
 // والظهورُ بالتكليف لا بالصلاحية: قسمُ التوزيع لمن صفتُه النافذةُ معلّمُ موادّ أو تربيةٍ خاصّة أو موهوبين
 // ⓖ قسمُ «درجات المادّة» (تكليف ⑥): موادّي (v2_grade_my_subjects) · الفتح · بطاقةُ التوزيع بخاناتها وبنودها · بطاقةُ الطالب
-//    وكشفُ الفصل ينتظر حرفَ الفصل من الباب · وحكمُ النجاح لا يُعرض حتى يُصلَح «راسب» لمن لم يُرصد له شيء
+//    وكشفُ الفصل بحرف الفصل (sections[].section) · وحكمُ النجاح في الحال full وحدَها (state من الباب)
 // ① قسمُ «توزيع المنهج»: موادّي (v2_my_plan_subjects) ومن كلّ سطرٍ لوحاتُه — البطاقة · بلا أسبوع · المنهج · الكفاية · المخارج · حدُّ الفصلين
 // ② «صفّي» و«يومي» و«ما كُلِّفتُ به» و«ما وصلني» قائمةٌ اليومَ في شاشتَي «الحصّة» و«ما عليّ» — وتُنقل إلى هنا بترتيب مفرح
 (function () {
@@ -430,7 +430,7 @@
   // الأبواب: v2_grade_my_subjects · v2_grade_plan_open · v2_grade_plan_card (بخمسة وسائط و p_person فارغًا) · v2_grade_item_add/set/drop
   //          v2_grade_student · وأدواتُ التقويم من v2_reference('assess_tools') — يُرسل key ويُعرض label_ar، مجموعتين بـ kind
   // ولا حسابَ في الشاشة: المجاميعُ والسقوفُ وألفاظُها من الباب · والخانةُ التي سقفُها صفرٌ لا تُعرض
-  // وكشفُ الفصل (v2_grade_sheet) ينتظر مفتاحَ حرف الفصل: لا بابَ يُخرجه، ولا يُقتطع من اسم الفصل
+  // وكشفُ الفصل (v2_grade_sheet) بحرف الفصل من v2_my_plan_subjects (sections[].section) — ولا يُقتطع من اسم الفصل
   const gr = { term: null, terms: null, subj: null, panel: 'card', card: null, tools: null, stuSec: null };
   const GPANELS = [['card', 'بطاقةُ التوزيع'], ['student', 'بطاقةُ طالب'], ['sheet', 'كشفُ الفصل']];
   const gkey = () => ({ p_grade: gr.subj.grade, p_subject: gr.subj.subject_ar, p_school: M.state.school, p_term: gr.term });
@@ -600,7 +600,7 @@
   }
 
   // بطاقةُ الطالب: الفصلُ من v2_my_plan_subjects (section_id · class_ar) والطلّابُ من v2_loyalty_of_section
-  // وتُعرض الدرجاتُ وحدَها: لا band_ar ولا passes ولا said_ar (فيه الحكم) حتى يُصلَح حكمُ من لم يُرصد له شيء
+  // وحالُ الرصد (state · state_ar) من الباب: لا حكمَ قبل اكتمال الرصد — والتقديرُ (band_ar) في الحال full وحدَها
   async function gStudent(box) {
     const c = el('section', 'rs-card');
     box.appendChild(c);
@@ -630,6 +630,10 @@
     if (error) n.appendChild(el('div', 'notice err', errText(error)));
     else {
       const d = data || {};
+      // حالُ الرصد من الباب: none · partial بلا حكم — و full وحدَه يُعرض فيه التقديرُ وجملتُه
+      if (d.state_ar) n.appendChild(el('p', 'rs-sum', d.state_ar));
+      if (d.state === 'full') { if (d.band_ar) n.appendChild(el('p', 'rs-score', d.band_ar)); if (d.said_ar) n.appendChild(el('p', 'rs-meta', d.said_ar)); }
+      if (d.total_ar) n.appendChild(el('p', 'rs-meta', d.total_ar));
       const groups = new Map();
       for (const x of (d.items || []).filter((y) => y.counts !== false)) {
         if (!groups.has(x.bucket_ar)) groups.set(x.bucket_ar, []);
@@ -640,7 +644,7 @@
         const ul = el('ul', 'rs-acts');
         for (const x of xs) {
           const li = el('li'); const sp = el('span'); sp.style.flex = '1';
-          sp.append(el('b', null, x.title_ar || ''), el('div', 'rs-meta', [x.points_ar, x.said_ar].filter(Boolean).join(' · ')));
+          sp.append(el('b', null, x.title_ar || ''), el('div', 'rs-meta', [x.points_ar, x.max_ar && !x.points_ar ? x.max_ar : null, x.said_ar].filter(Boolean).join(' · ')));
           li.appendChild(sp); ul.appendChild(li);
         }
         n.appendChild(ul);
@@ -656,11 +660,82 @@
     V.form({ title: (data && data.name_ar) || (it && it[1]) || '', what: gr.subj.said_ar || '', ok: false, cancel: 'إغلاق', fields: [{ key: 'n', type: 'node', node: n }] });
   }
 
-  // كشفُ الفصل: الطلّابُ صفوفًا والبنودُ أعمدة — ولا يُبنى حتى يُخرج البابُ حرفَ الفصل الذي يطلبه v2_grade_sheet
-  function gSheet(box) {
+  // كشفُ الفصل (v2_grade_sheet): الطلّابُ صفوفًا والبنودُ أعمدة · والفصلُ بحرفه (sections[].section) يُرسل كما جاء
+  // خليّةُ البند تُكتب فيها الدرجة ⇐ v2_grade_mark · وخليّةُ الحضور للقراءة وتُظهر said_ar · والقبليُّ عمودٌ بلونٍ آخر
+  // والمجموعُ total_ar من الباب · ويبقى الكشفُ مفتوحًا بعد إقفال التوزيع
+  async function gSheet(box) {
     const c = el('section', 'rs-card');
-    c.appendChild(el('p', 'rs-note', 'لم يُبنَ بعد: v2_grade_sheet يطلب حرفَ الفصل، ولا بابَ يُخرجه اليوم — والإصلاحُ عند وكيل القاعدة ينتظر أمرَ مفرح.'));
     box.appendChild(c);
+    const { data, error } = await M.rpc('v2_my_plan_subjects', { p_school: M.state.school, p_term: null }, 'فصولي');
+    if (error) { errBox(c, error); arabize(c); return; }
+    const row = ((data && data.rows) || []).find((r) => Number(r.grade) === Number(gr.subj.grade) && r.subject_ar === gr.subj.subject_ar);
+    const secs = ((row && row.sections) || []).filter((x) => x.section).map((x) => [x.section, x.class_ar || '']);
+    if (!secs.length) { line(c, 'rs-meta', data && data.summary_ar); arabize(c); return; }
+    if (!gr.sheetSec || !secs.some((x) => x[0] === gr.sheetSec)) gr.sheetSec = secs[0][0];
+    const pk = el('div', 'rs-pick'); const body = el('div');
+    c.append(pk, body);
+    if (secs.length > 1) V.pick(pk, secs, gr.sheetSec, (v) => { gr.sheetSec = v; drawSheet(body); });
+    arabize(c);
+    drawSheet(body);
+  }
+  async function drawSheet(body) {
+    body.textContent = '';
+    const { data, error } = await M.rpc('v2_grade_sheet', { p_grade: gr.subj.grade, p_subject: gr.subj.subject_ar, p_section: gr.sheetSec, p_school: M.state.school, p_term: gr.term }, 'كشف الفصل');
+    if (error) { errBox(body, error); arabize(body); return; }
+    const d = data || {};
+    line(body, 'rs-sum', d.said_ar);
+    line(body, 'rs-meta', [d.section_ar, d.term_ar, d.kind_ar].filter(Boolean).join(' · '));
+    const studs = d.students || [];
+    if (!studs.length) { arabize(body); return; }
+    const cols = studs[0].items || [];
+    const wrap = el('div', 'gr-sheet');
+    const tb = el('table');
+    const hr = el('tr');
+    hr.appendChild(el('th', 'gr-name', 'الطالب'));
+    for (const it of cols) {
+      const th = el('th', it.bucket === 'pre' ? 'pre' : null);
+      th.append(el('b', null, it.title_ar || ''), el('small', null, it.max_ar || ''));
+      hr.appendChild(th);
+    }
+    hr.appendChild(el('th', null, 'المجموع'));
+    tb.appendChild(hr);
+    for (const st of studs) {
+      const tr = el('tr');
+      tr.appendChild(el('td', 'gr-name', st.name_ar || ''));
+      const tot = el('td', 'gr-tot', st.total_ar || '');
+      for (const it of st.items || []) {
+        const td = el('td', it.bucket === 'pre' ? 'pre' : null);
+        if (it.is_attendance) {
+          // الحضورُ يُحسب آليًّا — للقراءة، وعند اللمس نصُّه
+          const b = btn('يُحسب آليًّا', 'gr-auto', () => V.flash('ok', it.said_ar || ''));
+          td.appendChild(b);
+        } else {
+          const inp = el('input'); inp.type = 'number'; inp.inputMode = 'decimal'; inp.setAttribute('data-raw', '');
+          inp.setAttribute('aria-label', (st.name_ar || '') + ' — ' + (it.title_ar || ''));
+          if (it.points != null) inp.value = String(Number(it.points));
+          let was = inp.value;
+          inp.addEventListener('change', async () => {
+            if (inp.value === was) return;
+            const v = inp.value === '' ? null : Number(inp.value);
+            const x = await M.rpc('v2_grade_mark', { p_item: it.item_id, p_student: st.student_id, p_points: v }, 'رصد درجة');
+            if (x.error) { V.flash('bad', errText(x.error)); inp.value = was; return; }
+            was = inp.value;
+            V.flash('ok', (x.data && x.data.said_ar) || '');
+            // المجموعُ بلفظه من الباب بعد الرصد
+            const y = await M.rpc('v2_grade_sheet', { p_grade: gr.subj.grade, p_subject: gr.subj.subject_ar, p_section: gr.sheetSec, p_school: M.state.school, p_term: gr.term }, 'كشف الفصل');
+            const me = ((y.data && y.data.students) || []).find((z) => z.student_id === st.student_id);
+            if (me) { tot.textContent = me.total_ar || ''; arabize(tot); }
+          });
+          td.appendChild(inp);
+        }
+        tr.appendChild(td);
+      }
+      tr.appendChild(tot);
+      tb.appendChild(tr);
+    }
+    wrap.appendChild(tb);
+    body.appendChild(wrap);
+    arabize(body);
   }
 
   M.start({ screen: 'muallim', onChange: () => refresh() });

@@ -696,3 +696,13 @@ ul.rs-acts li.click:hover { background: var(--soft); border-radius: 8px; }
 .gr-bar { height: 8px; border-radius: 999px; background: var(--chip); overflow: hidden; margin: 8px 0 4px; }
 .gr-bar i { display: block; height: 100%; background: var(--primary); border-radius: 999px; }
 .gr-bar.over i { background: var(--warn, #b45309); }
+/* كشفُ الفصل: الجدولُ يُمرَّر أفقيًّا داخل إطاره لا الصفحة · وعمودُ القبليّ بلونٍ آخر */
+.gr-sheet { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px; border: 1px solid var(--line, #e5e7eb); border-radius: 10px; }
+.gr-sheet table { border-collapse: collapse; font-size: 13px; min-width: 100%; }
+.gr-sheet th, .gr-sheet td { border-bottom: 1px solid var(--line, #e5e7eb); padding: 6px 8px; text-align: center; white-space: nowrap; }
+.gr-sheet th small { display: block; color: var(--mute); font-weight: 400; }
+.gr-sheet .gr-name { text-align: start; position: sticky; inset-inline-start: 0; background: var(--card, #fff); white-space: normal; min-width: 120px; }
+.gr-sheet .pre { background: var(--soft); }
+.gr-sheet input { width: 56px; padding: 4px; text-align: center; font-size: 15px; }
+.gr-sheet .gr-tot { white-space: normal; min-width: 110px; font-size: 12px; }
+.gr-auto { font-size: 12px; padding: 4px 8px; border-radius: 999px; border: 1px dashed var(--mute); background: transparent; color: var(--mute); }
