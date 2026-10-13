@@ -58,7 +58,8 @@
     { key: 'muallim', group: 'ما عليّ', title: 'صفحة المعلّم', desc: 'صفّي · توزيعُ المنهج · يومي · ما كُلِّفتُ به · ما وصلني · ما يُقاس بي',
       href: 'muallim.html', allow: (c, me) => ['subject_teacher', 'sped_teacher', 'gifted_teacher'].includes(currentRole(me)) },
     // الحصّة (تكليفُ الباني ④): جلسةُ الحصّة ← شبكةُ الفصل ← بطاقةُ الطالب — بالتكليف: لمعلّمي الموادّ والتربية الخاصّة (لا مفتاحَ لها في can)
-    { key: 'hissa', group: 'ما عليّ', title: 'الحصّة', desc: 'حصصي اليوم · شبكةُ الفصل · بطاقةُ الطالب',
+    // وصارت قسمَ «صفّي» في صفحة المعلّم: رُفع مدخلُها من الشريط (nav: false) — والصفحةُ باقيةٌ تُفتح بعنوانها للفحص
+    { key: 'hissa', group: 'ما عليّ', title: 'الحصّة', desc: 'حصصي اليوم · شبكةُ الفصل · بطاقةُ الطالب', nav: false,
       href: 'hissa.html', allow: (c, me) => ['subject_teacher', 'sped_teacher'].includes(currentRole(me)) },
     // المواظبة: الحرمانُ والوقفُ والإخطار (تكليفُ الشاشات ⑧) — بالصفة النافذة كالبريد، والجسورُ تحرس كلَّ لوحةٍ وفعل
     { key: 'hirman', group: 'الإدارة', title: 'المواظبة: الحرمان والوقف', desc: 'إخطاراتُ الغياب · لوحةُ الحرمان وقرارُه · الحالاتُ الموقوفُ تصعيدُها',
@@ -354,7 +355,7 @@
     nav.textContent = '';
     nav.className = 'screens drawer';
     nav.hidden = true;
-    const list = screensFor(me);
+    const list = screensFor(me).filter((x) => x.nav !== false);
     let tg = $('navToggle');
     if (!tg) {
       tg = el('button', 'hbtn navtg', '☰');
@@ -439,7 +440,7 @@
       if (!me) { gate('حسابك غير مسند إلى منسوب في مؤيّد. اطلب من مالك النظام إسنادك.'); return; }
       if (!screen || !screen.allow(me.can || {}, me)) {
         // الصفة الجديدة لا تملك هذه الشاشة: إلى أول شاشة تملكها، وإلا فلا شيء
-        const first = screensFor(me)[0];
+        const first = screensFor(me).filter((x) => x.nav !== false)[0];
         if (why === 'role' && first) { location.replace(first.href); return; }
         $('dayView').hidden = true;
         gate('صفتك (' + (me.role_ar || 'بلا صفة') + ') لا تملك هذه الشاشة.' +
