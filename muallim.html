@@ -41,6 +41,56 @@
   <!-- الأقسامُ الستّة — تنكمش بالتكليف: من ليس معلّمًا مُسندًا لا يرى قسمَ التوزيع -->
   <div class="rs-pick" id="sections" role="tablist" aria-label="أقسامُ صفحة المعلّم"></div>
   <div id="sectionBody"></div>
+
+  <!-- قسمُ «صفّي»: طبقاتُ «الحصّة» الثلاث بعينها (hissa.js) تُركَّب هنا — قسمٌ في الصفحة لا شاشةٌ أخرى -->
+  <div id="safiHost" hidden>
+    <!-- الطبقةُ الأولى: جلسةُ الحصّة — v2_my_now · v2_my_sessions (غيرُ ثابت: يُنادى عند الحاجة وحدَها) · v2_session_* -->
+    <div id="layer1">
+      <section class="rs-card">
+        <h3>الآن</h3>
+        <div id="now"></div>
+      </section>
+      <section class="rs-card">
+        <h3>حصصي اليوم</h3>
+        <div id="sessions"></div>
+      </section>
+      <section class="rs-card">
+        <h3>ما ينتظرني أنا</h3>
+        <p class="rs-sum" id="stepsSum"></p>
+        <div id="steps"></div>
+      </section>
+      <section class="rs-card">
+        <h3>من خرج الآن</h3>
+        <div id="exitsNow"></div>
+      </section>
+    </div>
+
+    <!-- الطبقةُ الثانية: شبكةُ الفصل — الطلّابُ بالترتيب الذي جاء به الباب، ولا ترتيبَ من الشاشة -->
+    <section class="rs-card" id="gridCard" hidden>
+      <div class="rs-row"><button type="button" class="rs-btn ghost" id="gridBack">→ حصصي</button></div>
+      <h3 id="gridTitle"></h3>
+      <p class="rs-meta" id="gridNote"></p>
+      <div class="hs-grid" id="grid"></div>
+      <h4 class="rs-sub">لوحةُ أعمال الفصل</h4>
+      <div id="workBoard"></div>
+    </section>
+
+    <!-- الطبقةُ الثالثة: بطاقةُ الطالب — v2_card_open بابٌ واحد -->
+    <section class="rs-card" id="cardView" hidden>
+      <div class="rs-row"><button type="button" class="rs-btn ghost" id="cardBack">→ الفصل</button></div>
+      <h3 id="cardName"></h3>
+      <p class="rs-meta" id="cardSub"></p>
+      <div id="cardHead"></div>
+      <div class="hs-tabs" id="tabs" role="tablist" aria-label="تبويباتُ البطاقة"></div>
+      <div id="tabBody"></div>
+      <h4 class="rs-sub">رصيدُ الممارسات</h4>
+      <div id="pbal"></div>
+      <!-- تتمّةُ البطاقة: شاراتُه · أعمالُه · اتّصالُه · سجلُّه الزمنيّ -->
+      <div id="cardMore"></div>
+      <h4 class="rs-sub">نقاطُ الولاء</h4>
+      <div id="loyalty"></div>
+    </section>
+  </div>
 </main>
 
 <div class="toast" id="toast" hidden></div>
@@ -49,6 +99,7 @@
 <script src="config.js"></script>
 <script src="common.js"></script>
 <script src="views.js"></script>
+<script src="hissa.js"></script>
 <script src="muallim.js"></script>
 </body>
 </html>

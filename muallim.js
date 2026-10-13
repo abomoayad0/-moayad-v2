@@ -4,7 +4,7 @@
 // ⓖ قسمُ «درجات المادّة» (تكليف ⑥): موادّي (v2_grade_my_subjects) · الفتح · بطاقةُ التوزيع بخاناتها وبنودها · بطاقةُ الطالب
 //    وكشفُ الفصل بحرف الفصل (sections[].section) · وحكمُ النجاح في الحال full وحدَها (state من الباب)
 // ① قسمُ «توزيع المنهج»: موادّي (v2_my_plan_subjects) ومن كلّ سطرٍ لوحاتُه — البطاقة · بلا أسبوع · المنهج · الكفاية · المخارج · حدُّ الفصلين
-// ② «صفّي» و«يومي» و«ما كُلِّفتُ به» و«ما وصلني» قائمةٌ اليومَ في شاشتَي «الحصّة» و«ما عليّ» — وتُنقل إلى هنا بترتيب مفرح
+// ② «صفّي» قسمٌ في الصفحة (طبقاتُ hissa.js بعينها في safiHost) · و«يومي» و«ما كُلِّفتُ به» و«ما وصلني» ما زالت في «ما عليّ»
 (function () {
   'use strict';
 
@@ -14,7 +14,7 @@
   const { arabize, btn } = V;
 
   const TEACHING = ['subject_teacher', 'sped_teacher', 'gifted_teacher'];
-  const ui = { sec: 'plan' };
+  const ui = { sec: 'mine' };
   const role = () => { const r = ((M.state.me && M.state.me.roles) || []).find((x) => x.is_current === true); return r ? r.role_key : null; };
 
   const SECTIONS = [
@@ -35,7 +35,11 @@
 
   function render() {
     const box = $('sectionBody'); box.textContent = '';
-    ({ mine: secLink('hissa.html', 'افتح «الحصّة»'), plan: secPlan, grades: secGrades, day: secLink('mukallaf.html', 'افتح «ما عليّ»'),
+    // «صفّي» قسمٌ في الصفحة: طبقاتُ الحصّة الثلاث (hissa.js) في safiHost — وتُطوى إذا فُتح قسمٌ غيرُه
+    const safi = ui.sec === 'mine';
+    $('safiHost').hidden = !safi;
+    if (safi) { if (window.MoayadSafi) window.MoayadSafi.refresh(); return; }
+    ({ plan: secPlan, grades: secGrades, day: secLink('mukallaf.html', 'افتح «ما عليّ»'),
       tasks: secLink('mukallaf.html', 'افتح «ما عليّ»'), inbox: secLink('mukallaf.html', 'افتح «ما عليّ»'), measured: secMeasured }[ui.sec])(box);
   }
   // الأقسامُ القائمةُ في شاشتَين — تُفتح منهما حتى تُنقل

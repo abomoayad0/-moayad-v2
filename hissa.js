@@ -766,5 +766,7 @@
     });
   }
 
-  M.start({ screen: 'hissa', onChange: () => refresh() });
+  // في صفحة المعلّم (safiHost) تُركَّب الطبقاتُ قسمًا فيها، والصفحةُ تبدؤها — وفي hissa.html تبقى شاشةً مستقلّة
+  if (document.getElementById('safiHost')) window.MoayadSafi = { refresh };
+  else M.start({ screen: 'hissa', onChange: () => refresh() });
 })();
