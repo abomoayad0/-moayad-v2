@@ -8,7 +8,8 @@
   const { $, el } = M;
 
   // الأرقامُ عربيّةٌ في العرض — لما ترجعه القاعدةُ بأرقامٍ غربيّة (الرقم · التاريخ): تحويلُ أرقامٍ لا حساب
-  const ar = (v) => String(v == null ? '' : v).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
+  // والمُعرِّفُ اللاتينيُّ (رمزُ وثيقةٍ كـ CONDUCT-1447-OFF) يبقى كما هو: كلمةٌ فيها حرفٌ لاتينيٌّ لا تُعرَّب أرقامُها
+  const ar = (v) => String(v == null ? '' : v).replace(/[A-Za-z0-9_-]+/g, (tok) => (/[A-Za-z]/.test(tok) ? tok : tok.replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d])));
   function arabize(node) {
     const w = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
     // [data-raw]: مرجعٌ تقنيٌّ (كمسار الملفّ) يُعرض كما رجع — لا تُبدَّل أرقامُه
@@ -104,7 +105,7 @@
     node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(e); } });
   }
 
-  // درجةُ السلوك من v2_my_score كما ترجع: line_ar سطرًا بارزًا، و what_ar بجمله الأربع تحته، والتفصيلُ بأسبابه مطويًّا
+  // درجةُ السلوك من v2_my_score كما ترجع: line_ar سطرًا بارزًا، و what_ar بجمله الأربع تحته وسندُها، والتفصيلُ بأسبابه مطويًّا
   function scoreBox(box, r) {
     box.textContent = '';
     if (r.error) { box.appendChild(el('div', 'notice err', M.errText(r.error))); return; }
@@ -114,6 +115,8 @@
     const ul = el('ul', 'rs-acts');
     for (const k of ['deducted', 'restored', 'merit', 'ceiling']) if (w[k]) ul.appendChild(el('li', null, w[k]));
     box.appendChild(ul);
+    // سندُ السقوف تحتها كما جاء (رمزُ الوثيقة يبقى لاتينيًّا: مُعرِّفٌ لا عدد — فلا يُعرَّب)
+    if (w['سند']) { const sd = el('p', 'rs-meta', w['سند']); sd.setAttribute('data-raw', ''); box.appendChild(sd); }
     const rows = d.rows || {};
     const all = [['deductions', 'ما حُسم'], ['compensations', 'ما عُوّض'], ['merits', 'ما اكتُسب']];
     if (all.some(([k]) => (rows[k] || []).length)) {

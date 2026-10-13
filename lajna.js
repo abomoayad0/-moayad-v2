@@ -226,7 +226,8 @@
     if (!members.length) box.appendChild(el('p', 'rs-meta', 'لم يسجّل فيها أحدٌ بعد.'));
     for (const x of members) {
       const r = el('div', 'rs-file');
-      const st = x.graded ? 'قُدّرت ' + x.points + ' درجة' : x.verdict || (x.filed ? 'رفع نموذجَه — بانتظار الإقرار' : 'لم يرفع نموذجَه بعد');
+      // الدرجةُ المقدَّرةُ بلفظها من الباب (points_ar) — لا رقمٌ يُلصق بكلمةٍ في الشاشة
+      const st = x.graded ? ['قُدّرت', x.points_ar].filter(Boolean).join(' ') : x.verdict || (x.filed ? 'رفع نموذجَه — بانتظار الإقرار' : 'لم يرفع نموذجَه بعد');
       r.append(el('h5', null, x.name || ''), el('p', null, st));
       if (x.filed) {
         const lg = el('div', 'rs-lgd');
@@ -304,12 +305,8 @@
       ],
       ok: 'قدّرها',
       onOk: async (v) => {
-        const r = await call('v2_entry_grade', { p_entry: x.entry, p_points: v.pts, p_note: v.note }, 'تقدير الدرجة', (d) => {
-          // القسمةُ كما رجعت من القاعدة
-          const s = d['الدرجة'] || {};
-          return ['منح', 'تعويض', 'اكتساب', 'مهدور'].map((k) => k + ' ' + (d[k] == null ? '—' : d[k])).join(' · ') +
-            ' — الإيجابيُّ ' + s.positive + ' من ٨٠ · المتميّزُ ' + s.merit + ' من ٢٠ · المجموعُ ' + s.total + ' من ١٠٠';
-        });
+        // جملةُ اللجنة كما تأتي من الباب (said_ar) سطرًا واحدًا — لا تركيبَ ولا سقفَ مكتوبًا في الشاشة
+        const r = await call('v2_entry_grade', { p_entry: x.entry, p_points: v.pts, p_note: v.note }, 'تقدير الدرجة', (d) => d.said_ar || '');
         if (r.error) return r.error;
         loadOpps();
         return null;
