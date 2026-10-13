@@ -15,6 +15,7 @@
 
   const M = window.Moayad;
   const { $, el, toast, errText, showLoadErr } = M;
+  const V = window.MoayadView;
   M.state.screen = 'panel';
 
   // مفاتيح اللجان كما في المواصفة — وأسماؤها ونصابُها من v2_committee_board
@@ -76,6 +77,7 @@
       s.appendChild(el('div', 'meta nocan', 'يُدار من جسره الخاصّ' + (r.bridge_ar ? ': ' + r.bridge_ar : '') + ' — لا من التعديل العامّ.'));
       const tool = OWN_TOOLS[r.key];
       if (tool) s.appendChild(toggle('افتح', tool));
+      if (EXTRA_TOOLS[r.key]) s.appendChild(toggle(EXTRA_TOOLS[r.key][0], EXTRA_TOOLS[r.key][1]));
     } else if (r.editable) {
       const b = el('button', 'btn-ghost wide', 'تعديل');
       b.type = 'button';
@@ -1009,6 +1011,73 @@
     calendarTool(box);
   }
 
+  // ----- فتراتُ الفصل الدراسيّ (تكليف ⑦): فترتان في كلّ فصل — للمدير والوكلاء، والبابُ يردّ غيرَهم بنصّه -----
+  // القراءة v2_term_periods · والضبط v2_term_periods_set بنهايات الفترات وحدَها (والبداياتُ تُحسب في القاعدة) · وردُّ الحارس كما هو
+  const tp = { term: null, names: {} };
+  async function periodsTool(box) {
+    box.textContent = '';
+    if (noSchool(box)) return;
+    const { data, error } = await M.rpc('v2_term_periods', { p_school: ui.school, p_term: tp.term }, 'فترات الفصل');
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const d = data || {};
+    if (tp.term == null) tp.term = d.term_no;
+    tp.names[d.term_no] = d.term_ar;
+    // الفصلان باسميهما من الباب
+    const other = Number(d.term_no) === 1 ? 2 : 1;
+    if (!tp.names[other]) {
+      const o = await M.rpc('v2_term_periods', { p_school: ui.school, p_term: other }, 'فترات الفصل الآخر');
+      if (!o.error && o.data) tp.names[other] = o.data.term_ar;
+    }
+    const pk = el('div', 'rs-pick');
+    box.appendChild(pk);
+    const items = [1, 2].filter((n) => tp.names[n]).map((n) => [n, tp.names[n]]);
+    if (items.length > 1) V.pick(pk, items, Number(tp.term), (v) => { tp.term = v; periodsTool(box); });
+    if (d.said_ar) box.appendChild(el('div', 'meta', d.said_ar));
+    // شريطُ الأسابيع: كلُّ فترةٍ بلونها، وما بعد آخرِ فترةٍ أسبوعُ الاختبار خارجَهما
+    const per = d.periods || [];
+    const strip = el('div', 'tp-strip');
+    for (let w = 1; w <= Number(d.term_weeks || 0); w++) {
+      const i = per.findIndex((x) => w >= x.from_week && w <= x.to_week);
+      const c = el('span', 'tp-w' + (i >= 0 ? ' p' + ((i % 2) + 1) : ' ex'), String(w));
+      c.title = i >= 0 ? per[i].period_ar : 'خارج الفترات';
+      strip.appendChild(c);
+    }
+    box.appendChild(strip);
+    const lg = el('div', 'tp-legend');
+    per.forEach((x, i) => lg.appendChild(el('span', 'tp-k p' + ((i % 2) + 1), x.period_ar || '')));
+    lg.appendChild(el('span', 'tp-k ex', 'أسبوعُ الاختبار — خارجَ الفترات'));
+    box.appendChild(lg);
+    for (const x of per) {
+      const row = el('div', 'ev');
+      row.appendChild(el('div', 'name', x.period_ar || ''));
+      row.appendChild(el('div', 'meta', [x.from_week_ar && x.to_week_ar ? x.from_week_ar + ' ← ' + x.to_week_ar : null, x.weeks_ar].filter(Boolean).join(' · ')));
+      if (x.source_ar) row.appendChild(el('div', 'meta', x.source_ar));
+      if (x.note_ar) row.appendChild(el('div', 'meta', x.note_ar));
+      box.appendChild(row);
+    }
+    if (d.note_ar) box.appendChild(el('div', 'meta', d.note_ar));
+    box.appendChild(btn('اضبط الفترات', 'btn-accept wide', () => setPeriods(d, box)));
+    V.arabize(box);
+  }
+  function setPeriods(d, box) {
+    const per = d.periods || [];
+    const n = Math.max(per.length, 2);
+    const fields = [];
+    for (let i = 0; i < n; i++) fields.push({ key: 'e' + i, type: 'number', label: 'نهايةُ ' + ((per[i] && per[i].period_ar) || 'الفترة'), value: per[i] ? per[i].to_week : null, hint: 'رقمُ الأسبوع الذي تنتهي به — والبدايةُ تُحسب' });
+    fields.push({ key: 'note', type: 'textarea', label: 'السببُ أو الملاحظة', rows: 2 });
+    V.form({
+      title: 'ضبطُ فترات ' + (d.term_ar || ''), what: d.said_ar || '', ok: 'احفظ',
+      fields,
+      onOk: async (v) => {
+        const ends = []; for (let i = 0; i < n; i++) ends.push(v['e' + i]);
+        const { data, error } = await M.rpc('v2_term_periods_set', { p_term: tp.term, p_until_weeks: ends, p_school: ui.school, p_note: v.note }, 'ضبط فترات الفصل');
+        if (error) return error;
+        V.flash('ok', (data && (data.note_ar || data.said_ar)) || '');
+        periodsTool(box); return null;
+      },
+    });
+  }
+
   // ----- الهيكلُ التنظيميّ: يُختار من الدليل ولا يُخترع -----
   async function structureTool(box) {
     box.textContent = '';
@@ -1271,6 +1340,7 @@
   // أدواتٌ تُضاف إلى التعديل العامّ لبابها: [نصُّ الزرّ، الأداة]
   const EXTRA_TOOLS = {
     day_settings: ['لوحةُ اليوم', (b) => window.MoayadYawm.dayPlanTool(b)],
+    calendar: ['فتراتُ الفصل الدراسيّ', (b) => periodsTool(b)],
   };
   const OWN_TOOLS = {
     class_practices: practicesTool, practice_scopes: scopesTool,

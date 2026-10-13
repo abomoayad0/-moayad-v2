@@ -450,16 +450,17 @@
     if (error) { errBox(body, error); arabize(c); return; }
     const d = data || {};
     if (gr.term == null) gr.term = d.term_no;
-    // الفترتان باسميهما من الباب
+    // الفصلان الدراسيّان باسميهما من الباب (والفتراتُ داخلَهما)
     if (!gr.terms && d.term_no != null) {
       const other = Number(d.term_no) === 1 ? 2 : 1;
-      const o = await M.rpc('v2_grade_my_subjects', { p_school: M.state.school, p_term: other }, 'اسم الفترة الأخرى');
+      const o = await M.rpc('v2_grade_my_subjects', { p_school: M.state.school, p_term: other }, 'اسم الفصل الآخر');
       gr.terms = [[Number(d.term_no), d.term_ar || '']];
       if (!o.error && o.data && o.data.term_ar) gr.terms.push([other, o.data.term_ar]);
       gr.terms.sort((a, b) => a[0] - b[0]);
     }
     if (gr.terms && gr.terms.length > 1) V.pick(tp, gr.terms, Number(gr.term), (v) => { gr.term = v; render(); });
     sum.textContent = d.summary_ar || '';
+    line(sum.parentNode, 'rs-meta', d.note_ar);
     const ul = el('ul', 'rs-acts');
     for (const r of d.rows || []) {
       const li = el('li', r.opened ? 'click' : null);
@@ -470,8 +471,8 @@
       if (r.opened) {
         li.setAttribute('role', 'button'); li.tabIndex = 0;
         V.tap(li, () => { gr.subj = r; gr.panel = 'card'; gr.card = null; render(); });
-      } else {
-        // سطرٌ لم يُفتح ⇐ زرٌّ واحد
+      } else if (d.periods_set !== false) {
+        // سطرٌ لم يُفتح ⇐ زرٌّ واحد — ولا يُعرض إن لم تُضبط فتراتُ الفصل (summary_ar يقولها)
         const ob = btn('افتح الدرجات', 'rs-btn');
         ob.addEventListener('click', () => V.send(ob, async () => {
           const x = await M.rpc('v2_grade_plan_open', { p_grade: r.grade, p_subject: r.subject_ar, p_school: M.state.school, p_term: gr.term }, 'افتح الدرجات');
@@ -509,7 +510,9 @@
   }
   const gagain = () => { gr.card = null; render(); };
 
-  // بطاقةُ التوزيع: الخاناتُ بترتيبها · شريطُ الامتلاء sum من cap · والقبليُّ بلونٍ آخرَ ووسمِ «لا يُحتسب»
+  // بطاقةُ التوزيع (تكليف ⑦): المئةُ للفصل الدراسيّ — الخاناتُ بسقوفها في الأعلى بأشرطة امتلاء
+  // ثمّ الفترتان (periods[]) تبويبين ببنودهما · ثمّ «للفصل الدراسيّ» (term_items: القبليُّ والنهائيُّ المقفل) · ثمّ المجموع
+  // ونافذةُ التعديل (edit_window) تُقال بنصّها والأزرارُ باقيةٌ — يردّها الحارسُ بنصّه · ولا رقمَ يُجمع في الشاشة
   async function gCard(box) {
     const c = el('section', 'rs-card');
     box.appendChild(c);
@@ -518,14 +521,14 @@
     const d = gr.card; const pl = d.plan || {};
     if (!pl.id) { line(c, 'rs-sum', d.said_ar); arabize(c); return; }
     line(c, 'rs-meta', [pl.grade_ar, pl.term_ar, pl.status_ar, pl.locked_ar].filter(Boolean).join(' · '));
+    const ew = d.edit_window || {};
+    if (ew.open === false && ew.said_ar) c.appendChild(el('div', 'rs-info', ew.said_ar));
     const ro = !!pl.locked; // بعد الإقفال: التوزيعُ للقراءة · والرصدُ يبقى مفتوحًا
-    for (const b of d.buckets || []) {
-      if (b.cap === 0) continue;
-      const pre = b.counts === false;
-      const bx = el('div', 'gr-bucket' + (pre ? ' pre' : ''));
+    const counted = (d.buckets || []).filter((b) => b.counts !== false && b.cap !== 0);
+    for (const b of counted) {
+      const bx = el('div', 'gr-bucket');
       const h = el('div', 'gr-bhead');
       h.appendChild(el('b', null, b.label_ar || ''));
-      if (pre) h.appendChild(el('span', 'gr-tag', 'لا يُحتسب'));
       bx.appendChild(h);
       if (b.cap != null && Number(b.cap) > 0) {
         const bar = el('div', 'gr-bar' + (b.fits === false ? ' over' : ''));
@@ -533,27 +536,69 @@
         bar.appendChild(f); bx.appendChild(bar);
       }
       line(bx, 'rs-meta', b.said_ar);
-      const ul = el('ul', 'rs-acts');
-      for (const it of b.items || []) {
-        const li = el('li');
-        const sp = el('span'); sp.style.flex = '1';
-        sp.appendChild(el('b', null, (it.locked ? '🔒 ' : '') + (it.title_ar || '')));
-        sp.appendChild(el('div', 'rs-meta', [it.max_ar, it.tool_ar, it.is_attendance ? 'يُحسب آليًّا' : null].filter(Boolean).join(' · ')));
-        if (it.note_ar) sp.appendChild(el('div', 'rs-meta', it.note_ar));
-        li.appendChild(sp);
-        if (!ro && !it.locked && !it.is_attendance) {
-          const w = el('span', 'rs-ibs');
-          w.append(btn('عدّل', 'rs-btn ghost', () => itemForm(b, it)), btn('ارفع', 'rs-btn ghost', () => dropForm(it)));
-          li.appendChild(w);
-        }
-        ul.appendChild(li);
-      }
-      bx.appendChild(ul);
-      if (!ro) { const r = el('div', 'rs-row'); r.appendChild(btn('أضف بندًا', 'rs-btn', () => itemForm(b, null))); bx.appendChild(r); }
+      // البندُ الجديدُ يُنسب للفترة الجارية آليًّا — والنهائيُّ لا يُضاف إليه (بندُه مقفل)
+      if (!ro && b.key !== 'final') { const r = el('div', 'rs-row'); r.appendChild(btn('أضف بندًا', 'rs-btn ghost', () => itemForm(b, null))); bx.appendChild(r); }
       c.appendChild(bx);
     }
+    const pers = d.periods || [];
+    if (pers.length) {
+      if (gr.per == null || !pers.some((x) => x.period_no === gr.per)) gr.per = d.now_period != null && pers.some((x) => x.period_no === d.now_period) ? d.now_period : pers[0].period_no;
+      const pk = el('div', 'rs-pick'); const pb = el('div');
+      c.append(pk, pb);
+      const drawPer = () => {
+        pb.textContent = '';
+        const x = pers.find((y) => y.period_no === gr.per) || {};
+        line(pb, 'rs-meta', [x.from_week_ar && x.to_week_ar ? x.from_week_ar + ' ← ' + x.to_week_ar : null, x.said_ar].filter(Boolean).join(' · '));
+        pb.appendChild(itemList(x.items || [], ro, pers));
+        arabize(pb);
+      };
+      V.pick(pk, pers.map((x) => [x.period_no, x.period_ar || '']), gr.per, (v) => { gr.per = v; drawPer(); });
+      drawPer();
+    }
+    const ti = d.term_items || [];
+    if (ti.length) {
+      const tb = el('div', 'gr-bucket pre');
+      tb.appendChild(el('div', 'gr-bhead', 'للفصل الدراسيّ'));
+      tb.appendChild(itemList(ti, ro, []));
+      c.appendChild(tb);
+    }
     line(c, 'rs-sum', d.said_ar);
+    line(c, 'rs-meta', d.note_ar);
     arabize(c);
+  }
+  // بنودٌ بأزرارها: القبليُّ وسمُه «لا يُحتسب» · والمقفلُ 🔒 بلا أزرار · والحضورُ «يُحسب آليًّا»
+  function itemList(items, ro, pers) {
+    const ul = el('ul', 'rs-acts');
+    for (const it of items) {
+      const li = el('li');
+      const sp = el('span'); sp.style.flex = '1';
+      sp.appendChild(el('b', null, (it.locked ? '🔒 ' : '') + (it.title_ar || '')));
+      sp.appendChild(el('div', 'rs-meta', [it.bucket_ar, it.max_ar, it.tool_ar, it.is_attendance ? 'يُحسب آليًّا' : null, it.counts === false ? 'لا يُحتسب' : null].filter(Boolean).join(' · ')));
+      if (it.note_ar) sp.appendChild(el('div', 'rs-meta', it.note_ar));
+      li.appendChild(sp);
+      if (!ro && !it.locked && !it.is_attendance) {
+        const w = el('span', 'rs-ibs');
+        w.append(btn('عدّل', 'rs-btn ghost', () => itemForm({ key: it.bucket, label_ar: it.bucket_ar }, it)), btn('ارفع', 'rs-btn ghost', () => dropForm(it)));
+        if (pers.length > 1) w.appendChild(btn('انقل إلى فترةٍ أخرى', 'rs-btn ghost', () => movePeriodForm(it, pers)));
+        li.appendChild(w);
+      }
+      ul.appendChild(li);
+    }
+    return ul;
+  }
+  // نقلُ البند بين الفترتين: v2_grade_item_period — والفتراتُ بأسمائها من البطاقة
+  function movePeriodForm(it, pers) {
+    const others = pers.filter((x) => x.period_no !== gr.per).map((x) => [x.period_no, x.period_ar || '']);
+    V.form({
+      title: 'نقلُ البند إلى فترةٍ أخرى', what: it.title_ar || '', ok: 'انقله',
+      fields: [{ key: 'p', type: 'pick', label: 'إلى', items: others, value: others.length === 1 ? others[0][0] : null }],
+      onOk: async (v) => {
+        const x = await M.rpc('v2_grade_item_period', { p_item: it.id, p_period: v.p }, 'نقل البند بين الفترتين');
+        if (x.error) return x.error;
+        V.flash('ok', (x.data && (x.data.said_ar || x.data.summary_ar)) || '');
+        gagain(); return null;
+      },
+    });
   }
 
   // أدواتُ التقويم: يُرسل key ويُعرض label_ar · مجموعتان بـ kind كما جاء من الباب («أداة» · «أسلوب»)
@@ -585,7 +630,8 @@
           ? await M.rpc('v2_grade_item_set', { p_item: it.id, p_title: v.title, p_max: v.max, p_tool: tool }, 'تعديل البند')
           : await M.rpc('v2_grade_item_add', { p_plan: gr.card.plan.id, p_bucket: b.key, p_title: v.title, p_max: v.max, p_tool: tool }, 'إضافة بند');
         if (x.error) return x.error;
-        V.flash('ok', (x.data && (x.data.said_ar || x.data.summary_ar)) || '');
+        // والبندُ الجديدُ نُسب للفترة الجارية آليًّا — فتُقال فترتُه من الباب
+        V.flash('ok', [x.data && (x.data.said_ar || x.data.summary_ar), x.data && x.data.period_ar].filter(Boolean).join(' · '));
         gagain(); return null;
       },
     });
@@ -638,20 +684,26 @@
       if (d.state_ar) n.appendChild(el('p', 'rs-sum', d.state_ar));
       if (d.state === 'full') { if (d.band_ar) n.appendChild(el('p', 'rs-score', d.band_ar)); if (d.said_ar) n.appendChild(el('p', 'rs-meta', d.said_ar)); }
       if (d.total_ar) n.appendChild(el('p', 'rs-meta', d.total_ar));
-      const groups = new Map();
-      for (const x of (d.items || []).filter((y) => y.counts !== false)) {
-        if (!groups.has(x.bucket_ar)) groups.set(x.bucket_ar, []);
-        groups.get(x.bucket_ar).push(x);
-      }
-      for (const [g, xs] of groups) {
-        n.appendChild(el('h4', null, g || ''));
+      if (d.note_ar) n.appendChild(el('p', 'rs-meta', d.note_ar));
+      // الفترتان: مجموعُ كلٍّ منهما بجملته (periods[].said_ar) ثمّ بنودُها — والنهائيُّ والقبليُّ صندوقان منفصلان
+      const pers = d.periods || [];
+      for (const pr of pers) {
+        n.appendChild(el('h4', null, pr.period_ar || ''));
+        if (pr.said_ar) n.appendChild(el('p', 'rs-meta', pr.said_ar));
         const ul = el('ul', 'rs-acts');
-        for (const x of xs) {
+        for (const x of (d.items || []).filter((y) => y.period_no === pr.period_no && y.counts !== false)) {
           const li = el('li'); const sp = el('span'); sp.style.flex = '1';
           sp.append(el('b', null, x.title_ar || ''), el('div', 'rs-meta', [x.points_ar, x.max_ar && !x.points_ar ? x.max_ar : null, x.said_ar].filter(Boolean).join(' · ')));
           li.appendChild(sp); ul.appendChild(li);
         }
         n.appendChild(ul);
+      }
+      const fin = d.final || [];
+      if (fin.length) {
+        const fb = el('div', 'gr-bucket');
+        fb.appendChild(el('div', 'gr-bhead', 'للفصل الدراسيّ'));
+        for (const x of fin) fb.appendChild(el('p', 'rs-meta', [x.title_ar, x.points_ar, x.max_ar && !x.points_ar ? x.max_ar : null].filter(Boolean).join(' · ')));
+        n.appendChild(fb);
       }
       const pre = d.pre || [];
       if (pre.length) {
@@ -688,12 +740,24 @@
     if (error) { errBox(body, error); arabize(body); return; }
     const d = data || {};
     line(body, 'rs-sum', d.said_ar);
-    line(body, 'rs-meta', [d.section_ar, d.term_ar, d.kind_ar].filter(Boolean).join(' · '));
+    line(body, 'rs-meta', [d.section_ar, d.term_ar, d.kind_ar, d.now_period_ar].filter(Boolean).join(' · '));
+    line(body, 'rs-meta', d.note_ar);
     const studs = d.students || [];
     if (!studs.length) { arabize(body); return; }
-    const cols = studs[0].items || [];
+    // الأعمدةُ مجموعةٌ بفتراتها (period_no) بترتيبها · وما لا فترةَ له (القبليُّ والنهائيُّ) تحت «للفصل»
+    const gk = (it) => (it.period_no == null ? 99 : it.period_no);
+    const cols = (studs[0].items || []).map((it, i) => [it, i]).sort((a, b) => gk(a[0]) - gk(b[0]) || a[1] - b[1]).map((x) => x[0]);
     const wrap = el('div', 'gr-sheet');
     const tb = el('table');
+    const gh = el('tr');
+    gh.appendChild(el('th', 'gr-name', ''));
+    for (let i = 0; i < cols.length;) {
+      let j = i; while (j < cols.length && gk(cols[j]) === gk(cols[i])) j++;
+      const th = el('th', 'gr-grp' + (cols[i].period_no == null ? ' pre' : ''), cols[i].period_no == null ? 'للفصل' : (cols[i].period_ar || ''));
+      th.colSpan = j - i; gh.appendChild(th); i = j;
+    }
+    gh.appendChild(el('th', null, ''));
+    tb.appendChild(gh);
     const hr = el('tr');
     hr.appendChild(el('th', 'gr-name', 'الطالب'));
     for (const it of cols) {
@@ -707,7 +771,10 @@
       const tr = el('tr');
       tr.appendChild(el('td', 'gr-name', st.name_ar || ''));
       const tot = el('td', 'gr-tot', st.total_ar || '');
-      for (const it of st.items || []) {
+      const byId = new Map((st.items || []).map((x) => [x.item_id, x]));
+      for (const col of cols) {
+        const it = byId.get(col.item_id);
+        if (!it) { tr.appendChild(el('td')); continue; }
         const td = el('td', it.bucket === 'pre' ? 'pre' : null);
         if (it.is_attendance) {
           // الحضورُ يُحسب آليًّا — للقراءة، وعند اللمس نصُّه

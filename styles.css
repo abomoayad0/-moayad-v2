@@ -706,3 +706,13 @@ ul.rs-acts li.click:hover { background: var(--soft); border-radius: 8px; }
 .gr-sheet input { width: 56px; padding: 4px; text-align: center; font-size: 15px; }
 .gr-sheet .gr-tot { white-space: normal; min-width: 110px; font-size: 12px; }
 .gr-auto { font-size: 12px; padding: 4px 8px; border-radius: 999px; border: 1px dashed var(--mute); background: transparent; color: var(--mute); }
+
+/* لوحة التحكّم · فتراتُ الفصل: شريطُ الأسابيع — كلُّ فترةٍ بلونها، وأسبوعُ الاختبار خارجَها */
+.tp-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(26px, 1fr)); gap: 3px; margin: 10px 0 6px; }
+.tp-w { text-align: center; font-size: 12px; padding: 5px 0; border-radius: 6px; background: var(--chip); color: var(--mute); }
+.tp-w.p1, .tp-k.p1 { background: color-mix(in srgb, var(--primary) 22%, transparent); color: var(--ink); }
+.tp-w.p2, .tp-k.p2 { background: color-mix(in srgb, var(--brand, #b45309) 22%, transparent); color: var(--ink); }
+.tp-w.ex, .tp-k.ex { background: transparent; border: 1px dashed var(--mute); }
+.tp-legend { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; margin-bottom: 8px; }
+.tp-k { padding: 2px 8px; border-radius: 999px; }
+.gr-sheet .gr-grp { background: var(--soft); font-size: 12px; border-inline-start: 1px solid var(--line, #e5e7eb); }
