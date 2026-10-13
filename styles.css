@@ -687,3 +687,12 @@ ul.rs-acts li.click { cursor: pointer; }
 ul.rs-acts li.click:hover { background: var(--soft); border-radius: 8px; }
 .rs-chk { display: flex; align-items: center; gap: 6px; font-size: 14px; color: inherit; margin: 4px 0; }
 .rs-chk input { width: auto; }
+
+/* صفحة المعلّم · درجاتُ المادّة: خانةٌ بشريط امتلائها · والقبليُّ بلونٍ آخرَ ووسمِه */
+.gr-bucket { border: 1px solid var(--line, #e5e7eb); border-radius: 12px; padding: 10px 12px; margin-top: 10px; }
+.gr-bucket.pre { background: var(--soft); border-style: dashed; }
+.gr-bhead { display: flex; align-items: center; gap: 8px; justify-content: space-between; font-size: 15px; }
+.gr-tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--chip); color: var(--mute); }
+.gr-bar { height: 8px; border-radius: 999px; background: var(--chip); overflow: hidden; margin: 8px 0 4px; }
+.gr-bar i { display: block; height: 100%; background: var(--primary); border-radius: 999px; }
+.gr-bar.over i { background: var(--warn, #b45309); }

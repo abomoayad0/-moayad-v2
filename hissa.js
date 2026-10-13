@@ -7,6 +7,7 @@
 //    ممارسات/إيجابيات: v2_card_act (practice) · ملاحظة: v2_card_act (note) · تصحيح: v2_card_undo · اللائحة: v2_conduct_list ⇒ v2_record_behavior
 //    واجب: v2_work_set · v2_work_void · خروج: v2_exit_out · v2_exit_back · دور: v2_role_assign · v2_role_end
 //    رصيدُ الممارسات: practice_balance (مرآةٌ لا درجة) · ونقاطُ الولاء الآليّةُ لا أزرارَ لها (can_grant يحمل اليدويَّ وحده)
+//    تتمّتُها: v2_badges_of_student · v2_work_of_student · v2_contacts_of · v2_student_timeline · ومجالاتُ الممارسات: v2_practice_scopes · ونصيحةُ اللائحة: v2_advice_for
 //    صحّته: v2_card_health للقراءة وحدها (health_from) · الدرسُ من v2_session_lesson_options · وأنواعُ العمل من v2_work_kinds · نقاطُ الولاء: v2_loyalty_catalog · v2_loyalty_wallet · v2_loyalty_record · v2_loyalty_spend · v2_loyalty_undo
 // ولا رقمَ في الشاشة: كلُّ مهلةٍ وسقفٍ وعتبةٍ من الباب · وكلُّ رفضٍ بنصّه · ولا زرَّ يُعطَّل بحساب
 (function () {
@@ -105,7 +106,8 @@
       n.appendChild(el('p', 'rs-meta', [d.grade_ar, d.subject_ar, d.plan_status_ar ? 'التوزيع: ' + d.plan_status_ar : null].filter(Boolean).join(' · ')));
       if (d.note_ar) n.appendChild(el('div', 'rs-info', d.note_ar));
     }
-    const items = rows.map((r) => [r.item, [r.week_no != null ? 'الأسبوع ' + r.week_no : null, r.title_ar, r.unit_ar, r.state_ar, r.page_from != null ? 'ص ' + r.page_from + (r.page_to != null ? '–' + r.page_to : '') : null].filter(Boolean).join(' · ')]);
+    // الأسبوعُ والصفحاتُ بألفاظها من الباب وحدَه (week_ar · pages_ar) — ولا تُركَّب من أرقامها
+    const items = rows.map((r) => [r.item, [r.week_ar, r.title_ar, r.unit_ar, r.state_ar, r.pages_ar].filter(Boolean).join(' · ')]);
     const cur = rows.find((r) => r.is_current);
     const fields = [{ key: 'info', type: 'node', node: n }];
     if (items.length) fields.push({ key: 'item', type: 'pick', label: 'من التوزيع', items, value: cur ? cur.item : null });
@@ -284,7 +286,53 @@
     }
     renderTabs();
     renderLoyalty();
+    renderMore();
     arabize($('cardView'));
+  }
+  // تتمّةُ البطاقة (لوحتا ١٢ و١٣): شاراتُه · أعمالُه · اتّصالُه · سجلُّه الزمنيّ — كلٌّ مطويٌّ، ويُقرأ بابُه عند فتحه
+  function renderMore() {
+    const box = $('cardMore'); box.textContent = '';
+    const stu = ui.stu;
+    const part = (title, load) => {
+      const d = el('details', 'rs-dt');
+      d.appendChild(el('summary', null, title));
+      const b = el('div', 'rs-dtb'); d.appendChild(b);
+      let done = false;
+      d.addEventListener('toggle', async () => {
+        if (!d.open || done) return;
+        done = true; b.textContent = '';
+        await load(b);
+        if (ui.stu === stu) arabize(b);
+      });
+      box.appendChild(d);
+    };
+    part('شاراتُه', async (b) => {
+      const { data, error } = await M.rpc('v2_badges_of_student', { p_student: stu.id }, 'شارات الطالب');
+      if (error) { err(b, error); return; }
+      const d = data || {};
+      for (const t of [d.count_ar, d.ready_ar]) if (t) b.appendChild(el('p', null, t));
+      for (const x of arr(d.rows)) b.appendChild(el('p', null, [x.title_ar, x.awarded_on_ar, x.reason_ar].filter(Boolean).join(' · ')));
+      if (d.note_ar) b.appendChild(el('p', 'rs-meta', d.note_ar));
+    });
+    part('أعمالُه', async (b) => {
+      const { data, error } = await M.rpc('v2_work_of_student', { p_student: stu.id }, 'أعمال الطالب');
+      if (error) { err(b, error); return; }
+      const rows = arr(data);
+      for (const x of rows) b.appendChild(el('p', null, [x.kind_ar, x.subject, x.body, x.due_ar, x.by_ar].filter(Boolean).join(' · ')));
+      if (!rows.length) b.appendChild(el('p', 'rs-meta', 'لا أعمالَ مسندةً إليه.'));
+    });
+    part('اتّصالُ المدرسة بوليّه', async (b) => {
+      const { data, error } = await M.rpc('v2_contacts_of', { p_student: stu.id }, 'سجلّ الاتّصال');
+      if (error) { err(b, error); return; }
+      const rows = arr(data);
+      for (const x of rows) b.appendChild(el('p', null, [x.attempt_ar, x.on, x.summary, x.source_ar].filter(Boolean).join(' · ')));
+      if (!rows.length) b.appendChild(el('p', 'rs-meta', 'لم يُثبت اتّصالٌ بعد.'));
+    });
+    part('سجلُّه الزمنيّ', async (b) => {
+      const { data, error } = await M.rpc('v2_student_timeline', { p_student: stu.id, p_as: null }, 'سجلّ الطالب الزمنيّ');
+      if (error) { err(b, error); return; }
+      V.events(b, arr((data || {}).events));
+    });
   }
   // التبويباتُ العشرةُ بترتيبها في صفّين — والمغلقُ يُعرض مغلقًا بسببه
   function renderTabs() {
@@ -334,7 +382,16 @@
       sel.value = keep;
     };
     q.addEventListener('input', paint); paint();
-    n.append(el('label', null, 'السلوك'), q, sel);
+    // النصيحةُ التربويّة للسلوك المختار (لوحة ١٠) — نصُّها من v2_advice_for كما جاء
+    const adv = el('div', 'rs-info'); adv.hidden = true;
+    sel.addEventListener('change', async () => {
+      adv.hidden = true; adv.textContent = '';
+      const p = list.find((x) => String(x.id) === sel.value);
+      if (!p) return;
+      const { data: a } = await M.rpc('v2_advice_for', { p_problem: p.id, p_occurrence: null, p_school: M.state.school }, 'النصيحة التربويّة');
+      if (a && a.text && sel.value === String(p.id)) { adv.append(el('b', null, 'النصيحةُ التربويّة: '), document.createTextNode(a.text)); adv.hidden = false; arabize(adv); }
+    });
+    n.append(el('label', null, 'السلوك'), q, sel, adv);
     V.form({
       title: 'رصدُ مخالفة', what: ui.stu.name || '',
       fields: [{ key: 'pick', type: 'node', node: n }, { key: 'place', label: 'المكان (اختياريّ)' }, { key: 'note', type: 'textarea', label: 'ملاحظة (اختياريّة)', rows: 2 }],
@@ -463,14 +520,24 @@
     });
   }
   // ممارسات (السلبيّة والمحايدة) · إيجابيات — من قائمة الباب بترتيبها، وتُرفع في اللحظة نفسِها
+  // ومجالاتُها (لوحة ٧): أسماءُ المجالات من v2_practice_scopes، والممارسةُ تحمل مفتاحَ مجالها (scope) من البطاقة
   function tabPractices(box, positive) {
     const all = arr(ui.card.practices).filter((p) => (p.polarity === 'positive') === positive);
     const q = el('input'); q.type = 'search'; q.placeholder = 'ابحث'; q.autocomplete = 'off';
     const list = el('div', 'rs-list');
+    const sp = el('div', 'rs-pick');
+    let scope = null;
+    const drawScopes = () => {
+      const have = new Set(all.map((x) => x.scope));
+      const items = (ui.scopes || []).filter((x) => have.has(x.key)).sort((a, b) => (a.ord || 0) - (b.ord || 0)).map((x) => [x.key, x.label || '']);
+      if (items.length > 1) V.pick(sp, [[null, 'الكلّ']].concat(items), scope, (v) => { scope = v; paint(); });
+    };
+    if (ui.scopes) drawScopes();
+    else M.rpc('v2_practice_scopes', { p_school: M.state.school }, 'مجالات الممارسات').then((r) => { if (!r.error) { ui.scopes = arr(r.data); drawScopes(); } });
     const paint = () => {
       list.textContent = '';
       const t = q.value.trim();
-      for (const p of all.filter((x) => !t || (x.title_ar || '').includes(t))) {
+      for (const p of all.filter((x) => (!t || (x.title_ar || '').includes(t)) && (!scope || x.scope === scope))) {
         const b = btn('', 'rs-item', () => practiceForm(p));
         b.append(el('b', null, p.title_ar || ''), el('small', null, [p.points_ar, p.done_today ? 'رُصدت اليومَ' : null, p.threshold_ar, p.once_ar].filter(Boolean).join(' · ')));
         list.appendChild(b);
@@ -480,7 +547,7 @@
     q.addEventListener('input', paint);
     // الممارساتُ دفترٌ منفصلٌ عن دليل السلوك ومحفظة الولاء — والنصُّ من الباب
     if (ui.card.practices_note_ar) box.appendChild(el('p', 'rs-meta', ui.card.practices_note_ar));
-    box.append(q, list);
+    box.append(sp, q, list);
     paint();
   }
   function practiceForm(p) {

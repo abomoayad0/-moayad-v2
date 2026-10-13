@@ -1,6 +1,8 @@
 // مؤيّد · صفحةُ المعلّم (تكليف ⑤) — بيتٌ واحدٌ بستّة أقسامٍ وشريطِ «صفتي»
 // الأقسام: صفّي · توزيعُ المنهج · يومي في المدرسة · ما كُلِّفتُ به · ما وصلني · ما يُقاس بي
 // والظهورُ بالتكليف لا بالصلاحية: قسمُ التوزيع لمن صفتُه النافذةُ معلّمُ موادّ أو تربيةٍ خاصّة أو موهوبين
+// ⓖ قسمُ «درجات المادّة» (تكليف ⑥): موادّي (v2_grade_my_subjects) · الفتح · بطاقةُ التوزيع بخاناتها وبنودها · بطاقةُ الطالب
+//    وكشفُ الفصل ينتظر حرفَ الفصل من الباب · وحكمُ النجاح لا يُعرض حتى يُصلَح «راسب» لمن لم يُرصد له شيء
 // ① قسمُ «توزيع المنهج»: موادّي (v2_my_plan_subjects) ومن كلّ سطرٍ لوحاتُه — البطاقة · بلا أسبوع · المنهج · الكفاية · المخارج · حدُّ الفصلين
 // ② «صفّي» و«يومي» و«ما كُلِّفتُ به» و«ما وصلني» قائمةٌ اليومَ في شاشتَي «الحصّة» و«ما عليّ» — وتُنقل إلى هنا بترتيب مفرح
 (function () {
@@ -16,7 +18,7 @@
   const role = () => { const r = ((M.state.me && M.state.me.roles) || []).find((x) => x.is_current === true); return r ? r.role_key : null; };
 
   const SECTIONS = [
-    ['mine', 'صفّي'], ['plan', 'توزيعُ المنهج'], ['day', 'يومي في المدرسة'],
+    ['mine', 'صفّي'], ['plan', 'توزيعُ المنهج'], ['grades', 'درجاتُ المادّة'], ['day', 'يومي في المدرسة'],
     ['tasks', 'ما كُلِّفتُ به'], ['inbox', 'ما وصلني'], ['measured', 'ما يُقاس بي'],
   ];
 
@@ -25,7 +27,7 @@
     showLoadErr('');
     V.renderRole();
     // بالتكليف: قسمُ التوزيع لمن يُدرّس وحدَه
-    const list = SECTIONS.filter(([k]) => k !== 'plan' || TEACHING.includes(role()));
+    const list = SECTIONS.filter(([k]) => !['plan', 'grades'].includes(k) || TEACHING.includes(role()));
     if (!list.some(([k]) => k === ui.sec)) ui.sec = list[0][0];
     V.pick($('sections'), list, ui.sec, (v) => { ui.sec = v; render(); });
     render();
@@ -33,7 +35,7 @@
 
   function render() {
     const box = $('sectionBody'); box.textContent = '';
-    ({ mine: secLink('hissa.html', 'افتح «الحصّة»'), plan: secPlan, day: secLink('mukallaf.html', 'افتح «ما عليّ»'),
+    ({ mine: secLink('hissa.html', 'افتح «الحصّة»'), plan: secPlan, grades: secGrades, day: secLink('mukallaf.html', 'افتح «ما عليّ»'),
       tasks: secLink('mukallaf.html', 'افتح «ما عليّ»'), inbox: secLink('mukallaf.html', 'افتح «ما عليّ»'), measured: secMeasured }[ui.sec])(box);
   }
   // الأقسامُ القائمةُ في شاشتَين — تُفتح منهما حتى تُنقل
@@ -422,6 +424,243 @@
     })));
     c.appendChild(r);
     arabize(c);
+  }
+
+  // ---------- درجاتُ المادّة ----------
+  // الأبواب: v2_grade_my_subjects · v2_grade_plan_open · v2_grade_plan_card (بخمسة وسائط و p_person فارغًا) · v2_grade_item_add/set/drop
+  //          v2_grade_student · وأدواتُ التقويم من v2_reference('assess_tools') — يُرسل key ويُعرض label_ar، مجموعتين بـ kind
+  // ولا حسابَ في الشاشة: المجاميعُ والسقوفُ وألفاظُها من الباب · والخانةُ التي سقفُها صفرٌ لا تُعرض
+  // وكشفُ الفصل (v2_grade_sheet) ينتظر مفتاحَ حرف الفصل: لا بابَ يُخرجه، ولا يُقتطع من اسم الفصل
+  const gr = { term: null, terms: null, subj: null, panel: 'card', card: null, tools: null, stuSec: null };
+  const GPANELS = [['card', 'بطاقةُ التوزيع'], ['student', 'بطاقةُ طالب'], ['sheet', 'كشفُ الفصل']];
+  const gkey = () => ({ p_grade: gr.subj.grade, p_subject: gr.subj.subject_ar, p_school: M.state.school, p_term: gr.term });
+
+  async function secGrades(box) {
+    if (gr.subj) return gradeView(box);
+    const c = el('section', 'rs-card');
+    c.appendChild(el('h3', null, 'موادّي في الدرجات'));
+    const tp = el('div', 'rs-pick'); const sum = el('p', 'rs-sum'); const body = el('div');
+    c.append(tp, sum, body);
+    box.appendChild(c);
+    const { data, error } = await M.rpc('v2_grade_my_subjects', { p_school: M.state.school, p_term: gr.term }, 'موادّي في الدرجات');
+    if (error) { errBox(body, error); arabize(c); return; }
+    const d = data || {};
+    if (gr.term == null) gr.term = d.term_no;
+    // الفترتان باسميهما من الباب
+    if (!gr.terms && d.term_no != null) {
+      const other = Number(d.term_no) === 1 ? 2 : 1;
+      const o = await M.rpc('v2_grade_my_subjects', { p_school: M.state.school, p_term: other }, 'اسم الفترة الأخرى');
+      gr.terms = [[Number(d.term_no), d.term_ar || '']];
+      if (!o.error && o.data && o.data.term_ar) gr.terms.push([other, o.data.term_ar]);
+      gr.terms.sort((a, b) => a[0] - b[0]);
+    }
+    if (gr.terms && gr.terms.length > 1) V.pick(tp, gr.terms, Number(gr.term), (v) => { gr.term = v; render(); });
+    sum.textContent = d.summary_ar || '';
+    const ul = el('ul', 'rs-acts');
+    for (const r of d.rows || []) {
+      const li = el('li', r.opened ? 'click' : null);
+      const b = el('span'); b.style.flex = '1';
+      b.appendChild(el('b', null, r.said_ar || ''));
+      if (r.kind_ar) b.appendChild(el('div', 'rs-meta', r.kind_ar));
+      li.append(el('i', 'rs-tick' + (r.opened ? ' ok' : ''), r.opened ? '›' : '○'), b);
+      if (r.opened) {
+        li.setAttribute('role', 'button'); li.tabIndex = 0;
+        V.tap(li, () => { gr.subj = r; gr.panel = 'card'; gr.card = null; render(); });
+      } else {
+        // سطرٌ لم يُفتح ⇐ زرٌّ واحد
+        const ob = btn('افتح الدرجات', 'rs-btn');
+        ob.addEventListener('click', () => V.send(ob, async () => {
+          const x = await M.rpc('v2_grade_plan_open', { p_grade: r.grade, p_subject: r.subject_ar, p_school: M.state.school, p_term: gr.term }, 'افتح الدرجات');
+          if (x.error) { V.flash('bad', errText(x.error)); return; }
+          V.flash('ok', (x.data && x.data.said_ar) || '');
+          render();
+        }));
+        const w = el('span', 'rs-ibs'); w.appendChild(ob); li.appendChild(w);
+      }
+      ul.appendChild(li);
+    }
+    body.appendChild(ul);
+    arabize(c);
+  }
+
+  function gradeView(box) {
+    const head = el('section', 'rs-card');
+    const row = el('div', 'rs-row');
+    row.appendChild(btn('‹ موادّي', 'rs-btn ghost', () => { gr.subj = null; gr.card = null; render(); }));
+    head.append(row, el('h3', null, gr.subj.said_ar || ''));
+    const pk = el('div', 'rs-pick');
+    head.appendChild(pk);
+    const body = el('div');
+    box.append(head, body);
+    V.pick(pk, GPANELS, gr.panel, (v) => { gr.panel = v; body.textContent = ''; gpanel(body); });
+    arabize(head);
+    gpanel(body);
+  }
+  function gpanel(body) { ({ card: gCard, student: gStudent, sheet: gSheet }[gr.panel])(body); }
+
+  async function loadGCard() {
+    const { data, error } = await M.rpc('v2_grade_plan_card', Object.assign(gkey(), { p_person: null }), 'بطاقة توزيع الدرجات');
+    gr.card = error ? null : (data || {});
+    return error;
+  }
+  const gagain = () => { gr.card = null; render(); };
+
+  // بطاقةُ التوزيع: الخاناتُ بترتيبها · شريطُ الامتلاء sum من cap · والقبليُّ بلونٍ آخرَ ووسمِ «لا يُحتسب»
+  async function gCard(box) {
+    const c = el('section', 'rs-card');
+    box.appendChild(c);
+    const err = gr.card ? null : await loadGCard();
+    if (err) { errBox(c, err); arabize(c); return; }
+    const d = gr.card; const pl = d.plan || {};
+    if (!pl.id) { line(c, 'rs-sum', d.said_ar); arabize(c); return; }
+    line(c, 'rs-meta', [pl.grade_ar, pl.term_ar, pl.status_ar, pl.locked_ar].filter(Boolean).join(' · '));
+    const ro = !!pl.locked; // بعد الإقفال: التوزيعُ للقراءة · والرصدُ يبقى مفتوحًا
+    for (const b of d.buckets || []) {
+      if (b.cap === 0) continue;
+      const pre = b.counts === false;
+      const bx = el('div', 'gr-bucket' + (pre ? ' pre' : ''));
+      const h = el('div', 'gr-bhead');
+      h.appendChild(el('b', null, b.label_ar || ''));
+      if (pre) h.appendChild(el('span', 'gr-tag', 'لا يُحتسب'));
+      bx.appendChild(h);
+      if (b.cap != null && Number(b.cap) > 0) {
+        const bar = el('div', 'gr-bar' + (b.fits === false ? ' over' : ''));
+        const f = el('i'); f.style.width = Math.min(100, (Number(b.sum) / Number(b.cap)) * 100) + '%';
+        bar.appendChild(f); bx.appendChild(bar);
+      }
+      line(bx, 'rs-meta', b.said_ar);
+      const ul = el('ul', 'rs-acts');
+      for (const it of b.items || []) {
+        const li = el('li');
+        const sp = el('span'); sp.style.flex = '1';
+        sp.appendChild(el('b', null, (it.locked ? '🔒 ' : '') + (it.title_ar || '')));
+        sp.appendChild(el('div', 'rs-meta', [it.max_ar, it.tool_ar, it.is_attendance ? 'يُحسب آليًّا' : null].filter(Boolean).join(' · ')));
+        if (it.note_ar) sp.appendChild(el('div', 'rs-meta', it.note_ar));
+        li.appendChild(sp);
+        if (!ro && !it.locked && !it.is_attendance) {
+          const w = el('span', 'rs-ibs');
+          w.append(btn('عدّل', 'rs-btn ghost', () => itemForm(b, it)), btn('ارفع', 'rs-btn ghost', () => dropForm(it)));
+          li.appendChild(w);
+        }
+        ul.appendChild(li);
+      }
+      bx.appendChild(ul);
+      if (!ro) { const r = el('div', 'rs-row'); r.appendChild(btn('أضف بندًا', 'rs-btn', () => itemForm(b, null))); bx.appendChild(r); }
+      c.appendChild(bx);
+    }
+    line(c, 'rs-sum', d.said_ar);
+    arabize(c);
+  }
+
+  // أدواتُ التقويم: يُرسل key ويُعرض label_ar · مجموعتان بـ kind كما جاء من الباب («أداة» · «أسلوب»)
+  async function loadTools() {
+    if (gr.tools) return null;
+    const { data, error } = await M.rpc('v2_reference', { p_key: 'assess_tools' }, 'أدوات التقويم');
+    if (error) return error;
+    gr.tools = ((data && data.items) || []).slice().sort((a, b) => (a.ord || 0) - (b.ord || 0));
+    gr.toolsNote = data && data.note;
+    return null;
+  }
+  async function itemForm(b, it) {
+    const e = await loadTools();
+    if (e) { V.flash('bad', errText(e)); return; }
+    const kinds = [...new Set(gr.tools.map((t) => t.kind).filter(Boolean))];
+    const cur = it && it.tool_key ? gr.tools.find((t) => t.key === it.tool_key) : null;
+    const fields = [
+      { key: 'title', label: 'اسمُ البند', value: it ? it.title_ar : '' },
+      { key: 'max', type: 'number', label: 'درجتُه العظمى', value: it ? it.max_points : null },
+      { key: 'kind', type: 'pick', label: 'الأداةُ أو الأسلوب (اختياريّ)', items: kinds.map((k) => [k, k]), value: cur ? cur.kind : null, hint: gr.toolsNote },
+    ];
+    for (const k of kinds) fields.push({ key: 'tool_' + k, type: 'choose', label: k, items: gr.tools.filter((t) => t.kind === k).map((t) => [t.key, t.label_ar || '']), value: cur && cur.kind === k ? cur.key : null, show: (v) => v.kind === k });
+    V.form({
+      title: it ? 'تعديلُ بند' : 'بندٌ جديد', what: b.label_ar || '', ok: it ? 'احفظ' : 'أضف',
+      fields,
+      onOk: async (v) => {
+        const tool = v.kind ? v['tool_' + v.kind] : null;
+        const x = it
+          ? await M.rpc('v2_grade_item_set', { p_item: it.id, p_title: v.title, p_max: v.max, p_tool: tool }, 'تعديل البند')
+          : await M.rpc('v2_grade_item_add', { p_plan: gr.card.plan.id, p_bucket: b.key, p_title: v.title, p_max: v.max, p_tool: tool }, 'إضافة بند');
+        if (x.error) return x.error;
+        V.flash('ok', (x.data && (x.data.said_ar || x.data.summary_ar)) || '');
+        gagain(); return null;
+      },
+    });
+  }
+  // «ارفع» لا «احذف»: البندُ يبقى في السجلّ
+  function dropForm(it) {
+    V.form({
+      title: 'رفعُ البند', what: it.title_ar || '', ok: 'ارفعه',
+      onOk: async () => {
+        const x = await M.rpc('v2_grade_item_drop', { p_item: it.id }, 'رفع البند');
+        if (x.error) return x.error;
+        V.flash('ok', (x.data && (x.data.said_ar || x.data.summary_ar)) || '');
+        gagain(); return null;
+      },
+    });
+  }
+
+  // بطاقةُ الطالب: الفصلُ من v2_my_plan_subjects (section_id · class_ar) والطلّابُ من v2_loyalty_of_section
+  // وتُعرض الدرجاتُ وحدَها: لا band_ar ولا passes ولا said_ar (فيه الحكم) حتى يُصلَح حكمُ من لم يُرصد له شيء
+  async function gStudent(box) {
+    const c = el('section', 'rs-card');
+    box.appendChild(c);
+    const { data, error } = await M.rpc('v2_my_plan_subjects', { p_school: M.state.school, p_term: null }, 'فصولي');
+    if (error) { errBox(c, error); arabize(c); return; }
+    const row = ((data && data.rows) || []).find((r) => Number(r.grade) === Number(gr.subj.grade) && r.subject_ar === gr.subj.subject_ar);
+    const secs = ((row && row.sections) || []).map((s) => [s.section_id, s.class_ar || '']);
+    if (!secs.length) { line(c, 'rs-meta', data && data.summary_ar); arabize(c); return; }
+    if (!gr.stuSec || !secs.some((s) => s[0] === gr.stuSec)) gr.stuSec = secs[0][0];
+    const pk = el('div', 'rs-pick'); const list = el('div');
+    c.append(pk, list);
+    if (secs.length > 1) V.pick(pk, secs, gr.stuSec, (v) => { gr.stuSec = v; students(list); });
+    else c.insertBefore(el('p', 'rs-meta', secs[0][1]), pk);
+    students(list);
+    arabize(c);
+  }
+  async function students(list) {
+    list.textContent = '';
+    const { data, error } = await M.rpc('v2_loyalty_of_section', { p_section: gr.stuSec }, 'طلّاب الفصل');
+    if (error) { errBox(list, error); return; }
+    const items = ((data && data.rows) || []).map((x) => [x.student_id, x.name || '']);
+    V.chooser(list, items, null, (id) => studentCard(id, items.find((x) => x[0] === id)));
+  }
+  async function studentCard(id, it) {
+    const { data, error } = await M.rpc('v2_grade_student', { p_student: id, p_grade: gr.subj.grade, p_subject: gr.subj.subject_ar, p_school: M.state.school, p_term: gr.term }, 'درجات الطالب');
+    const n = el('div');
+    if (error) n.appendChild(el('div', 'notice err', errText(error)));
+    else {
+      const d = data || {};
+      const groups = new Map();
+      for (const x of (d.items || []).filter((y) => y.counts !== false)) {
+        if (!groups.has(x.bucket_ar)) groups.set(x.bucket_ar, []);
+        groups.get(x.bucket_ar).push(x);
+      }
+      for (const [g, xs] of groups) {
+        n.appendChild(el('h4', null, g || ''));
+        const ul = el('ul', 'rs-acts');
+        for (const x of xs) {
+          const li = el('li'); const sp = el('span'); sp.style.flex = '1';
+          sp.append(el('b', null, x.title_ar || ''), el('div', 'rs-meta', [x.points_ar, x.said_ar].filter(Boolean).join(' · ')));
+          li.appendChild(sp); ul.appendChild(li);
+        }
+        n.appendChild(ul);
+      }
+      const pre = d.pre || [];
+      if (pre.length) {
+        const pb = el('div', 'gr-bucket pre');
+        pb.appendChild(el('div', 'gr-bhead', 'التقويم القبليّ — لا يؤثّر في الدرجة'));
+        for (const x of pre) pb.appendChild(el('p', 'rs-meta', [x.title_ar, x.points_ar].filter(Boolean).join(' · ')));
+        n.appendChild(pb);
+      }
+    }
+    V.form({ title: (data && data.name_ar) || (it && it[1]) || '', what: gr.subj.said_ar || '', ok: false, cancel: 'إغلاق', fields: [{ key: 'n', type: 'node', node: n }] });
+  }
+
+  // كشفُ الفصل: الطلّابُ صفوفًا والبنودُ أعمدة — ولا يُبنى حتى يُخرج البابُ حرفَ الفصل الذي يطلبه v2_grade_sheet
+  function gSheet(box) {
+    const c = el('section', 'rs-card');
+    c.appendChild(el('p', 'rs-note', 'لم يُبنَ بعد: v2_grade_sheet يطلب حرفَ الفصل، ولا بابَ يُخرجه اليوم — والإصلاحُ عند وكيل القاعدة ينتظر أمرَ مفرح.'));
+    box.appendChild(c);
   }
 
   M.start({ screen: 'muallim', onChange: () => refresh() });
