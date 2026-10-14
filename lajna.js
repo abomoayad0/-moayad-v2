@@ -150,7 +150,8 @@
   }
 
   function oppLine(o) {
-    return [o.when, 'المسجّلون ' + o.joined + (o.capacity ? ' من ' + o.capacity : ''), 'رفعوا ' + o.filed, 'أُقرّ ' + o.verdicted, 'قُدّر ' + o.graded, o.held_by ? 'يقيمها ' + o.held_by : null].filter(Boolean).join(' · ');
+    // العدُّ بجملته من الباب (said_ar) — لا عددٌ يُلصق بكلمةٍ في الشاشة
+    return [o.when, o.said_ar, o.held_by ? 'يقيمها ' + o.held_by : null].filter(Boolean).join(' · ');
   }
 
   function renderOpps(err) {
@@ -160,7 +161,8 @@
     const wait = ui.opps.filter((o) => o.verdicted > o.graded);
     for (const o of wait) {
       const f = el('div', 'rs-file');
-      f.append(el('h5', null, o.title || o.merit || ''), el('p', null, (o.verdicted - o.graded) + ' بانتظار التقدير · ' + (o.points_note || '') + (o.source ? ' · ' + o.source : '')));
+      // ما أُقرّ وما قُدّر بلفظيهما من الباب — بلا طرحٍ في الشاشة
+      f.append(el('h5', null, o.title || o.merit || ''), el('p', null, [o.verdicted_ar, o.graded_ar, o.points_note, o.source_ar || o.source].filter(Boolean).join(' · ')));
       f.appendChild(btn('قدّر الدرجة', 'rs-btn', () => selectOpp(o.opp)));
       g.appendChild(f);
     }

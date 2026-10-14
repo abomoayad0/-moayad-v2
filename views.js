@@ -124,7 +124,8 @@
       det.appendChild(el('summary', null, 'التفصيلُ بأسبابه' + (d.term_ar ? ' — ' + d.term_ar : '')));
       const body = el('div', 'rs-dtb');
       for (const [k, t] of all) {
-        for (const x of rows[k] || []) body.appendChild(el('div', null, t + ' ' + x.points + ' · ' + (x.on || '') + (x.why ? ' — ' + x.why : '')));
+        // السطرُ بجملته من الباب (said_ar: «حُسمت درجتان — الأحد …») ثمّ سببُه — لا رقمٌ ولا تاريخٌ خامٌ يُلصق في الشاشة
+        for (const x of rows[k] || []) body.appendChild(el('div', null, (x.said_ar || [t, x.points_ar, x.on_ar].filter(Boolean).join(' · ')) + (x.why ? ' — ' + x.why : '')));
       }
       det.appendChild(body);
       box.appendChild(det);
