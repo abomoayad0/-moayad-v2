@@ -177,10 +177,18 @@
     if (!list.length) { box.appendChild(el('p', 'rs-meta', 'لم تُكتب لابنك خطّة.')); return; }
     for (const p of list) {
       const f = el('div', 'rs-file');
-      f.append(el('h5', null, (p.target || '—') + ' — ' + (p.state_ar || '')), el('p', null, p.desc || ''));
+      f.appendChild(el('h5', null, (p.target || '—') + ' — ' + (p.state_ar || '')));
+      // قياسُ الخطّة للقراءة (ملحق ⑭): وليُّ الأمر طرفٌ في تقييم فاعليّتها — ولا زرَّ تسجيل
+      const pm = p.measure ? V.planMeasure(p.measure) : null;
+      if (pm) f.append(pm.said, pm.before);
+      f.appendChild(el('p', null, p.desc || ''));
       const steps = (Array.isArray(p.steps_list) ? p.steps_list : String(p.steps || '').split('\n')).filter((x) => String(x).trim() !== '');
       if (steps.length) { const ul = el('ul', 'rs-acts'); for (const x of steps) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }
-      f.appendChild(el('p', null, 'رأيُك: ' + (p.guardian || 'لم تُبدِه بعد')));
+      if (pm) f.appendChild(pm.after);
+      const dt = el('div', 'rs-lgd');
+      dt.append(el('i', 'k', 'رأيُك:'), el('i', null, p.guardian || 'لم تُبدِه بعد'));
+      if (p.guardian_at_ar) dt.append(el('i', 'k', 'تاريخُه:'), el('i', null, p.guardian_at_ar));
+      f.appendChild(dt);
       if (p.status === 'draft') f.appendChild(btn(p.guardian ? 'عدّل رأيَك' : 'أبدِ رأيَك', 'rs-btn', () => V.form({
         title: 'رأيُك في الخطّة', what: p.target || '',
         fields: [{ key: 'text', type: 'textarea', label: 'رأيُك', rows: 3, value: p.guardian }],

@@ -45,9 +45,15 @@
     for (const p of list) {
       const f = el('div', 'rs-file');
       f.appendChild(el('h5', null, (p.target || '—') + (p.state_ar ? ' — ' + p.state_ar : '')));
-      f.appendChild(el('p', null, [p.starts ? 'من ' + p.starts : null, p.ends ? 'إلى ' + p.ends : null].filter(Boolean).join(' · ')));
+      // قياسُ الخطّة للقراءة (ملحق ⑭): السطرُ البارز والجدولان — ولا زرَّ تسجيل، فالتسجيلُ للقائم بتعديل السلوك
+      const pm = p.measure ? V.planMeasure(p.measure) : null;
+      if (pm) f.append(pm.said, pm.before);
+      const dt = el('div', 'rs-lgd');
+      for (const [k, v] of [['تبدأ', p.starts_ar], ['تنتهي', p.ends_ar]]) if (v) dt.append(el('i', 'k', k + ':'), el('i', null, v));
+      f.appendChild(dt);
       const st = (Array.isArray(p.steps_list) ? p.steps_list : String(p.steps_list || p.steps || '').split('\n')).filter((x) => String(x).trim());
       if (st.length) { const ul = el('ul', 'rs-acts'); for (const x of st) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }
+      if (pm) f.appendChild(pm.after);
       box.appendChild(f);
     }
     arabize(box);

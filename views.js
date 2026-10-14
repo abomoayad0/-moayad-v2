@@ -107,7 +107,7 @@
 
   // قياسُ خطّة تعديل السلوك (v2_plan_of.measure · تكليف ⑭) — كلُّ ما يُقرأ من الباب بلفظه، ولا يُحسب فرقٌ هنا
   // يرجع ثلاثَ قطع: said (سطرُه البارز) · before (جدولُ baseline فوقَ الخطّة) · after (جدولُ followup تحتَها وسندُه)
-  // والعناوينُ عناوينُ جدولَي الصفحة ٦٠–٦١ كما هي، والخامُّ (on_date · tally) للترتيب وحدَه
+  // والعناوينُ عناوينُ جدولَي الصفحة ٦٠–٦١ كما هي (وهي الطور — فلا عمودَ لـphase_ar)، والخامُّ (on_date · tally) للترتيب وحدَه
   const MEASURE_TABLES = { baseline: 'قياس شدّة أو تكرار السلوك', followup: 'متابعة السلوك' };
   function planMeasure(m) {
     m = m || {};
@@ -123,9 +123,10 @@
       if (!rows.length) continue;
       const t = el('table', 'rs-table');
       const hr = el('tr');
-      for (const h of ['', 'التاريخ', 'فترة الملاحظة', 'التكرار']) hr.appendChild(el('th', null, h));
+      // أعمدةُ الصفحة: «اليوم» داخلَ on_date_ar (يبدأ باسمه) · و«التكرار» و«المجموع» هما tally_ar — فلا تُفرَد ولا تُزاد خانات
+      for (const h of ['التاريخ', 'فترة الملاحظة', 'التكرار']) hr.appendChild(el('th', null, h));
       t.appendChild(hr);
-      for (const x of rows) { const tr = el('tr'); for (const v of [x.phase_ar, x.on_date_ar, x.window_ar, x.tally_ar]) tr.appendChild(el('td', null, v || '—')); t.appendChild(tr); }
+      for (const x of rows) { const tr = el('tr'); for (const v of [x.on_date_ar, x.window_ar, x.tally_ar]) tr.appendChild(el('td', null, v || '—')); t.appendChild(tr); }
       box.appendChild(t);
     }
     out.after.appendChild(el('p', 'rs-meta', [m.problem_ar, m.degree_ar, m.days_ar, m.source_ar].filter(Boolean).join(' · ')));

@@ -925,16 +925,21 @@
       // القياسُ قبلُ وبعد (تكليف ⑭): جملتُه بارزة، وجدولُ القياس القبليّ فوقَ الخطّة، والمتابعةُ تحتَها
       const pm = p.measure ? V.planMeasure(p.measure) : null;
       if (pm) f.append(pm.said, pm.before);
-      f.appendChild(el('p', null, ['كتبها ' + (p.by || '—'), p.starts ? 'من ' + p.starts : null, p.ends ? 'إلى ' + p.ends : null, p.final_at ? 'اعتمدها ' + (p.final_by || '—') + ' في ' + String(p.final_at).slice(0, 10) : null].filter(Boolean).join(' · ')));
+      // التواريخُ بألفاظها من الباب (starts_ar · ends_ar · final_at_ar — ملحق ⑭) في خاناتٍ لا في جملة، ولا يُعرض ما لم يأتِ لفظُه
+      const dt = el('div', 'rs-lgd');
+      for (const [k, v] of [['كتبها', p.by], ['تبدأ', p.starts_ar], ['تنتهي', p.ends_ar], ['اعتمدها', p.final_at_ar ? p.final_by : null], ['تاريخُ الاعتماد', p.final_at_ar]]) if (v) dt.append(el('i', 'k', k + ':'), el('i', null, v));
+      f.appendChild(dt);
       const lg = el('div', 'rs-lgd');
       for (const [k, v] of [['السلوك', p.desc], ['مظاهرُه', p.manifest], ['ما يسبقه', p.ante], ['ما يليه', p.conseq], ['ما يحقّقه منه', p.gain], ['ما سبق من إجراء', p.prior]]) if (v) lg.append(el('i', 'k', k + ':'), el('i', null, v));
       f.appendChild(lg);
       const st = lines(p.steps_list || p.steps);
       if (st.length) { f.appendChild(el('div', 'rs-label', 'إجراءاتُ التعديل')); const ul = el('ul', 'rs-acts'); for (const x of st) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }
       const op = el('div', 'rs-lgd');
-      op.append(el('i', 'k', 'رأيُ معلّم الفصل:'), el('i', p.needs_teacher ? 'rs-state-open' : null, p.teacher || 'لم يُبدِه بعد'),
-        el('i', 'k', 'رأيُ وليّ الأمر:'), el('i', null, p.guardian || 'لم يُبدِه بعد'),
-        el('i', 'k', 'رأيُ الوكيل:'), el('i', null, p.deputy || '—'));
+      op.append(el('i', 'k', 'رأيُ معلّم الفصل:'), el('i', p.needs_teacher ? 'rs-state-open' : null, p.teacher || 'لم يُبدِه بعد'));
+      if (p.teacher_at_ar) op.append(el('i', 'k', 'تاريخُه:'), el('i', null, p.teacher_at_ar));
+      op.append(el('i', 'k', 'رأيُ وليّ الأمر:'), el('i', null, p.guardian || 'لم يُبدِه بعد'));
+      if (p.guardian_at_ar) op.append(el('i', 'k', 'تاريخُه:'), el('i', null, p.guardian_at_ar));
+      op.append(el('i', 'k', 'رأيُ الوكيل:'), el('i', null, p.deputy || '—'));
       f.appendChild(op);
       if (pm) {
         f.appendChild(pm.after);
@@ -1058,7 +1063,7 @@
     const prevBox = el('div');
     if (prev) {
       const f = el('div', 'rs-file rs-prev');
-      f.appendChild(el('h5', null, 'الخطّةُ المعتمدةُ السابقة — ' + String(prev.final_at).slice(0, 10)));
+      f.appendChild(el('h5', null, ['الخطّةُ المعتمدةُ السابقة', prev.final_at_ar].filter(Boolean).join(' — ')));
       if (prev.target) f.appendChild(el('p', null, 'السلوكُ المستهدف: ' + prev.target));
       const st = lines(prev.steps_list || prev.steps);
       if (st.length) { const ul = el('ul', 'rs-acts'); for (const x of st) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }
