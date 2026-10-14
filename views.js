@@ -421,7 +421,7 @@
   function verdictCard(x, opts) {
     const f = el('div', 'rs-file');
     f.append(el('h5', null, (x.student || '') + ' — ' + (x.merit || '')),
-      el('p', null, [x.when, x.delegated_to_me ? 'أُحيلت إليك' + (x.delegate_note ? ': ' + x.delegate_note : '') : null].filter(Boolean).join(' · ')));
+      el('p', null, [x.when, x.filed_at_ar ? 'رُفعت ' + x.filed_at_ar : null, x.delegated_to_me ? 'أُحيلت إليك' + (x.delegate_note ? ': ' + x.delegate_note : '') : null].filter(Boolean).join(' · ')));
     const lg = el('div', 'rs-lgd');
     lg.append(el('i', 'k', 'ما كتبه:'), el('i', null, x.what || '—'), el('i', 'k', 'الشاهد:'), el('i', null, x.evidence || '—'));
     f.appendChild(lg);

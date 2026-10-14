@@ -70,7 +70,7 @@
       else if (!x.filed) st = 'أُغلقت — املأ نموذجَك وأرفق شاهدَك، ثمّ يقرّ من أقامها';
       else if (!x.verdict) st = 'رُفع نموذجُك — بانتظار الإقرار';
       else if (!x.graded) st = x.verdict + (x.note ? ' — ' + x.note : '') + ' · بانتظار تقدير اللجنة';
-      else st = 'تمّ — قدّرت لك اللجنةُ ' + (x.points_ar || x.points) + ' درجة';
+      else st = ['تمّ — قدّرت لك اللجنةُ', x.points_ar].filter(Boolean).join(' '); // points_ar جملةٌ معدودة (تكليف ⑫) — لا «درجة» تُلصق
       f.appendChild(el('div', 'rs-note', st));
       // نموذجُ المشاركة يُرفع إلى upload_to كما ترجعه القاعدة — ولا يُبنى المسارُ هنا
       if (x.state !== 'مفتوحة' && !x.filed) {
@@ -95,8 +95,9 @@
     if (!list.length) { box.appendChild(el('p', 'rs-meta', 'لا فرصَ مفتوحةً الآن — تابع صفحتك.')); return; }
     for (const o of list) {
       const f = el('div', 'rs-file');
-      f.append(el('h5', null, (o.merit || '') + (o.points_note ? ' — ' + o.points_note : '')),
-        el('p', null, [o.when, o.capacity ? 'سُجّل ' + o.taken + ' من ' + o.capacity : 'سُجّل ' + o.taken, o.group, o.source].filter(Boolean).join(' · ')));
+      f.append(el('h5', null, [o.merit, o.points_ar || o.points_note].filter(Boolean).join(' — ')),
+        // العدُّ بجملته من الباب (said_ar: «مسجَّلٌ واحد من ١٠») — لا عددٌ يُلصق بكلمة
+        el('p', null, [o.when, o.said_ar, o.group, o.source_ar || o.source].filter(Boolean).join(' · ')));
       const b = btn('سجّل فيها', 'rs-btn', () => join(o, b));
       if (ui.preview) { b.disabled = true; b.title = 'معاينة — التسجيلُ للطالب من حسابه'; }
       f.appendChild(b);
@@ -160,7 +161,7 @@
       body.appendChild(el('span', null, x.merit || ''));
       if (x.what) body.appendChild(el('div', 'rs-meta', x.what + (x.evidence ? ' · ' + x.evidence : '')));
       li.append(el('i', 'rs-tick' + (x.graded ? ' ok' : ''), x.graded ? '✓' : '○'), body,
-        el('small', 'rs-who', x.graded ? 'قُدّرت ' + (x.points_ar || x.points) + ' درجة' : x.verdict ? 'عند اللجنة' : 'بانتظار الإقرار'));
+        el('small', 'rs-who', x.graded ? ['قُدّرت', x.points_ar].filter(Boolean).join(' ') : x.verdict ? 'عند اللجنة' : 'بانتظار الإقرار'));
       ul.appendChild(li);
     }
     box.appendChild(ul);

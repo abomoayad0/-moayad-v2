@@ -1051,6 +1051,8 @@
       const row = el('div', 'ev');
       row.appendChild(el('div', 'name', x.period_ar || ''));
       row.appendChild(el('div', 'meta', [x.from_week_ar && x.to_week_ar ? x.from_week_ar + ' ← ' + x.to_week_ar : null, x.weeks_ar].filter(Boolean).join(' · ')));
+      // وتاريخاها بلفظيهما (from_ar · to_ar) — والخامُّ from_g/to_g لا يُعرض
+      if (x.from_ar || x.to_ar) row.appendChild(el('div', 'meta', [x.from_ar, x.to_ar].filter(Boolean).join(' ← ')));
       if (x.source_ar) row.appendChild(el('div', 'meta', x.source_ar));
       if (x.note_ar) row.appendChild(el('div', 'meta', x.note_ar));
       box.appendChild(row);

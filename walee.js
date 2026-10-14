@@ -208,7 +208,7 @@
     const ul = el('ul', 'rs-acts');
     for (const x of done) {
       const li = el('li');
-      li.append(el('i', 'rs-tick ok', '✓'), el('span', null, x.merit || ''), el('small', 'rs-who', '+' + (x.points_ar || x.points) + ' درجة'));
+      li.append(el('i', 'rs-tick ok', '✓'), el('span', null, x.merit || ''), el('small', 'rs-who', x.points_ar || '')); // points_ar جملةٌ معدودة (تكليف ⑫) — لا «+» ولا «درجة» تُلصق
       ul.appendChild(li);
     }
     box.append(ul, el('div', 'rs-note', 'قدّرتها لجنةُ التوجيه الطلابيّ'));
