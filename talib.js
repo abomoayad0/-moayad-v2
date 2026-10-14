@@ -65,13 +65,8 @@
     for (const x of mine) {
       const f = el('div', 'rs-file');
       f.append(el('h5', null, x.merit || ''), el('p', null, [x.when, x.state, x.close_why].filter(Boolean).join(' · ')));
-      let st;
-      if (x.state === 'مفتوحة') st = 'مسجَّلٌ · الفرصةُ مفتوحة — تُقفل باكتمال العدد أو انتهاء الوقت';
-      else if (!x.filed) st = 'أُغلقت — املأ نموذجَك وأرفق شاهدَك، ثمّ يقرّ من أقامها';
-      else if (!x.verdict) st = 'رُفع نموذجُك — بانتظار الإقرار';
-      else if (!x.graded) st = x.verdict + (x.note ? ' — ' + x.note : '') + ' · بانتظار تقدير اللجنة';
-      else st = ['تمّ — قدّرت لك اللجنةُ', x.points_ar].filter(Boolean).join(' '); // points_ar جملةٌ معدودة (تكليف ⑫) — لا «درجة» تُلصق
-      f.appendChild(el('div', 'rs-note', st));
+      // حالُ المشاركة بجملتها كاملةً من الباب (said_ar · تكليف ⑬) — لا فعلٌ ولا حرفٌ يُركَّب حول لفظٍ يأتي
+      if (x.said_ar) f.appendChild(el('div', 'rs-note', x.said_ar));
       // نموذجُ المشاركة يُرفع إلى upload_to كما ترجعه القاعدة — ولا يُبنى المسارُ هنا
       if (x.state !== 'مفتوحة' && !x.filed) {
         if (!x.upload_to) f.appendChild(el('div', 'notice err', 'لم ترجع القاعدةُ مسارَ الرفع (upload_to).'));
