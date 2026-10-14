@@ -186,8 +186,9 @@
       if (steps.length) { const ul = el('ul', 'rs-acts'); for (const x of steps) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }
       if (pm) f.appendChild(pm.after);
       const dt = el('div', 'rs-lgd');
-      dt.append(el('i', 'k', 'رأيُك:'), el('i', null, p.guardian || 'لم تُبدِه بعد'));
-      if (p.guardian_at_ar) dt.append(el('i', 'k', 'تاريخُه:'), el('i', null, p.guardian_at_ar));
+      const mine = el('i', null, p.guardian || 'لم تُبدِه بعد');
+      if (p.guardian_at_ar) mine.appendChild(el('div', 'rs-meta', p.guardian_at_ar)); // تاريخُه تحته بلا عنوان (تكليف ⑮)
+      dt.append(el('i', 'k', 'رأيُك:'), mine);
       f.appendChild(dt);
       if (p.status === 'draft') f.appendChild(btn(p.guardian ? 'عدّل رأيَك' : 'أبدِ رأيَك', 'rs-btn', () => V.form({
         title: 'رأيُك في الخطّة', what: p.target || '',

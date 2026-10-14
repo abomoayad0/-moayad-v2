@@ -47,18 +47,15 @@
     }
     const wrap = el('div', 'rs-tablewrap');
     const t = el('table', 'rs-table');
-    t.style.minWidth = '0'; // أربعةُ أعمدةٍ تسعها شاشةُ الجوّال بلا تمرير
-    const hr = el('tr');
-    for (const h of ['الطالب', 'المؤشّر', 'الرصدات', 'الحالة']) hr.appendChild(el('th', null, h));
-    t.appendChild(hr);
+    t.style.minWidth = '0';
+    // كلُّ حالةٍ سطرُها من الباب (said_ar · تكليف ⑮): الطالبُ والمشكلةُ والدرجةُ والرصداتُ وتاريخُ الفتح وموضعُها من المسار
+    // و state بلفظه من القاعدة — لا يُترجم ولا يُركَّب حولهما شيء
     for (const c of ui.cases) {
       const tr = el('tr', 'click' + (c.case === ui.caseId ? ' on' : ''));
       tr.tabIndex = 0;
-      const ind = (c.indicator || '') + ' — ' + (c.problem || '') + (c.degree != null ? ' · ' + degreeText(c.degree) : '');
       const stTd = el('td');
       stTd.appendChild(el('span', c.state === 'تمّت المعالجة' ? 'rs-state-done' : 'rs-state-open', c.state || ''));
-      if (c.studied === false) stTd.appendChild(el('div', 'rs-meta', 'الدراسةُ لم تُكتب'));
-      tr.append(el('td', null, c.student || ''), el('td', null, ind), el('td', null, String(c.records == null ? 0 : c.records)), stTd);
+      tr.append(el('td', null, c.said_ar || ''), stTd);
       tr.addEventListener('click', () => openCase(c.case));
       tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') openCase(c.case); });
       t.appendChild(tr);

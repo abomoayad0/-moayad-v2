@@ -49,7 +49,7 @@
       const pm = p.measure ? V.planMeasure(p.measure) : null;
       if (pm) f.append(pm.said, pm.before);
       const dt = el('div', 'rs-lgd');
-      for (const [k, v] of [['تبدأ', p.starts_ar], ['تنتهي', p.ends_ar]]) if (v) dt.append(el('i', 'k', k + ':'), el('i', null, v));
+      for (const [k, v] of [['تاريخ البداية', p.starts_ar], ['تاريخ النهاية', p.ends_ar]]) if (v) dt.append(el('i', 'k', k + ':'), el('i', null, v));
       f.appendChild(dt);
       const st = (Array.isArray(p.steps_list) ? p.steps_list : String(p.steps_list || p.steps || '').split('\n')).filter((x) => String(x).trim());
       if (st.length) { const ul = el('ul', 'rs-acts'); for (const x of st) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }

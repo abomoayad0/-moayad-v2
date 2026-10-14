@@ -911,6 +911,7 @@
   // ---------- خطّةُ تعديل السلوك (نموذج ٣) ----------
   // كما يرجع v2_plan_of: الحالُ والمحتوى والآراءُ، و needs_teacher و can_final — والاعتمادُ بكتابة «أعتمد»
   const lines = (v) => (Array.isArray(v) ? v : String(v || '').split('\n')).filter((x) => String(x).trim() !== '');
+  const opinion = (text, at, cls) => { const i = el('i', cls || null, text); if (at) i.appendChild(el('div', 'rs-meta', at)); return i; };
   function renderPlans() {
     const box = $('plans');
     box.textContent = '';
@@ -926,8 +927,9 @@
       const pm = p.measure ? V.planMeasure(p.measure) : null;
       if (pm) f.append(pm.said, pm.before);
       // التواريخُ بألفاظها من الباب (starts_ar · ends_ar · final_at_ar — ملحق ⑭) في خاناتٍ لا في جملة، ولا يُعرض ما لم يأتِ لفظُه
+      // وعناوينُ ما سمّته الصفحةُ ٦٠–٦١ بكلمتها حرفًا بحرف (تكليف ⑮) — و«اعتمدها» و«تاريخُ الاعتماد» من عملنا
       const dt = el('div', 'rs-lgd');
-      for (const [k, v] of [['كتبها', p.by], ['تبدأ', p.starts_ar], ['تنتهي', p.ends_ar], ['اعتمدها', p.final_at_ar ? p.final_by : null], ['تاريخُ الاعتماد', p.final_at_ar]]) if (v) dt.append(el('i', 'k', k + ':'), el('i', null, v));
+      for (const [k, v] of [['القائم بتعديل السلوك', p.by], ['تاريخ البداية', p.starts_ar], ['تاريخ النهاية', p.ends_ar], ['اعتمدها', p.final_at_ar ? p.final_by : null], ['تاريخُ الاعتماد', p.final_at_ar]]) if (v) dt.append(el('i', 'k', k + ':'), el('i', null, v));
       f.appendChild(dt);
       const lg = el('div', 'rs-lgd');
       for (const [k, v] of [['السلوك', p.desc], ['مظاهرُه', p.manifest], ['ما يسبقه', p.ante], ['ما يليه', p.conseq], ['ما يحقّقه منه', p.gain], ['ما سبق من إجراء', p.prior]]) if (v) lg.append(el('i', 'k', k + ':'), el('i', null, v));
@@ -935,10 +937,9 @@
       const st = lines(p.steps_list || p.steps);
       if (st.length) { f.appendChild(el('div', 'rs-label', 'إجراءاتُ التعديل')); const ul = el('ul', 'rs-acts'); for (const x of st) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }
       const op = el('div', 'rs-lgd');
-      op.append(el('i', 'k', 'رأيُ معلّم الفصل:'), el('i', p.needs_teacher ? 'rs-state-open' : null, p.teacher || 'لم يُبدِه بعد'));
-      if (p.teacher_at_ar) op.append(el('i', 'k', 'تاريخُه:'), el('i', null, p.teacher_at_ar));
-      op.append(el('i', 'k', 'رأيُ وليّ الأمر:'), el('i', null, p.guardian || 'لم يُبدِه بعد'));
-      if (p.guardian_at_ar) op.append(el('i', 'k', 'تاريخُه:'), el('i', null, p.guardian_at_ar));
+      // الرأيُ تحت عنوانه من الصفحة، وتاريخُه تحته بلا عنوان (تكليف ⑮)
+      op.append(el('i', 'k', 'رأي معلم/معلمة الفصل:'), opinion(p.teacher || 'لم يُبدِه بعد', p.teacher_at_ar, p.needs_teacher ? 'rs-state-open' : null),
+        el('i', 'k', 'رأي ولي الأمر:'), opinion(p.guardian || 'لم يُبدِه بعد', p.guardian_at_ar));
       op.append(el('i', 'k', 'رأيُ الوكيل:'), el('i', null, p.deputy || '—'));
       f.appendChild(op);
       if (pm) {
