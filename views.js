@@ -105,6 +105,35 @@
     node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(e); } });
   }
 
+  // قياسُ خطّة تعديل السلوك (v2_plan_of.measure · تكليف ⑭) — كلُّ ما يُقرأ من الباب بلفظه، ولا يُحسب فرقٌ هنا
+  // يرجع ثلاثَ قطع: said (سطرُه البارز) · before (جدولُ baseline فوقَ الخطّة) · after (جدولُ followup تحتَها وسندُه)
+  // والعناوينُ عناوينُ جدولَي الصفحة ٦٠–٦١ كما هي، والخامُّ (on_date · tally) للترتيب وحدَه
+  const MEASURE_TABLES = { baseline: 'قياس شدّة أو تكرار السلوك', followup: 'متابعة السلوك' };
+  function planMeasure(m) {
+    m = m || {};
+    const said = el('p', 'rs-score pm-said', m.said_ar || '');
+    const out = { said, before: el('div', 'pm-tbl'), after: el('div', 'pm-tbl') };
+    if (m.measurable === false) return out; // بلا تاريخِ بداية: جملتُه وحدَها ولا يُرسم شيء
+    const obs = (m.observed || []).slice().sort((a, b) => String(a.on_date || '').localeCompare(String(b.on_date || '')));
+    for (const ph of ['baseline', 'followup']) {
+      const box = ph === 'baseline' ? out.before : out.after;
+      box.appendChild(el('div', 'rs-label', MEASURE_TABLES[ph]));
+      box.appendChild(el('p', 'rs-meta', [[m[ph + '_from_ar'], m[ph + '_to_ar']].filter(Boolean).join(' ← '), m[ph + '_ar']].filter(Boolean).join(' · ')));
+      const rows = obs.filter((x) => x.phase === ph);
+      if (!rows.length) continue;
+      const t = el('table', 'rs-table');
+      const hr = el('tr');
+      for (const h of ['', 'التاريخ', 'فترة الملاحظة', 'التكرار']) hr.appendChild(el('th', null, h));
+      t.appendChild(hr);
+      for (const x of rows) { const tr = el('tr'); for (const v of [x.phase_ar, x.on_date_ar, x.window_ar, x.tally_ar]) tr.appendChild(el('td', null, v || '—')); t.appendChild(tr); }
+      box.appendChild(t);
+    }
+    out.after.appendChild(el('p', 'rs-meta', [m.problem_ar, m.degree_ar, m.days_ar, m.source_ar].filter(Boolean).join(' · ')));
+    // سندُه كما جاء (رمزُ الوثيقة يبقى لاتينيًّا)
+    if (m['سند_ar']) { const sd = el('p', 'rs-meta', m['سند_ar']); sd.setAttribute('data-raw', ''); out.after.appendChild(sd); }
+    return out;
+  }
+
   // درجةُ السلوك من v2_my_score كما ترجع: line_ar سطرًا بارزًا، و what_ar بجمله الأربع تحته وسندُها، والتفصيلُ بأسبابه مطويًّا
   function scoreBox(box, r) {
     box.textContent = '';
@@ -606,5 +635,5 @@
     return d;
   }
 
-  window.MoayadView = { ar, arabize, btn, inbox, busyOn, busyOff, send, notBuilt, offCard, renderRole, flash, seen, tap, recordAdvice, scoreBox, pick, sheet, events, chooser, form, verdictCard, committeeTask };
+  window.MoayadView = { ar, arabize, btn, inbox, busyOn, busyOff, send, notBuilt, offCard, renderRole, flash, seen, tap, recordAdvice, scoreBox, planMeasure, pick, sheet, events, chooser, form, verdictCard, committeeTask };
 })();

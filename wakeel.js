@@ -17,12 +17,8 @@
     busy: false, files: null, last: null,
   };
 
-  // الأرقامُ عربيّةٌ في العرض — لما ترجعه القاعدةُ بأرقامٍ غربيّة (الرقم · التاريخ · اسم الفصل): تحويلُ أرقامٍ لا حساب
-  const ar = (v) => String(v == null ? '' : v).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
-  function arabize(node) {
-    const w = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
-    for (let t = w.nextNode(); t; t = w.nextNode()) t.nodeValue = ar(t.nodeValue);
-  }
+  // الأرقامُ عربيّةٌ في العرض — بالمحوِّل المشترك: يترك [data-raw] والمُعرِّفَ اللاتينيَّ (رمزَ الوثيقة) كما هو
+  const { ar, arabize } = V;
   const fill = (sel, items, first) => {
     sel.textContent = '';
     if (first) sel.appendChild(new Option(first, ''));
@@ -926,6 +922,9 @@
     for (const p of list) {
       const f = el('div', 'rs-file');
       f.appendChild(el('h5', null, (p.target || '—') + ' — ' + (p.state_ar || p.status || '')));
+      // القياسُ قبلُ وبعد (تكليف ⑭): جملتُه بارزة، وجدولُ القياس القبليّ فوقَ الخطّة، والمتابعةُ تحتَها
+      const pm = p.measure ? V.planMeasure(p.measure) : null;
+      if (pm) f.append(pm.said, pm.before);
       f.appendChild(el('p', null, ['كتبها ' + (p.by || '—'), p.starts ? 'من ' + p.starts : null, p.ends ? 'إلى ' + p.ends : null, p.final_at ? 'اعتمدها ' + (p.final_by || '—') + ' في ' + String(p.final_at).slice(0, 10) : null].filter(Boolean).join(' · ')));
       const lg = el('div', 'rs-lgd');
       for (const [k, v] of [['السلوك', p.desc], ['مظاهرُه', p.manifest], ['ما يسبقه', p.ante], ['ما يليه', p.conseq], ['ما يحقّقه منه', p.gain], ['ما سبق من إجراء', p.prior]]) if (v) lg.append(el('i', 'k', k + ':'), el('i', null, v));
@@ -937,6 +936,11 @@
         el('i', 'k', 'رأيُ وليّ الأمر:'), el('i', null, p.guardian || 'لم يُبدِه بعد'),
         el('i', 'k', 'رأيُ الوكيل:'), el('i', null, p.deputy || '—'));
       f.appendChild(op);
+      if (pm) {
+        f.appendChild(pm.after);
+        // لا يُمنع شيءٌ هنا: الحرّاسُ في الباب يرفضون بلفظهم (الطورُ والتاريخُ والتكرار ومن يملك التسجيل)
+        if (p.measure.measurable !== false) f.appendChild(btn('سجّل ملاحظة', 'rs-btn soft', () => countForm(p)));
+      }
       if (p.status === 'draft') {
         const row = el('div', 'rs-row');
         row.append(btn('عدّلها', 'rs-btn soft', () => planForm(null, p)),
@@ -953,6 +957,29 @@
       box.appendChild(btn('اكتب خطّة', 'rs-btn', () => planForm(t || null, null)));
     }
     arabize(box);
+  }
+
+  // تسجيلُ ملاحظةٍ في أحد جدولَي القياس: v2_plan_count — ثمّ تُحدَّث البطاقةُ من measure الراجع ولا يُستدعى v2_plan_of ثانية
+  function countForm(p) {
+    V.form({
+      title: 'سجّل ملاحظة', what: p.target || '',
+      fields: [
+        { key: 'phase', type: 'pick', label: 'في جدول', items: [['baseline', 'قياس شدّة أو تكرار السلوك'], ['followup', 'متابعة السلوك']] },
+        { key: 'on', type: 'date', label: 'التاريخ' },
+        { key: 'window', label: 'فترة الملاحظة (اختياريّ)' },
+        { key: 'tally', type: 'number', label: 'التكرار' },
+      ],
+      ok: 'سجّلها',
+      onOk: async (v) => {
+        const { data, error } = await M.rpc('v2_plan_count', { p_plan: p.plan, p_phase: v.phase, p_on_date: v.on, p_window_ar: v.window, p_tally: v.tally }, 'تسجيل ملاحظة');
+        if (error) return error;
+        if (!data || data.ok !== true) return 'لم يُسجّلها الباب';
+        if (data.measure) p.measure = data.measure;
+        flash('ok', data.said_ar || '');
+        renderPlans();
+        return null;
+      },
+    });
   }
 
   // أبوابُ المهامّ الخاصّة — يُنقل إليها من بابِ الإثبات العامّ (opts.doors)
