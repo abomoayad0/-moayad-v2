@@ -437,7 +437,7 @@
   .rs-tablewrap { overflow-x: auto; margin-bottom: 8px; }
   .rs-table { min-width: 520px; border-collapse: collapse; font-size: 13px; }
   .rs-table th, .rs-table td { padding: 7px 4px; border-bottom: 1px solid var(--line); vertical-align: top; text-align: start; }
-  .rs-table th { color: var(--mute); font-weight: 600; }
+  .rs-table th, .rs-table td.kv-k { color: var(--mute); font-weight: 600; }
 
 /* ─── شاشاتُ الأدوار: ما زاد على الوكيل ─── */
   .rs-sub { margin: 16px 0 4px; font-size: 14px; padding-top: 10px; border-top: 1px solid var(--line); }

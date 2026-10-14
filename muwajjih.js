@@ -1,7 +1,9 @@
 // مؤيّد · شاشة الموجّه — viewM في المحاكي: دوري · مؤشّرُ الحالات · بطاقةُ الحالة · جلساتي · سجلُّ الملفّ.
 // 🔒 دراسةُ الحالة والجلسات سرٌّ عند الموجّه: لا تُعرض في غير هذي الشاشة، والقاعدةُ تحرسها ورفضُها يُعرض بنصّه.
 // v2_counsel_board · v2_case_card · v2_case_write · v2_session_add · v2_case_report · v2_student_timeline(p_student, 'counselor')
-// وخطّةُ تعديل السلوك ومحضرُ التوعية وبنكُ العبارات لم تُبنَ في المحرّك — فتُعرض معطّلةً بسببها.
+// وخطّةُ تعديل السلوك في بطاقة الحالة (plan.js · تكليف ⑯): الموجّهُ «القائم بتعديل السلوك» بنصّ ذيل ص٦١ — يكتبها ويُسجّل قياسَها
+// ومحضرُ التوعية لم يُبنَ في المحرّك — فيُعرض معطّلًا بسببه.
+// وما كتبه إنسانٌ بيده (الدراسة · الجلسات · التقرير · ملاحظةُ الرصدة) يُعرض حرفًا بحرف: [data-raw] لا تُحوَّل أرقامُه
 (function () {
   'use strict';
 
@@ -11,14 +13,14 @@
   const { ar, arabize, btn, notBuilt, flash, pick } = V;
 
   // حالُ المعالجة كما تكتبه القاعدة في counsel_cases.state — يُمرَّر إليها فتصفّي هي
-  const STATES = [['', 'الكلّ'], ['قيد المعالجة', 'قيد المعالجة'], ['تمّت المعالجة', 'تمّت المعالجة']];
+  const STATES = [['', 'الكلّ'], ['قيد المعالجة', 'قيد المعالجة'], ['تمّت المعالجة', 'تمّت المعالجة'], ['مغلقة', 'مغلقة']];
   // مدى الاستجابة: الأربعةُ التي يقبلها قيدُ counsel_sessions_response_check — والقاعدةُ ترفض غيرها
   const RESPONSES = ['تحسّنٌ ملحوظ', 'تحسّنٌ طفيف', 'السلوكُ مستمرّ', 'تراجُع'];
 
   const ui = { state: '', cases: [], caseId: null, card: null, resp: null, busy: false };
   const sess = V.sheet('sessModal');
   const rep = V.sheet('repModal');
-  const degreeText = (n) => (n == null ? '' : 'الدرجة ' + ar(n));
+  const raw = (n) => { n.setAttribute('data-raw', ''); return n; };
 
   async function refresh() {
     if (!M.state.school) return;
@@ -95,8 +97,11 @@
 
   function kv(t, k, v) {
     const tr = el('tr');
-    tr.append(el('th', null, k), el('td', null, v == null || v === '' ? '—' : String(v)));
+    const td = el('td', null, v == null || v === '' ? '—' : String(v));
+    // المفتاحُ خانةٌ لا رأس — فقاعدةُ الجوّال تُخفي كلَّ صفٍّ فيه th (رأسُ الجدول)، فكان الجدولُ يختفي على الهاتف
+    tr.append(el('td', 'kv-k', k), td);
     t.appendChild(tr);
+    return td;
   }
 
   function renderCase() {
@@ -106,7 +111,8 @@
     const g = d.guardian || {};
     const p = d.problem || {};
     $('caseTitle').textContent = p.text || 'بطاقةُ الحالة';
-    $('caseMeta').textContent = (st.name || '') + ' · فُتحت في ' + (c.opened_on || '—') + ' · ' + (c.state || '');
+    // سطرُ الحالة من الباب (said_ar) — الجملةُ نفسُها التي في المكتب، فيتّسق المؤشّرُ والبطاقة · و state بلفظه
+    $('caseMeta').textContent = [d.said_ar, c.state].filter(Boolean).join(' · ');
 
     // ما يعرفه النظام — عرضًا فقط
     const f = $('caseFacts');
@@ -114,18 +120,31 @@
     f.appendChild(el('div', 'rs-label', 'ما يعرفه النظام — عرضًا فقط'));
     const t = el('table', 'rs-table');
     t.style.minWidth = '0';
-    kv(t, 'الطالب', (st.name || '') + (st.no ? ' — ' + st.no : ''));
+    kv(t, 'الطالب', st.name);
+    raw(kv(t, 'رقم القيد', st.student_no)); // رقمُ القيد يبقى كما هو
     kv(t, 'وليُّ أمره', (g.name || '') + (g.relation ? ' — ' + g.relation : ''));
-    kv(t, 'المشكلة', (p.text || '') + (p.degree != null ? ' · ' + degreeText(p.degree) : '') + (p.source ? ' · ' + p.source : ''));
-    kv(t, 'المحسوم', d.deducted);
+    kv(t, 'المشكلة', [p.text, p.degree_ar, p.source_ar].filter(Boolean).join(' · '));
+    kv(t, 'المحسوم', d.deducted_ar);
+    kv(t, 'الفصل الدراسيّ', c.term_ar);
     kv(t, 'حالُ المعالجة', c.state);
+    kv(t, 'الجلسات', d.sessions_ar);
+    kv(t, 'التقرير', d.reported_ar);
+    if (c.closed_on_ar) kv(t, 'تاريخ الإغلاق', c.closed_on_ar);
     f.appendChild(t);
     const recs = d.records || [];
     const det = el('details', 'rs-dt');
-    det.appendChild(el('summary', null, 'الرصدات (' + recs.length + ')'));
+    det.appendChild(el('summary', null, ['الرصدات', d.records_ar].filter(Boolean).join(' — ')));
     const db = el('div', 'rs-dtb');
+    // كلُّ رصدةٍ بألفاظها (no_ar · on_ar · step_ar) — ومن دوّنها ومكانُها في خانات، وملاحظتُها كما كُتبت
     for (const r of recs) {
-      db.appendChild(el('div', null, ['الرصدة ' + (r.no == null ? '' : r.no), r.on, r.by ? 'دوّنها ' + r.by : null, r.place, r.note].filter(Boolean).join(' · ')));
+      const row = el('div');
+      row.appendChild(el('b', null, [r.no_ar, r.on_ar, r.step_ar].filter(Boolean).join(' · ')));
+      const lg = el('div', 'rs-lgd');
+      if (r.by) lg.append(el('i', 'k', 'دوّنها:'), el('i', null, r.by));
+      if (r.place) lg.append(el('i', 'k', 'المكان:'), raw(el('i', null, r.place)));
+      if (r.note) lg.append(el('i', 'k', 'ملاحظة:'), raw(el('i', null, r.note)));
+      if (lg.childNodes.length) row.appendChild(lg);
+      db.appendChild(row);
     }
     if (!recs.length) db.appendChild(el('div', null, 'لا رصدات مرتبطة.'));
     det.appendChild(db);
@@ -140,7 +159,7 @@
     $('cwPlan').value = c.plan_ar || '';
     $('cwNote').textContent = d.note || '';
     $('cwNote').hidden = !d.note;
-    $('cwAt').textContent = c.written_at ? 'كُتبت في ' + ar(String(c.written_at).slice(0, 10)) : 'لم تُكتب بعد';
+    $('cwAt').textContent = c.written_at_ar ? 'تاريخ كتابة الدراسة: ' + c.written_at_ar : (c.written_at ? '' : 'لم تُكتب بعد');
     $('cwSave').textContent = c.written_at ? 'احفظ تعديلَ الدراسة' : 'احفظ الدراسة';
     $('cwSave').className = c.written_at ? 'rs-btn soft' : 'rs-btn big';
 
@@ -161,13 +180,14 @@
     if (r) {
       const t2 = el('table', 'rs-table');
       t2.style.minWidth = '0';
-      kv(t2, 'رُفع في', r.issued_on || (r.created_at ? String(r.created_at).slice(0, 10) : null));
-      kv(t2, 'عددُ الجلسات', r.sessions_n);
+      // حقولُ التقرير المصرَّحة (تكليف ⑯) — والرأيُ والتوصيةُ كما كتبهما الموجّه
+      kv(t2, 'تاريخ الرفع', r.issued_on_ar);
+      kv(t2, 'الجلسات', r.sessions_ar);
       kv(t2, 'المدى', r.span_ar);
       kv(t2, 'آخرُ تقديرٍ للاستجابة', r.last_resp);
       kv(t2, 'الحكم', r.judgement);
-      kv(t2, 'الرأيُ الفنّيّ', r.opinion);
-      kv(t2, 'التوصية', r.recommend);
+      raw(kv(t2, 'الرأيُ الفنّيّ', r.opinion));
+      raw(kv(t2, 'التوصية', r.recommend));
       rb.append(t2, el('div', 'rs-note', 'رُفع التقريرُ للّجنة — ولا يُرفع مرّتين.'));
     } else if (ss.length) {
       rb.appendChild(btn('ارفع تقريرَ دراسة الحالة', 'rs-btn', openReport));
@@ -178,7 +198,19 @@
 
     const off = $('caseOff');
     off.textContent = '';
-    off.append(notBuilt('خطّةُ تعديل السلوك'), notBuilt('محضرُ التوعية'), notBuilt('بنكُ العبارات'));
+    off.append(notBuilt('محضرُ التوعية'));
+    loadPlans();
+  }
+
+  // خطّةُ تعديل السلوك للطالب (v2_plan_of) — مربوطةً برصدة الحالة فيُقاس على مخالفتها، وبنكُ العبارات بمشكلتها
+  async function loadPlans() {
+    const c = (ui.card && ui.card.case) || {};
+    const box = $('casePlans');
+    if (!c.student_id) { box.textContent = ''; return; }
+    const caseId = ui.caseId;
+    const res = await M.rpc('v2_plan_of', { p_student: c.student_id }, 'خطّة تعديل السلوك');
+    if (caseId !== ui.caseId) return;
+    window.MoayadPlan.render(box, { result: res, student: { student_id: c.student_id, name: (ui.card.student || {}).name }, task: null, record: c.record_id || null, problem: c.problem_id == null ? null : c.problem_id, reload: loadPlans });
   }
 
   // الجلساتُ سجلٌّ .acts — الأحدثُ أعلى كما ترجعه القاعدة
@@ -188,13 +220,14 @@
       const li = el('li');
       const body = el('span');
       body.style.flex = '1';
-      body.appendChild(el('b', null, (label ? label(x) + ' · ' : '') + 'الجلسةُ ' + (x.no == null ? '' : x.no) + (x.minutes ? ' · ' + x.minutes + ' دقيقة' : '')));
+      // no_ar · on_ar من الباب — والمدّةُ لا تُعرض: لا لفظَ لها في الباب (minutes خامّ)، ولا تُلصق «دقيقة» بعدد
+      body.appendChild(el('b', null, [label ? label(x) : null, x.no_ar].filter(Boolean).join(' · ')));
       const lg = el('div', 'rs-lgd');
-      lg.append(el('i', 'k', 'ما نُوقش:'), el('i', null, x.discussed || ''),
+      lg.append(el('i', 'k', 'ما نُوقش:'), raw(el('i', null, x.discussed || '')),
         el('i', 'k', 'الاستجابة:'), el('i', null, x.response || ''),
-        el('i', 'k', 'التالي:'), el('i', null, x.next || ''));
+        el('i', 'k', 'التالي:'), raw(el('i', null, x.next || '')));
       body.appendChild(lg);
-      li.append(el('i', 'rs-tick ok', '✓'), body, el('small', 'rs-who', x.on || ''));
+      li.append(el('i', 'rs-tick ok', '✓'), body, el('small', 'rs-who', x.on_ar || ''));
       ul.appendChild(li);
     }
     return ul;
@@ -254,7 +287,7 @@
     const ss = ui.card.sessions || [];
     const a = $('repAuto');
     a.textContent = '';
-    a.appendChild(el('div', null, 'عددُ الجلسات: ' + ss.length));
+    if (ui.card.sessions_ar) a.appendChild(el('div', null, 'الجلسات: ' + ui.card.sessions_ar));
     if (ss.length) a.appendChild(el('div', null, 'آخرُ تقديرٍ للاستجابة: ' + (ss[0].response || '—')));
     a.appendChild(el('div', null, 'والحكمُ يضعه النظامُ عند الرفع.'));
     arabize(a);

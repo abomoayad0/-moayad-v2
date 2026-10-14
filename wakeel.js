@@ -910,82 +910,17 @@
 
   // ---------- خطّةُ تعديل السلوك (نموذج ٣) ----------
   // كما يرجع v2_plan_of: الحالُ والمحتوى والآراءُ، و needs_teacher و can_final — والاعتمادُ بكتابة «أعتمد»
-  const lines = (v) => (Array.isArray(v) ? v : String(v || '').split('\n')).filter((x) => String(x).trim() !== '');
-  const opinion = (text, at, cls) => { const i = el('i', cls || null, text); if (at) i.appendChild(el('div', 'rs-meta', at)); return i; };
+  // البطاقةُ ونماذجُها في plan.js — مشتركةٌ مع بطاقة الحالة في شاشة الموجّه (تكليف ⑯)
+  const planCtx = (t) => {
+    const m = t && metaOf(t.problem_ar);
+    return { result: (ui.files && ui.files.plans) || {}, student: { student_id: ui.stu.student_id, name: ui.stu.display_name || ui.stu.full_name }, task: t, problem: m ? m.id : null, reload: loadStudentCards };
+  };
   function renderPlans() {
     const box = $('plans');
     box.textContent = '';
     if (!ui.stu || !ui.files) return;
-    const r = ui.files.plans || {};
-    if (r.error) box.appendChild(el('div', 'notice err', errText(r.error)));
-    const list = r.data || [];
-    if (!list.length && !r.error) box.appendChild(el('p', 'rs-empty', 'لم تُكتب له خطّة.'));
-    for (const p of list) {
-      const f = el('div', 'rs-file');
-      f.appendChild(el('h5', null, (p.target || '—') + ' — ' + (p.state_ar || p.status || '')));
-      // القياسُ قبلُ وبعد (تكليف ⑭): جملتُه بارزة، وجدولُ القياس القبليّ فوقَ الخطّة، والمتابعةُ تحتَها
-      const pm = p.measure ? V.planMeasure(p.measure) : null;
-      if (pm) f.append(pm.said, pm.before);
-      // التواريخُ بألفاظها من الباب (starts_ar · ends_ar · final_at_ar — ملحق ⑭) في خاناتٍ لا في جملة، ولا يُعرض ما لم يأتِ لفظُه
-      // وعناوينُ ما سمّته الصفحةُ ٦٠–٦١ بكلمتها حرفًا بحرف (تكليف ⑮) — و«اعتمدها» و«تاريخُ الاعتماد» من عملنا
-      const dt = el('div', 'rs-lgd');
-      for (const [k, v] of [['القائم بتعديل السلوك', p.by], ['تاريخ البداية', p.starts_ar], ['تاريخ النهاية', p.ends_ar], ['اعتمدها', p.final_at_ar ? p.final_by : null], ['تاريخُ الاعتماد', p.final_at_ar]]) if (v) dt.append(el('i', 'k', k + ':'), el('i', null, v));
-      f.appendChild(dt);
-      const lg = el('div', 'rs-lgd');
-      for (const [k, v] of [['السلوك', p.desc], ['مظاهرُه', p.manifest], ['ما يسبقه', p.ante], ['ما يليه', p.conseq], ['ما يحقّقه منه', p.gain], ['ما سبق من إجراء', p.prior]]) if (v) lg.append(el('i', 'k', k + ':'), el('i', null, v));
-      f.appendChild(lg);
-      const st = lines(p.steps_list || p.steps);
-      if (st.length) { f.appendChild(el('div', 'rs-label', 'إجراءاتُ التعديل')); const ul = el('ul', 'rs-acts'); for (const x of st) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }
-      const op = el('div', 'rs-lgd');
-      // الرأيُ تحت عنوانه من الصفحة، وتاريخُه تحته بلا عنوان (تكليف ⑮)
-      op.append(el('i', 'k', 'رأي معلم/معلمة الفصل:'), opinion(p.teacher || 'لم يُبدِه بعد', p.teacher_at_ar, p.needs_teacher ? 'rs-state-open' : null),
-        el('i', 'k', 'رأي ولي الأمر:'), opinion(p.guardian || 'لم يُبدِه بعد', p.guardian_at_ar));
-      op.append(el('i', 'k', 'رأيُ الوكيل:'), el('i', null, p.deputy || '—'));
-      f.appendChild(op);
-      if (pm) {
-        f.appendChild(pm.after);
-        // لا يُمنع شيءٌ هنا: الحرّاسُ في الباب يرفضون بلفظهم (الطورُ والتاريخُ والتكرار ومن يملك التسجيل)
-        if (p.measure.measurable !== false) f.appendChild(btn('سجّل ملاحظة', 'rs-btn soft', () => countForm(p)));
-      }
-      if (p.status === 'draft') {
-        const row = el('div', 'rs-row');
-        row.append(btn('عدّلها', 'rs-btn soft', () => planForm(null, p)),
-          btn('رأيُ معلّم الفصل', 'rs-btn soft', () => opinionForm(p, 'teacher', 'رأيُ معلّم الفصل', p.teacher)),
-          btn('رأيُ الوكيل', 'rs-btn soft', () => opinionForm(p, 'deputy', 'رأيُ الوكيل', p.deputy)));
-        if (p.can_final) row.appendChild(btn('اعتمدها', 'rs-btn', () => finalForm(p)));
-        f.appendChild(row);
-        if (!p.can_final && p.needs_teacher) f.appendChild(el('p', 'rs-meta', 'لا تُعتمد حتى يُبدي معلّمُ الفصل رأيَه.'));
-      }
-      box.appendChild(f);
-    }
-    if (!list.some((p) => p.status === 'draft')) {
-      const t = ((ui.files && ui.files.tasks) || []).find((x) => x.kind === 'plan' && x.status === 'open');
-      box.appendChild(btn('اكتب خطّة', 'rs-btn', () => planForm(t || null, null)));
-    }
-    arabize(box);
-  }
-
-  // تسجيلُ ملاحظةٍ في أحد جدولَي القياس: v2_plan_count — ثمّ تُحدَّث البطاقةُ من measure الراجع ولا يُستدعى v2_plan_of ثانية
-  function countForm(p) {
-    V.form({
-      title: 'سجّل ملاحظة', what: p.target || '',
-      fields: [
-        { key: 'phase', type: 'pick', label: 'في جدول', items: [['baseline', 'قياس شدّة أو تكرار السلوك'], ['followup', 'متابعة السلوك']] },
-        { key: 'on', type: 'date', label: 'التاريخ' },
-        { key: 'window', label: 'فترة الملاحظة (اختياريّ)' },
-        { key: 'tally', type: 'number', label: 'التكرار' },
-      ],
-      ok: 'سجّلها',
-      onOk: async (v) => {
-        const { data, error } = await M.rpc('v2_plan_count', { p_plan: p.plan, p_phase: v.phase, p_on_date: v.on, p_window_ar: v.window, p_tally: v.tally }, 'تسجيل ملاحظة');
-        if (error) return error;
-        if (!data || data.ok !== true) return 'لم يُسجّلها الباب';
-        if (data.measure) p.measure = data.measure;
-        flash('ok', data.said_ar || '');
-        renderPlans();
-        return null;
-      },
-    });
+    const t = ((ui.files && ui.files.tasks) || []).find((x) => x.kind === 'plan' && x.status === 'open') || null;
+    window.MoayadPlan.render(box, planCtx(t));
   }
 
   // أبوابُ المهامّ الخاصّة — يُنقل إليها من بابِ الإثبات العامّ (opts.doors)
@@ -1052,83 +987,8 @@
     });
   }
 
-  // كتابةُ الخطّة أو تعديلُ مسودّتها — وتحت حقولها بنكُ العبارات (plDesc · plAnte · plPost · plGain)
-  function planForm(t, p) {
-    const stu = ui.stu;
-    const draft = p || (((ui.files && ui.files.plans && ui.files.plans.data) || []).find((x) => x.status === 'draft')) || null;
-    const m = t && metaOf(t.problem_ar);
-    const pr = m ? m.id : null;
-    // حارسُ تغيير الخطّة: الخطّةُ المعتمدةُ السابقةُ إلى جوار الحقول (v2_plan_of) — ليرى الوكيلُ ما يُغيّره ولا يُجبَر على التذكّر
-    const finals = ((ui.files && ui.files.plans && ui.files.plans.data) || []).filter((x) => x.status === 'final' && x.final_at);
-    const prev = finals.sort((a, b) => String(b.final_at).localeCompare(String(a.final_at)))[0] || null;
-    const prevBox = el('div');
-    if (prev) {
-      const f = el('div', 'rs-file rs-prev');
-      f.appendChild(el('h5', null, ['الخطّةُ المعتمدةُ السابقة', prev.final_at_ar].filter(Boolean).join(' — ')));
-      if (prev.target) f.appendChild(el('p', null, 'السلوكُ المستهدف: ' + prev.target));
-      const st = lines(prev.steps_list || prev.steps);
-      if (st.length) { const ul = el('ul', 'rs-acts'); for (const x of st) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }
-      prevBox.appendChild(f);
-    }
-    V.form({
-      title: draft ? 'خطّةُ تعديل السلوك — مسودّة' : 'خطّةُ تعديل السلوك', what: (stu.display_name || stu.full_name) + (t && t.problem_ar ? ' — ' + t.problem_ar : ''),
-      fields: [
-        { key: 'prev', type: 'node', node: prevBox },
-        { key: 'desc', type: 'textarea', label: 'وصفُ السلوك المراد تعديلُه', rows: 2, value: draft ? draft.desc : null, bank: { key: 'plDesc', problem: pr } },
-        { key: 'manifest', type: 'textarea', label: 'مظاهرُه عند الطالب (اختياريّ)', rows: 2, value: draft ? draft.manifest : null },
-        { key: 'ante', type: 'textarea', label: 'ما يسبقه — مثيراتُه (اختياريّ)', rows: 2, value: draft ? draft.ante : null, bank: { key: 'plAnte', problem: pr } },
-        { key: 'conseq', type: 'textarea', label: 'ما يليه (اختياريّ)', rows: 2, value: draft ? draft.conseq : null, bank: { key: 'plPost', problem: pr } },
-        { key: 'gain', type: 'textarea', label: 'ما يحقّقه الطالبُ منه (اختياريّ)', rows: 2, value: draft ? draft.gain : null, bank: { key: 'plGain', problem: pr } },
-        { key: 'prior', type: 'textarea', label: 'ما سبق من إجراء (اختياريّ)', rows: 2, value: draft ? draft.prior : null },
-        { key: 'target', type: 'textarea', label: 'السلوكُ البديلُ المستهدف', rows: 2, value: draft ? draft.target : null },
-        { key: 'steps', type: 'textarea', label: 'إجراءاتُ التعديل — سطرٌ لكلّ إجراء', rows: 4, value: draft ? lines(draft.steps_list || draft.steps).join('\n') : null },
-        { key: 'starts', type: 'date', label: 'تبدأ', value: draft ? draft.starts : null },
-        { key: 'ends', type: 'date', label: 'تنتهي (اختياريّ)', value: draft ? draft.ends : null },
-      ],
-      ok: draft ? 'احفظ التعديل' : 'احفظها مسودّة',
-      onOk: async (v) => {
-        const { data, error } = await M.rpc('v2_plan_write', {
-          p_student: stu.student_id, p_record: t ? t.record_id : null, p_task: t ? t.task_id : null, p_plan: draft ? draft.plan : null,
-          p_desc: v.desc, p_manifest: v.manifest, p_ante: v.ante, p_conseq: v.conseq, p_gain: v.gain, p_prior: v.prior,
-          p_target: v.target, p_steps: v.steps, p_starts: v.starts, p_ends: v.ends,
-        }, 'كتابة الخطّة');
-        if (error) return error;
-        V.flash('ok', (data && data.note) || 'حُفظت الخطّة');
-        loadStudentCards();
-        return null;
-      },
-    });
-  }
-
-  function opinionForm(p, who, label, cur) {
-    V.form({
-      title: label, what: p.target || '',
-      fields: [{ key: 'text', type: 'textarea', label: label, rows: 3, value: cur }],
-      ok: 'احفظ الرأي',
-      onOk: async (v) => {
-        const { error } = await M.rpc('v2_plan_opinion', { p_plan: p.plan, p_who: who, p_text: v.text }, 'رأيٌ في الخطّة');
-        if (error) return error;
-        V.flash('ok', 'حُفظ ' + label);
-        loadStudentCards();
-        return null;
-      },
-    });
-  }
-
-  function finalForm(p) {
-    V.form({
-      title: 'اعتمادُ الخطّة', what: 'باعتماد الخطّة يبدأ قياسُ استجابة الطالب، وعليه تُبنى إحالتُه للّجنة',
-      fields: [{ key: 'confirm', label: 'اكتب: أعتمد' }],
-      ok: 'اعتمدها',
-      onOk: async (v) => {
-        const { data, error } = await M.rpc('v2_plan_final', { p_plan: p.plan, p_confirm: v.confirm }, 'اعتماد الخطّة');
-        if (error) return error;
-        V.flash('ok', (data && data.note) || 'اعتُمدت الخطّة');
-        loadStudentCards();
-        return null;
-      },
-    });
-  }
+  // كتابةُ الخطّة من مهمّتها (بابُ الإثبات · زرُّ السطر) — النموذجُ في plan.js
+  const planForm = (t) => window.MoayadPlan.write(planCtx(t), t, null);
 
   // ---------- حصرُ السلوكيّات ----------
   // كما يرجع v2_census_of: «حصرُك» أو «حصرُ المكلَّف (فلان)» · وneg[] وpos[] بأيقوناتها · وsummary
