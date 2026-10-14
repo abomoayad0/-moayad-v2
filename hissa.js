@@ -281,8 +281,8 @@
       const f = el('div', 'rs-file');
       const h = el('h5', null, [w.kind_ar, w.subject, w.student_ar].filter(Boolean).join(' · '));
       if (w.voided) h.style.textDecoration = 'line-through';
-      f.append(h, el('p', null, w.body || ''), el('p', 'rs-meta', [w.page, w.due_ar, w.scope_ar, w.by_ar, w.late ? 'متأخّر' : null].filter(Boolean).join(' · ')));
-      if (w.voided) f.appendChild(el('p', 'rs-meta', 'أُلغي: ' + (w.void_reason || '')));
+      f.append(h, V.typed(w.body || '', 'p'), V.line('p', 'rs-meta', [w.page ? V.typed(w.page) : null, w.due_ar, w.scope_ar, w.by_ar, w.late ? 'متأخّر' : null]));
+      if (w.voided) f.appendChild(V.line('p', 'rs-meta', ['أُلغي:', V.typed(w.void_reason || '')], ' '));
       else if (w.mine) { const rr = el('div', 'rs-row'); rr.appendChild(btn('ألغِه', 'rs-btn', () => voidWork(w))); f.appendChild(rr); }
       box.appendChild(f);
     }
@@ -373,14 +373,14 @@
       const { data, error } = await M.rpc('v2_work_of_student', { p_student: stu.id }, 'أعمال الطالب');
       if (error) { err(b, error); return; }
       const rows = arr(data);
-      for (const x of rows) b.appendChild(el('p', null, [x.kind_ar, x.subject, x.body, x.due_ar, x.by_ar].filter(Boolean).join(' · ')));
+      for (const x of rows) b.appendChild(V.line('p', null, [x.kind_ar, x.subject, x.body ? V.typed(x.body) : null, x.due_ar, x.by_ar]));
       if (!rows.length) b.appendChild(el('p', 'rs-meta', 'لا أعمالَ مسندةً إليه.'));
     });
     part('اتّصالُ المدرسة بوليّه', async (b) => {
       const { data, error } = await M.rpc('v2_contacts_of', { p_student: stu.id }, 'سجلّ الاتّصال');
       if (error) { err(b, error); return; }
       const rows = arr(data);
-      for (const x of rows) b.appendChild(el('p', null, [x.attempt_ar, x.on, x.summary, x.source_ar].filter(Boolean).join(' · ')));
+      for (const x of rows) b.appendChild(V.line('p', null, [x.attempt_ar, x.on, x.summary ? V.typed(x.summary) : null, x.source_ar]));
       if (!rows.length) b.appendChild(el('p', 'rs-meta', 'لم يُثبت اتّصالٌ بعد.'));
     });
     part('سجلُّه الزمنيّ', async (b) => {

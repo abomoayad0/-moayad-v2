@@ -114,7 +114,7 @@
     else {
       const c = data || {}; const m = c.mail || {};
       n.appendChild(el('p', 'rs-meta', [m.serial_no != null ? 'وارد ' + m.serial_no : null, m.from, m.received_h].filter(Boolean).join(' · ')));
-      if (m.body) n.appendChild(el('p', 'rs-msg', m.body));
+      if (m.body) n.appendChild(V.typed(m.body, 'p', 'rs-msg'));
       for (const a of c.attachments || []) {
         const p = el('p'); p.appendChild(document.createTextNode('📎 '));
         if (a.url) { const l = el('a', null, a.name || a.url); l.href = a.url; l.target = '_blank'; l.rel = 'noopener'; p.appendChild(l); } else p.appendChild(document.createTextNode(a.name || ''));
@@ -124,7 +124,7 @@
         const mine = (i.followups || []).filter((x) => x.mine === true);
         if (!mine.length) continue;
         const f = el('div', 'rs-file');
-        f.appendChild(el('h5', null, i.text || ''));
+        f.appendChild(V.typed(i.text || '', 'h5'));
         for (const fu of mine) f.appendChild(el('p', 'rs-meta', ['متابعتُك', fu.due_h, fu.late ? 'متأخّرة' : null, fu.done_h].filter(Boolean).join(' · ')));
         n.appendChild(f);
       }

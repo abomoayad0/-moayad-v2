@@ -77,7 +77,7 @@
         f.setAttribute('role', 'button');
         f.tabIndex = 0;
         f.setAttribute('aria-pressed', String(ui.picked.has(t.task)));
-        f.append(el('h5', null, t.text || ''), el('p', null, [t.student, t.owner].filter(Boolean).join(' · ')), el('div', 'rs-need', t.need_ar || ''));
+        f.append(V.typed(t.text || '', 'h5'), el('p', null, [t.student, t.owner].filter(Boolean).join(' · ')), el('div', 'rs-need', t.need_ar || ''));
         V.tap(f, (e) => {
           if (e && e.target && e.target.closest('button')) return;
           if (ui.picked.has(t.task)) ui.picked.delete(t.task); else ui.picked.add(t.task);
@@ -148,7 +148,7 @@
       // الخطابُ الواحدُ يُقفل بعضَها بخروجه وبعضَها لا يُقفل إلّا بجواب الجهة — وهذا ما يُسأل عنه أوّلَ مرّة
       if (ui.pend && ui.pend.note_ar) c.appendChild(el('p', 'rs-meta', ui.pend.note_ar));
       const ul = el('ul', 'rs-acts');
-      for (const t of tasks) { const li = el('li'); const b = el('span'); b.append(el('span', null, t.text || ''), el('div', 'rs-need', t.need_ar || '')); li.append(el('i', 'rs-tick', '○'), b); ul.appendChild(li); }
+      for (const t of tasks) { const li = el('li'); const b = el('span'); b.append(V.typed(t.text || ''), el('div', 'rs-need', t.need_ar || '')); li.append(el('i', 'rs-tick', '○'), b); ul.appendChild(li); }
       c.appendChild(ul);
       tb.appendChild(c);
     }
@@ -213,7 +213,7 @@
       if (v) lg.append(el('i', 'k', k + ':'), el('i', null, String(v)));
     }
     n.appendChild(lg);
-    if (c.body) n.appendChild(el('p', 'rs-msg', c.body));
+    if (c.body) n.appendChild(V.typed(c.body, 'p', 'rs-msg')); // نصُّ ما كتبه المرسِل كما هو
     const allTasks = (c.tasks || []).concat(c.absence_tasks || []);
     if (allTasks.length) {
       n.appendChild(el('div', 'rs-label', 'البنودُ التي يحملها'));
@@ -221,7 +221,7 @@
       for (const t of allTasks) {
         const li = el('li');
         const b = el('span');
-        b.append(el('span', null, t.text || ''), el('div', 'rs-need', t.closes_on_ar || ''));
+        b.append(V.typed(t.text || ''), el('div', 'rs-need', t.closes_on_ar || ''));
         if (t.student) b.appendChild(el('div', 'rs-meta', t.student));
         li.append(el('i', 'rs-tick' + (t.status === 'done' ? ' ok' : ''), t.status === 'done' ? '✓' : '○'), b);
         ul.appendChild(li);
@@ -493,7 +493,7 @@
     const lg = el('div', 'rs-lgd');
     for (const [k, v] of [['الرقم', [m.serial_no, m.ref_no].filter(Boolean).join(' · ')], ['من', m.from], ['ورد', m.received_h], ['تاريخُه', m.doc_date_h], ['السرّيّة', m.secrecy]]) if (v) lg.append(el('i', 'k', k + ':'), el('i', null, String(v)));
     n.appendChild(lg);
-    if (m.body) n.appendChild(el('p', 'rs-msg', m.body));
+    if (m.body) n.appendChild(V.typed(m.body, 'p', 'rs-msg'));
     // المرفقات: { name · kind · ref · url · confirmed } — url ما يُفتح، وref مرجعُ الملفّ، وconfirmed: أُقرّ أم استُخرج آليًّا
     if ((c.attachments || []).length) n.appendChild(el('div', 'rs-label', 'المرفقات'));
     for (const a of c.attachments || []) {
@@ -508,7 +508,7 @@
     }
     for (const i of c.items || []) {
       const f = el('div', 'rs-file');
-      f.append(el('h5', null, (i.ord ? i.ord + ' · ' : '') + (i.text || '')), el('p', 'rs-meta', [i.starts_h, i.ends_h].filter(Boolean).join(' — ')));
+      f.append(V.line('h5', null, [i.ord ? String(i.ord) : null, V.typed(i.text || '')]), el('p', 'rs-meta', [i.starts_h, i.ends_h].filter(Boolean).join(' — ')));
       // ولكلّ موجَّهٍ إليه متابعتُه — mine كما يرجع من الجسر
       for (const fu of (i.followups || []).filter((x) => x.mine === true)) {
         f.appendChild(el('p', null, 'متابعتُك' + (fu.due_h ? ' · حتى ' + fu.due_h : '') + (fu.late ? ' · متأخّرة' : '')));

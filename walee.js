@@ -135,7 +135,7 @@
       const f = el('div', 'rs-file');
       f.append(el('h5', null, e.title || ''), el('p', null, [e.body, e.on_date].filter(Boolean).join(' · ')));
       if (e.replied) {
-        f.appendChild(el('p', 'rs-state-done', 'ردُّك: ' + (e.reply || '') + (e.suggested ? ' · تقترح ' + e.suggested : '') + (e.reply_note ? ' — ' + e.reply_note : '')));
+        f.appendChild(V.line('p', 'rs-state-done', ['ردُّك: ' + (e.reply || '') + (e.suggested ? ' · تقترح ' + e.suggested : ''), e.reply_note ? V.typed(e.reply_note) : null], ' — '));
       } else {
         if (e.action) f.appendChild(el('p', 'rs-meta', e.action));
         f.appendChild(btn('ردّ على الدعوة', 'rs-btn', () => inviteReply(e)));
@@ -177,16 +177,16 @@
     if (!list.length) { box.appendChild(el('p', 'rs-meta', 'لم تُكتب لابنك خطّة.')); return; }
     for (const p of list) {
       const f = el('div', 'rs-file');
-      f.appendChild(el('h5', null, (p.target || '—') + ' — ' + (p.state_ar || '')));
+      f.appendChild(V.line('h5', null, [V.typed(p.target || '—'), p.state_ar || ''], ' — '));
       // قياسُ الخطّة للقراءة (ملحق ⑭): وليُّ الأمر طرفٌ في تقييم فاعليّتها — ولا زرَّ تسجيل
       const pm = p.measure ? V.planMeasure(p.measure) : null;
       if (pm) f.append(pm.said, pm.before);
-      f.appendChild(el('p', null, p.desc || ''));
+      f.appendChild(V.typed(p.desc || '', 'p'));
       const steps = (Array.isArray(p.steps_list) ? p.steps_list : String(p.steps || '').split('\n')).filter((x) => String(x).trim() !== '');
-      if (steps.length) { const ul = el('ul', 'rs-acts'); for (const x of steps) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }
+      if (steps.length) { const ul = el('ul', 'rs-acts'); for (const x of steps) ul.appendChild(V.typed('• ' + x, 'li')); f.appendChild(ul); }
       if (pm) f.appendChild(pm.after);
       const dt = el('div', 'rs-lgd');
-      const mine = el('i', null, p.guardian || 'لم تُبدِه بعد');
+      const mine = el('i'); mine.appendChild(p.guardian ? V.typed(p.guardian) : document.createTextNode('لم تُبدِه بعد'));
       if (p.guardian_at_ar) mine.appendChild(el('div', 'rs-meta', p.guardian_at_ar)); // تاريخُه تحته بلا عنوان (تكليف ⑮)
       dt.append(el('i', 'k', 'رأيُك:'), mine);
       f.appendChild(dt);
@@ -264,7 +264,7 @@
     d.appendChild(body);
     d.addEventListener('toggle', () => { if (d.open) markRead(f); });
     c.appendChild(d);
-    if (f.reply) c.appendChild(el('p', null, 'ردُّك: ' + f.reply));
+    if (f.reply) c.appendChild(V.line('p', null, ['ردُّك:', V.typed(f.reply)], ' '));
     // ملاحظتُه على النموذج — يكتبها هو (v2_guardian_form_note)
     c.appendChild(btn('أضف ملاحظتك', 'rs-btn ghost', () => V.form({
       title: 'ملاحظتُك على النموذج', what: f.title_ar || '',

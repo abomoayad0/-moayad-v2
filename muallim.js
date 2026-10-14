@@ -212,8 +212,7 @@
     const b = el('span'); b.style.flex = '1';
     b.appendChild(el('b', null, it.title_ar || ''));
     b.appendChild(el('div', 'rs-meta', [it.kind_ar, it.periods_ar, it.state_ar, it.done_sections_ar, it.pages_ar, it.unit_ar].filter(Boolean).join(' · ')));
-    const why = [it.why, it.move_why].filter(Boolean).join(' — ');
-    if (why) b.appendChild(el('div', 'rs-meta', why));
+    if (it.why || it.move_why) b.appendChild(V.line('div', 'rs-meta', [it.why ? V.typed(it.why) : null, it.move_why ? V.typed(it.move_why) : null], ' — '));
     li.append(el('i', 'rs-tick' + (it.state === 'done' ? ' ok' : ''), it.state === 'done' ? '✓' : '○'), b);
     V.tap(li, () => itemSheet(it));
     return li;
@@ -273,7 +272,8 @@
       const lab = el('label', 'rs-chk');
       const cb = el('input'); cb.type = 'checkbox'; cb.value = s.section;
       const st = per.get(s.section);
-      lab.append(cb, document.createTextNode(' ' + (s.label_ar || '') + (st ? ' — ' + [st.state_ar, st.on_ar, st.why].filter(Boolean).join(' · ') : '')));
+      lab.append(cb, document.createTextNode(' ' + (s.label_ar || '') + (st ? ' — ' + [st.state_ar, st.on_ar].filter(Boolean).join(' · ') : '')));
+      if (st && st.why) lab.append(document.createTextNode(' · '), V.typed(st.why));
       secBox.appendChild(lab); checks.push(cb);
     }
     const isA = (k) => (v) => v.act === k;

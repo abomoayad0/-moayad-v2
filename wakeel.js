@@ -472,7 +472,7 @@
     for (const x of rows) {
       const f = el('div', 'rs-file');
       f.appendChild(el('h5', null, x.merit));
-      f.appendChild(el('p', null, (x.student || '') + ' — ' + (x.what || '') + (x.evidence ? ' · الشاهد: ' + x.evidence : '')));
+      f.appendChild(V.line('p', null, [(x.student || '') + ' — ', V.typed(x.what || ''), x.evidence ? ' · الشاهد: ' : null, x.evidence ? V.typed(x.evidence) : null], ''));
       const row = el('div', 'rs-row');
       row.append(notBuilt('ارفعه للّجنة'), notBuilt('ردّه'));
       f.appendChild(row);
@@ -683,7 +683,7 @@
     const det = el('details', 'rs-dt');
     det.appendChild(el('summary', null, 'رصداتُه (' + f.all.length + ')'));
     const body = el('div', 'rs-dtb');
-    for (const x of f.all) body.appendChild(el('div', null, 'الرصدةُ ' + x.occurrence + ' · ' + (x.on_h || x.on) + (x.place ? ' · ' + x.place : '') + (x.note ? ' — ' + x.note : '')));
+    for (const x of f.all) body.appendChild(V.line('div', null, ['الرصدةُ ' + x.occurrence + ' · ' + (x.on_h || x.on), x.place ? ' · ' : null, x.place ? V.typed(x.place) : null, x.note ? ' — ' : null, x.note ? V.typed(x.note) : null], ''));
     det.appendChild(body);
     c.appendChild(det);
     return c;
@@ -729,7 +729,7 @@
         const body = el('span');
         body.style.flex = '1';
         body.appendChild(el('b', null, 'المحاولةُ ' + (x.attempt_ar || x.attempt) + ' · ' + x.channel + ' — ' + x.outcome));
-        body.appendChild(el('div', 'rs-meta', [x.summary, x.guardian_say ? 'قال وليُّ الأمر: ' + x.guardian_say : null, x.guardian, x.by ? 'أثبتها ' + x.by : null].filter(Boolean).join(' · ')));
+        body.appendChild(V.line('div', 'rs-meta', [x.summary ? V.typed(x.summary) : null, x.guardian_say ? V.line('span', null, ['قال وليُّ الأمر:', V.typed(x.guardian_say)], ' ') : null, x.guardian, x.by ? 'أثبتها ' + x.by : null]));
         // ردّ وليُّ الأمر (علم أو رفض) ⇒ أُشعر — كما تُقفل به القاعدةُ المهمّة
         const got = x.outcome === 'ردّ وعلم' || x.outcome === 'ردّ ورفض';
         li.append(el('i', 'rs-tick' + (got ? ' ok' : ''), got ? '✓' : '○'), body, el('small', 'rs-who', [x.on, x.at ? String(x.at).slice(0, 5) : null].filter(Boolean).join(' ')));

@@ -35,7 +35,7 @@
       const c = el('div', 'rs-card');
       c.appendChild(el('b', null, (d.post_ar || d.post) + ' — ' + (d.to || '')));
       c.appendChild(el('div', 'rs-meta', 'عن: ' + (d.from || 'صفةٍ شاغرة') + ' · ' + span(d.starts, d.ends)));
-      c.appendChild(el('div', 'rs-meta', 'السبب: ' + (d.reason || '—') + (d.letter ? ' · خطاب: ' + d.letter : '') + (d.by ? ' · أصدرها: ' + d.by : '')));
+      c.appendChild(V.line('div', 'rs-meta', ['السبب:', V.typed(d.reason || '—'), d.letter ? '· خطاب:' : null, d.letter ? V.typed(d.letter) : null, d.by ? '· أصدرها: ' + d.by : null], ' '));
       c.appendChild(btn('ألغِ الإنابة', 'rs-btn soft', () => revokeForm(box, d)));
       box.appendChild(c);
     }
@@ -47,8 +47,9 @@
       const dd = el('div', 'rs-dtb');
       for (const d of past) {
         const r = el('div', 'rs-meta');
-        r.textContent = (d.post_ar || '') + ' — ' + (d.to || '') + ' · ' + span(d.starts, d.ends) + ' · ' + (d.reason || '') +
-          (d.revoked_at ? ' · أُلغيت: ' + String(d.revoked_at).slice(0, 10) + (d.revoked_why ? ' — ' + d.revoked_why : '') : ' · انتهت مدّتها');
+        r.append((d.post_ar || '') + ' — ' + (d.to || '') + ' · ' + span(d.starts, d.ends) + ' · ', V.typed(d.reason || ''),
+          d.revoked_at ? ' · أُلغيت: ' + String(d.revoked_at).slice(0, 10) + (d.revoked_why ? ' — ' : '') : ' · انتهت مدّتها');
+        if (d.revoked_at && d.revoked_why) r.appendChild(V.typed(d.revoked_why));
         dd.appendChild(r);
       }
       det.appendChild(dd);

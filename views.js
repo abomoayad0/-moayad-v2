@@ -105,6 +105,16 @@
     node.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(e); } });
   }
 
+  // ما كتبه إنسانٌ بيده (ملاحظةٌ · رأيٌ · وصفٌ · سبب) يُعرض حرفًا بحرف — [data-raw] فلا تُحوَّل أرقامُه (تكليف ⑰)
+  // والضابط: ما مصدرُه خانةٌ حرّة لا يُمسّ، وما ركّبته القاعدةُ يأتي ملفوظًا (_ar)
+  const typed = (text, tag, cls) => { const n = el(tag || 'span', cls || null, text == null ? '' : String(text)); n.setAttribute('data-raw', ''); return n; };
+  // سطرٌ يجمع لفظَ الباب ونصَّ الإنسان: النصوصُ تُحوَّل أرقامُها، والعُقدُ (typed) تبقى كما هي — والفارغُ يسقط
+  function line(tag, cls, items, sep) {
+    const n = el(tag, cls || null);
+    items.filter((x) => x != null && x !== '' && x !== false).forEach((x, i) => { if (i) n.appendChild(document.createTextNode(sep == null ? ' · ' : sep)); n.appendChild(typeof x === 'string' ? document.createTextNode(x) : x); });
+    return n;
+  }
+
   // قياسُ خطّة تعديل السلوك (v2_plan_of.measure · تكليف ⑭) — كلُّ ما يُقرأ من الباب بلفظه، ولا يُحسب فرقٌ هنا
   // يرجع ثلاثَ قطع: said (سطرُه البارز) · before (جدولُ baseline فوقَ الخطّة) · after (جدولُ followup تحتَها وسندُه)
   // والعناوينُ عناوينُ جدولَي الصفحة ٦٠–٦١ كما هي (وهي الطور — فلا عمودَ لـphase_ar)، والخامُّ (on_date · tally) للترتيب وحدَه
@@ -451,9 +461,10 @@
   function verdictCard(x, opts) {
     const f = el('div', 'rs-file');
     f.append(el('h5', null, (x.student || '') + ' — ' + (x.merit || '')),
-      el('p', null, [x.when, x.filed_at_ar ? 'رُفعت ' + x.filed_at_ar : null, x.delegated_to_me ? 'أُحيلت إليك' + (x.delegate_note ? ': ' + x.delegate_note : '') : null].filter(Boolean).join(' · ')));
+      el('p', null, [x.when, x.filed_at_ar ? 'رُفعت ' + x.filed_at_ar : null, x.delegated_to_me ? 'أُحيلت إليك' + (x.delegate_note ? ':' : '') : null].filter(Boolean).join(' · ')));
+    if (x.delegated_to_me && x.delegate_note) f.lastChild.append(' ', typed(x.delegate_note));
     const lg = el('div', 'rs-lgd');
-    lg.append(el('i', 'k', 'ما كتبه:'), el('i', null, x.what || '—'), el('i', 'k', 'الشاهد:'), el('i', null, x.evidence || '—'));
+    lg.append(el('i', 'k', 'ما كتبه:'), typed(x.what || '—', 'i'), el('i', 'k', 'الشاهد:'), typed(x.evidence || '—', 'i'));
     f.appendChild(lg);
     if (x.evidence_path) {
       f.appendChild(btn('افتح المرفق', 'rs-btn soft', async () => {
@@ -494,8 +505,8 @@
     const f = el('div', 'rs-file');
     f.append(el('h5', null, (t.title || '') + (t.student ? ' — ' + t.student : '')),
       el('p', null, [t.committee, 'الاجتماع ' + t.meeting_no, t.held_on, t.carried ? 'مرحَّل' : null].filter(Boolean).join(' · ')));
-    if (t.decision) f.appendChild(el('p', null, 'القرار: ' + t.decision));
-    if (t.recommend) f.appendChild(el('p', null, 'التوصية: ' + t.recommend));
+    if (t.decision) f.appendChild(line('p', null, ['القرار:', typed(t.decision)], ' '));
+    if (t.recommend) f.appendChild(line('p', null, ['التوصية:', typed(t.recommend)], ' '));
     if (t.due) {
       const p = el('p', null, 'الموعد ' + t.due + (t.days_left != null ? ' · ' + (t.late ? 'متأخّرٌ ' + Math.abs(t.days_left) + ' يومًا' : 'بقي ' + t.days_left + ' يومًا') : ''));
       if (t.late) p.className = 'rs-state-open';
@@ -636,5 +647,5 @@
     return d;
   }
 
-  window.MoayadView = { ar, arabize, btn, inbox, busyOn, busyOff, send, notBuilt, offCard, renderRole, flash, seen, tap, recordAdvice, scoreBox, planMeasure, pick, sheet, events, chooser, form, verdictCard, committeeTask };
+  window.MoayadView = { ar, arabize, btn, inbox, busyOn, busyOff, send, notBuilt, offCard, renderRole, flash, seen, tap, recordAdvice, scoreBox, planMeasure, typed, line, pick, sheet, events, chooser, form, verdictCard, committeeTask };
 })();

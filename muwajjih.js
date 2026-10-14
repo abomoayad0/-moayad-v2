@@ -220,8 +220,8 @@
       const li = el('li');
       const body = el('span');
       body.style.flex = '1';
-      // no_ar · on_ar من الباب — والمدّةُ لا تُعرض: لا لفظَ لها في الباب (minutes خامّ)، ولا تُلصق «دقيقة» بعدد
-      body.appendChild(el('b', null, [label ? label(x) : null, x.no_ar].filter(Boolean).join(' · ')));
+      // no_ar · on_ar · minutes_ar من الباب (تكليف ⑰) — والمدّةُ تسقط إن لم تأتِ، ولا تُلصق «دقيقة» بعدد
+      body.appendChild(el('b', null, [label ? label(x) : null, x.no_ar, x.minutes_ar].filter(Boolean).join(' · ')));
       const lg = el('div', 'rs-lgd');
       lg.append(el('i', 'k', 'ما نُوقش:'), raw(el('i', null, x.discussed || '')),
         el('i', 'k', 'الاستجابة:'), el('i', null, x.response || ''),
@@ -276,7 +276,7 @@
     // رُفضت ⇒ يبقى اللوحُ بما كُتب فيه، ونصُّ الرفض كما هو
     if (error) { flash('bad', errText(error)); return; }
     sess.close();
-    flash('ok', 'قُيّدت الجلسةُ ' + ((data && data.session) || ''));
+    flash('ok', (data && data.said_ar) || ''); // جملتُه من الباب (تكليف ⑰) — لا «قُيّدت» تُكتب هنا
     await loadCase();
     loadBoard();
   });

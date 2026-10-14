@@ -180,8 +180,8 @@
       const h = el('h5', null, (o.title || o.merit || '') + ' — ');
       h.appendChild(el('b', o.state === 'مفتوحة' ? 'rs-state-done' : null, o.state || ''));
       f.append(h, el('p', null, oppLine(o)));
-      if (o.close_why) f.appendChild(el('p', null, 'سببُ الإغلاق: ' + o.close_why));
-      if (o.plan_note) f.appendChild(el('p', null, 'اعتُمد مخطّطُها: ' + o.plan_note));
+      if (o.close_why) f.appendChild(V.line('p', null, ['سببُ الإغلاق:', V.typed(o.close_why)], ' '));
+      if (o.plan_note) f.appendChild(V.line('p', null, ['اعتُمد مخطّطُها:', V.typed(o.plan_note)], ' '));
       const open = ui.oppId === o.opp;
       f.appendChild(btn(open ? 'اطوِ ملفَّ الفرصة' : 'ملفُّ الفرصة', 'rs-btn soft', () => (open ? selectOpp(null) : selectOpp(o.opp))));
       if (open) { const d = el('div'); d.id = 'oppBox'; f.appendChild(d); }
@@ -236,11 +236,11 @@
       r.append(el('h5', null, x.name || ''), el('p', null, st));
       if (x.filed) {
         const lg = el('div', 'rs-lgd');
-        lg.append(el('i', 'k', 'ما كتبه:'), el('i', null, x.what || ''), el('i', 'k', 'الشاهد:'), el('i', null, x.evidence || '—'));
+        lg.append(el('i', 'k', 'ما كتبه:'), V.typed(x.what || '', 'i'), el('i', 'k', 'الشاهد:'), V.typed(x.evidence || '—', 'i'));
         r.appendChild(lg);
         if (x.evidence_path) r.appendChild(btn('افتح المرفق', 'rs-btn soft', () => openEvidence(x.evidence_path)));
       }
-      if (x.verdict) r.appendChild(el('p', null, 'الإقرار: ' + x.verdict + (x.note ? ' — ' + x.note : '') + (x.by ? ' · ' + x.by : '')));
+      if (x.verdict) r.appendChild(V.line('p', null, ['الإقرار: ' + x.verdict, x.note ? V.typed(x.note) : null, x.by], ' — '));
       if (x.delegated) r.appendChild(el('p', null, 'أُحيل إقرارُها إلى ' + x.delegated));
       const row = el('div', 'rs-row');
       if (x.verdict && !x.graded) row.appendChild(btn('قدّر درجتَه', 'rs-btn', () => grade(x, m)));
@@ -467,8 +467,8 @@
   function meetingRow(m, onOpen) {
     const f = el('div', 'rs-file');
     f.append(el('h5', null, 'الاجتماع ' + m.no + ' · ' + (m.kind || '') + ' — ' + (m.status || '')),
-      el('p', null, [m.held_on, hm(m.started), m.place].filter(Boolean).join(' · ')));
-    if (m.agenda) f.appendChild(el('p', null, 'جدولُ الأعمال: ' + m.agenda));
+      V.line('p', null, [m.held_on, hm(m.started), m.place ? V.typed(m.place) : null]));
+    if (m.agenda) f.appendChild(V.line('p', null, ['جدولُ الأعمال:', V.typed(m.agenda)], ' '));
     f.appendChild(el('p', null, ['البنود ' + (m.items || 0), m.called_by ? 'دعا إليه ' + m.called_by : null, m.approved_by ? 'اعتمده ' + m.approved_by : null,
       m.quorum_met == null ? null : m.quorum_met ? 'النصابُ مكتمل' : 'النصابُ ناقص'].filter(Boolean).join(' · ')));
     f.appendChild(btn('افتح', 'rs-btn soft', onOpen));
@@ -573,12 +573,12 @@
       const tl = it.tally || {};
       r.appendChild(el('p', null, 'صوّت ' + (it.vote_count || 0) + ' من ' + (it.voters_total || 0) + ' · موافق ' + (tl['موافق'] || 0) + ' · مخالف ' + (tl['مخالف'] || 0) + ' · ممتنع ' + (tl['ممتنع'] || 0)));
       for (const v of it.votes || []) {
-        r.appendChild(el('p', null, v.name + ': ' + v.vote + (v.note ? ' — ' + v.note : '')));
-        if (v.prev_vote) r.appendChild(el('p', null, 'بدّل صوتَه من «' + v.prev_vote + '»' + (v.change_note ? ' — ' + v.change_note : '') + (v.changed_at ? ' · ' + day(v.changed_at) : '')));
+        r.appendChild(V.line('p', null, [v.name + ': ' + v.vote, v.note ? V.typed(v.note) : null], ' — '));
+        if (v.prev_vote) r.appendChild(V.line('p', null, ['بدّل صوتَه من «' + v.prev_vote + '»', v.change_note ? ' — ' : null, v.change_note ? V.typed(v.change_note) : null, v.changed_at ? ' · ' + day(v.changed_at) : null], ''));
       }
-      if (it.body) r.appendChild(el('p', null, 'المناقشة: ' + it.body));
-      if (it.decision) r.appendChild(el('p', null, 'القرار: ' + it.decision));
-      if (it.recommend) r.appendChild(el('p', null, 'التوصيات: ' + it.recommend + (it.owner_name ? ' · المنفّذ ' + it.owner_name : '') + (it.due ? ' · الموعد ' + it.due : '')));
+      if (it.body) r.appendChild(V.line('p', null, ['المناقشة:', V.typed(it.body)], ' '));
+      if (it.decision) r.appendChild(V.line('p', null, ['القرار:', V.typed(it.decision)], ' '));
+      if (it.recommend) r.appendChild(V.line('p', null, ['التوصيات: ', V.typed(it.recommend), it.owner_name ? ' · المنفّذ ' + it.owner_name : null, it.due ? ' · الموعد ' + it.due : null], ''));
       if (editable && it.outcome === 'قيد النظر') {
         if (seat) {
           const mine = (it.votes || []).find((x) => x.person_id && x.person_id === (M.state.me && M.state.me.person_id));

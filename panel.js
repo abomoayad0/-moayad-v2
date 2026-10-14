@@ -1151,7 +1151,7 @@
       row.appendChild(top);
       row.appendChild(el('div', 'meta', 'النظام: ' + x.system_says));
       row.appendChild(el('div', 'meta', 'والمدرسة: ' + x.school_does));
-      row.appendChild(el('div', 'detail', 'السبب: ' + x.reason));
+      row.appendChild(V.line('div', 'detail', ['السبب:', V.typed(x.reason)], ' '));
       row.appendChild(el('div', 'meta', 'قرّره: ' + (x.decided_by || '—') + (x.source ? ' · السند: ' + x.source : '')));
       box.appendChild(row);
     }

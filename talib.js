@@ -44,7 +44,7 @@
     if (r.error) { box.appendChild(el('div', 'notice err', errText(r.error))); return; }
     for (const p of list) {
       const f = el('div', 'rs-file');
-      f.appendChild(el('h5', null, (p.target || '—') + (p.state_ar ? ' — ' + p.state_ar : '')));
+      f.appendChild(V.line('h5', null, [V.typed(p.target || '—'), p.state_ar], ' — '));
       // قياسُ الخطّة للقراءة (ملحق ⑭): السطرُ البارز والجدولان — ولا زرَّ تسجيل، فالتسجيلُ للقائم بتعديل السلوك
       const pm = p.measure ? V.planMeasure(p.measure) : null;
       if (pm) f.append(pm.said, pm.before);
@@ -52,7 +52,7 @@
       for (const [k, v] of [['تاريخ البداية', p.starts_ar], ['تاريخ النهاية', p.ends_ar]]) if (v) dt.append(el('i', 'k', k + ':'), el('i', null, v));
       f.appendChild(dt);
       const st = (Array.isArray(p.steps_list) ? p.steps_list : String(p.steps_list || p.steps || '').split('\n')).filter((x) => String(x).trim());
-      if (st.length) { const ul = el('ul', 'rs-acts'); for (const x of st) ul.appendChild(el('li', null, '• ' + x)); f.appendChild(ul); }
+      if (st.length) { const ul = el('ul', 'rs-acts'); for (const x of st) ul.appendChild(V.typed('• ' + x, 'li')); f.appendChild(ul); }
       if (pm) f.appendChild(pm.after);
       box.appendChild(f);
     }
@@ -70,7 +70,7 @@
     if (!mine.length) { box.appendChild(el('p', 'rs-meta', 'لم تسجّل في فرصةٍ بعد.')); return; }
     for (const x of mine) {
       const f = el('div', 'rs-file');
-      f.append(el('h5', null, x.merit || ''), el('p', null, [x.when, x.state, x.close_why].filter(Boolean).join(' · ')));
+      f.append(el('h5', null, x.merit || ''), V.line('p', null, [x.when, x.state, x.close_why ? V.typed(x.close_why) : null]));
       // حالُ المشاركة بجملتها كاملةً من الباب (said_ar · تكليف ⑬) — لا فعلٌ ولا حرفٌ يُركَّب حول لفظٍ يأتي
       if (x.said_ar) f.appendChild(el('div', 'rs-note', x.said_ar));
       // نموذجُ المشاركة يُرفع إلى upload_to كما ترجعه القاعدة — ولا يُبنى المسارُ هنا
@@ -160,7 +160,7 @@
       const body = el('span');
       body.style.flex = '1';
       body.appendChild(el('span', null, x.merit || ''));
-      if (x.what) body.appendChild(el('div', 'rs-meta', x.what + (x.evidence ? ' · ' + x.evidence : '')));
+      if (x.what) body.appendChild(V.line('div', 'rs-meta', [V.typed(x.what), x.evidence ? V.typed(x.evidence) : null]));
       li.append(el('i', 'rs-tick' + (x.graded ? ' ok' : ''), x.graded ? '✓' : '○'), body,
         el('small', 'rs-who', x.graded ? ['قُدّرت', x.points_ar].filter(Boolean).join(' ') : x.verdict ? 'عند اللجنة' : 'بانتظار الإقرار'));
       ul.appendChild(li);

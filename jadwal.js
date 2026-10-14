@@ -69,7 +69,8 @@
       const wd = d.no;
       const dname = d.label;
       const tr = el('tr');
-      const dth = el('th', null, dname); if (d.on_ar) dth.appendChild(el('div', 'rs-meta', d.on_ar)); tr.appendChild(dth);
+      // اليومُ خانةٌ لا رأس — فقاعدةُ الجوّال تُخفي كلَّ صفٍّ فيه th، فكان الجدولُ كلُّه يختفي على الهاتف (تكليف ⑰)
+      const dth = el('td', 'kv-k', dname); if (d.on_ar) dth.appendChild(el('div', 'rs-meta', d.on_ar)); tr.appendChild(dth);
       for (const p of periods) {
         const here = mine.filter((x) => x.weekday === wd && x.period === p.no);
         const td = el('td', 'click' + (here.length ? ' on k-' + here[0].kind : ''));
