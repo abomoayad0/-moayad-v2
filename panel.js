@@ -1379,10 +1379,8 @@
     M.renderHeader(me, async (r) => { const m = await M.actAs(r); if (m) enter(); });
     M.renderNav(me, 'panel');
     if (!me) { M.gate('حسابك غير مسند إلى منسوب في مؤيّد.'); return; }
-    // مدرسة الصفة النافذة — لعرض شاغلي المقاعد
-    const cur = (me.roles || []).find((r) => r.is_current === true && r.school_id);
-    const schools = (me.schools || []).filter((x) => !cur || x.id === cur.school_id);
-    ui.school = schools.length ? schools[0].id : null;
+    // مدرسةُ الصفة النافذة من acting_school وحدَها (تكليف ⑨) — لا schools[0] بديلًا: الفراغُ «لم يختر بعد»
+    ui.school = me.acting_school || null;
     M.state.school = ui.school;
     M.renderActing(ui.school);
     $('panelView').hidden = false;

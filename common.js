@@ -263,8 +263,9 @@
     const box = el('div', 'rolebox');
     // الصفة نصّاً من role_ar دائماً — ولا تعتمد على ما يعرضه مربّع الاختيار في المتصفح
     const cur = roles.find((r) => r.is_current === true);
+    // ومدرستُها من acting_school_ar وحدَها (تكليف ⑨) — والفراغُ معناه «لم يختر بعد»، فلا تُرسم مدرسةٌ من عندنا
     box.append(el('span', 'role-l', 'تعمل بصفة:'),
-      el('span', 'role', (me.role_ar || 'بلا صفة') + (cur && cur.school ? ' — ' + cur.school : '')));
+      el('span', 'role', (me.role_ar || 'بلا صفة') + (me.acting_school_ar ? ' — ' + me.acting_school_ar : '')));
     if (roles.length > 1 && onRole) {
       const sel = document.createElement('select');
       sel.id = 'roleSel';
@@ -278,13 +279,15 @@
       roles.forEach((r, i) => {
         const o = document.createElement('option');
         o.value = String(i);
-        o.textContent = (r.is_current === true ? '✓ ' : '') + roleLabel(r);
+        // can_act = false: تُعرض ولا تُختار — باهتةً وسببُها (why_ar) معها كما جاء
+        o.textContent = (r.is_current === true ? '✓ ' : '') + roleLabel(r) + (r.can_act === false && r.why_ar ? ' — ' + r.why_ar : '');
+        if (r.can_act === false) o.disabled = true;
         sel.appendChild(o);
       });
       sel.addEventListener('change', () => {
         const r = roles[Number(sel.value)];
         sel.value = '';
-        if (r && r.is_current !== true) onRole(r);
+        if (r && r.is_current !== true && r.can_act !== false) onRole(r);
       });
       box.appendChild(sel);
     }
@@ -303,18 +306,20 @@
         const o = document.createElement('option');
         o.value = x.id;
         o.textContent = x.name;
-        if (cur && cur.school_id === x.id) o.selected = true;
+        if (me.acting_school === x.id) o.selected = true;
         ssel.appendChild(o);
       }
       ssel.addEventListener('change', () => {
         const sid = ssel.value;
-        const r = roles.find((x) => x.school_id === sid && cur && x.role_key === cur.role_key) || roles.find((x) => x.school_id === sid);
+        // الصفةُ نفسُها في المدرسة الأخرى إن صلحت للعمل، وإلا أوّلُ صفةٍ تصلح فيها — ويُرسل school_id صفِّها
+        const ok = (x) => x.school_id === sid && x.can_act !== false;
+        const r = roles.find((x) => ok(x) && cur && x.role_key === cur.role_key) || roles.find(ok);
         if (r && r.is_current !== true) onRole(r);
       });
       sb2.appendChild(ssel);
       (hs || who).appendChild(sb2);
-    } else if (hs && cur && cur.school) {
-      const sb2 = el('div', 'schoolbox one', cur.school);
+    } else if (hs && me.acting_school_ar) {
+      const sb2 = el('div', 'schoolbox one', me.acting_school_ar);
       sb2.id = 'schoolSwitch';
       hs.appendChild(sb2);
     }
@@ -449,23 +454,22 @@
       }
       gate('');
 
-      // الصفة المختارة إن كانت لمدرسة بعينها فلا عمل إلا فيها — والقاعدة تمنع غيرها
-      const curRole = (me.roles || []).find((r) => r.is_current === true && r.school_id);
-      const schools = (me.schools || []).filter((x) => !curRole || x.id === curRole.school_id);
-      if (schools.length === 0) { gate('لا مدرسة مسندة لحسابك.'); return; }
-      const sel = $('school');
-      const prev = state.school;
-      sel.innerHTML = '';
-      for (const x of schools) {
-        const o = document.createElement('option');
-        o.value = x.id;
-        o.textContent = x.name + ' — ' + x.students + ' طالباً مقيّداً';
-        sel.appendChild(o);
+      // المدرسةُ العاملةُ من acting_school وحدَها (تكليف ⑨): لا schools[0] ولا محفوظٌ في المتصفّح بديلًا —
+      // فإن فرغت فمعناه «لم يختر بعد»: اختر صفتك من زرّ الحساب، ولا تُرسم مدرسةٌ من عندنا
+      if (!me.acting_school) {
+        $('dayView').hidden = true;
+        gate('لم تُختر صفتُك ومدرستُها بعد — اخترها من زرّ حسابك في أعلى الشاشة.');
+        return;
       }
-      const saved = prev || load('moayad.school');
-      if (saved && schools.some((x) => x.id === saved)) sel.value = saved;
-      $('schoolBox').hidden = schools.length === 1;
-      state.school = sel.value;
+      const sel = $('school');
+      sel.innerHTML = '';
+      const o = document.createElement('option');
+      o.value = me.acting_school;
+      o.textContent = me.acting_school_ar || '';
+      sel.appendChild(o);
+      $('schoolBox').hidden = true;
+      state.school = me.acting_school;
+      store('moayad.school', state.school);
       if (!state.date) { $('date').value = localToday(); state.date = $('date').value; }
       $('dayView').hidden = false;
       renderActing(state.school);
