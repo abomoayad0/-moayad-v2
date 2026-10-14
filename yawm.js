@@ -28,7 +28,8 @@
       const hd = el('div', 'rs-hd');
       hd.append(el('h5', null, b.label + ' · ' + b.kind), el('span', 'rs-who', b.starts_ar + ' — ' + b.ends_ar));
       f.appendChild(hd);
-      f.appendChild(el('p', null, [b.minutes_ar + ' دقيقة', b.after_period_ar, b.needs_duty ? 'تحتاج مناوبة' + (b.min_staff ? ' (' + b.min_staff + ' فأكثر)' : '') : 'بلا مناوبة', 'المناوبون الآن ' + (b.duty_now || 0), b.note].filter(Boolean).join(' · ')));
+      // المدّةُ والعددان بألفاظها من v2_breaks (ملحق ⑲): minutes_ar «١٥ دقيقة» · min_staff_ar · duty_now_ar — لا كلمةَ تُلصق بها
+      f.appendChild(el('p', null, [b.minutes_ar, b.after_period_ar, b.needs_duty ? 'تحتاج مناوبة' : 'بلا مناوبة', b.needs_duty && b.min_staff_ar ? 'أدناها: ' + b.min_staff_ar : null, b.duty_now_ar ? 'المناوبون الآن: ' + b.duty_now_ar : null, b.note].filter(Boolean).join(' · ')));
       const row = el('div', 'rs-row');
       row.append(btn('عدّل', 'rs-btn soft', () => breakForm(box, b)), btn('ألغِها بسبب', 'rs-btn ghost', () => removeForm(box, b)));
       f.appendChild(row);

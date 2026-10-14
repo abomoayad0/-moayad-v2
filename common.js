@@ -489,7 +489,8 @@
   // القوائمُ على الهاتف بطاقاتٌ لا جدولٌ يُمرَّر أفقيًّا: كلُّ خليّةٍ تحمل عنوانَ عمودها (data-label) فيعرضه CSS
   function labelTables(root) {
     for (const t of (root.querySelectorAll ? root.querySelectorAll('table.rs-table') : [])) {
-      const hs = [...t.querySelectorAll('thead th, tr:first-child > th')].map((x) => x.textContent.trim());
+      // عنوانُ العمود بأجزائه مفصولةً (اسمُ الحصّة · وقتُها) — فلا يلتصق «الحصّة ١» بـ«٠٧:٠٠» فيُقرأ «الحصّة ١٠٧:٠٠» (ملحق ⑲)
+      const hs = [...t.querySelectorAll('thead th, tr:first-child > th')].map((x) => [...x.childNodes].map((n) => n.textContent.trim()).filter(Boolean).join(' · '));
       if (!hs.length) continue;
       for (const tr of t.querySelectorAll('tbody tr, tr')) {
         [...tr.children].forEach((c, i) => { if (c.tagName === 'TD' && !c.dataset.label && hs[i]) c.dataset.label = hs[i]; });
