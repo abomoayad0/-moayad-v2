@@ -112,7 +112,8 @@
     const { data, error } = await M.rpc('v2_opp_join', { p_opp: o.opp, p_student: ui.sid }, 'التسجيل في فرصة');
     b.disabled = false;
     if (error) { flash('bad', errText(error)); return; }
-    flash('ok', 'سُجّلتَ في: ' + (o.merit || '') + (data && data.capacity ? ' · ' + data.taken + ' من ' + data.capacity : ''));
+    // جملةُ التسجيل من الباب (said_ar) — وإن اكتمل العددُ قالته بنفسها
+    flash('ok', (data && data.said_ar) || '');
     load();
   }
 

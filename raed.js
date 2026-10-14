@@ -67,8 +67,9 @@
     for (const o of mine) {
       const f = el('div', 'rs-file');
       f.append(el('h5', null, (o.title || o.merit || '') + ' — ' + (o.state || '')),
-        el('p', null, [o.when, o.points_note, o.source].filter(Boolean).join(' · ')),
-        el('p', null, 'المسجّلون ' + o.joined + (o.capacity ? ' من ' + o.capacity : '') + ' · رفعوا ' + o.filed + ' · أقررتَ ' + o.verdicted + ' · قدّرت اللجنةُ ' + o.graded));
+        el('p', null, [o.when, o.points_ar || o.points_note, o.source_ar || o.source].filter(Boolean).join(' · ')),
+        // العدُّ بألفاظه من الباب (تكليف ⑪) — لا عددٌ يُلصق بكلمةٍ في الشاشة
+        el('p', null, [o.said_ar, o.filed_ar, o.verdicted_ar, o.graded_ar].filter(Boolean).join(' · ')));
       if (o.close_why) f.appendChild(el('p', null, 'سببُ الإغلاق: ' + o.close_why));
       box.appendChild(f);
     }

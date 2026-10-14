@@ -220,7 +220,10 @@
     const c = ui.oppCard;
     const o = c.opp || {};
     const m = c.merit || {};
-    box.appendChild(el('p', 'rs-meta', [m.group, o.kind, m.points_note, m.source, o.capacity ? 'السعة ' + o.capacity : 'بلا حدّ'].filter(Boolean).join(' · ')));
+    // ألفاظُ الفرصة من الباب (تكليف ⑪): السعةُ capacity_ar · الدرجةُ points_ar · السندُ source_ar · ومتى فُتحت وأُغلقت — لا عددٌ يُلصق بكلمة
+    box.appendChild(el('p', 'rs-meta', [m.group, o.kind, m.points_ar || m.points_note, m.source_ar || m.source, o.capacity_ar].filter(Boolean).join(' · ')));
+    const when = [o.term_ar, o.opened_on_ar ? 'فُتحت ' + o.opened_on_ar : null, o.closed_on_ar ? 'أُغلقت ' + o.closed_on_ar : null, o.said_ar].filter(Boolean).join(' · ');
+    if (when) box.appendChild(el('p', 'rs-meta', when));
     const acts = el('div', 'rs-row');
     if (o.state === 'مفتوحة') acts.appendChild(btn('أغلقها — انتهى الوقت', 'rs-btn ghost', closeOpp));
     box.appendChild(acts);
@@ -229,7 +232,7 @@
     for (const x of members) {
       const r = el('div', 'rs-file');
       // الدرجةُ المقدَّرةُ بلفظها من الباب (points_ar) — لا رقمٌ يُلصق بكلمةٍ في الشاشة
-      const st = x.graded ? ['قُدّرت', x.points_ar].filter(Boolean).join(' ') : x.verdict || (x.filed ? 'رفع نموذجَه — بانتظار الإقرار' : 'لم يرفع نموذجَه بعد');
+      const st = x.graded ? [['قُدّرت', x.points_ar].filter(Boolean).join(' '), x.graded_on_ar].filter(Boolean).join(' · ') : x.verdict || (x.filed ? 'رفع نموذجَه — بانتظار الإقرار' : 'لم يرفع نموذجَه بعد');
       r.append(el('h5', null, x.name || ''), el('p', null, st));
       if (x.filed) {
         const lg = el('div', 'rs-lgd');
@@ -264,7 +267,7 @@
     V.form({
       title: 'افتح فرصةً للطلبة',
       fields: [
-        { key: 'merit', type: 'choose', label: 'الممارسة', items: ui.merits.map((m) => [m.id, m.text, [m.group, m.points_note, m.source].filter(Boolean).join(' · ')]) },
+        { key: 'merit', type: 'choose', label: 'الممارسة', items: ui.merits.map((m) => [m.id, m.text, [m.group, m.points_ar || m.points_note, m.per_participation_ar, m.source_ar || m.source].filter(Boolean).join(' · ')]) },
         { key: 'kind', type: 'pick', label: 'بابُها', items: [['منظَّمة', 'منظَّمة'], ['فرديّة', 'فرديّة'], ['آليّة', 'آليّة']], value: 'منظَّمة' },
         { key: 'title', label: 'عنوانُها (اختياري)' },
         { key: 'when', label: 'موعدُها ومكانُها', hint: 'الإذاعة المدرسية · الأحد' },
@@ -300,7 +303,7 @@
 
   function grade(x, m) {
     V.form({
-      title: 'تقديرُ الدرجة', what: x.name + ' — ' + (m.text || '') + (m.points_note ? ' · ' + m.points_note : '') + (m.source ? ' · ' + m.source : ''),
+      title: 'تقديرُ الدرجة', what: [x.name + ' — ' + (m.text || ''), m.points_ar || m.points_note, m.source_ar || m.source].filter(Boolean).join(' · '),
       fields: [
         { key: 'pts', type: 'number', label: 'الدرجة' },
         { key: 'note', type: 'textarea', label: 'توصيةُ اللجنة', hint: 'إلزاميّةٌ لما لم يُذكر في الدليل' },
