@@ -40,7 +40,7 @@
     $('safiHost').hidden = !safi;
     if (safi) { if (window.MoayadSafi) window.MoayadSafi.refresh(); return; }
     ({ plan: secPlan, grades: secGrades, day: secLink('mukallaf.html', 'افتح «ما عليّ»'),
-      tasks: secLink('mukallaf.html', 'افتح «ما عليّ»'), inbox: secLink('mukallaf.html', 'افتح «ما عليّ»'), measured: secMeasured }[ui.sec])(box);
+      tasks: secTasks, inbox: secLink('mukallaf.html', 'افتح «ما عليّ»'), measured: secMeasured }[ui.sec])(box);
   }
   // الأقسامُ القائمةُ في شاشتَين — تُفتح منهما حتى تُنقل
   const secLink = (href, label) => (box) => {
@@ -49,6 +49,15 @@
     const r = el('div', 'rs-row'); r.appendChild(btn(label, 'rs-btn', () => { location.href = href; })); c.appendChild(r);
     box.appendChild(c);
   };
+  // ما كُلِّفتُ به: «مناوبتي» هنا (البدلُ الذي ينتظر جوابي · طلباتُ المبادلة — munawaba.js) · وبقيّتُه في «ما عليّ»
+  function secTasks(box) {
+    const c = el('section', 'rs-card');
+    c.appendChild(el('h3', null, 'مناوبتي'));
+    const b = el('div'); c.appendChild(b);
+    box.appendChild(c);
+    window.MoayadMunawaba.mineTool(b);
+    secLink('mukallaf.html', 'افتح «ما عليّ»')(box);
+  }
   function secMeasured(box) {
     const c = el('section', 'rs-card');
     c.appendChild(el('p', 'rs-meta', 'لم يُبنَ هذا القسم: ملفُّ الأداء وشواهدُه والأداءُ الوظيفيُّ لا أبوابَ لها بعد.'));

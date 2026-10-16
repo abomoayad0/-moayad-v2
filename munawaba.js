@@ -46,6 +46,7 @@
 
   // ================= ① مناوبةُ اليوم =================
   async function dayTab(body) {
+    const again = () => draw(body);
     const d = today();
     const { data, error } = await M.rpc('v2_duty_day', M.state.date ? { p_school: school(), p_date: d } : { p_school: school() }, 'مناوبة اليوم');
     if (error) { errBox(body, error); arabize(body); return; }
@@ -62,17 +63,17 @@
       const zone = r['مفتاح_الموضع']; const absent = r['مناوب_id'];
       // البديلُ يكلّفه الوكيل ولا يُفرض عليه — والمقترحُ اقتراحٌ لا تنفيذ
       if (absent && r['الحالة'] !== 'حاضر') {
-        if (r['مقترح_id']) row.appendChild(btn('كلّف المقترح', 'rs-btn', () => subForm(body, d, zone, absent, r['مقترح_id'], r['المقترح'])));
-        row.appendChild(btn('كلّف بديلًا', 'rs-btn soft', () => subForm(body, d, zone, absent, null, null)));
+        if (r['مقترح_id']) row.appendChild(btn('كلّف المقترح', 'rs-btn', () => subForm(again, d, zone, absent, r['مقترح_id'], r['المقترح'])));
+        row.appendChild(btn('كلّف بديلًا', 'rs-btn soft', () => subForm(again, d, zone, absent, null, null)));
       }
       // جوابُ البديل: له وحدَه، والبابُ يحرسه
-      if (r['بديل_id'] && (r['موافقة_البديل'] == null || r['موافقة_البديل'] === '')) row.append(btn('أوافق على البدل', 'rs-btn soft', () => answerForm(body, d, zone, absent, true)), btn('أعتذر', 'rs-btn ghost', () => answerForm(body, d, zone, absent, false)));
+      if (r['بديل_id'] && (r['موافقة_البديل'] == null || r['موافقة_البديل'] === '')) row.append(btn('أوافق على البدل', 'rs-btn soft', () => answerForm(again, d, zone, absent, true)), btn('أعتذر', 'rs-btn ghost', () => answerForm(again, d, zone, absent, false)));
       if (row.childNodes.length) f.appendChild(row);
       body.appendChild(f);
     }
     arabize(body);
   }
-  async function subForm(body, d, zone, absent, sub, subName) {
+  async function subForm(again, d, zone, absent, sub, subName) {
     const items = sub ? [[sub, subName || '', 'المقترح']] : await eligible();
     V.form({
       title: 'تكليفُ بديل', what: 'يوافق البديلُ أو يعتذر — ولا يُفرض عليه', ok: 'كلّفه',
@@ -80,18 +81,18 @@
       onOk: async (v) => {
         const x = await M.rpc('v2_duty_substitute', { p_school: school(), p_date: d, p_zone: zone, p_absent: absent, p_sub: v.p, p_note: v.n }, 'تكليف بديل');
         if (x.error) return x.error;
-        flashRes(x.data); draw(body); return null;
+        flashRes(x.data); again(); return null;
       },
     });
   }
-  function answerForm(body, d, zone, absent, ok) {
+  function answerForm(again, d, zone, absent, ok) {
     V.form({
       title: ok ? 'الموافقةُ على البدل' : 'الاعتذارُ عن البدل', ok: ok ? 'أوافق' : 'أعتذر',
       fields: [{ key: 'n', type: 'textarea', label: 'ملاحظة (اختياريّة)', rows: 2 }],
       onOk: async (v) => {
         const x = await M.rpc('v2_duty_substitute_answer', { p_school: school(), p_date: d, p_zone: zone, p_absent: absent, p_ok: ok, p_note: v.n }, 'جواب البديل');
         if (x.error) return x.error;
-        flashRes(x.data); draw(body); return null;
+        flashRes(x.data); again(); return null;
       },
     });
   }
@@ -131,12 +132,12 @@
       const ul = el('ul', 'rs-acts');
       for (const p of roster.filter((x) => x['مفتاح_الموضع'] === key)) {
         const li = el('li'); const sp = el('span'); sp.style.flex = '1';
-        // «من_تاريخ» خامٌّ بلا لفظ — فلا يُعرض حتى يأتي لفظُه من الباب
-        sp.append(el('b', null, p['المنسوب'] || ''), el('div', 'rs-meta', p['النوع'] || ''));
+        // تاريخُ التكليف بلفظه (من_تاريخ_ar) إن جاء — والخامُّ (من_تاريخ) لا يُعرض
+        sp.append(el('b', null, p['المنسوب'] || ''), el('div', 'rs-meta', [p['النوع'], p['من_تاريخ_ar'] ? 'بدايةُ التكليف: ' + p['من_تاريخ_ar'] : null].filter(Boolean).join(' · ')));
         const w = el('span', 'rs-ibs');
         w.append(btn('استبدل', 'rs-btn ghost', () => replaceForm(b, wd, key, p)), btn('انقله', 'rs-btn ghost', () => moveForm(b, wd, key, p, arr(z.data))), btn('ارفعه', 'rs-btn ghost', () => removeForm(b, wd, key, p)));
-        // رفعُ التكليف كاملًا بوسمه — ولا يظهر الزرّ إن لم يرجع الوسم
-        if (p['وسم_التكليف']) w.appendChild(btn('ارفع التكليفَ كاملًا', 'rs-btn ghost', () => releaseForm(b, p)));
+        // رفعُ التكليف كاملًا لكلّ صفّ: بوسمه إن أُنشئ بـ«كلّف يومًا كاملًا» (v2_duty_release_day) · وإلّا بالمنسوب ويومه (v2_duty_release_person)
+        w.appendChild(btn('ارفع التكليفَ كاملًا', 'rs-btn ghost', () => releaseForm(b, wd, p)));
         li.append(sp, w); ul.appendChild(li);
       }
       f.appendChild(ul);
@@ -199,11 +200,13 @@
       },
     });
   }
-  function releaseForm(b, p) {
+  function releaseForm(b, wd, p) {
     V.form({
       title: 'رفعُ التكليف كاملًا', what: [p['المنسوب'], p['اليوم']].filter(Boolean).join(' — '), ok: 'ارفعه',
       onOk: async () => {
-        const x = await M.rpc('v2_duty_release_day', { p_school: school(), p_day_ref: p['وسم_التكليف'] }, 'رفع تكليف كامل');
+        const x = p['وسم_التكليف']
+          ? await M.rpc('v2_duty_release_day', { p_school: school(), p_day_ref: p['وسم_التكليف'] }, 'رفع تكليف كامل')
+          : await M.rpc('v2_duty_release_person', { p_school: school(), p_weekday: wd, p_person: p['منسوب_id'] }, 'رفع تكليف كامل');
         if (x.error) return x.error;
         flashRes(x.data); drawDay(b); return null;
       },
@@ -220,9 +223,12 @@
 
   // ================= ③ طلباتُ المبادلة =================
   // المبادلةُ ليومين بعينهما ولا تمسّ تكليفَ العام · بموافقة الطرفين ثمّ الوكيل
-  async function swapsTab(body) {
+  // اللفظُ إن جاء (X_ar)، وإلّا القديمُ إن كان نصًّا لا تاريخًا خامًّا — فلا تنكسر الشاشةُ قبل تبديل البابِ ولا بعده
+  const dayOf = (r, k) => r[k + '_ar'] || (typeof r[k] === 'string' && !/^\d{4}-\d{2}-\d{2}$/.test(r[k]) ? r[k] : null);
+  async function swapsTab(body) { await swapsList(body, () => draw(body), true); }
+  async function swapsList(body, again, admin) {
     const top = el('div', 'rs-row');
-    top.appendChild(btn('اطلب مبادلة', 'rs-btn', () => requestForm(body)));
+    top.appendChild(btn('اطلب مبادلة', 'rs-btn', () => requestForm(again)));
     body.appendChild(top);
     const { data, error } = await M.rpc('v2_duty_swaps_board', { p_school: school() }, 'طلبات المبادلة');
     if (error) { errBox(body, error); arabize(body); return; }
@@ -231,47 +237,74 @@
     for (const r of rows) {
       const f = el('div', 'rs-file');
       const hd = el('div', 'rs-hd');
-      hd.append(el('h5', null, [r['الطالب'], r['الطرف']].filter(Boolean).join(' ⇄ ')), el('span', 'rs-who', r['الحال'] || ''));
+      hd.append(el('h5', null, [r['صاحب_الطلب'] || r['الطالب'], r['الطرف']].filter(Boolean).join(' ⇄ ')), el('span', 'rs-who', r['الحال'] || ''));
       f.appendChild(hd);
       const lg = el('div', 'rs-lgd');
-      for (const [k, v] of [['يومُه', r['يومه']], ['يومُ الطرف', r['يوم_الطرف']], ['موافقةُ الطرف', r['موافقة_الطرف']], ['اعتمادُ الوكيل', r['اعتماد_الوكيل']]]) if (v) lg.append(el('i', 'k', k + ':'), el('i', null, v));
+      for (const [k, v] of [['يومُه', dayOf(r, 'يومه')], ['يومُ الطرف', dayOf(r, 'يوم_الطرف')], ['موافقةُ الطرف', r['موافقة_الطرف']], ['اعتمادُ الوكيل', r['اعتماد_الوكيل']]]) if (v) lg.append(el('i', 'k', k + ':'), el('i', null, v));
       if (r['السبب']) lg.append(el('i', 'k', 'السبب:'), V.typed(r['السبب'], 'i'));
       f.appendChild(lg);
-      // الأزرارُ لكلّ ذي شأن — والبابُ يحرس من يملك كلًّا منها
+      // الأزرارُ لكلّ ذي شأن — والبابُ يحرس من يملك كلًّا منها · والاعتمادُ للوكيل في لوحته وحدَها
       const id = r['رقم'];
       const row = el('div', 'rs-row');
-      row.append(btn('يوافق الطرف', 'rs-btn soft', () => okForm(body, 'v2_duty_swap_partner', id, true, 'جوابُ الطرف')),
-        btn('يعتذر الطرف', 'rs-btn ghost', () => okForm(body, 'v2_duty_swap_partner', id, false, 'جوابُ الطرف')),
-        btn('اعتمدها', 'rs-btn', () => okForm(body, 'v2_duty_swap_approve', id, true, 'اعتمادُ الوكيل')),
-        btn('رُدّها', 'rs-btn ghost', () => okForm(body, 'v2_duty_swap_approve', id, false, 'اعتمادُ الوكيل')),
-        btn('ألغِ الطلب', 'rs-btn ghost', () => cancelForm(body, id)));
+      row.append(btn('يوافق الطرف', 'rs-btn soft', () => okForm(again, 'v2_duty_swap_partner', id, true, 'جوابُ الطرف')),
+        btn('يعتذر الطرف', 'rs-btn ghost', () => okForm(again, 'v2_duty_swap_partner', id, false, 'جوابُ الطرف')));
+      if (admin) row.append(btn('اعتمدها', 'rs-btn', () => okForm(again, 'v2_duty_swap_approve', id, true, 'اعتمادُ الوكيل')),
+        btn('رُدّها', 'rs-btn ghost', () => okForm(again, 'v2_duty_swap_approve', id, false, 'اعتمادُ الوكيل')));
+      row.appendChild(btn('ألغِ الطلب', 'rs-btn ghost', () => cancelForm(again, id)));
       f.appendChild(row);
       body.appendChild(f);
     }
     arabize(body);
   }
-  function okForm(body, fn, id, ok, title) {
+
+  // ================= صفحةُ المعلّم: مناوبتي — البدلُ الذي ينتظر جوابَه · وطلباتُ المبادلة =================
+  // المبادلةُ بين معلّمين، فمكانُها صفحتُه لا لوحةٌ لا يفتحها (قرارُ مفرح)
+  async function mineTool(box) {
+    box.textContent = '';
+    const again = () => mineTool(box);
+    const me = (M.state.me && M.state.me.person_id) || null;
+    const d = today();
+    box.appendChild(el('h4', 'rs-sub', 'بدلٌ ينتظر جوابي'));
+    const { data, error } = await M.rpc('v2_duty_day', M.state.date ? { p_school: school(), p_date: d } : { p_school: school() }, 'مناوبة اليوم');
+    if (error) errBox(box, error);
+    const mine = arr(data).filter((r) => me && r['بديل_id'] === me && (r['موافقة_البديل'] == null || r['موافقة_البديل'] === ''));
+    if (!error && !mine.length) box.appendChild(el('p', 'rs-meta', 'لا بدلَ ينتظر جوابك اليوم.'));
+    for (const r of mine) {
+      const f = el('div', 'rs-file');
+      f.appendChild(el('h5', null, r['الموضع'] || ''));
+      if (r['البيان']) f.appendChild(el('p', 'rs-meta', r['البيان']));
+      const row = el('div', 'rs-row');
+      row.append(btn('أوافق على البدل', 'rs-btn', () => answerForm(again, d, r['مفتاح_الموضع'], r['مناوب_id'], true)), btn('أعتذر', 'rs-btn ghost', () => answerForm(again, d, r['مفتاح_الموضع'], r['مناوب_id'], false)));
+      f.appendChild(row);
+      box.appendChild(f);
+    }
+    box.appendChild(el('h4', 'rs-sub', 'طلباتُ المبادلة'));
+    const sw = el('div'); box.appendChild(sw);
+    await swapsList(sw, again, false);
+    arabize(box);
+  }
+  function okForm(again, fn, id, ok, title) {
     V.form({
       title, ok: ok ? 'أقرّ' : 'رُدّ',
       fields: [{ key: 'n', type: 'textarea', label: 'ملاحظة (اختياريّة)', rows: 2 }],
       onOk: async (v) => {
         const x = await M.rpc(fn, { p_id: id, p_ok: ok, p_note: v.n }, title);
         if (x.error) return x.error;
-        flashRes(x.data); draw(body); return null;
+        flashRes(x.data); again(); return null;
       },
     });
   }
-  function cancelForm(body, id) {
+  function cancelForm(again, id) {
     V.form({
       title: 'إلغاءُ طلب المبادلة', ok: 'ألغِه',
       onOk: async () => {
         const x = await M.rpc('v2_duty_swap_cancel', { p_id: id }, 'إلغاء المبادلة');
         if (x.error) return x.error;
-        flashRes(x.data); draw(body); return null;
+        flashRes(x.data); again(); return null;
       },
     });
   }
-  async function requestForm(body) {
+  async function requestForm(again) {
     const items = await eligible();
     V.form({
       title: 'طلبُ مبادلة', what: 'يومُك بيومه — بموافقته ثمّ الوكيل، ولا يمسّ تكليفَ العام', ok: 'أرسل الطلب',
@@ -284,10 +317,10 @@
       onOk: async (v) => {
         const x = await M.rpc('v2_duty_swap_request', { p_partner: v.p, p_my_date: v.mine, p_partner_date: v.his, p_reason: v.r }, 'طلب مبادلة');
         if (x.error) return x.error;
-        flashRes(x.data); draw(body); return null;
+        flashRes(x.data); again(); return null;
       },
     });
   }
 
-  window.MoayadMunawaba = { rosterTool };
+  window.MoayadMunawaba = { rosterTool, mineTool };
 })();
