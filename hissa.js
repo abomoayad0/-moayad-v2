@@ -309,7 +309,8 @@
     await reloadCard();
   }
   async function reloadCard() {
-    const { data, error } = await M.rpc('v2_card_open', { p_student: ui.stu.id, p_date: M.state.date || null }, 'بطاقة الطالب');
+    // لا يُرسل p_date إن لم تكن له قيمة — فالبابُ يجعله اليومَ (تكليف ⑳)
+    const { data, error } = await M.rpc('v2_card_open', Object.assign({ p_student: ui.stu.id }, M.state.date ? { p_date: M.state.date } : {}), 'بطاقة الطالب');
     const head = $('cardHead');
     $('cardName').textContent = ui.stu.name || '';
     $('cardSub').textContent = '';
@@ -604,6 +605,22 @@
     if (ui.card.practices_note_ar) box.appendChild(el('p', 'rs-meta', ui.card.practices_note_ar));
     box.append(sp, q, list);
     paint();
+    // ممارساتُ مادّتي للمادّة الجارية (تكليف ⑳): card_practices لا يعرف المادّة، فتُضمّ إليها من v2_plan_practices · والرصدُ بـ v2_record_practice
+    const mine = el('div');
+    box.appendChild(mine);
+    const s = secOf(); const stu = ui.stu;
+    window.MoayadMumarasa.subjectPractices(ui.card.student && ui.card.student.grade_ar, s.subject, positive).then((rows) => {
+      if (ui.stu !== stu || !rows.length) return;
+      mine.appendChild(el('div', 'rs-label', 'ممارساتُ مادّتي — ' + (s.subject || '')));
+      const l2 = el('div', 'rs-list');
+      for (const p of rows) {
+        const b = btn('', 'rs-item', () => window.MoayadMumarasa.recordForm(p, stu.id, periodOf(), s.subject, reloadCard));
+        b.append(el('b', null, p['الممارسة'] || ''), el('small', null, [p['المصبّ'], p['عتبة']].filter(Boolean).join(' · ')));
+        l2.appendChild(b);
+      }
+      mine.appendChild(l2);
+      arabize(mine);
+    });
   }
   function practiceForm(p) {
     V.form({

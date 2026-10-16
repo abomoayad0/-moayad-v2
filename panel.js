@@ -1358,6 +1358,8 @@
     timetable_drafts: (b) => window.MoayadJadwal.draftsTool(b),
     // فتراتُ اليوم — yawm.js
     break_slots: (b) => window.MoayadYawm.breaksTool(b),
+    // جدولُ المناوبة ولوحةُ اليوم وطلباتُ المبادلة — munawaba.js (تكليف ⑳)
+    duty_roster: (b) => window.MoayadMunawaba.rosterTool(b),
     // الإنابةُ في الصفات — inaba.js
     delegations: (b) => window.MoayadInaba.delegationsTool(b),
     // جداولُ مرجع الدرجة الأولى — marja.js

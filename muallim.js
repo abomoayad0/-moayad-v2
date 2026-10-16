@@ -436,7 +436,10 @@
   // ولا حسابَ في الشاشة: المجاميعُ والسقوفُ وألفاظُها من الباب · والخانةُ التي سقفُها صفرٌ لا تُعرض
   // وكشفُ الفصل (v2_grade_sheet) بحرف الفصل من v2_my_plan_subjects (sections[].section) — ولا يُقتطع من اسم الفصل
   const gr = { term: null, terms: null, subj: null, panel: 'card', card: null, tools: null, stuSec: null };
-  const GPANELS = [['card', 'بطاقةُ التوزيع'], ['student', 'بطاقةُ طالب'], ['sheet', 'كشفُ الفصل']];
+  const GPANELS = [['card', 'بطاقةُ التوزيع'], ['student', 'بطاقةُ طالب'], ['sheet', 'كشفُ الفصل'], ['prac', 'ممارساتُ مادّتي']];
+  const MM = () => window.MoayadMumarasa;
+  // رقمُ خطّة المادّة من بطاقة التوزيع — وبنودُ الممارسات فيها (تكليف ⑳)
+  const gPlan = async () => { if (!gr.card) await loadGCard(); return (gr.card && gr.card.plan && gr.card.plan.id) || null; };
   const gkey = () => ({ p_grade: gr.subj.grade, p_subject: gr.subj.subject_ar, p_school: M.state.school, p_term: gr.term });
 
   async function secGrades(box) {
@@ -501,7 +504,9 @@
     arabize(head);
     gpanel(body);
   }
-  function gpanel(body) { ({ card: gCard, student: gStudent, sheet: gSheet }[gr.panel])(body); }
+  function gpanel(body) { ({ card: gCard, student: gStudent, sheet: gSheet, prac: gPrac }[gr.panel])(body); }
+  // ممارساتُ مادّتي: القائمةُ والقيمةُ والمصبُّ وبنودُ الممارسات — mumarasa.js
+  async function gPrac(body) { MM().panel(body, await gPlan()); }
 
   async function loadGCard() {
     const { data, error } = await M.rpc('v2_grade_plan_card', Object.assign(gkey(), { p_person: null }), 'بطاقة توزيع الدرجات');
@@ -524,6 +529,7 @@
     const ew = d.edit_window || {};
     if (ew.open === false && ew.said_ar) c.appendChild(el('div', 'rs-info', ew.said_ar));
     const ro = !!pl.locked; // بعد الإقفال: التوزيعُ للقراءة · والرصدُ يبقى مفتوحًا
+    gr.pitems = await MM().practiceItems(pl.id, true);
     const counted = (d.buckets || []).filter((b) => b.counts !== false && b.cap !== 0);
     for (const b of counted) {
       const bx = el('div', 'gr-bucket');
@@ -573,12 +579,18 @@
       const li = el('li');
       const sp = el('span'); sp.style.flex = '1';
       sp.appendChild(el('b', null, (it.locked ? '🔒 ' : '') + (it.title_ar || '')));
-      sp.appendChild(el('div', 'rs-meta', [it.bucket_ar, it.max_ar, it.tool_ar, it.is_attendance ? 'يُحسب آليًّا' : null, it.counts === false ? 'لا يُحتسب' : null].filter(Boolean).join(' · ')));
+      const pit = gr.pitems && gr.pitems.get(it.id);
+      sp.appendChild(el('div', 'rs-meta', [it.bucket_ar, it.max_ar, it.tool_ar, it.is_attendance ? 'يُحسب آليًّا' : null, pit ? 'من الممارسات — تُحسب ولا تُكتب' : null, it.counts === false ? 'لا يُحتسب' : null].filter(Boolean).join(' · ')));
       if (it.note_ar) sp.appendChild(el('div', 'rs-meta', it.note_ar));
+      if (pit && pit['البيان']) sp.appendChild(el('div', 'rs-meta', pit['البيان']));
       li.appendChild(sp);
       if (!ro && !it.locked && !it.is_attendance) {
         const w = el('span', 'rs-ibs');
         w.append(btn('عدّل', 'rs-btn ghost', () => itemForm({ key: it.bucket, label_ar: it.bucket_ar }, it)), btn('ارفع', 'rs-btn ghost', () => dropForm(it)));
+        // تعليمُه «من الممارسات» بابٌ وحدَه بعد إنشائه (v2_grade_item_practice) — والدرجةُ المبدئيّةُ فيه لا في نموذج الإنشاء
+        const planId = gr.card && gr.card.plan && gr.card.plan.id;
+        if (pit) w.appendChild(btn('أرجِعه بندًا عاديًّا', 'rs-btn ghost', () => MM().unmarkForm({ id: it.id, title_ar: it.title_ar }, planId, gagain)));
+        else if (it.bucket !== 'final' && it.bucket !== 'pre') w.appendChild(btn('من الممارسات', 'rs-btn ghost', () => MM().markForm({ id: it.id, title_ar: it.title_ar, max_ar: it.max_ar }, planId, gagain)));
         if (pers.length > 1) w.appendChild(btn('انقل إلى فترةٍ أخرى', 'rs-btn ghost', () => movePeriodForm(it, pers)));
         li.appendChild(w);
       }
@@ -716,6 +728,10 @@
         n.appendChild(pb);
       }
     }
+    // بنودُ الممارسات: درجتُها محسوبةٌ من v2_practice_item_mark — لا من v2_grade_student
+    const pb = await MM().studentBox(await gPlan(), id);
+    if (pb) n.appendChild(pb);
+    arabize(n);
     V.form({ title: (data && data.name_ar) || (it && it[1]) || '', what: gr.subj.said_ar || '', ok: false, cancel: 'إغلاق', fields: [{ key: 'n', type: 'node', node: n }] });
   }
 
@@ -747,6 +763,7 @@
     line(body, 'rs-meta', d.note_ar);
     const studs = d.students || [];
     if (!studs.length) { arabize(body); return; }
+    const pitems = await MM().practiceItems(await gPlan());
     // الأعمدةُ مجموعةٌ بفتراتها (period_no) بترتيبها · وما لا فترةَ له (القبليُّ والنهائيُّ) تحت «للفصل»
     const gk = (it) => (it.period_no == null ? 99 : it.period_no);
     const cols = (studs[0].items || []).map((it, i) => [it, i]).sort((a, b) => gk(a[0]) - gk(b[0]) || a[1] - b[1]).map((x) => x[0]);
@@ -779,7 +796,10 @@
         const it = byId.get(col.item_id);
         if (!it) { tr.appendChild(el('td')); continue; }
         const td = el('td', it.bucket === 'pre' ? 'pre' : null);
-        if (it.is_attendance) {
+        if (pitems.has(it.item_id)) {
+          // بندُ الممارسات يُحسب ولا يُكتب — لا حقل، وعند اللمس بيانُه من v2_practice_item_mark
+          td.appendChild(MM().markCell(it.item_id, st.student_id, st.name_ar));
+        } else if (it.is_attendance) {
           // الحضورُ يُحسب آليًّا — للقراءة، وعند اللمس نصُّه
           const b = btn('يُحسب آليًّا', 'gr-auto', () => V.flash('ok', it.said_ar || ''));
           td.appendChild(b);
