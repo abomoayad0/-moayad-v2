@@ -40,7 +40,7 @@
     $('safiHost').hidden = !safi;
     if (safi) { if (window.MoayadSafi) window.MoayadSafi.refresh(); return; }
     ({ plan: secPlan, grades: secGrades, day: secLink('mukallaf.html', 'افتح «ما عليّ»'),
-      tasks: secTasks, inbox: secLink('mukallaf.html', 'افتح «ما عليّ»'), measured: secMeasured }[ui.sec])(box);
+      tasks: secTasks, inbox: secInbox, measured: secMeasured }[ui.sec])(box);
   }
   // الأقسامُ القائمةُ في شاشتَين — تُفتح منهما حتى تُنقل
   const secLink = (href, label) => (box) => {
@@ -56,6 +56,15 @@
     const b = el('div'); c.appendChild(b);
     box.appendChild(c);
     window.MoayadMunawaba.mineTool(b);
+    secLink('mukallaf.html', 'افتح «ما عليّ»')(box);
+  }
+  // ما وصلني: «شاهدٌ في شكوى» هنا (تكليف ٢١ §③ — shakwa.js: الصندوقُ بلا تفصيل ثمّ تعهّدُ السرّيّة ثمّ القراءةُ والجواب) · وبقيّتُه في «ما عليّ»
+  function secInbox(box) {
+    const c = el('section', 'rs-card');
+    c.appendChild(el('h3', null, 'شاهدٌ في شكوى'));
+    const b = el('div'); c.appendChild(b);
+    box.appendChild(c);
+    window.MoayadShakwa.teacherAsks(b);
     secLink('mukallaf.html', 'افتح «ما عليّ»')(box);
   }
   function secMeasured(box) {

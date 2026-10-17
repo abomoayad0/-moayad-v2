@@ -4,7 +4,7 @@
 // v2_entries_pending · v2_form_open(5) · v2_student_card · v2_student_tasks · v2_student_timeline(p_student, null)
 // الدرجةُ الأولى: auto[] و advice بعد الرصد · v2_advice_for · v2_census_list · v2_census_self · v2_census_assign · v2_census_sweep
 // v2_contact_log (الحقلُ يتبع النتيجة) · v2_guardian_message · v2_response_check · v2_refer_committee · وبنكُ العبارات v2_bank تحت الحقول
-// وإنجازُ المهامّ بإثباتها في tasks.js
+// وإنجازُ المهامّ بإثباتها في tasks.js · والشكاوى ومحضرُ ضبطِ الواقعة في shakwa.js (تكاليف ٢١ · ٢٢ · ٢٣)
 (function () {
   'use strict';
 
@@ -75,6 +75,9 @@
     ui.full = !!(M.state.me && M.state.me.can && M.state.me.can.wakeel_full);
     $('evCard').hidden = !ui.full;
     if (ui.full) loadEvidence();
+    // الشكاوى والبلاغات (تكاليف ٢١ · ٢٢) — والبابُ يردُّ غيرَ وكيلِ شؤونِ الطلّابِ والمديرِ برسالته
+    $('cmpCard').hidden = !ui.full;
+    if (ui.full) window.MoayadShakwa.deputy($('cmp'));
     loadOpen();
     loadRecent();
   }
@@ -703,6 +706,9 @@
       if (ui.full && e.kind === 'behavior_record' && e.record_id) {
         const b = btn('ألغِ هذي الرصدة', 'rs-btn irrev', () => voidForm({ record: e.record_id, student: ui.stu.student_id, student_ar: ui.stu.display_name || ui.stu.full_name, problem_ar: e.title, on_date: e.on }));
         const r = el('div', 'rs-row'); r.appendChild(b); d.appendChild(r);
+        // محضرُ ضبطِ الواقعة (تكليف ٢٢ §④): السندُ دائمًا، والزرُّ إن لزم — shakwa.js
+        const mh = el('div'); d.appendChild(mh);
+        window.MoayadShakwa.minuteHook(mh, e.record_id, ui.stu.student_id);
       }
       box.appendChild(d);
     }

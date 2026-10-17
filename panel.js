@@ -50,6 +50,15 @@
       const card = el('section', 'panel pgroup');
       card.appendChild(el('h2', 'ph', g));
       for (const r of ui.catalog.filter((x) => x.group_ar === g)) card.appendChild(section(r));
+      // الكلماتُ الدالّة في الشكوى (تكليف ٢١ §④ · shakwa.js) — لا صفَّ لها في الفهرس، فتُلحق بمجموعةِ السلوك
+      if (ui.catalog.some((x) => x.group_ar === g && x.key === 'practice_overrides')) {
+        const s = el('div', 'psec open');
+        const top = el('div', 'row1');
+        top.appendChild(el('div', 'name', '✅ الكلماتُ الدالّة في الشكوى'));
+        s.appendChild(top);
+        s.appendChild(toggle('افتح', (b) => window.MoayadShakwa.hintsTool(b)));
+        card.appendChild(s);
+      }
       if (ui.catalog.some((x) => x.group_ar === g && x.key === 'committees')) {
         const c = el('div', 'ptool');
         c.id = 'committeeTool';
@@ -560,6 +569,8 @@
       const acts = el('div', 'acts two');
       acts.append(btn('عدّل بياناته', null, () => editStaff(p, box)), btn('أسند تكليفًا', null, () => addAssignment(p.person, p.name, box)));
       row.appendChild(acts);
+      // تاريخُ الشكاوى عليه (تكليف ٢٢ §② · ٢٣ §②) — للمدير، والبابُ يردُّ غيرَه برسالته
+      row.appendChild(toggle('الشكاوى عليه', (b) => window.MoayadShakwa.staffOf(b, p.person)));
       box.appendChild(row);
     }
   }

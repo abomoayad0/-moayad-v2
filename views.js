@@ -254,6 +254,57 @@
     return { get: () => val, set: (v) => { val = v; draw(); } };
   }
 
+  // لوحةُ التوقيع المرسوم — مكوّنٌ واحدٌ لكلّ مواضع التوقيع (تكليف ٢٣ §①): الإصبعُ يرسم، والناتجُ
+  // { v: 1, ratio: عرضُ اللوحة ÷ ارتفاعِها, strokes: [[[x,y],…],…] } والنقاطُ نسبيّةٌ بين ٠ و١.
+  // ولا حكمَ هنا على الخطّ ولا على طوله — الحارسُ في القاعدة. «امسحْ وأعدْ» يعيدُها بيضاء.
+  // ⇒ { node, get(): الكائن أو null, has(), clear() } · onChange(has) عند كلّ خطٍّ ومسح
+  function signPad(onChange) {
+    const w = el('div', 'rs-sign');
+    const cv = el('canvas');
+    cv.setAttribute('aria-label', 'لوحةُ التوقيع — ارسمْ بإصبعك');
+    const clr = btn('امسحْ وأعدْ', 'rs-btn ghost');
+    w.append(cv, clr);
+    const strokes = [];
+    let cur = null;
+    let ratio = 3;
+    const r3 = (n) => Math.round(Math.min(1, Math.max(0, n)) * 1000) / 1000;
+    const draw = () => {
+      const box = cv.getBoundingClientRect();
+      if (!box.width) return;
+      const dpr = window.devicePixelRatio || 1;
+      cv.width = Math.round(box.width * dpr); cv.height = Math.round(box.height * dpr);
+      ratio = Math.round((box.width / box.height) * 1000) / 1000;
+      const g = cv.getContext('2d');
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, box.width, box.height);
+      g.lineWidth = 2.2; g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = getComputedStyle(w).color;
+      for (const s of strokes) {
+        g.beginPath();
+        s.forEach(([x, y], i) => { const px = x * box.width, py = y * box.height; if (i) g.lineTo(px, py); else g.moveTo(px, py); });
+        if (s.length === 1) g.lineTo(s[0][0] * box.width + 0.1, s[0][1] * box.height);
+        g.stroke();
+      }
+    };
+    const at = (e) => { const b = cv.getBoundingClientRect(); return [r3((e.clientX - b.left) / b.width), r3((e.clientY - b.top) / b.height)]; };
+    cv.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      try { cv.setPointerCapture(e.pointerId); } catch (_) { /* لا شيء */ }
+      cur = [at(e)]; strokes.push(cur); draw();
+      if (strokes.length === 1 && onChange) onChange(true);
+    });
+    cv.addEventListener('pointermove', (e) => { if (!cur) return; e.preventDefault(); cur.push(at(e)); draw(); });
+    const end = () => { cur = null; };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end); cv.addEventListener('pointerleave', end);
+    clr.addEventListener('click', () => { strokes.length = 0; cur = null; draw(); if (onChange) onChange(false); });
+    if (window.ResizeObserver) new ResizeObserver(draw).observe(cv);
+    return {
+      node: w,
+      has: () => strokes.length > 0,
+      get: () => (strokes.length ? { v: 1, ratio, strokes: strokes.map((s) => s.slice()) } : null),
+      clear: () => clr.click(),
+    };
+  }
+
   // اللوحُ المنزلق بحقوله — لما يحتاج حقولًا وحدَه. onOk(values) يرجع خطأ القاعدة أو null:
   // فإن رجع خطأٌ بقي اللوحُ بما كُتب فيه، وعُرض نصُّه كما هو في أعلاه.
   // الحقول: { key, type: text|textarea|date|time|number|pick|choose|file|icons|node, label, items, value, hint, show(values), bank: {key, problem}, node }
@@ -292,12 +343,24 @@
     const get = {};
     const shows = []; // [[wrap, show(values)]] — حقلٌ يتبع غيرَه (كالنتيجة في إثبات الاتّصال)
     const sync = () => { const v = api.values(); for (const [w, fn] of shows) w.hidden = !fn(v); };
+    // حقلُ التوقيع (type: 'sign'): نصُّ التعهّد فوقه، وزرُّ التأكيد معطَّلٌ حتى يُرسَمَ أوّلُ خطّ
+    const pads = [];
+    const locked = () => !!o.okDisabled || pads.some((p) => !p.has());
     for (const f of o.fields || []) {
       const id = 'fm_' + f.key;
       const w = el('div', 'rs-fld');
       sh.appendChild(w);
       if (f.show) shows.push([w, f.show]);
       if (f.type === 'node') { w.appendChild(f.node); continue; }
+      if (f.type === 'sign') {
+        if (f.label) w.appendChild(el('p', 'rs-pledge', f.label));
+        const p = signPad(() => { ok.disabled = locked(); });
+        pads.push(p);
+        w.appendChild(p.node);
+        if (f.hint) w.appendChild(el('p', 'rs-meta', f.hint));
+        get[f.key] = p.get;
+        continue;
+      }
       if (f.type === 'icons') { get[f.key] = icons(w, f); continue; }
       if (f.type === 'pick' || f.type === 'choose') {
         w.appendChild(el('div', 'rs-label', f.label));
@@ -343,13 +406,13 @@
     foot.appendChild(row);
     const api = { values: () => { const r = {}; for (const k in get) r[k] = get[k](); return r; }, ok };
     // زرُّ التأكيد معطَّلٌ حتى يقول الجسرُ إنّه جاهز (كالنموذج قبل اعتماده) — okDisabled
-    if (o.okDisabled) ok.disabled = true;
+    ok.disabled = locked();
     // كلُّ زرٍّ في اللوح يرجع خطأَ القاعدة أو null — فإن رجع خطأٌ بقي اللوحُ ونصُّه في أعلاه
     const run = async (b, fn) => {
       if (formBox.busy) return;
       formBox.busy = true; busyOn(b);
       let e = null;
-      try { e = await fn(api.values()); } finally { formBox.busy = false; busyOff(b); b.disabled = b === ok && !!o.okDisabled; }
+      try { e = await fn(api.values()); } finally { formBox.busy = false; busyOff(b); b.disabled = b === ok && locked(); }
       if (e) {
         err.textContent = '';
         // { text, acts } ⇒ النصُّ كما هو ومعه أزرارٌ تنقله إلى ما يدلّ عليه
@@ -647,5 +710,5 @@
     return d;
   }
 
-  window.MoayadView = { ar, arabize, btn, inbox, busyOn, busyOff, send, notBuilt, offCard, renderRole, flash, seen, tap, recordAdvice, scoreBox, planMeasure, typed, line, pick, sheet, events, chooser, form, verdictCard, committeeTask };
+  window.MoayadView = { ar, arabize, btn, inbox, busyOn, busyOff, send, notBuilt, offCard, renderRole, flash, seen, tap, recordAdvice, scoreBox, planMeasure, typed, line, pick, sheet, events, chooser, form, signPad, verdictCard, committeeTask };
 })();

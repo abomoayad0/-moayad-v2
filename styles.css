@@ -716,3 +716,28 @@ ul.rs-acts li.click:hover { background: var(--soft); border-radius: 8px; }
 .tp-legend { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; margin-bottom: 8px; }
 .tp-k { padding: 2px 8px; border-radius: 999px; }
 .gr-sheet .gr-grp { background: var(--soft); font-size: 12px; border-inline-start: 1px solid var(--line, #e5e7eb); }
+
+/* ===== الشكوى والمحضر (تكاليف ٢١ · ٢٢ · ٢٣) ===== */
+/* لوحةُ التوقيع المرسوم — مكوّنٌ واحد · touch-action: none كي لا تُمرَّر الصفحةُ تحت الإصبع */
+.rs-sign { color: var(--ink); display: grid; gap: 6px; }
+.rs-sign canvas { width: 100%; aspect-ratio: 3 / 1; min-height: 110px; border: 1.5px dashed var(--mute); border-radius: 12px; background: var(--card); touch-action: none; cursor: crosshair; }
+.rs-sign .rs-btn { justify-self: start; }
+.rs-pledge { font-weight: 700; margin: 4px 0; line-height: 1.9; }
+/* الأحمرُ هنا بنصّ التكليف: المتأخّرةُ · بلاغُ الإيذاء · المسألةُ النظاميّة · تنبيهُ حدّ الجلسات */
+.rs-red, .rs-file.rs-red h5 { color: var(--sysfail); }
+.rs-file.rs-red { border-color: var(--sysfail); border-width: 1.5px; }
+.rs-btn.rs-harm { background: transparent; color: var(--sysfail); border: 1.5px solid var(--sysfail); min-height: 48px; }
+.rs-harmbox { margin-top: 22px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.rs-said { white-space: pre-line; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin: 8px 0; background: var(--bg); line-height: 1.9; }
+.rs-said.rs-red { border-color: var(--sysfail); }
+.rs-big { font-size: 17px; font-weight: 700; margin: 6px 0; }
+.rs-cand { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin: 6px 0; }
+.rs-cand.m-strong { border-color: var(--primary); background: var(--ok-bg); }
+.rs-cand.m-mid { background: var(--chip); }
+.rs-cand.m-weak { background: var(--soft); opacity: .7; }
+.rs-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.rs-chips span { background: var(--chip); border-radius: 999px; padding: 3px 10px; font-size: 13px; }
+.rs-chips span button { border: 0; background: none; color: var(--mute); cursor: pointer; margin-inline-start: 4px; }
+.rs-ans { display: grid; gap: 8px; }
+.rs-ans .rs-btn { text-align: start; min-height: 48px; }
+.rs-ans small { display: block; color: var(--mute); font-weight: 400; }
