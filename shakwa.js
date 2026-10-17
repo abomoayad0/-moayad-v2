@@ -24,8 +24,11 @@
   const roleKey = () => { const r = ((M.state.me && M.state.me.roles) || []).find((x) => x.is_current === true); return r ? r.role_key : null; };
 
   // نصوصُ التعهّد كما في التكليف ٢١
-  const PLEDGE = 'أتعهّدُ أنّ ما قلتُه صحيحٌ، لم أزِد فيه ولم أُنقِص منه';
-  const SECRECY = 'اطّلعتُ عليها بصفتي شاهدًا، وأتعهّدُ ألّا أُفشيَ منها شيئًا';
+  // نصُّ التعهّد من v2_my_pledge وحدَه (تكليف ٢٥) — ولا نصَّ ثابتًا في الشاشة: ما يُعرَض هو ما يُحفظ مع التوقيع
+  async function pledge(kind, party) {
+    const { data, error } = await M.rpc('v2_my_pledge', { p_kind: kind, p_party: party || null }, 'نصّ التعهّد');
+    return error ? { error } : { text: data };
+  }
   const STAFF_LINE = 'الشكوى على معلّمٍ أو منسوبٍ تُقدَّمُ عندَ وكيلِ شؤونِ الطلّابِ نفسِه';
   const KINDS = [['complaint', 'شكوى'], ['report', 'بلاغ']];
   const KIND_WHY = {
@@ -178,6 +181,9 @@
   }
 
   async function studentForm(box) {
+    // لا طرفَ بعد — فالشكوى لم تُقدَّم · ولا توقيعَ بلا نصّ
+    const pl = await pledge('statement');
+    if (pl.error) { flash('bad', errText(pl.error)); return; }
     const ppl = await M.rpc('v2_my_people', undefined, 'أسماءُ الزملاء والمنسوبين');
     const rows = ppl.data || [];
     const mates = rows.filter((r) => r['نوع'] === 'زميل');
@@ -201,7 +207,7 @@
         { key: 'at', type: 'time', label: 'الساعة' },
         { key: 'place', label: 'المكان' },
         ...who,
-        { key: 'sign', type: 'sign', label: PLEDGE },
+        { key: 'sign', type: 'sign', label: pl.text },
       ],
       ok: 'أرسِلْ',
       onOk: async (v) => {
@@ -235,7 +241,7 @@
   }
 
   // ======================= ② شاشةُ الوكيل =======================
-  const B = { all: false, host: null, pledge: null };
+  const B = { all: false, host: null };
   // الحالُ بلفظ القاعدة (complaint_status_ar): ما يُعمل فيه · والمحفوظةُ لا تُقفَل ولا يُرصد فيها زور
   const OPEN_STATES = ['وصلت — لم تُفتَح بعد', 'التحقيقُ جارٍ'];
   const SHELVED = 'حُفظت بالبتِّ الأوّل';
@@ -268,11 +274,6 @@
     tools.appendChild(btn('سجّلْ شكوى عن طالب', 'rs-btn soft', () => fileForDeputy(list, cs)));
     daily(note);
     boardList(list, cs);
-    // نصُّ تعهّدِ الإفادة كما ضبطته المدرسة (v2_complaint_settings) — وإلّا فالبيتيّ
-    M.rpc('v2_complaint_settings', { p_school: school() }, 'لوحة الشكوى').then((r) => {
-      const t = ((r.data && r.data['نصوصُ_التعهّد']) || []).find((x) => x['مفتاح'] === 'pledge_statement_ar');
-      B.pledge = t && t['القيمة'] ? t['القيمة'] : null;
-    });
   }
 
   async function boardList(list, cs) {
@@ -431,10 +432,13 @@
     });
   }
 
-  function statementForm(cs, row, p) {
+  // تعهّدُ الإفادة عند الوكيل: من v2_my_pledge بلا طرف (المدرسةُ من صفته) — فالطرفُ لا يُفتح إلّا لصاحبه
+  async function statementForm(cs, row, p) {
+    const pl = await pledge('statement');
+    if (pl.error) { flash('bad', errText(pl.error)); return; }
     V.form({
       title: 'إفادةُ ' + (p['الاسم'] || ''), what: [row['المرجع'], p['الدور']].filter(Boolean).join(' · '),
-      fields: [{ key: 'body', type: 'textarea', label: 'قولُه', rows: 5 }, { key: 'sign', type: 'sign', label: B.pledge || PLEDGE }],
+      fields: [{ key: 'body', type: 'textarea', label: 'قولُه', rows: 5 }, { key: 'sign', type: 'sign', label: pl.text }],
       ok: 'سجِّلْها',
       onOk: async (v) => {
         const { data, error } = await M.rpc('v2_complaint_statement', { p_party: p['طرف'], p_body: v.body, p_strokes: v.sign }, 'تدوين إفادة');
@@ -618,7 +622,7 @@
       const rec = d['سجلّ_اللائحة'] || null;
       if (rec) {
         const pan = el('div');
-        keep.append(btn('افتحْ محضرَ ضبطِ الواقعة', 'rs-btn', () => minute(pan, rec, null)), pan);
+        keep.append(btn('افتحْ محضرَ ضبطِ الواقعة', 'rs-btn', () => minute(pan, rec, d['طالب'] || null)), pan);
       } else {
         const w = el('span', 'rs-off-act');
         const x = btn('افتحْ محضرَ ضبطِ الواقعة', 'rs-btn soft'); x.disabled = true;
@@ -820,7 +824,7 @@
       }
     }
     // الطباعةُ من النموذج نفسِه (form.html) — بعناوينِ خاناته من القاعدة
-    // ومن شاشة الشكوى لا يُعرف الطالب — فالطباعةُ من سجلِّه
+    // والطالبُ من الإقفال (طالب) أو من سجلِّه — وبه تُطبع
     if (student) {
       const a = el('a', 'rs-btn soft', 'اطبعِ المحضر');
       a.href = 'form.html?form=11&student=' + encodeURIComponent(student) + '&ref=' + encodeURIComponent(record);
@@ -860,10 +864,12 @@
     }
     arabize(box);
   }
-  function secrecyForm(box, r, pan) {
+  async function secrecyForm(box, r, pan) {
+    const pl = await pledge('secrecy', r['طرف']);
+    if (pl.error) { flash('bad', errText(pl.error)); return; }
     V.form({
       title: 'تعهّدُ السرّيّة', what: r['المرجع'],
-      fields: [{ key: 'sign', type: 'sign', label: SECRECY }],
+      fields: [{ key: 'sign', type: 'sign', label: pl.text }],
       ok: 'وقّعْ',
       onOk: async (v) => {
         const { data, error } = await M.rpc('v2_complaint_teacher_sign', { p_party: r['طرف'], p_strokes: v.sign }, 'تعهّد السرّيّة');
@@ -967,18 +973,21 @@
     box.appendChild(add);
     if (h.error) { errBox(box, h.error); return; }
     const rows = h.data || [];
-    if (!rows.length) { box.appendChild(el('p', 'rs-empty', 'لا كلماتٍ مُقرّة.')); arabize(box); return; }
+    // البابُ الفارغُ صحيح: الدفترُ يبدأ فارغًا عمدًا
+    if (!rows.length) { box.appendChild(el('p', 'rs-empty', 'ما في كلماتٍ مُقرّةٍ بعد.')); arabize(box); return; }
     for (const r of rows) {
       const f = el('div', 'rs-file');
       f.appendChild(el('h5', null, [r['الكلمة'], r['الحال']].filter(Boolean).join(' · ')));
       f.appendChild(el('p', null, [r['الدرجة'], r['رقم_البند'], r['النصّ']].filter(Boolean).join(' · ')));
       // البابُ يطلب رقمَ البند — يُعرف بنصّه ودرجتِه من بنود الدليل، فإن لم يتعيّن بقي الزرُّ معطّلًا
-      // البابُ يطلب رقمَ البند ولا يُرجعه — فالزرُّ معطّلٌ حتى يُرجعَه (بيدِ مفرح · ردُّ وكيل القاعدة ⑥)
+      // التعطيلُ لا الحذف — بـ «بند» كما يرجع من v2_complaint_hints
       const on = !/معطّل|موقوف/.test(r['الحال'] || '');
-      const x = el('span', 'rs-off-act');
-      const b = btn(on ? 'عطِّلْها' : 'فعِّلْها', 'rs-btn soft'); b.disabled = true;
-      x.append(b, el('small', null, 'ينتظرُ رقمَ البندِ من الباب'));
-      f.appendChild(x);
+      f.appendChild(btn(on ? 'عطِّلْها' : 'فعِّلْها', 'rs-btn soft', async () => {
+        const { data, error } = await M.rpc('v2_complaint_hint_set', { p_school: school(), p_word: r['الكلمة'], p_problem: r['بند'], p_on: !on }, on ? 'تعطيل كلمة' : 'تفعيل كلمة');
+        if (error) { flash('bad', errText(error)); return; }
+        flash('ok', [data && data['الكلمة'], data && data['الحال']].filter(Boolean).join(' · '));
+        hintsTool(box);
+      }));
       box.appendChild(f);
     }
     arabize(box);
@@ -1079,7 +1088,9 @@
     // الرمزُ لاتينيٌّ كما هو (data-raw) · والوزنُ كما رجع
     for (const code of ['cmp_false', 'cmp_perjury']) wf.appendChild(V.line('p', null, [typed(code), w[code] == null ? '—' : String(w[code])], ': '));
     if (w['البيان']) wf.appendChild(el('p', null, w['البيان']));
-    wf.appendChild(V.notBuilt('لوحةُ أوزانِ الممارسات'));
+    // لوحةُ أوزان الممارسات نفسُها (تكليف ٢٦) — تُفتح هنا على السالبة والبحثُ بالرمز
+    const wb = el('div');
+    wf.append(btn('لوحةُ أوزانِ الممارسات', 'rs-btn soft', () => window.MoayadAwzan.tool(wb, { polarity: 'negative', q: 'cmp_' })), wb);
     box.appendChild(wf);
     arabize(box);
   }

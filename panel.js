@@ -59,6 +59,12 @@
         s.appendChild(top);
         s.appendChild(toggle('افتح', (b) => window.MoayadShakwa.settingsTool(b)));
         card.appendChild(s);
+        // «أوزانُ الممارسات» (تكليف ٢٦ · awzan.js) — موجبةٌ وسالبة، والرمزُ لاتينيّ، والوزنُ من weight_ar
+        const w = el('div', 'psec open');
+        const wt = el('div', 'row1');
+        wt.appendChild(el('div', 'name', '✅ أوزانُ الممارسات'));
+        w.append(wt, toggle('افتح', (b) => window.MoayadAwzan.tool(b)));
+        card.appendChild(w);
       }
       if (ui.catalog.some((x) => x.group_ar === g && x.key === 'committees')) {
         const c = el('div', 'ptool');
