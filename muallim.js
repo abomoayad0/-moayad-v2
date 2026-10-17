@@ -605,8 +605,8 @@
     bar.appendChild(el('h5', k === 'opened' ? 'rs-orange' : null, d['الحال'] || ''));
     if (d['سبب_القفل'] || pl.lock_why) bar.appendChild(el('p', null, d['سبب_القفل'] || pl.lock_why));
     if (d['البيان']) bar.appendChild(el('p', 'rs-meta', d['البيان']));
-    // زرُّ الاعتماد في المسوّدة وحدَها
-    if ((k ? k === 'draft' : !d['مقفلة']) && pl.is_mine !== false) bar.appendChild(btn('اعتمدْ توزيعي', 'rs-btn pri', () => approveFlow(pl)));
+    // زرُّ الاعتماد في المسوّدة والمفتوحةِ بمهلة (تكليف ٢٩) — والحكمُ بعده لـ«جاهزة»
+    if ((k ? k === 'draft' || k === 'opened' : !d['مقفلة']) && pl.is_mine !== false) bar.appendChild(btn('اعتمدْ توزيعي', 'rs-btn pri', () => approveFlow(pl)));
     arabize(bar);
   }
   const GO = { 'ممارسة': 'prac', 'بند': 'card', 'خطّة': 'card' };
@@ -630,7 +630,10 @@
     }
     V.form({
       title: 'اعتمدْ توزيعي', what: [pl.subject_ar, pl.grade_ar].filter(Boolean).join(' · '),
-      fields: [{ key: 'w', type: 'node', node: el('p', 'rs-pledge', 'ستُقفلُ خطّتُك بعدَ الاعتماد، ولا تُعدَّل. وإن احتجتَ تعديلًا فاطلبْ من الوكيلِ أو المديرِ فتحَها. أتعتمد؟') }],
+      // وفي المفتوحةِ بمهلة يقول التأكيدُ ما يقع: تُقفل الآن وتنتهي المهلةُ قبل موعدها
+      fields: [{ key: 'w', type: 'node', node: el('p', 'rs-pledge', d['الحال_مفتاح'] === 'opened'
+        ? 'ستُقفلُ خطّتُك الآن، وتنتهي مهلةُ الفتحِ قبلَ موعدِها. أتعتمد؟'
+        : 'ستُقفلُ خطّتُك بعدَ الاعتماد، ولا تُعدَّل. وإن احتجتَ تعديلًا فاطلبْ من الوكيلِ أو المديرِ فتحَها. أتعتمد؟') }],
       ok: 'نعم، أعتمدُه', okCls: 'rs-btn irrev',
       onOk: async () => {
         const x = await M.rpc('v2_grade_plan_approve', { p_plan: pl.id }, 'اعتماد توزيع الدرجات');
