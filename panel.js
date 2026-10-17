@@ -50,13 +50,14 @@
       const card = el('section', 'panel pgroup');
       card.appendChild(el('h2', 'ph', g));
       for (const r of ui.catalog.filter((x) => x.group_ar === g)) card.appendChild(section(r));
-      // الكلماتُ الدالّة في الشكوى (تكليف ٢١ §④ · shakwa.js) — لا صفَّ لها في الفهرس، فتُلحق بمجموعةِ السلوك
+      // «الشكوى والبلاغ» (تكليف ٢٤ · shakwa.js): الأرقامُ والمفاتيحُ ونصوصُ التعهّد والكلماتُ الدالّة والأوزان
+      // لا صفَّ لها في الفهرس، فتُلحق بمجموعةِ السلوك — والبابُ يردُّ غيرَ وكيلِ شؤونِ الطلّابِ والمدير
       if (ui.catalog.some((x) => x.group_ar === g && x.key === 'practice_overrides')) {
         const s = el('div', 'psec open');
         const top = el('div', 'row1');
-        top.appendChild(el('div', 'name', '✅ الكلماتُ الدالّة في الشكوى'));
+        top.appendChild(el('div', 'name', '✅ الشكوى والبلاغ'));
         s.appendChild(top);
-        s.appendChild(toggle('افتح', (b) => window.MoayadShakwa.hintsTool(b)));
+        s.appendChild(toggle('افتح', (b) => window.MoayadShakwa.settingsTool(b)));
         card.appendChild(s);
       }
       if (ui.catalog.some((x) => x.group_ar === g && x.key === 'committees')) {
