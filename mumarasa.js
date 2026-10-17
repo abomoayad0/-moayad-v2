@@ -86,7 +86,9 @@
 
   // ========== لوحةُ «ممارساتُ مادّتي» ==========
   const st = { scope: '', polarity: '' };
-  async function panel(box, plan) {
+  // opts.locked: التوزيعُ معتمدٌ مقفل (تكليف ٢٧) — فلا أزرارَ تعديلٍ إطلاقًا، والقائمةُ للقراءة
+  async function panel(box, plan, opts) {
+    const locked = !!(opts && opts.locked);
     box.textContent = '';
     const c = el('section', 'rs-card');
     box.appendChild(c);
@@ -118,23 +120,32 @@
     for (const [k, t] of scopes) { const o = el('option', null, t); o.value = k; ss.appendChild(o); }
     ss.value = st.scope;
     ss.addEventListener('change', () => { st.scope = ss.value; panel(box, plan); });
-    fl.append(ps, ss, btn('أنشئ ممارسةً لمادّتي', 'rs-btn', () => addForm(box, plan, scopes)));
+    fl.append(ps, ss);
+    if (!locked) fl.appendChild(btn('أنشئ ممارسةً لمادّتي', 'rs-btn', () => addForm(box, plan, scopes)));
     c.appendChild(fl);
     const { data, error } = await M.rpc('v2_plan_practices', { p_plan: plan, p_scope: st.scope || null, p_polarity: st.polarity || null }, 'ممارسات مادّتي');
     if (error) { c.appendChild(el('div', 'notice err', errText(error))); arabize(c); return; }
     const rows = arr(data);
+    // عدّادُ ما ينتظر قيمتَه — من القائمة كلِّها لا من المرشّح · فيُعرف النقصُ من أوّلِ يوم قبل أن تتراكم الرصدات
+    const all = st.scope || st.polarity ? arr((await M.rpc('v2_plan_practices', { p_plan: plan, p_scope: null, p_polarity: null }, 'ممارسات مادّتي')).data) : rows;
+    const waiting = all.filter(noValue).length;
+    if (waiting) c.insertBefore(el('div', 'rs-said rs-red', 'ممارساتٌ تنتظرُ قيمتَها: ' + V.ar(waiting)), fl);
     if (!rows.length) c.appendChild(el('p', 'rs-meta', 'لا ممارسةَ في هذا المرشّح.'));
-    for (const p of rows) c.appendChild(practiceRow(p, box, plan, items));
+    for (const p of rows) c.appendChild(practiceRow(p, box, plan, items, locked));
     arabize(c);
   }
-  function practiceRow(p, box, plan, items) {
+  // بلا قيمة: قيمتُها صفرٌ أو لم تُقيَّم أو بلا مصبّ — والمخفيّةُ لا تُعدّ
+  const noValue = (p) => !p['مخفيّة'] && (!Number(p['قيمتي']) || !p['المصبّ']);
+  function practiceRow(p, box, plan, items, locked) {
     const f = el('div', 'rs-file' + (p['مخفيّة'] ? ' rs-prev' : ''));
     f.appendChild(el('h5', null, [p['الممارسة'], POL[p['القطبيّة']] || p['القطبيّة']].filter(Boolean).join(' — ')));
+    if (noValue(p)) f.appendChild(el('p', 'rs-red', '⚠ بلا قيمة — ما تُضيفُ شيئًا'));
     const lg = el('div', 'rs-lgd');
     // أصلُها كما يقوله الباب (عامّة · مدرستي · مادّتي) — والقيمةُ والمصبُّ والعتبةُ والملاحظةُ في خانات
     for (const [k, v] of [['أصلُها', p['أصلها']], ['المجال', p['لفظ_المجال'] || p['المجال']], ['الموضع', p['الموضع']], ['قيمتي', p['قيمتي'] == null ? 'لم تُقيَّم' : String(Number(p['قيمتي']))], ['المصبّ', p['المصبّ'] || 'لم يُحدَّد'], ['العتبة', p['عتبة']], ['الحال', p['مخفيّة'] ? 'مخفيّةٌ عن مادّتي' : null]]) if (v) lg.append(el('i', 'k', k + ':'), el('i', null, v));
     if (p['ملاحظتي']) lg.append(el('i', 'k', 'ملاحظتي:'), V.typed(p['ملاحظتي'], 'i'));
     f.appendChild(lg);
+    if (locked) return f;
     const row = el('div', 'rs-row');
     row.append(btn('اضبط القيمةَ والمصبّ', 'rs-btn soft', () => setForm(p, box, plan, items)),
       btn(p['مخفيّة'] ? 'أظهِرها لمادّتي' : 'أخفِها عن مادّتي', 'rs-btn ghost', () => act('v2_plan_practice_hide', { p_plan: plan, p_code: p['الكود'], p_hidden: !p['مخفيّة'] }, 'إخفاء الممارسة', box, plan)));

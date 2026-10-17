@@ -524,7 +524,7 @@
   }
   function gpanel(body) { ({ card: gCard, student: gStudent, sheet: gSheet, prac: gPrac }[gr.panel])(body); }
   // ممارساتُ مادّتي: القائمةُ والقيمةُ والمصبُّ وبنودُ الممارسات — mumarasa.js
-  async function gPrac(body) { MM().panel(body, await gPlan()); }
+  async function gPrac(body) { const id = await gPlan(); MM().panel(body, id, { locked: !!(gr.card && gr.card.plan && gr.card.plan.locked) }); }
 
   async function loadGCard() {
     const { data, error } = await M.rpc('v2_grade_plan_card', Object.assign(gkey(), { p_person: null }), 'بطاقة توزيع الدرجات');
@@ -547,6 +547,7 @@
     const ew = d.edit_window || {};
     if (ew.open === false && ew.said_ar) c.appendChild(el('div', 'rs-info', ew.said_ar));
     const ro = !!pl.locked; // بعد الإقفال: التوزيعُ للقراءة · والرصدُ يبقى مفتوحًا
+    planBar(c, pl);
     gr.pitems = await MM().practiceItems(pl.id, true);
     const counted = (d.buckets || []).filter((b) => b.counts !== false && b.cap !== 0);
     for (const b of counted) {
@@ -590,6 +591,52 @@
     line(c, 'rs-meta', d.note_ar);
     arabize(c);
   }
+  // شريطُ الحال واعتمادُ التوزيع (تكليف ٢٧): v2_grade_plan_check قراءةً · v2_grade_plan_approve بعد فحصٍ وتأكيدٍ صريح
+  // الحالُ والبيانُ من الباب · والنواقصُ سطرًا سطرًا ولكلٍّ زرٌّ ينقل إلى موضعه · ولا اعتمادَ ما دامت جاهزة = false
+  async function planBar(c, pl) {
+    const bar = el('div', 'rs-file');
+    c.insertBefore(bar, c.children[1] || null);
+    const { data, error } = await M.rpc('v2_grade_plan_check', { p_plan: pl.id }, 'فحص توزيع الدرجات');
+    if (error) { errBox(bar, error); arabize(bar); return; }
+    const d = data || {};
+    bar.appendChild(el('h5', null, d['الحال'] || ''));
+    if (pl.locked && pl.locked_ar) bar.appendChild(el('p', null, pl.locked_ar));
+    if (d['البيان']) bar.appendChild(el('p', 'rs-meta', d['البيان']));
+    if (!d['مقفلة'] && pl.is_mine !== false) bar.appendChild(btn('اعتمدْ توزيعي', 'rs-btn pri', () => approveFlow(pl)));
+    arabize(bar);
+  }
+  const GO = { 'ممارسة': 'prac', 'بند': 'card', 'خطّة': 'card' };
+  async function approveFlow(pl) {
+    const { data, error } = await M.rpc('v2_grade_plan_check', { p_plan: pl.id }, 'فحص توزيع الدرجات');
+    if (error) { V.flash('bad', errText(error)); return; }
+    const d = data || {};
+    if (!d['جاهزة']) {
+      // لا يُستدعى الاعتماد: النواقصُ كما قالها الباب، وزرٌّ ينقل إلى موضعِ كلٍّ
+      const list = el('div');
+      if (d['سقوف']) list.appendChild(el('div', 'rs-said rs-red', d['سقوف']));
+      for (const g of d['النواقص'] || []) {
+        const r = el('div', 'rs-file');
+        r.appendChild(el('p', null, g['ما_ينقص'] || ''));
+        const to = GO[g['الموضع']] || 'card';
+        r.appendChild(btn('انتقلْ إليه', 'rs-btn soft', () => { document.querySelector('.rs-modal:not([hidden])').hidden = true; gr.panel = to; render(); }));
+        list.appendChild(r);
+      }
+      V.form({ title: 'لا يُعتمدُ بعد', what: d['البيان'] || '', fields: [{ key: 'g', type: 'node', node: list }], ok: false, cancel: 'أغلق' });
+      return;
+    }
+    V.form({
+      title: 'اعتمدْ توزيعي', what: [pl.subject_ar, pl.grade_ar].filter(Boolean).join(' · '),
+      fields: [{ key: 'w', type: 'node', node: el('p', 'rs-pledge', 'ستُقفلُ خطّتُك بعدَ الاعتماد، ولا تُعدَّل. وإن احتجتَ تعديلًا فاطلبْ من الوكيلِ أو المديرِ فتحَها. أتعتمد؟') }],
+      ok: 'نعم، أعتمدُه', okCls: 'rs-btn irrev',
+      onOk: async () => {
+        const x = await M.rpc('v2_grade_plan_approve', { p_plan: pl.id }, 'اعتماد توزيع الدرجات');
+        if (x.error) return x.error;
+        V.flash('ok', (x.data && x.data['البيان']) || '');
+        gagain(); return null;
+      },
+    });
+  }
+
   // بنودٌ بأزرارها: القبليُّ وسمُه «لا يُحتسب» · والمقفلُ 🔒 بلا أزرار · والحضورُ «يُحسب آليًّا»
   function itemList(items, ro, pers) {
     const ul = el('ul', 'rs-acts');
