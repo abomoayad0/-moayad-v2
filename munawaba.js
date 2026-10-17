@@ -3,6 +3,10 @@
 // ② الجدول: v2_duty_zones (المواضعُ كلُّها ومنها الفارغ) · v2_duty_roster_view · v2_duty_eligible (مرتَّبًا بالعدل)
 //    v2_duty_assign_day · v2_duty_release_day · v2_duty_zone_add · _remove · _replace · _move · v2_duty_autofill
 // ③ طلباتُ المبادلة: v2_duty_swaps_board · v2_duty_swap_request · _partner · _approve · _cancel
+// ⑤ رصدُ المناوب (تكليف ٣١) في «مناوبتي» بصفحة المعلّم: موضعُه اليومَ مُستنتَجٌ من v2_duty_day (مناوب_id أو بديل_id = person_id)
+//    وممارساتُ موضعه أوّلًا من v2_practices(school,'supervision') — الموجبةُ ثمّ السالبة · و«اعرضْ الكلّ» لا يحجب شيئًا
+//    والطالبُ من v2_recent_students ثمّ v2_students_find · والرصدُ v2_record_practice(student, code, note) بلا حصّةٍ ولا مادّة
+//    ومن لا مناوبةَ له يرصد أيضًا ويختار موضعَه — ولا عدّادَ تقصيرٍ ولا تذكير
 // ④ لوحةُ المواضع (تكليف ٣٠): v2_zone_board (المواضعُ بأرقامها · و«بلا_موضع» سطرٌ مستقلّ) · والضغطُ على موضعٍ v2_zone_records
 //    وشريطُ التجربة إن كانت «منها_تجربة» فوق الصفر — ولا تُطرح من الجملة · والمدى افتراضُه اليومُ (لا يُرسل إن لم يُختر)
 // التكليفُ مرّةً ويستمرّ ولا جلسةَ تُفتح وتُغلق · والنصابُ حدٌّ أدنى يُخبَر به ولا يُمنع تجاوزُه
@@ -386,5 +390,107 @@
     });
   }
 
-  window.MoayadMunawaba = { rosterTool, mineTool };
+  // ---------- ⑤ رصدُ المناوب ----------
+  const rs = { zone: null, all: false, stu: null };
+  async function recordTool(box) {
+    box.textContent = '';
+    const me = (M.state.me && M.state.me.person_id) || null;
+    const [dd, zz, pp] = await Promise.all([
+      M.rpc('v2_duty_day', M.state.date ? { p_school: school(), p_date: today() } : { p_school: school() }, 'مناوبة اليوم'),
+      M.rpc('v2_duty_zones', { p_school: school() }, 'مواضع المناوبة'),
+      M.rpc('v2_practices', { p_school: school(), p_scope: 'supervision', p_polarity: null }, 'ممارسات الإشراف'),
+    ]);
+    if (zz.error) { errBox(box, zz.error); arabize(box); return; }
+    if (pp.error) { errBox(box, pp.error); arabize(box); return; }
+    // ألفاظُ المواضع من v2_duty_zones — لا من الشاشة
+    const zones = arr(zz.data).map((z) => [z['مفتاح'], z['الموضع'] || z['مفتاح']]);
+    const zname = (k) => (zones.find((z) => z[0] === k) || [k, k])[1];
+    const mine = [...new Set(arr(dd.data).filter((r) => me && (r['مناوب_id'] === me || r['بديل_id'] === me)).map((r) => r['مفتاح_الموضع']).filter(Boolean))];
+    // موضعُه الواحدُ يُفتح مباشرةً — وما اختاره بيده يبقى
+    if (!rs.mineSet) rs.zone = mine.length === 1 ? mine[0] : null;
+    // ① الموضع: واحدٌ يُفتح · أكثرُ يُختار · ولا شيءَ له فيختار من الثمانية
+    const head = el('div', 'rs-file');
+    if (mine.length === 1) head.appendChild(el('p', 'rs-big', 'مناوبتُك اليوم: ' + zname(mine[0])));
+    else if (!mine.length) head.appendChild(el('p', null, 'لا مناوبةَ لك اليوم — ولك أن ترصدَ في أيِّ موضعٍ إن رأيتَ شيئًا'));
+    const zp = el('div', 'rs-pick');
+    const zlist = mine.length > 1 ? zones.filter((z) => mine.includes(z[0])) : zones;
+    if (mine.length !== 1) { V.pick(zp, zlist, rs.zone, (v) => { rs.zone = v; rs.mineSet = true; drawPrac(); }); head.appendChild(zp); }
+    if (dd.error) head.appendChild(el('p', 'rs-meta', errText(dd.error)));
+    box.appendChild(head);
+    // ② الطالب: آخرُ من فتحتَهم ثمّ البحثُ بالاسم — ولا يُلزم بالفصل
+    const sbox = el('div', 'rs-file');
+    sbox.appendChild(el('h5', null, 'الطالب'));
+    const chosen = el('p', 'rs-big', rs.stu ? rs.stu.name : '');
+    const recent = el('div', 'rs-pick');
+    const q = el('input'); q.type = 'search'; q.placeholder = 'ابحث بالاسم'; q.setAttribute('aria-label', 'بحث عن طالب');
+    const sum = el('p', 'rs-meta'); const res = el('div', 'rs-list');
+    sbox.append(chosen, recent, q, sum, res);
+    box.appendChild(sbox);
+    const pick = (x) => { rs.stu = x; chosen.textContent = x.name; q.value = ''; res.textContent = ''; sum.textContent = ''; arabize(chosen); };
+    M.rpc('v2_recent_students', { p_limit: 8 }, 'آخرُ من عملتَ عليهم').then(({ data }) => {
+      for (const x of (data && data.rows) || []) {
+        const sp = el('span', null, x.name || ''); sp.setAttribute('role', 'button'); sp.tabIndex = 0;
+        V.tap(sp, () => pick({ id: x.student, name: x.name }));
+        recent.appendChild(sp);
+      }
+      arabize(recent);
+    });
+    let seq = 0; let tm = null;
+    q.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(async () => {
+      const t = q.value.trim(); const my = ++seq;
+      if (t.length < 2) { res.textContent = ''; sum.textContent = ''; return; }
+      const { data, error } = await M.rpc('v2_students_find', { p_text: t, p_in_grade: null, p_in_section: null, p_max: 20, p_of_school: school() }, 'البحث عن طالب');
+      if (my !== seq) return;
+      res.textContent = '';
+      if (error) { errBox(res, error); return; }
+      // ملخّصُ الباب كما هو (ومنه نطاقُ البحث إن ضاق)
+      sum.textContent = [data && data.summary_ar, data && data.note_ar].filter(Boolean).join(' · ');
+      for (const x of (data && data.rows) || []) {
+        const b = btn('', 'rs-item', () => pick({ id: x.student, name: x.name || x.full_name }));
+        b.append(el('b', null, x.name || x.full_name || ''), el('small', null, [x.class_ar, x.student_no].filter(Boolean).join(' · ')));
+        res.appendChild(b);
+      }
+      arabize(sbox);
+    }, 250); });
+    // ③ الممارسات: موضعُه أوّلًا (الموجبةُ ثمّ السالبة) · و«اعرضْ الكلّ»
+    const pbox = el('div');
+    box.appendChild(pbox);
+    const all = arr(pp.data);
+    const drawPrac = () => {
+      pbox.textContent = '';
+      const list = rs.all || !rs.zone ? all : all.filter((p) => p.zone === rs.zone);
+      for (const [pol, title] of [['positive', 'الموجبة'], ['negative', 'السالبة']]) {
+        const part = list.filter((p) => p.polarity === pol);
+        if (!part.length) continue;
+        pbox.appendChild(el('h4', 'rs-sub', title));
+        for (const p of part) {
+          const b = btn('', 'rs-item', () => recordForm(p));
+          b.append(el('b', null, p.title || ''), el('small', null, [p.points_ar, p.threshold_count ? 'العتبة: ' + V.ar(p.threshold_count) + (p.threshold_days ? ' · خلال أيّام: ' + V.ar(p.threshold_days) : '') : null, rs.all && p.zone ? zname(p.zone) : null].filter(Boolean).join(' · ')));
+          pbox.appendChild(b);
+        }
+      }
+      if (!list.length) pbox.appendChild(el('p', 'rs-empty', 'لا ممارسات.'));
+      if (rs.zone) pbox.appendChild(btn(rs.all ? 'ممارساتُ موضعي' : 'اعرضْ الكلّ', 'rs-btn ghost', () => { rs.all = !rs.all; drawPrac(); }));
+      arabize(pbox);
+    };
+    const recordForm = (p) => {
+      if (!rs.stu) { V.flash('bad', 'اخترِ الطالبَ أوّلًا'); sbox.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+      V.form({
+        title: p.title || '', what: [rs.stu.name, p.points_ar].filter(Boolean).join(' · '),
+        fields: [{ key: 'note', type: 'textarea', label: 'ملاحظة (اختياريّة)', rows: 2 }],
+        ok: 'ارصدْها',
+        onOk: async (v) => {
+          // بلا حصّةٍ ولا مادّة — والموضعُ يُحفظ من الممارسة وحدَه
+          const { data, error } = await M.rpc('v2_record_practice', { p_student: rs.stu.id, p_code: p.code, p_note: v.note }, 'رصد ممارسة');
+          if (error) return error;
+          V.flash('ok', (data && (data.said_ar || data.msg)) || (typeof data === 'string' ? data : 'رُصدت'));
+          return null;
+        },
+      });
+    };
+    drawPrac();
+    arabize(box);
+  }
+
+  window.MoayadMunawaba = { rosterTool, mineTool, recordTool };
 })();

@@ -50,12 +50,16 @@
     box.appendChild(c);
   };
   // ما كُلِّفتُ به: «مناوبتي» هنا (البدلُ الذي ينتظر جوابي · طلباتُ المبادلة — munawaba.js) · وبقيّتُه في «ما عليّ»
+  // «مناوبتي» بابان (تكليف ٣١): تكليفي وتبديلي · ورصدي — والرصدُ لكلّ معلّمٍ ولو لم يُكلَّف
   function secTasks(box) {
     const c = el('section', 'rs-card');
     c.appendChild(el('h3', null, 'مناوبتي'));
-    const b = el('div'); c.appendChild(b);
+    const pk = el('div', 'rs-pick');
+    const b = el('div'); c.append(pk, b);
     box.appendChild(c);
-    window.MoayadMunawaba.mineTool(b);
+    const tabs = { mine: (x) => window.MoayadMunawaba.mineTool(x), rec: (x) => window.MoayadMunawaba.recordTool(x) };
+    V.pick(pk, [['mine', 'تكليفي وتبديلي'], ['rec', 'رصدي']], ui.duty || 'mine', (v) => { ui.duty = v; tabs[v](b); });
+    tabs[ui.duty || 'mine'](b);
     secLink('mukallaf.html', 'افتح «ما عليّ»')(box);
   }
   // ما وصلني: «شاهدٌ في شكوى» هنا (تكليف ٢١ §③ — shakwa.js: الصندوقُ بلا تفصيل ثمّ تعهّدُ السرّيّة ثمّ القراءةُ والجواب) · وبقيّتُه في «ما عليّ»
