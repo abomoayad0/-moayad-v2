@@ -126,10 +126,11 @@
     const { data, error } = await M.rpc('v2_plan_practices', { p_plan: plan, p_scope: st.scope || null, p_polarity: st.polarity || null }, 'ممارسات مادّتي');
     if (error) { c.appendChild(el('div', 'notice err', errText(error))); arabize(c); return; }
     const rows = arr(data);
-    // عدّادُ ما ينتظر قيمتَه — من القائمة كلِّها لا من المرشّح · فيُعرف النقصُ من أوّلِ يوم قبل أن تتراكم الرصدات
-    const all = st.scope || st.polarity ? arr((await M.rpc('v2_plan_practices', { p_plan: plan, p_scope: null, p_polarity: null }, 'ممارسات مادّتي')).data) : rows;
-    const waiting = all.filter(noValue).length;
-    if (waiting) c.insertBefore(el('div', 'rs-said rs-red', 'ممارساتٌ تنتظرُ قيمتَها: ' + V.ar(waiting)), fl);
+    // عدّادُ ما ينتظر قيمتَه — للخطّة كلِّها لا للمرشّح · فيُعرف النقصُ من أوّلِ يوم قبل أن تتراكم الرصدات
+    // جملتُه من الباب (v2_grade_plan_check · بلا_قيمة_جملة) — ولا يُركَّب عددٌ بكلمة
+    const ck = await M.rpc('v2_grade_plan_check', { p_plan: plan }, 'فحص توزيع الدرجات');
+    const wl = ck.data && ck.data['بلا_قيمة_جملة'];
+    if (wl) c.insertBefore(el('div', 'rs-said rs-red', wl), fl);
     if (!rows.length) c.appendChild(el('p', 'rs-meta', 'لا ممارسةَ في هذا المرشّح.'));
     for (const p of rows) c.appendChild(practiceRow(p, box, plan, items, locked));
     arabize(c);

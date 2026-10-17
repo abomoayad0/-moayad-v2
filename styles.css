@@ -741,3 +741,7 @@ ul.rs-acts li.click:hover { background: var(--soft); border-radius: 8px; }
 .rs-ans { display: grid; gap: 8px; }
 .rs-ans .rs-btn { text-align: start; min-height: 48px; }
 .rs-ans small { display: block; color: var(--mute); font-weight: 400; }
+/* التوزيعُ المفتوحُ بمهلة (تكليف ٢٧) — بارزٌ بالبرتقاليّ */
+.rs-orange { color: #b25d00; font-weight: 700; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .rs-orange { color: #f0a050; } }
+:root[data-theme="dark"] .rs-orange { color: #f0a050; }

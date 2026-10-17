@@ -546,7 +546,8 @@
     line(c, 'rs-meta', [pl.grade_ar, pl.term_ar, pl.status_ar, pl.locked_ar].filter(Boolean).join(' · '));
     const ew = d.edit_window || {};
     if (ew.open === false && ew.said_ar) c.appendChild(el('div', 'rs-info', ew.said_ar));
-    const ro = !!pl.locked; // بعد الإقفال: التوزيعُ للقراءة · والرصدُ يبقى مفتوحًا
+    // بعد الإقفال: التوزيعُ للقراءة · والرصدُ يبقى مفتوحًا — و editable من الباب إن رجع (المفتوحةُ بمهلةٍ تُعدَّل)
+    const ro = pl.editable === false || (pl.editable == null && !!pl.locked);
     planBar(c, pl);
     gr.pitems = await MM().practiceItems(pl.id, true);
     const counted = (d.buckets || []).filter((b) => b.counts !== false && b.cap !== 0);
@@ -599,10 +600,13 @@
     const { data, error } = await M.rpc('v2_grade_plan_check', { p_plan: pl.id }, 'فحص توزيع الدرجات');
     if (error) { errBox(bar, error); arabize(bar); return; }
     const d = data || {};
-    bar.appendChild(el('h5', null, d['الحال'] || ''));
-    if (pl.locked && pl.locked_ar) bar.appendChild(el('p', null, pl.locked_ar));
+    // ثلاثُ حالاتٍ بمفتاحها: draft مسوّدة · approved معتمدةٌ مقفلة · opened مفتوحةٌ بمهلة (بارزةٌ بالبرتقاليّ)
+    const k = d['الحال_مفتاح'];
+    bar.appendChild(el('h5', k === 'opened' ? 'rs-orange' : null, d['الحال'] || ''));
+    if (d['سبب_القفل'] || pl.lock_why) bar.appendChild(el('p', null, d['سبب_القفل'] || pl.lock_why));
     if (d['البيان']) bar.appendChild(el('p', 'rs-meta', d['البيان']));
-    if (!d['مقفلة'] && pl.is_mine !== false) bar.appendChild(btn('اعتمدْ توزيعي', 'rs-btn pri', () => approveFlow(pl)));
+    // زرُّ الاعتماد في المسوّدة وحدَها
+    if ((k ? k === 'draft' : !d['مقفلة']) && pl.is_mine !== false) bar.appendChild(btn('اعتمدْ توزيعي', 'rs-btn pri', () => approveFlow(pl)));
     arabize(bar);
   }
   const GO = { 'ممارسة': 'prac', 'بند': 'card', 'خطّة': 'card' };

@@ -50,6 +50,14 @@
       const card = el('section', 'panel pgroup');
       card.appendChild(el('h2', 'ph', g));
       for (const r of ui.catalog.filter((x) => x.group_ar === g)) card.appendChild(section(r));
+      // «خططُ الدرجات» (تكليف ٢٧ · darajat.js) — في مجموعةِ التقويم بجوار الخطط الدراسيّة: حالُ كلٍّ وفتحُ المعتمدة بسبب
+      if (ui.catalog.some((x) => x.group_ar === g && x.key === 'study_plans')) {
+        const s = el('div', 'psec open');
+        const top = el('div', 'row1');
+        top.appendChild(el('div', 'name', '✅ خططُ الدرجات'));
+        s.append(top, toggle('افتح', (b) => window.MoayadDarajat.plansTool(b)));
+        card.appendChild(s);
+      }
       // «الشكوى والبلاغ» (تكليف ٢٤ · shakwa.js): الأرقامُ والمفاتيحُ ونصوصُ التعهّد والكلماتُ الدالّة والأوزان
       // لا صفَّ لها في الفهرس، فتُلحق بمجموعةِ السلوك — والبابُ يردُّ غيرَ وكيلِ شؤونِ الطلّابِ والمدير
       if (ui.catalog.some((x) => x.group_ar === g && x.key === 'practice_overrides')) {
