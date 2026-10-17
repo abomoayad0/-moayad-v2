@@ -3,6 +3,8 @@
 // ② الجدول: v2_duty_zones (المواضعُ كلُّها ومنها الفارغ) · v2_duty_roster_view · v2_duty_eligible (مرتَّبًا بالعدل)
 //    v2_duty_assign_day · v2_duty_release_day · v2_duty_zone_add · _remove · _replace · _move · v2_duty_autofill
 // ③ طلباتُ المبادلة: v2_duty_swaps_board · v2_duty_swap_request · _partner · _approve · _cancel
+// ④ لوحةُ المواضع (تكليف ٣٠): v2_zone_board (المواضعُ بأرقامها · و«بلا_موضع» سطرٌ مستقلّ) · والضغطُ على موضعٍ v2_zone_records
+//    وشريطُ التجربة إن كانت «منها_تجربة» فوق الصفر — ولا تُطرح من الجملة · والمدى افتراضُه اليومُ (لا يُرسل إن لم يُختر)
 // التكليفُ مرّةً ويستمرّ ولا جلسةَ تُفتح وتُغلق · والنصابُ حدٌّ أدنى يُخبَر به ولا يُمنع تجاوزُه
 // وكلُّ معلّمٍ يرصد في مواضع اليوم ولو لم يُكلَّف — فلا منعَ ولا عقابَ هنا · ورسائلُ الأبواب بلفظها
 (function () {
@@ -27,13 +29,75 @@
     box.textContent = '';
     const pk = el('div', 'rs-pick'); const body = el('div');
     box.append(pk, body);
-    V.pick(pk, [['day', 'مناوبةُ اليوم'], ['roster', 'الجدول'], ['swaps', 'طلباتُ المبادلة']], st.tab, (v) => { st.tab = v; draw(body); });
+    V.pick(pk, [['day', 'مناوبةُ اليوم'], ['roster', 'الجدول'], ['swaps', 'طلباتُ المبادلة'], ['zones', 'لوحةُ المواضع']], st.tab, (v) => { st.tab = v; draw(body); });
     draw(body);
   }
   function draw(body) {
     body.textContent = '';
-    ({ day: dayTab, roster: rosterTab, swaps: swapsTab }[st.tab])(body);
+    ({ day: dayTab, roster: rosterTab, swaps: swapsTab, zones: zonesTab }[st.tab])(body);
   }
+  // ---------- ④ لوحةُ المواضع ----------
+  async function zonesTab(body) {
+    const c = el('section', 'rs-card');
+    body.appendChild(c);
+    const rng = el('div', 'rs-row');
+    const inp = (lbl, v) => { const w = el('label', null, lbl); const i = el('input'); i.type = 'date'; i.value = v || ''; w.appendChild(i); rng.appendChild(w); return i; };
+    const fi = inp('من', st.zFrom); const ti = inp('إلى', st.zTo);
+    rng.appendChild(btn('اعرض', 'rs-btn soft', () => { st.zFrom = fi.value || null; st.zTo = ti.value || null; body.textContent = ''; zonesTab(body); }));
+    c.appendChild(rng);
+    const args = Object.assign({ p_school: school() }, st.zFrom ? { p_from: st.zFrom } : {}, st.zTo ? { p_to: st.zTo } : {});
+    const { data, error } = await M.rpc('v2_zone_board', args, 'لوحة المواضع');
+    if (error) { errBox(c, error); arabize(c); return; }
+    const d = data || {};
+    // 🔴 شريطُ التجربة — والعددُ كما رجع، ولا يُطرح من الجملة
+    const trial = d['منها_تجربة'];
+    if (trial && !/^[0٠]$/.test(String(trial))) c.appendChild(el('div', 'rs-said rs-orange', '⚠ من هذي الرصداتِ ' + trial + ' رصدةٍ تجريبيّة — المدرسةُ في وضعِ التجربة'));
+    c.appendChild(el('p', 'rs-meta', [d['من'], d['إلى'] && d['إلى'] !== d['من'] ? d['إلى'] : null].filter(Boolean).join(' ← ')));
+    if (d['البيان']) c.appendChild(el('p', 'rs-sum', d['البيان']));
+    if (d['الجملة'] != null) c.appendChild(el('p', null, 'الجملة: ' + d['الجملة']));
+    // الأكثرُ رصدًا أوّلًا (عدد رقمًا للترتيب) — والباقي بترتيبه
+    const rows = arr(d['المواضع']).slice().sort((a, b) => (Number(b['عدد']) || 0) - (Number(a['عدد']) || 0));
+    for (const z of rows) {
+      const f = el('div', 'rs-file');
+      f.appendChild(el('h5', null, z['الموضع'] || z['مفتاح']));
+      f.appendChild(el('p', 'rs-meta', [z['المقطع'] && z['المقطع'] !== '—' ? z['المقطع'] : null, z['النصاب'] != null ? 'النصاب: ' + V.ar(z['النصاب']) : null, z['آخرُ رصدة'] && z['آخرُ رصدة'] !== '—' ? 'آخرُ رصدة: ' + z['آخرُ رصدة'] : null].filter(Boolean).join(' · ')));
+      if (z['البيان']) f.appendChild(el('p', null, z['البيان']));
+      const recs = el('div');
+      if (Number(z['عدد']) > 0) f.appendChild(btn('رصداتُه', 'rs-btn soft', () => zoneRecords(recs, z, args)));
+      f.appendChild(recs);
+      c.appendChild(f);
+    }
+    // «بلا_موضع» سطرٌ مستقلٌّ لا يُخلط بالمواضع — ممارساتُ الحصّة
+    const nz = d['بلا_موضع'];
+    if (nz) {
+      const f = el('div', 'rs-file rs-prev');
+      f.appendChild(el('h5', null, 'بلا موضع'));
+      if (nz['البيان']) f.appendChild(el('p', null, nz['البيان']));
+      c.appendChild(f);
+    }
+    arabize(c);
+  }
+  async function zoneRecords(box, z, args) {
+    box.textContent = '';
+    const { data, error } = await M.rpc('v2_zone_records', Object.assign({}, args, { p_zone: z['مفتاح'] }), 'رصدات الموضع');
+    if (error) { errBox(box, error); arabize(box); return; }
+    const rows = arr(data);
+    if (!rows.length) { box.appendChild(el('p', 'rs-empty', 'لا رصدات.')); return; }
+    const ul = el('ul', 'rs-acts');
+    for (const r of rows) {
+      const li = el('li');
+      const sp = el('span'); sp.style.flex = '1';
+      sp.appendChild(el('b', null, [r['الطالب'], r['الصف']].filter(Boolean).join(' · ')));
+      sp.appendChild(el('div', 'rs-meta', [r['الممارسة'], r['القطبية'], r['الوزن']].filter(Boolean).join(' · ')));
+      sp.appendChild(el('div', 'rs-meta', [r['التاريخ'], r['الراصد'], r['صفتُه']].filter(Boolean).join(' · ')));
+      if (r['الملاحظة']) sp.appendChild(V.typed(r['الملاحظة'], 'div', 'rs-meta'));
+      li.appendChild(sp);
+      ul.appendChild(li);
+    }
+    box.appendChild(ul);
+    arabize(box);
+  }
+
   async function eligible() {
     if (st.eligible) return st.eligible;
     const { data, error } = await M.rpc('v2_duty_eligible', { p_school: school() }, 'من يصلح للمناوبة');
