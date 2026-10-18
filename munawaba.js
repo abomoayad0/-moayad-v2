@@ -5,7 +5,7 @@
 // ③ طلباتُ المبادلة: v2_duty_swaps_board · v2_duty_swap_request · _partner · _approve · _cancel
 // ⑤ رصدُ المناوب (تكليف ٣١) في «مناوبتي» بصفحة المعلّم: موضعُه اليومَ مُستنتَجٌ من v2_duty_day (مناوب_id أو بديل_id = person_id)
 //    وممارساتُ موضعه أوّلًا من v2_practices(school,'supervision') — الموجبةُ ثمّ السالبة · و«اعرضْ الكلّ» لا يحجب شيئًا
-//    والطالبُ من v2_recent_students ثمّ v2_students_find · والرصدُ v2_record_practice(student, code, note) بلا حصّةٍ ولا مادّة
+//    والطالبُ من v2_recent_students ثمّ v2_students_find (طلّابي rows ثمّ outside_rows تحت outside_ar) · والعتبةُ threshold_ar · والرصدُ v2_record_practice(student, code, note) بلا حصّةٍ ولا مادّة
 //    ومن لا مناوبةَ له يرصد أيضًا ويختار موضعَه — ولا عدّادَ تقصيرٍ ولا تذكير
 // ④ لوحةُ المواضع (تكليف ٣٠): v2_zone_board (المواضعُ بأرقامها · و«بلا_موضع» سطرٌ مستقلّ) · والضغطُ على موضعٍ v2_zone_records
 //    وشريطُ التجربة إن كانت «منها_تجربة» فوق الصفر — ولا تُطرح من الجملة · والمدى افتراضُه اليومُ (لا يُرسل إن لم يُختر)
@@ -443,13 +443,19 @@
       if (my !== seq) return;
       res.textContent = '';
       if (error) { errBox(res, error); return; }
-      // ملخّصُ الباب كما هو (ومنه نطاقُ البحث إن ضاق)
+      // ملخّصُ الباب كما هو · ثمّ «طلّابي» (rows) ثمّ طلّابُ المدرسة من خارج فصوله (outside_rows) تحت outside_ar
+      // ولا تحذيرَ على الثانية — الرصدُ عليهم حقٌّ لا استثناء (تكليف ٣٢)
       sum.textContent = [data && data.summary_ar, data && data.note_ar].filter(Boolean).join(' · ');
-      for (const x of (data && data.rows) || []) {
+      const item = (x) => {
         const b = btn('', 'rs-item', () => pick({ id: x.student, name: x.name || x.full_name }));
         b.append(el('b', null, x.name || x.full_name || ''), el('small', null, [x.class_ar, x.student_no].filter(Boolean).join(' · ')));
         res.appendChild(b);
-      }
+      };
+      const own = (data && data.rows) || [];
+      if (own.length) res.appendChild(el('div', 'rs-label', 'طلّابي'));
+      own.forEach(item);
+      if (data && data.outside_ar) res.appendChild(el('div', 'rs-label', data.outside_ar));
+      ((data && data.outside_rows) || []).forEach(item);
       arabize(sbox);
     }, 250); });
     // ③ الممارسات: موضعُه أوّلًا (الموجبةُ ثمّ السالبة) · و«اعرضْ الكلّ»
@@ -465,7 +471,7 @@
         pbox.appendChild(el('h4', 'rs-sub', title));
         for (const p of part) {
           const b = btn('', 'rs-item', () => recordForm(p));
-          b.append(el('b', null, p.title || ''), el('small', null, [p.points_ar, p.threshold_count ? 'العتبة: ' + V.ar(p.threshold_count) + (p.threshold_days ? ' · خلال أيّام: ' + V.ar(p.threshold_days) : '') : null, rs.all && p.zone ? zname(p.zone) : null].filter(Boolean).join(' · ')));
+          b.append(el('b', null, p.title || ''), el('small', null, [p.points_ar, p.threshold_ar || null, rs.all && p.zone ? zname(p.zone) : null].filter(Boolean).join(' · ')));
           pbox.appendChild(b);
         }
       }
