@@ -2,7 +2,7 @@
 // v2_settings_catalog · v2_setting_rows · v2_setting_update · v2_committee_board · v2_committee_seat_count
 // v2_staff_board · v2_staff_save · v2_posts_list · v2_assign_add · v2_assign_end · v2_students_board · v2_student_save · v2_enrolment_end
 // v2_enrol_reasons · v2_guardians_of · v2_guardian_save · v2_accounts_board · v2_account_toggle · v2_portal_toggle · v2_school_card
-// v2_practices(p_school,…) · v2_practices_hidden · v2_practice_save · v2_practice_state · v2_practice_scopes · v2_scope_upsert · v2_committee_rules · v2_committee_rules_get
+// v2_practices(p_school,…) · v2_practice_owner_set (صاحبُ الخطوة — تكليف ٣٧) · v2_practices_hidden · v2_practice_save · v2_practice_state · v2_practice_scopes · v2_scope_upsert · v2_committee_rules · v2_committee_rules_get
 // v2_brand_card · v2_brand_save · v2_stamp_save · v2_signature_save · v2_calendar_board · v2_year_save · v2_term_save
 // v2_structure_board · v2_structure_set · v2_exceptions_board · v2_exception_add · v2_exception_kinds · v2_reference(p_key)
 // واليومُ الدراسيّ: yawm.js (v2_breaks · v2_break_save · v2_break_remove · v2_day_plan · v2_day_build)
@@ -393,10 +393,21 @@
     if (p.threshold_count) bits.push('الحدّ: ' + p.threshold_count + (p.threshold_days ? ' خلال ' + p.threshold_days + ' يومًا' : ''));
     if (p.escalate_to) bits.push('تُصعَّد إلى المخالفة ' + p.escalate_to);
     row.appendChild(el('div', 'meta', bits.join(' · ')));
-    // ميدانُها ومن تُفتحُ عليه خطوتُها (تكليف ٣٤) — في تفصيل الممارسة لا في لحظة الرصد
-    if (p.track_ar || p.due_owner_ar) row.appendChild(el('div', 'meta', [p.track_ar, p.due_owner_ar ? 'خطوتُها على: ' + p.due_owner_ar : null].filter(Boolean).join(' · ')));
+    // ميدانُها ومن تُفتحُ عليه خطوتُها (تكليفا ٣٤ · ٣٧) — في تفصيل الممارسة لا في لحظة الرصد
+    if (p.track_ar) row.appendChild(el('div', 'meta', p.track_ar));
+    if (p.due_owner_ar) {
+      const ow = el('div', 'meta', 'خطوتُها على: ' + p.due_owner_ar);
+      // تعيينُ مدرسةٍ لا أصل — ليعرف المديرُ ما غيّره عن الأصل
+      if (p.owner_set_by_school) ow.appendChild(el('span', 'rs-tag own', 'تعيينُ مدرسة'));
+      row.appendChild(ow);
+    }
+    if (p.due_owner_note_ar) row.appendChild(el('div', 'meta', p.due_owner_note_ar));
     if (p.escalate_note) row.appendChild(el('div', 'meta', p.escalate_note));
     if (p.note) row.appendChild(el('div', 'meta', p.note));
+    const own = el('button', 'btn-ghost wide', 'صاحبُ الخطوة');
+    own.type = 'button';
+    own.addEventListener('click', () => ownerForm(p, box));
+    row.appendChild(own);
     const acts = el('div', 'acts ' + (p.edited ? 'three' : 'two'));
     const ed = el('button', null, 'عدّل');
     ed.type = 'button';
@@ -460,6 +471,42 @@
     'أظهِر': 'ظهرت.',
     'أعدها للأصل': 'رجعت للمشترك كما هو.',
   };
+  // صاحبُ الخطوة (تكليف ٣٧): v2_practice_owner_set(p_school, p_code, p_role, p_person, p_why)
+  // بوجهَين لا يجتمعان: «على صفة» (v2_posts_list) أو «على شخص» (v2_staff_list) · و«ارجعْ إلى الأصل» يُرسلهما فارغَين
+  async function ownerForm(p, box) {
+    const [po, st] = await Promise.all([
+      M.rpc('v2_posts_list', undefined, 'الوظائف'),
+      M.rpc('v2_staff_list', { p_school: ui.school }, 'قائمة المنسوبين'),
+    ]);
+    if (po.error) { toast('لم يقع:\n' + errText(po.error)); return; }
+    if (st.error) { toast('لم يقع:\n' + errText(st.error)); return; }
+    const send = async (role, person, why) => {
+      const { data, error } = await M.rpc('v2_practice_owner_set', { p_school: ui.school, p_code: p.code, p_role: role, p_person: person, p_why: why || null }, 'تكليف صاحب الخطوة');
+      if (error) return error;
+      toast((data && data['البيان']) || '', true);
+      practicesTool(box);
+      return null;
+    };
+    V.form({
+      title: 'صاحبُ الخطوة', what: p.title + (p.due_owner_ar ? ' — الآن على: ' + p.due_owner_ar : ''),
+      fields: [
+        { key: 'how', type: 'pick', label: 'التكليف', items: [['role', 'على صفة'], ['person', 'على شخص']], value: p.due_owner_person ? 'person' : 'role' },
+        { key: 'role', type: 'choose', label: 'الصفة', items: (po.data || []).map((x) => [x.key, x.label, x.kind || '']), value: p.due_owner_person ? null : (p.due_owner_role || null), show: (v) => v.how === 'role' },
+        { key: 'person', type: 'choose', label: 'المنسوب', items: (st.data || []).map((x) => [x.person_id, x.name_ar, x.post_ar || x.roles_ar || '']), value: p.due_owner_person || null, show: (v) => v.how === 'person' },
+        { key: 'why', type: 'textarea', label: 'السبب (اختياريّ)', rows: 2 },
+      ],
+      ok: 'كلِّفْه',
+      onOk: async (v) => {
+        // وجهٌ واحدٌ يُرسَل — والآخرُ فارغ
+        const role = v.how === 'role' ? v.role : null;
+        const person = v.how === 'person' ? v.person : null;
+        if (!role && !person) return v.how === 'person' ? 'اخترِ المنسوب' : 'اخترِ الصفة';
+        return send(role, person, v.why);
+      },
+      extra: p.owner_set_by_school ? [{ text: 'ارجعْ إلى الأصل', cls: 'rs-btn ghost', onClick: (v) => send(null, null, v.why) }] : [],
+    });
+  }
+
   async function setState(p, state, box) {
     const { error } = await M.rpc('v2_practice_state', { p_school: ui.school, p_code: p.code, p_state: state }, state + ' ممارسة');
     if (error) { toast('لم يقع:\n' + errText(error)); return; }

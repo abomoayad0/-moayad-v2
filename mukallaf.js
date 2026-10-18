@@ -6,6 +6,7 @@
 // ويومي: v2_my_now_board · v2_my_sections · v2_my_duties · v2_mail_my_tasks (⇒ v2_mail_followup_close) — للقراءة كما ترجع
 // وبحثُ الطلّاب: v2_students_find — للمعلّم في فصوله (scoped · note_ar) ولا مُرشِّحَ صفٍّ ولا فصل
 // ترى هذا الجزءَ وحدَه: لا ملفَّ طالبٍ ولا دراسةَ حالة.
+// وما يُنتظر منّي (تكليف ٣٧): khutwa.js — v2_card_my_steps لكلّ منسوب، بلا شرط صفة
 (function () {
   'use strict';
 
@@ -18,7 +19,7 @@
     showLoadErr('');
     V.renderRole();
     renderOff();
-    await Promise.all([loadMine(), loadDelegated(), loadCensus(), loadCommittee(), findNote()]);
+    await Promise.all([window.MoayadSteps.load($('stepsSum'), $('steps')), loadMine(), loadDelegated(), loadCensus(), loadCommittee(), findNote()]);
   }
 
   // ---------- بحثُ الطلّاب: v2_students_find — للمعلّم في فصوله (scoped) ----------

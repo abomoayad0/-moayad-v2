@@ -1,5 +1,5 @@
 // مؤيّد · التحصيلُ الدراسيّ — تكليفا ٣٤ و٣٥: شاشةٌ واحدةٌ بثلاثة أقسام، وكلٌّ يظهر لمن يفتحه بابُه
-// ① ما يُنتظر منّي (للوكيل التعليميّ): v2_card_my_steps ⇒ v2_card_step_do — كصندوق المعلّم في الحصّة
+// ① ما يُنتظر منّي لكلّ منسوب (تكليف ٣٧): khutwa.js — v2_card_my_steps ⇒ v2_card_step_do، بلا شرط صفة
 // ② لوحةُ المتدنّين: v2_low_board(p_school, p_grade) — مرتّبةٌ كما جاءت (خطوات_بلا_تحسّن نازلًا) · «أُحيل» وسمٌ لا إخفاء · المعيار_ar أسفلَها
 //    والإحالة: ihala.js · والإشعار: v2_low_notify_window ثمّ v2_low_notify_run — رماديٌّ خارجَ نافذته ومعه البيان، ولا يُخفى
 // ③ تحليلُ نتائج الفترة: v2_term_analysis(p_school, p_term, p_period, p_grade) — نطاقي في الرأس · المواد جدولًا · المتعثّرون قائمةً وتشخيصُهم تحت الدرجة
@@ -17,7 +17,6 @@
   const LOW = ['principal', 'deputy', 'deputy_academic', 'deputy_students', 'deputy_school', 'deputy_school_students', 'deputy_academic_school', 'counselor'];
   // ومن يُرسل الإشعار — المديرُ والوكيل
   const NOTIFY = ['principal', 'deputy', 'deputy_academic', 'deputy_school', 'deputy_academic_school'];
-  const STEPS = ['deputy_academic', 'deputy_academic_school'];
   const err = (box, e) => { box.textContent = ''; box.appendChild(el('div', 'notice err', errText(e))); };
 
   async function refresh() {
@@ -25,42 +24,11 @@
     V.renderRole();
     showLoadErr('');
     const r = role();
-    $('stepsCard').hidden = !STEPS.includes(r);
     $('lowCard').hidden = !LOW.includes(r);
-    const jobs = [loadAnalysis()];
-    if (STEPS.includes(r)) jobs.push(loadSteps());
+    // ما يُنتظر منّي لكلّ منسوب (تكليف ٣٧) — البابُ يعرف صاحبَه، فلا شرطَ صفة
+    const jobs = [loadAnalysis(), window.MoayadSteps.load($('stepsSum'), $('steps'))];
     if (LOW.includes(r)) jobs.push(loadLow());
     await Promise.all(jobs);
-  }
-
-  // ---------- ① ما يُنتظر منّي ----------
-  async function loadSteps() {
-    const box = $('steps');
-    const { data, error } = await M.rpc('v2_card_my_steps', { p_school: M.state.school }, 'ما يُنتظر منّي');
-    if (error) { $('stepsSum').textContent = ''; err(box, error); return; }
-    const d = data || {};
-    $('stepsSum').textContent = d.summary_ar || '';
-    box.textContent = '';
-    for (const x of d.rows || []) {
-      const f = el('div', 'rs-file' + (x.days_left < 0 ? ' rs-late' : ''));
-      f.append(el('h5', null, (x.student_ar || '') + ' — ' + (x.title_ar || '')), el('p', 'rs-meta', x.state_ar || ''));
-      const r = el('div', 'rs-row'); r.appendChild(btn('أنجزتُها', 'rs-btn', () => stepForm(x))); f.appendChild(r);
-      box.appendChild(f);
-    }
-    if (d.note_ar) box.appendChild(el('p', 'rs-meta', d.note_ar));
-    arabize($('stepsCard'));
-  }
-  function stepForm(x) {
-    V.form({
-      title: 'إنجازُ خطوة', what: (x.student_ar ? x.student_ar + ' — ' : '') + (x.title_ar || ''),
-      fields: [{ key: 'n', type: 'textarea', label: 'ما فعلتَ', rows: 3 }],
-      ok: 'أنجزتُها',
-      onOk: async (v) => {
-        const { data, error } = await M.rpc('v2_card_step_do', { p_step: x.step, p_note: v.n }, 'إنجاز خطوة');
-        if (error) return error;
-        flash('ok', (data && (data.note_ar || data.msg)) || ''); loadSteps(); return null;
-      },
-    });
   }
 
   // ---------- ② لوحةُ المتدنّين ----------

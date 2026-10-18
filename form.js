@@ -1,5 +1,6 @@
 // مؤيّد · النموذج الرسمي — يُملأ في الشاشة ويُحفظ في القاعدة، ثم يُعتمد ويُوقَّع، ويُطبع من المحفوظ.
 // form.html?form=8&student=<uuid>&ref=<record_id>&task=<task_id>
+// ورقمُه form_no_ar كما جاء (تكليف ٣٧) — ولا تحويلَ في الواجهة
 // v2_form_open · v2_form_save · v2_form_sign · v2_form_void · وسندُه وقرارُ المدرسة منه (sanad_ar · school_decision)
 // الخانات من schema والجدول من row_schema، ولا يُؤلَّف حقل ولا يُحسب شيء في الشاشة.
 (function () {
@@ -178,7 +179,7 @@
     const fin = isFinal();
     const ro = fin || !canEdit();
     document.title = 'مؤيّد · ' + (d.title_ar || 'نموذج');
-    $('barTitle').textContent = 'نموذج ' + d.form_no + ': ' + (d.title_ar || '');
+    $('barTitle').textContent = 'نموذج ' + (d.form_no_ar || d.form_no) + ': ' + (d.title_ar || '');
     const sh = $('sheet');
     sh.textContent = '';
 
@@ -187,7 +188,7 @@
     if (school) sh.appendChild(el('div', 'sch', school));
     sh.appendChild(el('h1', null, d.title_ar || ''));
     // قرارُ مدرسةٍ (school_decision من v2_form_open — تكليف ٣٥ وردُّ وكيل القاعدة): لا ترقيمَ دليلٍ ولا نسبةَ إلى وزارة — فلبسُه سندًا وزاريًّا تزوير
-    if (!d.school_decision) sh.appendChild(el('div', 'src', 'نموذج رقم ' + d.form_no + (d.source ? ' · ' + d.source : '')));
+    if (!d.school_decision) sh.appendChild(el('div', 'src', 'نموذج رقم ' + (d.form_no_ar || d.form_no) + (d.source ? ' · ' + d.source : '')));
     const st = el('div', 'fstatus ' + (fin ? 'final' : e ? 'draft' : 'new'),
       fin ? (d.final_done_ar || 'معتمد') + (e.finalized_h ? ' في ' + e.finalized_h : '') + (e.filled_role ? ' — ' + e.filled_role : '')
         : e ? 'مسوّدة محفوظة' : 'جديد — لم يُحفظ بعد');
