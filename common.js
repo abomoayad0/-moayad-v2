@@ -63,7 +63,8 @@
       href: 'hissa.html', allow: (c, me) => ['subject_teacher', 'sped_teacher'].includes(currentRole(me)) },
     // المواظبة: الحرمانُ والوقفُ والإخطار (تكليفُ الشاشات ⑧) — بالصفة النافذة كالبريد، والجسورُ تحرس كلَّ لوحةٍ وفعل
     { key: 'hirman', group: 'الإدارة', title: 'المواظبة: الحرمان والوقف', desc: 'إخطاراتُ الغياب · لوحةُ الحرمان وقرارُه · الحالاتُ الموقوفُ تصعيدُها',
-      href: 'hirman.html', allow: (c, me) => !!c.wakeel_full || MAIL_ROLES.includes(currentRole(me)) },
+      // ولا تُفتح للموجّه الطلابيّ (تكليف ٣٣) — والقاعدةُ تردّه بنصّها
+      href: 'hirman.html', allow: (c, me) => currentRole(me) !== 'counselor' && (!!c.wakeel_full || MAIL_ROLES.includes(currentRole(me))) },
     // والقاعدةُ تحرس الدخول إلى اللوحة
     { key: 'panel', group: 'الإدارة', title: 'لوحة التحكّم', desc: 'أبواب الإعداد — المقفلُ بسببه وسنده',
       href: 'panel.html', allow: (c) => !!c.manage_settings },

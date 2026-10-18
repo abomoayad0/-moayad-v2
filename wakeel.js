@@ -4,7 +4,7 @@
 // v2_entries_pending · v2_form_open(5) · v2_student_card · v2_student_tasks · v2_student_timeline(p_student, null)
 // الدرجةُ الأولى: auto[] و advice بعد الرصد · v2_advice_for · v2_census_list · v2_census_self · v2_census_assign · v2_census_sweep
 // v2_contact_log (الحقلُ يتبع النتيجة) · v2_guardian_message · v2_response_check · v2_refer_committee · وبنكُ العبارات v2_bank تحت الحقول
-// وإنجازُ المهامّ بإثباتها في tasks.js · والشكاوى ومحضرُ ضبطِ الواقعة في shakwa.js (تكاليف ٢١ · ٢٢ · ٢٣)
+// وإنجازُ المهامّ بإثباتها في tasks.js · ومتابعةُ حالات الموجّه v2_counsel_state_board (حالٌ لا مضمون — تكليف ٣٣) · والشكاوى ومحضرُ ضبطِ الواقعة في shakwa.js (تكاليف ٢١ · ٢٢ · ٢٣)
 (function () {
   'use strict';
 
@@ -80,6 +80,32 @@
     if (ui.full) window.MoayadShakwa.deputy($('cmp'));
     loadOpen();
     loadRecent();
+    loadCaseStates();
+  }
+
+  // ---------- متابعةُ الحالات (تكليف ٣٣) ----------
+  // الحالُ لا المضمون: لا نصَّ جلسةٍ ولا خطّة — ليست في الباب أصلًا · و«حدّ_اطّلاعك» أسفلها كما جاء
+  async function loadCaseStates() {
+    const card = $('csCard');
+    card.hidden = !ui.full;
+    if (!ui.full) return;
+    const box = $('cs');
+    box.textContent = '';
+    const { data, error } = await M.rpc('v2_counsel_state_board', { p_school: M.state.school }, 'متابعة الحالات');
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const d = data || {};
+    if (d['البيان']) box.appendChild(el('p', 'rs-sum', d['البيان']));
+    for (const r of d['الحالات'] || []) {
+      const f = el('div', 'rs-file click');
+      f.setAttribute('role', 'button'); f.tabIndex = 0;
+      f.appendChild(el('h5', null, [r['الطالب'], r['الصف']].filter(Boolean).join(' · ')));
+      f.appendChild(el('p', 'rs-meta', [r['المشكلة'], r['الدرجة_ar']].filter(Boolean).join(' · ')));
+      f.appendChild(el('p', null, [r['فُتحت_ar'], r['دُرست_ar'], r['جلساتها_ar'], r['آخر_حركة'] ? 'آخرُ حركة: ' + r['آخر_حركة'] : null, r['أُغلقت_ar'], r['بتقريرها'] ? 'بتقريرها ✓' : null].filter(Boolean).join(' · ')));
+      V.tap(f, () => openFromRow({ student: r['الطالب_id'], student_ar: r['الطالب'] }));
+      box.appendChild(f);
+    }
+    if (d['حدّ_اطّلاعك']) box.appendChild(el('div', 'rs-note', d['حدّ_اطّلاعك']));
+    arabize(box);
   }
 
   // ---------- صدرُ الشاشة: v2_open_records ----------

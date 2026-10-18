@@ -3,6 +3,8 @@
 // v2_counsel_board · v2_case_card · v2_case_write · v2_session_add · v2_case_report · v2_student_timeline(p_student, 'counselor')
 // وخطّةُ تعديل السلوك في بطاقة الحالة (plan.js · تكليف ⑯): الموجّهُ «القائم بتعديل السلوك» بنصّ ذيل ص٦١ — يكتبها ويُسجّل قياسَها
 // ومحضرُ التوعية لم يُبنَ في المحرّك — فيُعرض معطّلًا بسببه.
+// «مهامّي» (تكليف ٣٣): v2_counsel_my_tasks عدّادًا في الرأس، والصفُّ يفتح بطاقةَ حالة الطالب إن كانت له حالةٌ محوَّلة، وإلّا سجلَّ ملفّه — في هذي الشاشة
+// و«مكتبةُ عملي» لسانٌ هنا: v2_counsel_stages (تسعُ مراحلَ بسؤال كلٍّ) · v2_counsel_works (لي أوّلًا · وغيرُ المبنيّ رماديٌّ بلا زرّ)
 // وما كتبه إنسانٌ بيده (الدراسة · الجلسات · التقرير · ملاحظةُ الرصدة) يُعرض حرفًا بحرف: [data-raw] لا تُحوَّل أرقامُه
 (function () {
   'use strict';
@@ -32,7 +34,90 @@
     $('inboxCard').hidden = false;
     V.inbox($('inbox'), $('inboxTitle'));
     await loadBoard();
+    loadTasks();
+    if ($('libBox').open) loadLib();
   }
+
+  // ---------- «مهامّي» ----------
+  // ثلاثُ قوائم في بابٍ واحد — والصفرُ حالٌ لا خلل
+  async function loadTasks() {
+    const box = $('myTasks');
+    box.textContent = '';
+    const { data, error } = await M.rpc('v2_counsel_my_tasks', { p_school: M.state.school }, 'مهامّي');
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const d = data || {};
+    box.appendChild(el('p', 'rs-big', 'الجملة: ' + ar(d['الجملة'] == null ? 0 : d['الجملة'])));
+    if (d['البيان']) box.appendChild(el('p', 'rs-meta', d['البيان']));
+    for (const [k, n, title] of [['مهام_السلوك', 'عدد_السلوك', 'مهامُّ السلوك'], ['مهام_الغياب', 'عدد_الغياب', 'مهامُّ الغياب'], ['حالات_تنتظر_الدراسة', 'عدد_الحالات', 'حالاتٌ تنتظرُ الدراسة']]) {
+      const rows = d[k] || [];
+      box.appendChild(el('div', 'rs-label', title + ': ' + ar(d[n] == null ? rows.length : d[n])));
+      if (!rows.length) continue;
+      const ul = el('ul', 'rs-acts');
+      for (const r of rows) {
+        const li = el('li', 'click' + (r['متأخرة'] ? ' rs-red' : ''));
+        li.setAttribute('role', 'button'); li.tabIndex = 0;
+        const sp = el('span'); sp.style.flex = '1';
+        sp.append(el('b', null, [r['الطالب'], r['الصف']].filter(Boolean).join(' · ')), el('div', 'rs-meta', [r['المهمة'], r['منذ_ar'], r['موعدها']].filter(Boolean).join(' · ')));
+        li.appendChild(sp);
+        V.tap(li, () => openStudent(r['الطالب_id']));
+        ul.appendChild(li);
+      }
+      box.appendChild(ul);
+    }
+    arabize(box);
+  }
+  // بطاقتُه هنا: حالتُه المحوَّلةُ إن وُجدت في المؤشّر — وإلّا سجلُّ ملفّه (بصفة الموجّه)
+  async function openStudent(sid) {
+    if (!sid) return;
+    const c = ui.cases.find((x) => x.student_id === sid);
+    if (c) { openCase(c.case); return; }
+    $('caseCard').hidden = true;
+    await loadTimeline(sid);
+    $('tlBox').open = true;
+    $('tlCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ---------- «مكتبةُ عملي» ----------
+  // المراحلُ التسعُ بسؤال كلٍّ تحت عنوانها — لا قائمةَ أعمالٍ واحدة
+  async function loadLib() {
+    const box = $('lib');
+    box.textContent = '';
+    const { data, error } = await M.rpc('v2_counsel_stages', { p_school: M.state.school }, 'مراحل عمل الموجّه');
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const d = data || {};
+    if (d['البيان']) box.appendChild(el('p', 'rs-sum', d['البيان']));
+    if (d['جملة_البيان']) box.appendChild(el('p', 'rs-meta', d['جملة_البيان']));
+    for (const s of (d['المراحل'] || []).slice().sort((a, b) => (a['الترتيب'] || 0) - (b['الترتيب'] || 0))) {
+      const f = el('div', 'rs-file');
+      f.append(el('h5', null, s['المرحلة'] || ''), el('p', 'rs-big', s['السؤال'] || ''));
+      if (s['البيان']) f.appendChild(el('p', 'rs-meta', s['البيان']));
+      const w = el('div');
+      f.appendChild(btn('أعمالُ هذي المرحلة', 'rs-btn soft', () => loadWorks(w, s['مفتاح'])));
+      f.appendChild(w);
+      box.appendChild(f);
+    }
+    arabize(box);
+  }
+  async function loadWorks(box, stage) {
+    box.textContent = '';
+    const { data, error } = await M.rpc('v2_counsel_works', { p_school: M.state.school, p_stage: stage }, 'أعمال المرحلة');
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); return; }
+    const d = data || {};
+    if (d['البيان']) box.appendChild(el('p', 'rs-meta', d['البيان']));
+    // «لي» أوّلًا — وما لغيره يراه ليعرف موضعَه منه · والسرّيُّ بلا مشاركة · وغيرُ المبنيّ رماديٌّ بلا زرّ
+    const rows = (d['الأعمال'] || []).slice().sort((a, b) => (b['لي'] === true) - (a['لي'] === true) || (a['الترتيب'] || 0) - (b['الترتيب'] || 0));
+    for (const x of rows) {
+      const f = el('div', 'rs-file' + (x['حاله_عندنا'] === 'غيرُ مبنيّ' ? ' rs-prev' : ''));
+      f.appendChild(el('h5', null, x['العمل'] || ''));
+      f.appendChild(el('p', 'rs-meta', [x['نوعه'], x['المجموعة'], x['النموذج'] ? 'النموذج ' + x['النموذج'] : null, x['حاله_عندنا'], x['سنده'], x['سرّي'] ? 'سرّي' : null, x['لي'] ? null : (x['مالكه_ar'] ? 'لغيرك: ' + x['مالكه_ar'] : 'لغيرك')].filter(Boolean).join(' · ')));
+      if (x['مما_يعبّأ']) f.appendChild(el('p', 'rs-meta', x['مما_يعبّأ']));
+      if (x['ملاحظة']) f.appendChild(el('p', 'rs-meta', x['ملاحظة']));
+      box.appendChild(f);
+    }
+    if (!rows.length) box.appendChild(el('p', 'rs-empty', 'لا أعمال.'));
+    arabize(box);
+  }
+  $('libBox').addEventListener('toggle', () => { if ($('libBox').open && !$('lib').children.length) loadLib(); });
 
   // ---------- ② المؤشّر ----------
   async function loadBoard() {
