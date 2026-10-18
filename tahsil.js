@@ -145,8 +145,8 @@
     // نطاقي في الرأس: «موادّي أنا» أو «المدرسة كلّها»
     if (d['نطاقي']) box.appendChild(el('p', 'rs-big', d['نطاقي']));
     if (d['الفترة_ar']) box.appendChild(el('p', 'rs-meta', d['الفترة_ar']));
-    // درجاتٌ لم تُرصد ⇒ التحليلُ ناقص — تحذيرٌ في الرأس
-    if (Number(d['بلا_درجات']) > 0) box.appendChild(el('div', 'rs-need', 'درجاتٌ لم تُرصدْ بعد — والتحليلُ ناقصٌ حتّى تُرصد'));
+    // درجاتٌ لم تُرصد ⇒ التحليلُ ناقص — بلا_درجات_ar تحذيرًا في الرأس كما جاءت (null ⇒ لا سطر)
+    if (d['بلا_درجات_ar']) box.appendChild(el('div', 'rs-need', d['بلا_درجات_ar']));
     if (d['البيان']) box.appendChild(el('p', 'rs-said', d['البيان']));
     const subs = d['المواد'] || [];
     if (subs.length) {

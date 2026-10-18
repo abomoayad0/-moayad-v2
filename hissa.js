@@ -7,7 +7,7 @@
 //    ممارسات/إيجابيات: v2_card_act (practice) · ملاحظة: v2_card_act (note) · تصحيح: v2_card_undo · اللائحة: v2_conduct_list ⇒ v2_record_behavior
 //    واجب: v2_work_set · v2_work_void · خروج: v2_exit_out · v2_exit_back · دور: v2_role_assign · v2_role_end
 //    رصيدُ الممارسات: practice_balance (مرآةٌ لا درجة) · ونقاطُ الولاء الآليّةُ لا أزرارَ لها (can_grant يحمل اليدويَّ وحده)
-//    كشفُ التسليم: v2_work_roll · v2_work_mark · v2_work_mark_rest · ومِصفاةُ الميدان: track من v2_practices · والإحالة: ihala.js (تكليف ٣٤)
+//    كشفُ التسليم: v2_work_roll · v2_work_mark · v2_work_mark_rest · ومِصفاةُ الميدان: track من ممارسة البطاقة · والإحالة: ihala.js (تكليف ٣٤)
 //    تتمّتُها: v2_badges_of_student · v2_work_of_student · v2_contacts_of · v2_student_timeline · ومجالاتُ الممارسات: v2_practice_scopes · ونصيحةُ اللائحة: v2_advice_for
 //    كشفُ الحضور (لوحة ٤): v2_session_sheet (قارئ) · v2_period_states · v2_record_period — و v2_session_attendance كاتبٌ يُقفل
 //    صحّته: v2_card_health للقراءة وحدها (health_from) · الدرسُ من v2_session_lesson_options · وأنواعُ العمل من v2_work_kinds · نقاطُ الولاء: v2_loyalty_catalog · v2_loyalty_wallet · v2_loyalty_record · v2_loyalty_spend · v2_loyalty_undo
@@ -658,21 +658,10 @@
     const list = el('div', 'rs-list');
     const sp = el('div', 'rs-pick');
     let scope = null;
-    // مِصفاةُ الميدان (تكليف ٣٤): «الكلّ · تحصيليّ · سلوكيّ» — track من v2_practices بمفتاح الرمز، فممارساتُ البطاقة لا تحمله
+    // مِصفاةُ الميدان (تكليف ٣٤): «الكلّ · تحصيليّ · سلوكيّ» — track تحمله ممارسةُ البطاقة نفسُها
     const tp = el('div', 'rs-pick');
     let track = null;
-    const trackOf = (code) => (ui.tracks && ui.tracks[code]) || null;
-    const drawTracks = () => {
-      if (!ui.tracks) return;
-      V.pick(tp, [[null, 'الكلّ'], ['تحصيلي', 'تحصيليّ'], ['سلوكي', 'سلوكيّ']], track, (v) => { track = v; paint(); });
-    };
-    if (ui.tracks) drawTracks();
-    else M.rpc('v2_practices', { p_school: M.state.school, p_scope: null, p_polarity: null }, 'ميادين الممارسات').then((r) => {
-      if (r.error) return;
-      ui.tracks = {};
-      for (const x of arr(r.data)) ui.tracks[x.code] = x.track;
-      drawTracks(); paint();
-    });
+    V.pick(tp, [[null, 'الكلّ'], ['تحصيلي', 'تحصيليّ'], ['سلوكي', 'سلوكيّ']], track, (v) => { track = v; paint(); });
     const drawScopes = () => {
       const have = new Set(all.map((x) => x.scope));
       const items = (ui.scopes || []).filter((x) => have.has(x.key)).sort((a, b) => (a.ord || 0) - (b.ord || 0)).map((x) => [x.key, x.label || '']);
@@ -683,7 +672,7 @@
     const paint = () => {
       list.textContent = '';
       const t = q.value.trim();
-      for (const p of all.filter((x) => (!t || (x.title_ar || '').includes(t)) && (!scope || x.scope === scope) && (!track || trackOf(x.code) === track))) {
+      for (const p of all.filter((x) => (!t || (x.title_ar || '').includes(t)) && (!scope || x.scope === scope) && (!track || x.track === track))) {
         const b = btn('', 'rs-item', () => practiceForm(p));
         b.append(el('b', null, p.title_ar || ''), el('small', null, [p.points_ar, p.done_today ? 'رُصدت اليومَ' : null, p.threshold_ar, p.once_ar].filter(Boolean).join(' · ')));
         list.appendChild(b);
