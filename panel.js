@@ -393,6 +393,8 @@
     if (p.threshold_count) bits.push('الحدّ: ' + p.threshold_count + (p.threshold_days ? ' خلال ' + p.threshold_days + ' يومًا' : ''));
     if (p.escalate_to) bits.push('تُصعَّد إلى المخالفة ' + p.escalate_to);
     row.appendChild(el('div', 'meta', bits.join(' · ')));
+    // ميدانُها ومن تُفتحُ عليه خطوتُها (تكليف ٣٤) — في تفصيل الممارسة لا في لحظة الرصد
+    if (p.track_ar || p.due_owner_ar) row.appendChild(el('div', 'meta', [p.track_ar, p.due_owner_ar ? 'خطوتُها على: ' + p.due_owner_ar : null].filter(Boolean).join(' · ')));
     if (p.escalate_note) row.appendChild(el('div', 'meta', p.escalate_note));
     if (p.note) row.appendChild(el('div', 'meta', p.note));
     const acts = el('div', 'acts ' + (p.edited ? 'three' : 'two'));

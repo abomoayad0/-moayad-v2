@@ -391,7 +391,7 @@
   }
 
   // ---------- ⑤ رصدُ المناوب ----------
-  const rs = { zone: null, all: false, stu: null };
+  const rs = { zone: null, all: false, stu: null, track: null };
   async function recordTool(box) {
     box.textContent = '';
     const me = (M.state.me && M.state.me.person_id) || null;
@@ -459,12 +459,16 @@
       arabize(sbox);
     }, 250); });
     // ③ الممارسات: موضعُه أوّلًا (الموجبةُ ثمّ السالبة) · و«اعرضْ الكلّ»
+    // مِصفاةُ الميدان (تكليف ٣٤): «الكلّ · تحصيليّ · سلوكيّ» — track من v2_practices
+    const tp = el('div', 'rs-pick');
+    box.appendChild(tp);
     const pbox = el('div');
     box.appendChild(pbox);
     const all = arr(pp.data);
+    V.pick(tp, [[null, 'الكلّ'], ['تحصيلي', 'تحصيليّ'], ['سلوكي', 'سلوكيّ']], rs.track || null, (v) => { rs.track = v; drawPrac(); });
     const drawPrac = () => {
       pbox.textContent = '';
-      const list = rs.all || !rs.zone ? all : all.filter((p) => p.zone === rs.zone);
+      const list = (rs.all || !rs.zone ? all : all.filter((p) => p.zone === rs.zone)).filter((p) => !rs.track || p.track === rs.track);
       for (const [pol, title] of [['positive', 'الموجبة'], ['negative', 'السالبة']]) {
         const part = list.filter((p) => p.polarity === pol);
         if (!part.length) continue;

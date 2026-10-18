@@ -7,6 +7,7 @@
 //    ممارسات/إيجابيات: v2_card_act (practice) · ملاحظة: v2_card_act (note) · تصحيح: v2_card_undo · اللائحة: v2_conduct_list ⇒ v2_record_behavior
 //    واجب: v2_work_set · v2_work_void · خروج: v2_exit_out · v2_exit_back · دور: v2_role_assign · v2_role_end
 //    رصيدُ الممارسات: practice_balance (مرآةٌ لا درجة) · ونقاطُ الولاء الآليّةُ لا أزرارَ لها (can_grant يحمل اليدويَّ وحده)
+//    كشفُ التسليم: v2_work_roll · v2_work_mark · v2_work_mark_rest · ومِصفاةُ الميدان: track من v2_practices · والإحالة: ihala.js (تكليف ٣٤)
 //    تتمّتُها: v2_badges_of_student · v2_work_of_student · v2_contacts_of · v2_student_timeline · ومجالاتُ الممارسات: v2_practice_scopes · ونصيحةُ اللائحة: v2_advice_for
 //    كشفُ الحضور (لوحة ٤): v2_session_sheet (قارئ) · v2_period_states · v2_record_period — و v2_session_attendance كاتبٌ يُقفل
 //    صحّته: v2_card_health للقراءة وحدها (health_from) · الدرسُ من v2_session_lesson_options · وأنواعُ العمل من v2_work_kinds · نقاطُ الولاء: v2_loyalty_catalog · v2_loyalty_wallet · v2_loyalty_record · v2_loyalty_spend · v2_loyalty_undo
@@ -278,14 +279,76 @@
     const rows = arr(r.data);
     if (!rows.length) { box.appendChild(el('p', 'rs-meta', board ? 'لا عملَ قائمٌ في هذا الفصل.' : 'لا عملَ عليه.')); return; }
     for (const w of rows) {
-      const f = el('div', 'rs-file');
+      // في سجلّ الطالب: المستدرَكُ باهتٌ ومعه «استُدركت» — لا يُخفى ولا يُشطب (تكليف ٣٤) · redeemed · counted
+      const f = el('div', 'rs-file' + (!board && w.redeemed ? ' rs-faded' : ''));
       const h = el('h5', null, [w.kind_ar, w.subject, w.student_ar].filter(Boolean).join(' · '));
       if (w.voided) h.style.textDecoration = 'line-through';
+      if (!board && w.state) h.appendChild(el('span', 'rs-tag' + (w.state === 'لم يُرصد' ? '' : ' own'), w.state));
+      if (!board && w.redeemed) h.appendChild(el('span', 'rs-tag', 'استُدركت'));
+      if (!board && w.counted) h.appendChild(el('span', 'rs-tag', 'محسوبةٌ عليه'));
       f.append(h, V.typed(w.body || '', 'p'), V.line('p', 'rs-meta', [w.page ? V.typed(w.page) : null, w.due_ar, w.scope_ar, w.by_ar, w.late ? 'متأخّر' : null]));
       if (w.voided) f.appendChild(V.line('p', 'rs-meta', ['أُلغي:', V.typed(w.void_reason || '')], ' '));
-      else if (w.mine) { const rr = el('div', 'rs-row'); rr.appendChild(btn('ألغِه', 'rs-btn', () => voidWork(w))); f.appendChild(rr); }
+      else {
+        // كشفُ التسليم زرٌّ في بطاقة العمل (تكليف ٣٤) — والبابُ يقبله ممّن كلّف به أو يُدرّس مادّتَه في الفصل
+        const rr = el('div', 'rs-row');
+        if (board && w.id) rr.appendChild(btn('كشفُ التسليم', 'rs-btn soft', () => rollSheet(w)));
+        if (w.mine) rr.appendChild(btn('ألغِه', 'rs-btn', () => voidWork(w)));
+        f.appendChild(rr);
+      }
       box.appendChild(f);
     }
+  }
+  // كشفُ التسليم: v2_work_roll · v2_work_mark · v2_work_mark_rest — «الباقون سلّموا» في الأعلى، ثمّ القائمةُ يُقلَب فيها حالُ من لم يُسلّم
+  // والأحوالُ أربعٌ يختارها المعلّم — و«لم يُرصد» فراغٌ قبل الرصد لا زرّ · و«لم يسلّم» في الواجب تُولّد رصدتَها بنفسها
+  const ROLL_STATES = ['سلّم', 'لم يسلّم', 'سلّم متأخّرًا', 'معذور'];
+  function rollSheet(w) {
+    const node = el('div');
+    const said = el('div', 'rs-said'); said.hidden = true;
+    const body = el('div');
+    node.append(said, body);
+    let busy = false;
+    const say = (t) => { said.textContent = t || ''; said.hidden = !t; arabize(said); };
+    const act = async (fn, args, label) => {
+      if (busy) return; busy = true;
+      const { data, error } = await M.rpc(fn, args, label);
+      busy = false;
+      if (error) { say(errText(error)); return; }
+      say((data && data['البيان']) || '');
+      await load();
+    };
+    const load = async () => {
+      const { data, error } = await M.rpc('v2_work_roll', { p_work: w.id }, 'كشف التسليم');
+      body.textContent = '';
+      if (error) { body.appendChild(el('div', 'notice err', errText(error))); arabize(body); return; }
+      const d = data || {};
+      const wk = d['العمل'] || {};
+      body.appendChild(V.line('p', 'rs-meta', [wk['النوع'], wk['المادّة'], wk['موعده_ar'], wk['مضى_موعده'] ? 'مضى موعدُه' : null]));
+      if (d['البيان']) body.appendChild(el('p', 'rs-meta', d['البيان']));
+      const c = d['العدّادات'] || {};
+      // العدّاداتُ بألفاظ مفاتيحها كما جاءت
+      body.appendChild(el('p', null, Object.keys(c).map((k) => k.replace(/_/g, ' ') + ' ' + c[k]).join(' · ')));
+      const top = el('div', 'rs-row');
+      top.appendChild(btn('الباقون سلّموا', 'rs-btn pri', () => act('v2_work_mark_rest', { p_work: w.id, p_state: 'سلّم' }, 'الباقون سلّموا')));
+      body.appendChild(top);
+      for (const s of d['الطلاب'] || []) {
+        const r = el('div', 'rs-roll' + (s['استُدركت'] ? ' rs-faded' : ''));
+        const h = el('b', null, s['الطالب'] || '');
+        r.appendChild(h);
+        r.appendChild(el('span', 'rs-tag' + (s['الحال'] === 'لم يُرصد' ? '' : ' own'), s['الحال'] || ''));
+        if (s['استُدركت']) r.appendChild(el('span', 'rs-tag', 'استُدركت'));
+        if (s['رُصدت_عليه']) r.appendChild(el('span', 'rs-tag', 'رُصدت عليه'));
+        if (s['ملاحظة']) r.appendChild(V.typed(s['ملاحظة'], 'p', 'rs-meta'));
+        const pk = el('div', 'rs-pick');
+        V.pick(pk, ROLL_STATES.map((x) => [x, x]), s['الحال'], (v) => act('v2_work_mark', { p_work: w.id, p_student: s['الطالب_id'], p_state: v, p_note: null }, 'رصد التسليم'));
+        r.appendChild(pk);
+        body.appendChild(r);
+      }
+      if (!(d['الطلاب'] || []).length) body.appendChild(el('p', 'rs-meta', 'لا طالبَ في كشف هذا العمل.'));
+      arabize(body);
+    };
+    V.form({ title: 'كشفُ التسليم', what: w.body || '', fields: [{ key: 'roll', type: 'node', node }], ok: false, cancel: 'أغلِق' });
+    body.appendChild(el('p', 'rs-meta', 'جارٍ الجلب…'));
+    load();
   }
   function voidWork(w) {
     V.form({
@@ -340,6 +403,13 @@
         head.appendChild(p);
       }
     }
+    // الإحالةُ في الخطّة العلاجيّة (تكليف ٣٤) — ظاهرةٌ ومعها أنّ البابَ يردّ من لم يبلغ بابًا من أبوابها
+    if (window.MoayadIhala.can()) {
+      const rf = el('div', 'rs-row');
+      rf.appendChild(window.MoayadIhala.button({ id: ui.stu.id, name: (c.student && c.student.name_ar) || ui.stu.name }, null));
+      head.appendChild(rf);
+      head.appendChild(el('p', 'rs-meta', window.MoayadIhala.TEACHER_NOTE));
+    }
     renderTabs();
     renderLoyalty();
     renderMore();
@@ -374,7 +444,12 @@
       const { data, error } = await M.rpc('v2_work_of_student', { p_student: stu.id }, 'أعمال الطالب');
       if (error) { err(b, error); return; }
       const rows = arr(data);
-      for (const x of rows) b.appendChild(V.line('p', null, [x.kind_ar, x.subject, x.body ? V.typed(x.body) : null, x.due_ar, x.by_ar]));
+      for (const x of rows) {
+        const p = V.line('p', x.redeemed ? 'rs-faded' : null, [x.kind_ar, x.subject, x.body ? V.typed(x.body) : null, x.due_ar, x.by_ar, x.state]);
+        if (x.redeemed) p.appendChild(el('span', 'rs-tag', 'استُدركت'));
+        if (x.counted) p.appendChild(el('span', 'rs-tag', 'محسوبةٌ عليه'));
+        b.appendChild(p);
+      }
       if (!rows.length) b.appendChild(el('p', 'rs-meta', 'لا أعمالَ مسندةً إليه.'));
     });
     part('اتّصالُ المدرسة بوليّه', async (b) => {
@@ -583,6 +658,21 @@
     const list = el('div', 'rs-list');
     const sp = el('div', 'rs-pick');
     let scope = null;
+    // مِصفاةُ الميدان (تكليف ٣٤): «الكلّ · تحصيليّ · سلوكيّ» — track من v2_practices بمفتاح الرمز، فممارساتُ البطاقة لا تحمله
+    const tp = el('div', 'rs-pick');
+    let track = null;
+    const trackOf = (code) => (ui.tracks && ui.tracks[code]) || null;
+    const drawTracks = () => {
+      if (!ui.tracks) return;
+      V.pick(tp, [[null, 'الكلّ'], ['تحصيلي', 'تحصيليّ'], ['سلوكي', 'سلوكيّ']], track, (v) => { track = v; paint(); });
+    };
+    if (ui.tracks) drawTracks();
+    else M.rpc('v2_practices', { p_school: M.state.school, p_scope: null, p_polarity: null }, 'ميادين الممارسات').then((r) => {
+      if (r.error) return;
+      ui.tracks = {};
+      for (const x of arr(r.data)) ui.tracks[x.code] = x.track;
+      drawTracks(); paint();
+    });
     const drawScopes = () => {
       const have = new Set(all.map((x) => x.scope));
       const items = (ui.scopes || []).filter((x) => have.has(x.key)).sort((a, b) => (a.ord || 0) - (b.ord || 0)).map((x) => [x.key, x.label || '']);
@@ -593,7 +683,7 @@
     const paint = () => {
       list.textContent = '';
       const t = q.value.trim();
-      for (const p of all.filter((x) => (!t || (x.title_ar || '').includes(t)) && (!scope || x.scope === scope))) {
+      for (const p of all.filter((x) => (!t || (x.title_ar || '').includes(t)) && (!scope || x.scope === scope) && (!track || trackOf(x.code) === track))) {
         const b = btn('', 'rs-item', () => practiceForm(p));
         b.append(el('b', null, p.title_ar || ''), el('small', null, [p.points_ar, p.done_today ? 'رُصدت اليومَ' : null, p.threshold_ar, p.once_ar].filter(Boolean).join(' · ')));
         list.appendChild(b);
@@ -603,7 +693,7 @@
     q.addEventListener('input', paint);
     // الممارساتُ دفترٌ منفصلٌ عن دليل السلوك ومحفظة الولاء — والنصُّ من الباب
     if (ui.card.practices_note_ar) box.appendChild(el('p', 'rs-meta', ui.card.practices_note_ar));
-    box.append(sp, q, list);
+    box.append(tp, sp, q, list);
     paint();
     // ممارساتُ مادّتي للمادّة الجارية (تكليف ⑳): card_practices لا يعرف المادّة، فتُضمّ إليها من v2_plan_practices · والرصدُ بـ v2_record_practice
     const mine = el('div');

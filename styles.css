@@ -745,3 +745,13 @@ ul.rs-acts li.click:hover { background: var(--soft); border-radius: 8px; }
 .rs-orange { color: #b25d00; font-weight: 700; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .rs-orange { color: #f0a050; } }
 :root[data-theme="dark"] .rs-orange { color: #f0a050; }
+/* التحصيلُ الدراسيّ (تكليفا ٣٤ · ٣٥) */
+.rs-big { font-size: 16px; font-weight: 700; color: var(--ink); margin: 4px 0; }
+.rs-grey { color: var(--mute); }
+.rs-table tr.rs-tblnote td { color: var(--mute); font-size: 12.5px; border-bottom: 1px solid var(--line); padding-top: 0; }
+/* «استُدركت»: باهتةٌ لا مشطوبة — حدثت ثمّ عولجت */
+.rs-faded { opacity: .55; }
+.rs-faded .rs-tag { opacity: 1; }
+/* كشفُ التسليم */
+.rs-roll { border-top: 1px solid var(--line); padding: 8px 0; }
+.rs-roll .rs-pick span { font-size: 13px; }

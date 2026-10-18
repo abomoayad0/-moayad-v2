@@ -1,6 +1,6 @@
 // مؤيّد · النموذج الرسمي — يُملأ في الشاشة ويُحفظ في القاعدة، ثم يُعتمد ويُوقَّع، ويُطبع من المحفوظ.
 // form.html?form=8&student=<uuid>&ref=<record_id>&task=<task_id>
-// v2_form_open · v2_form_save · v2_form_sign · v2_form_void
+// v2_form_open · v2_form_save · v2_form_sign · v2_form_void · وسندُه وقرارُ المدرسة من v2_forms_catalog (sanad_ar · school_decision)
 // الخانات من schema والجدول من row_schema، ولا يُؤلَّف حقل ولا يُحسب شيء في الشاشة.
 (function () {
   'use strict';
@@ -18,7 +18,7 @@
     form: Number(q.get('form')), student: q.get('student') || null,
     ref: q.get('ref') || null, task: q.get('task') || null,
   };
-  const ui = { doc: null, rows: [] };
+  const ui = { doc: null, rows: [], cat: null };
   // داخل نافذة المهامّ (embed=1): يُبلغ الشاشة الأمّ بكل تغيير
   const EMBED = q.get('embed') === '1' && window.parent !== window;
   if (EMBED) document.body.classList.add('embed');
@@ -186,7 +186,9 @@
     const school = auto.school || (d.doc && d.doc.school);
     if (school) sh.appendChild(el('div', 'sch', school));
     sh.appendChild(el('h1', null, d.title_ar || ''));
-    sh.appendChild(el('div', 'src', 'نموذج رقم ' + d.form_no + (d.source ? ' · ' + d.source : '')));
+    // قرارُ مدرسةٍ (school_decision من الفهرس — تكليف ٣٥): لا ترقيمَ دليلٍ ولا نسبةَ إلى وزارة — فلبسُه سندًا وزاريًّا تزوير
+    const cat = ui.cat || {};
+    if (!cat.school_decision) sh.appendChild(el('div', 'src', 'نموذج رقم ' + d.form_no + (d.source ? ' · ' + d.source : '')));
     const st = el('div', 'fstatus ' + (fin ? 'final' : e ? 'draft' : 'new'),
       fin ? (d.final_done_ar || 'معتمد') + (e.finalized_h ? ' في ' + e.finalized_h : '') + (e.filled_role ? ' — ' + e.filled_role : '')
         : e ? 'مسوّدة محفوظة' : 'جديد — لم يُحفظ بعد');
@@ -332,6 +334,8 @@
       v.addEventListener('click', voidEntry);
       sh.appendChild(v);
     }
+    // سندُه من الفهرس (sanad_ar) أسفلَ النموذج كما جاء
+    if (cat.sanad_ar) sh.appendChild(el('div', 'src sanad', cat.sanad_ar));
     sh.hidden = false;
   }
 
@@ -446,6 +450,12 @@
     if (error) { showLoadErr('تعذّر فتح النموذج: ' + errText(error)); return; }
     if (!data) { showLoadErr('لم يُرجع النموذج شيئاً.'); return; }
     ui.doc = data;
+    // الفهرسُ يحمل sanad_ar وschool_decision — وv2_form_open لا يحملهما
+    const sc = M.state.me && M.state.me.acting_school;
+    if (sc && !ui.cat) {
+      const { data: c } = await M.rpc('v2_forms_catalog', { p_school: sc }, 'فهرس النماذج');
+      ui.cat = (Array.isArray(c) ? c : []).find((x) => Number(x.no) === P.form) || {};
+    }
     // المحفوظ أولاً، ثم ما في auto_rows ولم يُحفظ بعد (ما دام النموذج لم يُعتمد)
     ui.rows = ((data.entry && data.entry.rows) || []).map((r) => Object.assign({}, r));
     if (!(data.entry && data.entry.status === 'final')) {

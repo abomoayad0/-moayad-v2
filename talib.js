@@ -3,6 +3,7 @@
 // 🔴 حساباتُ الطلاب مغلقة، ولا جسرَ في القاعدة يعرّف الطالبَ بحسابه — فلا تُفتح الصفحةُ لطالبٍ حتى يُبنى.
 //    وتُفتح معاينةً للمنسوب الذي يملك student_card بـ ?student=… — للقراءة وحدها، وأفعالُها معطّلة.
 //    (v2_entry_file · ونموذجُ المشاركة يُرفع إلى upload_to من mine)
+// أعمالي (تكليف ٣٤): v2_student_work — بحساب الطالب وحدَه
 // شكوى أو بلاغ (تكاليف ٢١ · ٢٣): shakwa.js — بلوحةِ الرسم، ولا خيارَ «على معلّم»، واختيارُ الزملاءِ لا بابَ له للطالب بعد
 // ولا بنكَ عباراتٍ هنا — كلامُ الطالب شهادةٌ لا تُملى عليه. ولا اسمَ زميلٍ ولا درجتَه.
 (function () {
@@ -36,6 +37,28 @@
     renderOpen(o.error);
     renderEvid(o.error);
     renderRecs(tl);
+    renderWorks();
+  }
+
+  // أعمالي: v2_student_work بحساب الطالب وحدَه (auth.uid) — state_ar كما جاءت، ولا عدّادَ «بلغتَ كذا من كذا» (قرارُ مفرح)
+  // والمعاينةُ من منسوبٍ لا تقرؤها: البابُ يعرف الطالبَ بحسابه لا بـ?student=
+  async function renderWorks() {
+    const box = $('works');
+    box.textContent = '';
+    if (ui.preview) { box.appendChild(el('p', 'rs-meta', 'أعمالي تُقرأ بحساب الطالب وحدَه — والمعاينةُ لا تفتحها.')); return; }
+    const { data, error } = await M.rpc('v2_student_work', undefined, 'أعمالي');
+    if (error) { box.appendChild(el('div', 'notice err', errText(error))); arabize(box); return; }
+    const rows = Array.isArray(data) ? data : [];
+    for (const w of rows) {
+      const f = el('div', 'rs-file' + (w.late ? ' rs-late' : ''));
+      f.appendChild(el('h5', null, [w.kind_ar, w.subject, w.for_me_alone ? 'لي وحدي' : null].filter(Boolean).join(' · ')));
+      if (w.body) f.appendChild(V.typed(w.body, 'p'));
+      f.appendChild(V.line('p', 'rs-meta', [w.page ? V.typed(w.page) : null, w.due_ar, w.by_ar]));
+      if (w.state_ar) f.appendChild(el('p', 'rs-need', w.state_ar));
+      box.appendChild(f);
+    }
+    if (!rows.length) box.appendChild(el('p', 'rs-meta', 'لا عملَ عليك الآن.'));
+    arabize(box);
   }
 
   // خطّتي كما ترجع: السلوكُ المستهدف وحالُها وإجراءاتُها — ولا تُعرض إن لم تُكتب له خطّة
