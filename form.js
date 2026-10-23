@@ -197,6 +197,8 @@
     if (!fin && goesText()) sh.appendChild(el('div', 'goes noprint', 'عند الاعتماد يصل إلى: ' + goesText()));
     if (!fin && !canEdit()) sh.appendChild(el('div', 'notice err noprint', M.lacks('تعبئة هذا النموذج') + ' يُعرض للاطّلاع.'));
 
+    // سرّيّةُ النموذج (secrecy_ar · تكليف ٣٦): تحذيرٌ ظاهرٌ فوق الحقول قبل أن يُكتب — كما جاء
+    if (d.secrecy_ar) sh.appendChild(el('div', 'secret', '🔒 ' + d.secrecy_ar));
     // الخانات
     const data = (e && e.data) || {};
     const t = el('table', 'kv');

@@ -5,6 +5,7 @@
 // ومحضرُ التوعية لم يُبنَ في المحرّك — فيُعرض معطّلًا بسببه.
 // «مهامّي» (تكليف ٣٣): v2_counsel_my_tasks عدّادًا في الرأس، والصفُّ يفتح بطاقةَ حالة الطالب إن كانت له حالةٌ محوَّلة، وإلّا سجلَّ ملفّه — في هذي الشاشة
 // و«مكتبةُ عملي» لسانٌ هنا: v2_counsel_stages (تسعُ مراحلَ بسؤال كلٍّ) · v2_counsel_works (لي أوّلًا · وغيرُ المبنيّ رماديٌّ بلا زرّ)
+// و«سجلّاتي» (تكليف ٣٦ · riaya.js): فهرسُ سجلّات الرعاية بعدّاداتها · وسجلّاتُ رعاية الطالب في ملفّه — منه يُوسَم ويُخرَج بسبب
 // وما كتبه إنسانٌ بيده (الدراسة · الجلسات · التقرير · ملاحظةُ الرصدة) يُعرض حرفًا بحرف: [data-raw] لا تُحوَّل أرقامُه
 (function () {
   'use strict';
@@ -29,7 +30,9 @@
     showLoadErr('');
     V.renderRole();
     ui.caseId = null; ui.card = null;
-    $('caseCard').hidden = true; $('tlCard').hidden = true;
+    $('caseCard').hidden = true; $('tlCard').hidden = true; $('careCard').hidden = true;
+    $('riaya').textContent = '';
+    if ($('riayaBox').open) window.MoayadRiaya.tab($('riaya'), openStudent);
     // صندوقُه: نموذجُ الإحالة (٧) يصله سرًّا هنا وحدَه
     $('inboxCard').hidden = false;
     V.inbox($('inbox'), $('inboxTitle'));
@@ -118,6 +121,8 @@
     arabize(box);
   }
   $('libBox').addEventListener('toggle', () => { if ($('libBox').open && !$('lib').children.length) loadLib(); });
+  // «سجلّاتي» (تكليف ٣٦) — riaya.js · والطالبُ يُفتح ملفُّه هنا
+  $('riayaBox').addEventListener('toggle', () => { if ($('riayaBox').open && !$('riaya').children.length) window.MoayadRiaya.tab($('riaya'), openStudent); });
 
   // ---------- ② المؤشّر ----------
   async function loadBoard() {
@@ -425,6 +430,9 @@
     const box = $('timeline');
     if (error) { box.textContent = ''; box.appendChild(el('div', 'notice err', errText(error))); return; }
     const evs = (data && data.events) || [];
+    // سجلّاتُ رعايته — ووسمُه من ملفّه (تكليف ٣٦)
+    $('careCard').hidden = false;
+    window.MoayadRiaya.studentBlock($('care'), { id: sid, name: (ui.card && ui.card.student && ui.card.student.name && ui.card.case && ui.card.case.student_id === sid) ? ui.card.student.name : (data && (data.student_ar || data.name_ar)) || '' });
     $('tlSum').textContent = 'سجلُّ الملفّ (' + ar(evs.length) + ') — تنظر بصفة ' + ((data && data.as_ar) || '—');
     V.events(box, evs);
   }
