@@ -197,8 +197,16 @@
     if (!fin && goesText()) sh.appendChild(el('div', 'goes noprint', 'عند الاعتماد يصل إلى: ' + goesText()));
     if (!fin && !canEdit()) sh.appendChild(el('div', 'notice err noprint', M.lacks('تعبئة هذا النموذج') + ' يُعرض للاطّلاع.'));
 
-    // سرّيّةُ النموذج (secrecy_ar · تكليف ٣٦): تحذيرٌ ظاهرٌ فوق الحقول قبل أن يُكتب — كما جاء
-    if (d.secrecy_ar) sh.appendChild(el('div', 'secret', '🔒 ' + d.secrecy_ar));
+    // سرّيّةُ النموذج (تكليفا ٣٦ و«تمييزُ الدرجات» ٢٣/١٠) — فوق الحقول قبل أن يُكتب:
+    // الشكلُ من secrecy_level وحدَه (لا مطابقةَ نصٍّ أبدًا) · واللفظُ من secrecy_ar كما جاء
+    // ودرجةٌ لا تعرفها الشاشةُ تُعرض بأحوط الأشكال (كـtop_secret) ولفظُها ظاهر
+    // وقيدُ المحتوى (secrecy_rule_ar) نصٌّ محايدٌ بقفل — لا يدخل سلّمَ الدرجات البتّة
+    const LEVELS = { top_secret: 'lv-top', secret: 'lv-secret', school_only: 'lv-school' };
+    if (d.secrecy_level) {
+      const cls = LEVELS[d.secrecy_level] || 'lv-top';
+      sh.appendChild(el('div', 'secret ' + cls, (cls === 'lv-top' ? '⛔ ' : '🔒 ') + (d.secrecy_ar || '')));
+    }
+    if (d.secrecy_rule_ar) sh.appendChild(el('div', 'secret lv-rule', '🔒 ' + d.secrecy_rule_ar));
     // الخانات
     const data = (e && e.data) || {};
     const t = el('table', 'kv');
