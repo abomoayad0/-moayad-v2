@@ -4,7 +4,8 @@
 //    v2_care_kind_add(p_school, p_label, p_secret, p_note, p_ord) — ووضعُه «وسم» دائمًا · ويُرجع سنده
 //    v2_care_kind_set(p_school, p_key, p_hidden, p_label, p_ord, p_note) — ولا مفتاحَ سرّيّةٍ هنا: السرّيُّ يبقى سرّيًّا
 // ② أرقامُ المدرسة: v2_rules(p_school) ⇒ الأرقام [المفتاح · البند · القيمة · الأصل · الوحدة · أدنى · أقصى · المصدر · سنده · علّته · يُضبَط · ضبطتْه_مدرستُك]
-//    v2_rule_set(p_school, p_key, p_value, p_why) — والمقفلُ يُعرض بسنده ولا يُخفى · ولا زرَّ «ارجعْ إلى الأصل»: لا بابَ له
+//    v2_rule_set(p_school, p_key, p_value, p_why) — والمقفلُ يُعرض بسنده ولا يُخفى
+//    v2_rule_reset(p_school, p_key) — «ارجعْ إلى الأصل» على ما يُرجَع وحدَه (تكليف ٣٩) · ورجعَ_في سطرٌ هادئ
 // والرفضُ بنصّه · والبيانُ كما جاء · ولا تاريخَ خامّ (ضُبطَ_في لا يُعرض)
 (function () {
   'use strict';
@@ -149,12 +150,31 @@
     // المقفلُ ظاهرٌ بسنده كاملًا — فله سندٌ لا أنّه مفقود
     if (r['سنده']) f.appendChild(el('p', r['يُضبَط'] ? 'rs-meta' : null, r['سنده']));
     if (r['علّته']) f.appendChild(V.typed(r['علّته'], 'p', 'rs-meta'));
+    // رجعتْ عنه المدرسةُ إلى أصلِه: أثرٌ هادئٌ لا تنبيه (رجعَ_في) — وتاريخُه الخامُّ لا يُعرض
+    if (r['رجعَ_في'] && !r['ضبطتْه_مدرستُك']) f.appendChild(el('p', 'rs-meta', 'رجعَ إلى أصلِه'));
     if (r['يُضبَط']) {
       const a = el('div', 'rs-row');
       a.appendChild(btn('اضبطْه', 'rs-btn soft', () => ruleForm(r, box)));
+      // «ارجعْ إلى الأصل» على ما يُرجَع وحدَه (تكليف ٣٩) — v2_rule_reset، ولا يحذف صفًّا
+      if (r['يُرجَع']) a.appendChild(btn('ارجعْ إلى الأصل', 'rs-btn ghost', () => resetForm(r, box)));
       f.appendChild(a);
     }
     return f;
+  }
+
+  function resetForm(r, box) {
+    V.form({
+      title: 'ارجعْ إلى الأصل', what: r['البند'] || '',
+      fields: [{ key: 'n', type: 'node', node: el('p', null, 'الآن ' + r['القيمة'] + unit(r) + ' — ويرجعُ إلى ' + r['الأصل'] + unit(r)) }],
+      ok: 'ارجعْ',
+      onOk: async () => {
+        const { data, error } = await M.rpc('v2_rule_reset', { p_school: school(), p_key: r['المفتاح'] }, 'الرجوع إلى الأصل');
+        if (error) return error;
+        flash('ok', (data && data['البيان']) || '');
+        rulesTool(box);
+        return null;
+      },
+    });
   }
 
   function ruleForm(r, box) {

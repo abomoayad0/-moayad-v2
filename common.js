@@ -18,6 +18,7 @@
   // ومعهم الموجّهُ الطلابيّ: يقرأ سجلَّ الوارد (تكليف ⑦) — والمعلّمُ لا: ما يخصّه في «ما عليّ»
   const MAIL_ROLES = ['principal', 'deputy', 'deputy_students', 'deputy_school', 'deputy_school_students', 'admin_assistant', 'admin_assistant_students', 'counselor'];
   const TAHSIL_ROLES = ['principal', 'deputy', 'deputy_academic', 'deputy_students', 'deputy_school', 'deputy_school_students', 'deputy_academic_school', 'counselor', 'subject_teacher', 'sped_teacher', 'gifted_teacher'];
+  const HEALTH_ROLES = ['health_counselor', 'principal', 'deputy', 'deputy_students', 'deputy_school', 'deputy_school_students', 'deputy_academic', 'deputy_academic_school'];
   const currentRole = (me) => { const r = ((me && me.roles) || []).find((x) => x.is_current === true); return r ? r.role_key : null; };
   const SCREENS = [
     // الاصطفافُ والوصولُ والانصرافُ شاشةٌ واحدة بثلاثة أبواب — وrasd.html يُحوَّل إليها
@@ -70,6 +71,9 @@
     // لا مفتاحَ له في can — فيُفتح بالصفة: من يفتح لهم بابُ المتدنّين أو بابُ التحليل، وكلُّ قسمٍ يظهر لمن يفتحه بابُه
     { key: 'tahsil', group: 'التحصيل', title: 'التحصيل الدراسي', desc: 'ما يُنتظر منّي · لوحةُ المتدنّين · تحليلُ نتائج الفترة',
       href: 'tahsil.html', allow: (c, me) => TAHSIL_ROLES.includes(currentRole(me)) },
+    // السجلُّ الصحّيّ (تكليف ٣٩): الموجّهُ الصحّيُّ بالأسماء والقيادةُ بالأعداد — والصفاتُ ما يقبله الباب نفسُه
+    { key: 'sihha', group: 'الإدارة', title: 'السجلّ الصحّي', desc: 'الحالاتُ الصحّيّةُ القائمة · بحسب النوع · وما يحتاج مراجعة',
+      href: 'sihha.html', allow: (c, me) => HEALTH_ROLES.includes(currentRole(me)) },
     // والقاعدةُ تحرس الدخول إلى اللوحة
     { key: 'panel', group: 'الإدارة', title: 'لوحة التحكّم', desc: 'أبواب الإعداد — المقفلُ بسببه وسنده',
       href: 'panel.html', allow: (c) => !!c.manage_settings },
