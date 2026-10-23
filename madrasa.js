@@ -1,5 +1,6 @@
 // مؤيّد · بيدِ مدرستِك — تكليف ٣٨ (window.MoayadMadrasa): سجلّاتُ الرعاية وأرقامُ المدرسة في لوحة التحكّم
-// ① سجلّاتُ الرعاية: v2_care_kinds(p_school) ⇒ السجلّات [المفتاح · السجلّ · الترتيب · كيف · سرّي · ملاحظة · أصله · ضبطتْه_مدرستُك · عددهم]
+// ① سجلّاتُ الرعاية: v2_care_kinds(p_school) ⇒ السجلّات [المفتاح · السجلّ · الترتيب · كيف · سرّي · ملاحظة · أصله · سنده · ضبطتْه_مدرستُك · مخفيّ · عددهم · عددُه_محجوب]
+//    والمخفيُّ مشطوبٌ ومعه «أظهِره» · ولا عددَ يُعرض هنا — فلا صفرَ كاذبَ على السرّيّ
 //    v2_care_kind_add(p_school, p_label, p_secret, p_note, p_ord) — ووضعُه «وسم» دائمًا · ويُرجع سنده
 //    v2_care_kind_set(p_school, p_key, p_hidden, p_label, p_ord, p_note) — ولا مفتاحَ سرّيّةٍ هنا: السرّيُّ يبقى سرّيًّا
 // ② أرقامُ المدرسة: v2_rules(p_school) ⇒ الأرقام [المفتاح · البند · القيمة · الأصل · الوحدة · أدنى · أقصى · المصدر · سنده · علّته · يُضبَط · ضبطتْه_مدرستُك]
@@ -29,8 +30,14 @@
     box.appendChild(top);
     const rows = d['السجلّات'] || [];
     for (const k of rows) {
-      const f = el('div', 'rs-file');
-      const h = el('h5', null, k['السجلّ'] || '');
+      // المخفيُّ يُعرض للقيادة مشطوبًا ليُعادَ إظهارُه — ولا يظهر في فهرس الموجّه (مخفيّ من الباب)
+      const hid = k['مخفيّ'] === true;
+      const f = el('div', 'rs-file' + (hid ? ' rs-prev' : ''));
+      const h = el('h5', null);
+      const nm = el('span', null, k['السجلّ'] || '');
+      if (hid) nm.style.textDecoration = 'line-through';
+      h.appendChild(nm);
+      if (hid) h.appendChild(el('span', 'rs-tag', 'مخفيّ'));
       // أصلُه وسمًا: من المنتَج أم من قرار المدرسة · وما ضبطته المدرسةُ عليه علامة
       if (k['أصله']) h.appendChild(el('span', 'rs-tag' + (k['أصله'] === 'قرارُ مدرستِك' ? ' own' : ''), k['أصله']));
       if (k['ضبطتْه_مدرستُك']) h.appendChild(el('span', 'rs-tag own', 'ضبطتْه مدرستُك'));
@@ -38,9 +45,14 @@
       f.appendChild(h);
       if (k['كيف']) f.appendChild(el('p', 'rs-meta', k['كيف']));
       if (k['ملاحظة']) f.appendChild(V.typed(k['ملاحظة'], 'p', 'rs-meta'));
+      // سندُه لما أنشأته المدرسة (null للعامّ) — كما جاء، ولا شعارَ وزارة
+      if (k['سنده']) f.appendChild(el('p', 'rs-meta', k['سنده']));
       const r = el('div', 'rs-row');
-      r.appendChild(btn('اضبطْه', 'rs-btn soft', () => setForm(k, box)));
-      r.appendChild(btn('أخفِه', 'rs-btn ghost', () => hideForm(k, box)));
+      if (hid) r.appendChild(btn('أظهِره', 'rs-btn soft', async () => { const e = await send(k, { p_hidden: false, p_label: null, p_ord: null, p_note: null }, box); if (e) flash('bad', errText(e)); }));
+      else {
+        r.appendChild(btn('اضبطْه', 'rs-btn soft', () => setForm(k, box)));
+        r.appendChild(btn('أخفِه', 'rs-btn ghost', () => hideForm(k, box)));
+      }
       f.appendChild(r);
       box.appendChild(f);
     }
