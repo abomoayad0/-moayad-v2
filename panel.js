@@ -81,6 +81,18 @@
       }
       box.appendChild(card);
     }
+    // «بيدِ مدرستِك» (تكليف ٣٨ · madrasa.js): سجلّاتُ الرعاية وأرقامُ المدرسة — لا صفَّ لهما في الفهرس بعد، فيُلحقان آخرًا
+    // والبابان يحرسان: الضبطُ للمديرِ والوكلاءِ وحدَهم، والمقفلُ يُردّ بسنده
+    const own = el('section', 'panel pgroup');
+    own.appendChild(el('h2', 'ph', 'بيدِ مدرستِك'));
+    for (const [name, tool] of [['سجلّاتُ الرعاية', (b) => window.MoayadMadrasa.careTool(b)], ['أرقامُ المدرسة', (b) => window.MoayadMadrasa.rulesTool(b)]]) {
+      const s = el('div', 'psec open');
+      const top = el('div', 'row1');
+      top.appendChild(el('div', 'name', '✅ ' + name));
+      s.append(top, toggle('افتح', tool));
+      own.appendChild(s);
+    }
+    box.appendChild(own);
     loadCommittees();
   }
 
