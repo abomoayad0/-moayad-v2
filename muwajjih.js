@@ -5,6 +5,7 @@
 // ومحضرُ التوعية لم يُبنَ في المحرّك — فيُعرض معطّلًا بسببه.
 // «مهامّي» (تكليف ٣٣): v2_counsel_my_tasks عدّادًا في الرأس، والصفُّ يفتح بطاقةَ حالة الطالب إن كانت له حالةٌ محوَّلة، وإلّا سجلَّ ملفّه — في هذي الشاشة
 // و«مكتبةُ عملي» لسانٌ هنا: v2_counsel_stages (تسعُ مراحلَ بسؤال كلٍّ) · v2_counsel_works (لي أوّلًا · وغيرُ المبنيّ رماديٌّ بلا زرّ)
+// وبحثُ الطلّاب (v2_students_find) يفتح ملفَّ الطالب هنا — إتمامُ ٣٦
 // و«سجلّاتي» (تكليف ٣٦ · riaya.js): فهرسُ سجلّات الرعاية بعدّاداتها · وسجلّاتُ رعاية الطالب في ملفّه — منه يُوسَم ويُخرَج بسبب
 // وما كتبه إنسانٌ بيده (الدراسة · الجلسات · التقرير · ملاحظةُ الرصدة) يُعرض حرفًا بحرف: [data-raw] لا تُحوَّل أرقامُه
 (function () {
@@ -121,6 +122,29 @@
     arabize(box);
   }
   $('libBox').addEventListener('toggle', () => { if ($('libBox').open && !$('lib').children.length) loadLib(); });
+  // ابحث عن طالب (إتمامُ ٣٦): v2_students_find — rows ثمّ outside_rows تحت outside_ar · والجملُ كما جاءت · والضغطُ يفتح ملفَّه هنا
+  let fSeq = 0; let fTm = null;
+  $('qFind').addEventListener('input', () => { clearTimeout(fTm); fTm = setTimeout(async () => {
+    const q = $('qFind').value.trim(); const my = ++fSeq;
+    const list = $('qList');
+    if (q.length < 2) { list.textContent = ''; $('qSum').textContent = ''; return; }
+    const { data, error } = await M.rpc('v2_students_find', { p_text: q, p_in_grade: null, p_in_section: null, p_max: 20, p_of_school: M.state.school }, 'البحث عن طالب');
+    if (my !== fSeq) return;
+    list.textContent = '';
+    if (error) { list.appendChild(el('div', 'notice err', errText(error))); return; }
+    const d = data || {};
+    $('qSum').textContent = [d.summary_ar, d.note_ar].filter(Boolean).join(' · ');
+    const item = (x) => {
+      const b = btn('', 'rs-item', () => { list.textContent = ''; $('qSum').textContent = ''; $('qFind').value = ''; openStudent(x.student); });
+      b.append(el('b', null, x.name || x.full_name || ''), el('small', null, [x.class_ar, x.student_no].filter(Boolean).join(' · ')));
+      list.appendChild(b);
+    };
+    (d.rows || []).forEach(item);
+    if (d.outside_ar && (d.outside_rows || []).length) list.appendChild(el('div', 'rs-label', d.outside_ar));
+    (d.outside_rows || []).forEach(item);
+    if (!(d.rows || []).length && !(d.outside_rows || []).length) list.appendChild(el('p', 'rs-meta', 'لا نتائج.'));
+    arabize($('findCard'));
+  }, 250); });
   // «سجلّاتي» (تكليف ٣٦) — riaya.js · والطالبُ يُفتح ملفُّه هنا
   $('riayaBox').addEventListener('toggle', () => { if ($('riayaBox').open && !$('riaya').children.length) window.MoayadRiaya.tab($('riaya'), openStudent); });
 
