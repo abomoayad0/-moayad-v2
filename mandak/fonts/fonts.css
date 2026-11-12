@@ -1,0 +1,18 @@
+/*
+ * خطوط البطاقة — مؤقتة.
+ * القالب مصمَّم على beIN Black (الأرقام) و Al-Jazeera Arabic (النصوص)،
+ * ونسختهما الأصلية غير متوفرة بعد. فالمعاينة والـ PDF الآن بخط Cairo (رخصة OFL)
+ * تحت أسماء "CardText" و"CardNum"، وحين تصل الأصلية تُستبدل هنا فقط
+ * ولا يُلمس card.js — الأسماء ثابتة.
+ * متابعة: mandak_cards.followup بند «الخطوط الأصلية» — مؤجل.
+ */
+@font-face { font-family: "CardText"; font-weight: 400; font-display: block;
+  src: url("cairo-arabic-400-normal.woff2") format("woff2"); unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200E; }
+@font-face { font-family: "CardText"; font-weight: 400; font-display: block;
+  src: url("cairo-latin-400-normal.woff2") format("woff2"); unicode-range: U+0000-00FF; }
+@font-face { font-family: "CardText"; font-weight: 700; font-display: block;
+  src: url("cairo-arabic-700-normal.woff2") format("woff2"); unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF, U+200C-200E; }
+@font-face { font-family: "CardText"; font-weight: 700; font-display: block;
+  src: url("cairo-latin-700-normal.woff2") format("woff2"); unicode-range: U+0000-00FF; }
+@font-face { font-family: "CardNum"; font-weight: 900; font-display: block;
+  src: url("cairo-latin-900-normal.woff2") format("woff2"); unicode-range: U+0000-00FF; }
