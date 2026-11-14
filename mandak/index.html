@@ -5,69 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>بطاقة الموظف — بلدية محافظة المندق</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="/cards/style.css">
 </head>
 <body>
-<header class="top">
-  <h1>بيانات بطاقة الموظف</h1>
-  <p>بلدية محافظة المندق</p>
-</header>
-
-<main class="wrap" id="main">
-  <div class="cols">
-    <form class="panel" id="form" novalidate>
-      <h2>بياناتك</h2>
-      <div id="fields"></div>
-      <div id="err" class="note err hidden"></div>
-      <button class="btn block" id="send" type="submit">إرسال البيانات</button>
-    </form>
-    <section class="panel">
-      <h2>معاينة بطاقتك</h2>
-      <div id="preview"></div>
-      <p class="s" style="color:var(--muted);font-size:.82rem;margin:10px 0 0">المعاينة تقريبية، والطباعة النهائية تراجعها البلدية.</p>
-    </section>
-  </div>
-</main>
-
-<main class="wrap hidden" id="done">
-  <div class="panel done">
-    <div class="tick">✓</div>
-    <h2 id="doneTitle">تم استلام بياناتك</h2>
-    <p>شكرًا لك. لو تبي تعدّل أي شي، سجّل مرة ثانية بنفس السجل المدني وتتحدّث بياناتك.</p>
-    <button class="btn ghost" type="button" onclick="location.reload()">تسجيل موظف آخر</button>
-  </div>
-</main>
-
-<script src="card.js"></script>
-<script src="cropper.js"></script>
-<script src="form.js"></script>
-<script src="api.js"></script>
-<script>
-(function () {
-  'use strict';
-  const form = MandakForm.create(document.getElementById('fields'), document.getElementById('preview'));
-  const send = document.getElementById('send');
-  const err = document.getElementById('err');
-
-  document.getElementById('form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    err.classList.add('hidden');
-    if (!form.validate()) return;
-    send.disabled = true; send.textContent = 'جاري الإرسال…';
-    try {
-      const r = await MandakApi.call('register', { ...form.getData(), photo: form.newPhotoDataURL() });
-      document.getElementById('doneTitle').textContent = r.updated ? 'تم تحديث بياناتك' : 'تم استلام بياناتك';
-      document.getElementById('main').classList.add('hidden');
-      document.getElementById('done').classList.remove('hidden');
-      window.scrollTo(0, 0);
-    } catch (ex) {
-      err.textContent = ex.message;
-      err.classList.remove('hidden');
-    } finally {
-      send.disabled = false; send.textContent = 'إرسال البيانات';
-    }
-  });
-})();
-</script>
+<script src="config.js"></script>
+<script src="/cards/card.js"></script>
+<script src="/cards/cropper.js"></script>
+<script src="/cards/form.js"></script>
+<script src="/cards/api.js"></script>
+<script src="/cards/register.js"></script>
 </body>
 </html>

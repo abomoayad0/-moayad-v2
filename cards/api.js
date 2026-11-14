@@ -1,10 +1,11 @@
 /*
- * api.js — الاتصال الوحيد بالدالة mandak-cards (مشروع تعهد، قسم mandak_cards المعزول).
- * لا مفاتيح هنا: الدالة لا تطلب مفتاحًا، ولوحة صلاح تُرسل كلمة مرورها فقط.
+ * cards/api.js — الاتصال بدالة البلدية الحالية فقط (CARD_CONFIG.api).
+ * كل بلدية لها دالتها وقسمها ومخزنها، فلا يوجد عنوان يجمع بلديتين.
+ * لا مفاتيح هنا: الدالة لا تطلب مفتاحًا، واللوحة تُرسل كلمة مرورها فقط.
  */
 (function (global) {
   'use strict';
-  const URL_ = 'https://ybrcyagdhhgvtrlslmev.supabase.co/functions/v1/mandak-cards';
+  const URL_ = global.CARD_CONFIG.api;
 
   async function call(action, payload, adminPass) {
     const headers = { 'content-type': 'application/json' };

@@ -1,33 +1,52 @@
 /*
- * form.js — حقول البطاقة + الصورة + المعاينة. نموذج واحد تستعمله صفحة التسجيل
- * ونافذة التعديل في لوحة صلاح، فلا تتكرر الحقول ولا قواعدها.
+ * cards/form.js — حقول البطاقة + الصورة + المعاينة. نموذج واحد تستعمله صفحة التسجيل
+ * ونافذة التعديل في اللوحة، والحقول نفسها من CARD_CONFIG.fields لكل بلدية.
  * (القواعد نفسها يفرضها الخادم والجدول؛ هنا للتنبيه المبكر فقط)
  */
 (function (global) {
   'use strict';
   const C = global.MandakCard;
+  const CFG = global.CARD_CONFIG;
+  const has = (k) => CFG.fields.includes(k);
 
-  function create(host, previewHost, opts) {
-    opts = opts || {};
-    const H = C.HONORIFICS.map(h => `<option>${h}</option>`).join('');
-    host.innerHTML = `
+  const FIELD_HTML = {
+    honorific: () => `
       <label class="f" data-k="honorific"><span>الصفة</span>
-        <select name="honorific"><option value="">— اختر —</option>${H}</select>
-        <div class="msg-err">اختر الصفة</div></label>
+        <select name="honorific"><option value="">— اختر —</option>${CFG.honorifics.map(h => `<option>${h}</option>`).join('')}</select>
+        <div class="msg-err">اختر الصفة</div></label>`,
+    full_name: () => `
       <label class="f" data-k="full_name"><span>الاسم الكامل</span>
         <input type="text" name="full_name" autocomplete="name" maxlength="80" placeholder="مثل: محمد أحمد محي الزهراني">
         <small>ثلاثي أو رباعي، كما تبيه يطلع في البطاقة</small>
-        <div class="msg-err">اكتب الاسم ثلاثيًا على الأقل بالحروف العربية</div></label>
+        <div class="msg-err">اكتب الاسم ثلاثيًا على الأقل بالحروف العربية</div></label>`,
+    department: () => `
       <label class="f" data-k="department"><span>الإدارة / المسمى</span>
         <input type="text" name="department" maxlength="120" placeholder="مثل: مدير إدارة الطوارئ والأزمات">
-        <small>السطر اللي تحت الاسم في البطاقة — اكتبه مثل ما تبيه</small>
-        <div class="msg-err">اكتب الإدارة أو المسمى</div></label>
+        <small>السطر اللي تحت الزخرفة في البطاقة — اكتبه مثل ما تبيه</small>
+        <div class="msg-err">اكتب الإدارة أو المسمى</div></label>`,
+    national_id: () => `
       <label class="f" data-k="national_id"><span>السجل المدني</span>
-        <input type="text" name="national_id" class="ltr" inputmode="numeric" maxlength="10" placeholder="10 أرقام">
-        <div class="msg-err">السجل المدني ١٠ أرقام يبدأ بـ ١ أو ٢</div></label>
+        <input type="text" name="national_id" class="ltr" inputmode="numeric" maxlength="10" placeholder="10 أرقام تبدأ بـ 1">
+        <div class="msg-err">السجل المدني ١٠ أرقام يبدأ بـ ١</div></label>`,
+    employee_no: () => `
       <label class="f" data-k="employee_no"><span>الرقم الوظيفي <span class="opt">(اختياري)</span></span>
         <input type="text" name="employee_no" class="ltr" inputmode="numeric" maxlength="10">
-        <div class="msg-err">الرقم الوظيفي أرقام فقط</div></label>
+        <div class="msg-err">الرقم الوظيفي أرقام فقط</div></label>`,
+  };
+
+  // نفس قيود الخادم والجدول
+  const RULES = {
+    honorific: (v) => !v,
+    full_name: (v) => !/^[؀-ۿ ]+$/.test(v) || v.split(' ').length < 3,
+    department: (v) => v.length < 3,
+    national_id: (v) => !/^1[0-9]{9}$/.test(v),
+    employee_no: (v) => !!v && !/^[0-9]{1,10}$/.test(v),
+  };
+
+  function create(host, previewHost, opts) {
+    opts = opts || {};
+    const face = CFG.photo.shape === 'circle' ? 'الدائرة' : 'الإطار';
+    host.innerHTML = CFG.fields.map(k => FIELD_HTML[k]()).join('') + `
       <div class="photo-box f" data-k="photo">
         <label class="f" style="margin:0"><span>الصورة الشخصية</span></label>
         <div class="pick">
@@ -36,7 +55,7 @@
           <span class="s pick-note"></span>
         </div>
         <div class="crop-host"></div>
-        <div class="hint">صورة حديثة، والوجه واضح وخلفيته فاتحة. حرّك الصورة وكبّرها لين يتوسط وجهك الدائرة.</div>
+        <div class="hint">صورة حديثة، والوجه واضح وخلفيته فاتحة. حرّك الصورة وكبّرها لين يتوسط وجهك ${face}.</div>
         <div class="msg-err">الصورة مطلوبة</div>
       </div>`;
 
@@ -52,7 +71,7 @@
     const q = (n) => host.querySelector(`[name=${n}]`);
     const fileEl = host.querySelector('input[type=file]');
     const note = host.querySelector('.pick-note');
-    let existingPhoto = null;   // صورة محفوظة (لوحة صلاح)
+    let existingPhoto = null;   // صورة محفوظة (اللوحة)
     let newPhoto = false;
 
     const cropper = global.MandakCropper.create(host.querySelector('.crop-host'), { onChange: render });
@@ -78,18 +97,20 @@
       render();
     });
 
+    function norm(k, v) {
+      v = v || '';
+      if (k === 'national_id' || k === 'employee_no') return C.latinDigits(v).replace(/\s/g, '');
+      return v.replace(/\s+/g, ' ').trim();
+    }
+
     function getData() {
-      return {
-        honorific: q('honorific').value,
-        full_name: q('full_name').value.replace(/\s+/g, ' ').trim(),
-        department: q('department').value.replace(/\s+/g, ' ').trim(),
-        national_id: C.latinDigits(q('national_id').value).replace(/\s/g, ''),
-        employee_no: C.latinDigits(q('employee_no').value).replace(/\s/g, ''),
-      };
+      const d = {};
+      for (const k of CFG.fields) d[k] = norm(k, q(k).value);
+      return d;
     }
 
     function setData(d) {
-      for (const k of ['honorific', 'full_name', 'department', 'national_id', 'employee_no']) q(k).value = d[k] || '';
+      for (const k of CFG.fields) q(k).value = d[k] || '';
       render();
     }
 
@@ -113,14 +134,9 @@
 
     function validate() {
       const d = getData();
-      const bad = {
-        honorific: !d.honorific,
-        full_name: !/^[؀-ۿ ]+$/.test(d.full_name) || d.full_name.split(' ').length < 3,
-        department: d.department.length < 3,
-        national_id: !/^[12][0-9]{9}$/.test(d.national_id),
-        employee_no: !!d.employee_no && !/^[0-9]{1,10}$/.test(d.employee_no),
-        photo: !newPhoto && !existingPhoto,
-      };
+      const bad = {};
+      for (const k of CFG.fields) bad[k] = RULES[k](d[k]);
+      bad.photo = !newPhoto && !existingPhoto;
       let first = null;
       for (const k in bad) {
         const el = host.querySelector(`[data-k=${k}]`);
@@ -139,5 +155,5 @@
     };
   }
 
-  global.MandakForm = { create };
+  global.MandakForm = { create, has };
 })(window);

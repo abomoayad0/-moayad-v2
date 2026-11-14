@@ -1,4 +1,4 @@
-/* أنماط صفحتي البطاقات — لا تشارك مؤيد أي ملف */
+/* أنماط صفحات البطاقات لكل البلديات — لا تشارك مؤيد أي ملف */
 @import url("fonts/fonts.css");
 
 :root {
@@ -82,6 +82,7 @@ input.ltr { direction: ltr; text-align: right; letter-spacing: .04em; }
 .row .s { font-size: .82rem; color: var(--muted); }
 .row .acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .tag { display: inline-block; font-size: .72rem; padding: 0 6px; border-radius: 4px; background: #fff4e0; color: #8a5a00; }
+.tag.ok { background: #e7f4ec; color: var(--ok); }
 .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: flex-start; justify-content: center; overflow: auto; padding: 16px; z-index: 10; }
 .modal.on { display: flex; }
 .modal .panel { width: 100%; max-width: 760px; }

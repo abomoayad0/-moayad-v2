@@ -1,15 +1,18 @@
 /*
- * cropper.js — قص الصورة على دائرة البطاقة.
- * الموظف يسحب الصورة ويكبّرها لين يتوسط وجهه الدائرة، والناتج مربع 800×800 JPEG
- * تُرسم الدائرة منه في البطاقة (card.js). تستعمله صفحة التسجيل ولوحة صلاح.
+ * cards/cropper.js — قص الصورة على مكان الصورة في البطاقة.
+ * الشكل والنسبة من CARD_CONFIG.photo: دائرة (المندق) أو إطار مستطيل (بني حسن).
+ * الموظف يسحب الصورة ويكبّرها لين يتوسط وجهه، والناتج JPEG بعرض 800 وبنفس نسبة المكان.
  */
 (function (global) {
   'use strict';
-  const OUT = 800;          // ضلع الصورة الناتجة
+  const OUT_W = 800;        // عرض الصورة الناتجة
   const MAX_SRC = 2400;     // تصغير الصور الكبيرة قبل العمل عليها
 
   function create(host, opts) {
     opts = opts || {};
+    const P = global.CARD_CONFIG.photo;
+    const aspect = P.w / P.h;                 // عرض ÷ ارتفاع
+    const OUT_H = Math.round(OUT_W / aspect);
     const wrap = document.createElement('div');
     wrap.className = 'crop';
     wrap.innerHTML =
@@ -22,54 +25,61 @@
 
     let img = null;           // canvas مصدر (بعد التصغير)
     let scale = 1, minScale = 1, ox = 0, oy = 0;   // إزاحة مركز الصورة عن مركز المسرح (بكسل المسرح)
-    let size = 0;
+    let sw = 0, sh = 0;
 
     function resize() {
-      const css = Math.min(host.clientWidth || 300, 340);
+      const cssW = Math.min(host.clientWidth || 300, 340 * Math.min(1, aspect));
       const dpr = window.devicePixelRatio || 1;
-      const old = size;
-      size = Math.round(css * dpr);
-      if (img && old && old !== size) { const r = size / old; ox *= r; oy *= r; scale *= r; }
-      stage.width = stage.height = size;
-      stage.style.width = stage.style.height = css + 'px';
+      const old = sw;
+      sw = Math.round(cssW * dpr); sh = Math.round(sw / aspect);
+      if (img && old && old !== sw) { const r = sw / old; ox *= r; oy *= r; scale *= r; }
+      stage.width = sw; stage.height = sh;
+      stage.style.width = cssW + 'px'; stage.style.height = (cssW / aspect) + 'px';
       if (img) fit(false);
       draw();
     }
 
     function fit(reset) {
-      minScale = size / Math.min(img.width, img.height);   // الصورة تغطي المربع دائمًا
+      minScale = Math.max(sw / img.width, sh / img.height);   // الصورة تغطي المكان دائمًا
       if (reset) { scale = minScale; ox = oy = 0; zoomEl.value = 1; }
       scale = Math.max(scale, minScale);
       clamp();
     }
 
     function clamp() {
-      const w = img.width * scale, h = img.height * scale;
-      const mx = (w - size) / 2, my = (h - size) / 2;
+      const mx = (img.width * scale - sw) / 2, my = (img.height * scale - sh) / 2;
       ox = Math.max(-mx, Math.min(mx, ox));
       oy = Math.max(-my, Math.min(my, oy));
     }
 
-    function paint(c, s, k) {
+    function paint(c, tw, th, k) {
       // k: نسبة من المسرح إلى الهدف
       const w = img.width * scale * k, h = img.height * scale * k;
-      c.drawImage(img, s / 2 - w / 2 + ox * k, s / 2 - h / 2 + oy * k, w, h);
+      c.drawImage(img, tw / 2 - w / 2 + ox * k, th / 2 - h / 2 + oy * k, w, h);
+    }
+
+    function shapePath(c, inset) {
+      c.beginPath();
+      if (P.shape === 'circle') c.arc(sw / 2, sh / 2, Math.min(sw, sh) / 2 - inset, 0, Math.PI * 2);
+      else c.rect(inset, inset, sw - 2 * inset, sh - 2 * inset);
     }
 
     function draw() {
-      ctx.clearRect(0, 0, size, size);
-      ctx.fillStyle = '#eef2f3'; ctx.fillRect(0, 0, size, size);
+      ctx.clearRect(0, 0, sw, sh);
+      ctx.fillStyle = '#eef2f3'; ctx.fillRect(0, 0, sw, sh);
       if (!img) return;
-      paint(ctx, size, 1);
-      // تعتيم خارج الدائرة
+      paint(ctx, sw, sh, 1);
       ctx.save();
-      ctx.fillStyle = 'rgba(255,255,255,0.72)';
-      ctx.beginPath();
-      ctx.rect(0, 0, size, size);
-      ctx.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2, true);
-      ctx.fill('evenodd');
-      ctx.strokeStyle = '#16769e'; ctx.lineWidth = Math.max(2, size / 150);
-      ctx.beginPath(); ctx.arc(size / 2, size / 2, size / 2 - ctx.lineWidth, 0, Math.PI * 2); ctx.stroke();
+      if (P.shape === 'circle') {
+        // تعتيم خارج الدائرة
+        ctx.fillStyle = 'rgba(255,255,255,0.72)';
+        ctx.beginPath();
+        ctx.rect(0, 0, sw, sh);
+        ctx.arc(sw / 2, sh / 2, Math.min(sw, sh) / 2 - 1, 0, Math.PI * 2, true);
+        ctx.fill('evenodd');
+      }
+      ctx.strokeStyle = '#16769e'; ctx.lineWidth = Math.max(2, sw / 150);
+      shapePath(ctx, ctx.lineWidth / 2 + 1); ctx.stroke();
       ctx.restore();
     }
 
@@ -151,10 +161,10 @@
     function toCanvas() {
       if (!img) return null;
       const c = document.createElement('canvas');
-      c.width = c.height = OUT;
+      c.width = OUT_W; c.height = OUT_H;
       const x = c.getContext('2d');
-      x.fillStyle = '#fff'; x.fillRect(0, 0, OUT, OUT);
-      paint(x, OUT, OUT / size);
+      x.fillStyle = '#fff'; x.fillRect(0, 0, OUT_W, OUT_H);
+      paint(x, OUT_W, OUT_H, OUT_W / sw);
       return c;
     }
 
