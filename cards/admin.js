@@ -120,6 +120,7 @@
         <img src="${esc(r.photo_url || '')}" alt="" loading="lazy">
         <div>
           <div class="t">${r.honorific ? esc(r.honorific) + ' ' : ''}${esc(r.full_name)}</div>
+          ${needsTitle(r) ? `<select class="quick-h" aria-label="الصفة"><option value="">الصفة — اختر</option>${CFG.honorifics.map(h => `<option>${h}</option>`).join('')}</select>` : ''}
           <div class="s">${esc(r.department)}</div>
           <div class="s" dir="ltr" style="text-align:right">${esc(r.national_id)}${r.employee_no ? ' · ' + esc(r.employee_no) : ''}</div>
           <div class="s">${fmt(r.updated_at)} ${r.updated_by === 'admin' ? '<span class="tag">عُدّل من اللوحة</span>' : ''}
@@ -133,6 +134,20 @@
         </div>
       </div>`).join('') || '<p class="s">لا يوجد.</p>';
   }
+
+  // من سجّل قبل إضافة خانة الصفة (بني حسن): اختيار الصفة بضغطة من القائمة بدل فتح التعديل
+  function needsTitle(r) { return CFG.fields.includes('honorific') && !r.honorific; }
+  $('rows').addEventListener('change', async (e) => {
+    const s = e.target.closest('select.quick-h');
+    if (!s || !s.value) return;
+    const r = rows.find(x => x.id === s.closest('.row').dataset.id);
+    s.disabled = true;
+    try {
+      await api('admin_set_honorific', { id: r.id, honorific: s.value });
+      r.honorific = s.value; r.approved_at = null; r.updated_by = 'admin';
+      draw(); msg('تمت إضافة الصفة: ' + s.value + ' ' + r.full_name);
+    } catch (ex) { msg(ex.message, 'err'); s.disabled = false; }
+  });
 
   $('q').addEventListener('input', draw);
   $('filter').addEventListener('change', draw);

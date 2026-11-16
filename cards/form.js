@@ -34,6 +34,26 @@
         <div class="msg-err">الرقم الوظيفي أرقام فقط</div></label>`,
   };
 
+  // الاسم كما يكتبه الموظف قد يحمل صفته ورموزًا: «المهندس/ علي…»، «م. علي…».
+  // تُنقل الصفة لخانتها وتُشال الرموز بدل رفض الاسم.
+  // نفس المنطق في الدالة (core.ts — splitName)؛ هنا ليظهر في الخانة والمعاينة فورًا.
+  const TITLES = [
+    [/^(ال)?مهندسة$/, 'المهندسة'], [/^(ال)?مهندس$/, 'المهندس'],
+    [/^(ال)?[أا]ستاذة$/, 'الأستاذة'], [/^(ال)?[أا]ستاذ$/, 'الأستاذ'],
+    [/^(ال)?دكتورة$/, 'الدكتورة'], [/^(ال)?دكتور$/, 'الدكتور'],
+  ];
+  const ABBR = { 'م': 'المهندس', 'أ': 'الأستاذ', 'ا': 'الأستاذ', 'د': 'الدكتور' };
+  function splitName(raw) {
+    let s = String(raw || '').trim(), title = null;
+    const ab = /^([مأاد])\s*[.\/\-]\s*/.exec(s);          // م. / م/ / د-
+    if (ab) { title = ABBR[ab[1]]; s = s.slice(ab[0].length); }
+    s = s.replace(/[^؀-ۿ\s]|[،؛؟٪-٭۔]/g, ' ').replace(/\s+/g, ' ').trim();
+    const w = s.split(' ');
+    const hit = w.length > 1 && TITLES.find(([re]) => re.test(w[0]));
+    if (hit) { title = title || hit[1]; s = w.slice(1).join(' '); }
+    return { title, name: s };
+  }
+
   // نفس قيود الخادم والجدول
   const RULES = {
     honorific: (v) => !v,
@@ -97,9 +117,20 @@
       render();
     });
 
+    // لما يطلع من خانة الاسم: الصفة المكتوبة فيه تنتقل لخانتها (لو فاضية) والرموز تنشال
+    const nameEl = q('full_name');
+    nameEl.addEventListener('change', () => {
+      const sp = splitName(nameEl.value);
+      if (sp.title && has('honorific') && !q('honorific').value) q('honorific').value = sp.title;
+      nameEl.value = sp.name;
+      host.querySelector('[data-k=honorific]')?.classList.remove('bad');
+      render();
+    });
+
     function norm(k, v) {
       v = v || '';
       if (k === 'national_id' || k === 'employee_no') return C.latinDigits(v).replace(/\s/g, '');
+      if (k === 'full_name') return splitName(v).name;
       return v.replace(/\s+/g, ' ').trim();
     }
 
@@ -155,5 +186,5 @@
     };
   }
 
-  global.MandakForm = { create, has };
+  global.MandakForm = { create, has, splitName };
 })(window);
